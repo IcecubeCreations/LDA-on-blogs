@@ -16,3 +16,5 @@ If that is not the case, just install the required packages mentioned by the int
 - sklearn
 - pyenchant
 - pandas
+- matplotlib
+- scipy
