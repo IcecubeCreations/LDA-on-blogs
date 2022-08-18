@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head><meta name="generator" content="Hexo 3.8.0">
+		<meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		
+			<title>Amazon MSK vs Amazon MQ | cloudonaut</title>
+			<meta name="description" content="Learn how Amazon MSK differs from Amazon MQ.">
+		
+		<meta name="HandheldFriendly" content="True">
+		<meta name="MobileOptimized" content="320">
+		<meta name="viewport" content="width=device-width,initial-scale=1">
+		<meta name="robots" content="max-image-preview:large">
+
+		
+		
+		<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+		<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+		<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+
+		<link rel="preload" href="/dist/bootstrap.css" as="style">
+
+		<link rel="preload" href="/dist/main.js" as="script">
+		<link rel="preload" href="/dist/video.js" as="script">
+
+		<link rel="preload" href="/font/rubik-v7-latin-700.woff2" as="font" type="font/woff2" crossorigin>
+		<link rel="preload" href="/font/rubik-v7-latin-regular.woff2" as="font" type="font/woff2" crossorigin>
+		<link rel="preload" href="/font/rubik-v7-latin-500.woff2" as="font" type="font/woff2" crossorigin>
+
+		<link href="/dist/bootstrap.css" rel="stylesheet">
+		
+		<script type="application/ld+json">
+			{
+				"@context": "http://schema.org",
+				"@type": "Website",
+				"publisher": "cloudonaut",
+				"url": "https://cloudonaut.io",
+				"description": "Launch pad for Amazon Web Services"
+			}
+		</script>
+
+		
+		<link rel="canonical" href="https://cloudonaut.io/versus/messaging/msk-vs-mq/">
+		
+
+		<link rel="alternate" type="application/rss+xml" title="cloudonaut" href="https://cloudonaut.io/feed/rss.xml">
+		<meta name="google-site-verification" content="WPzL6Yiee6tJKbSpBGpE7TsCwB7Nv3h8cT-xFgepZAU">
+	</head>
+	
+	<body>
+	
+		
+		<header>
+			<div class="container">
+				<div class="row md-nav d-none d-lg-flex">
+					<div class="col-3">
+						<a href="/">cloudonaut</a>
+					</div>
+					
+					<div class="col-9">
+						<a href="/">Home</a>
+						<a href="/page/1">Blog</a>
+						<a href="https://podcast.cloudonaut.io/">Podcast</a>
+						<a href="/books-and-video-courses/">Books & Video Courses</a>
+						<a href="/support-us/">Support us</a>
+						<button type="button" class="btn-subscribe" data-toggle="modal" data-target="#subscriptionModal">Subscribe</button>
+					</div>
+					
+				</div>
+				<div class="row align-items-center xs-nav d-flex d-lg-none">
+					<div class="col-3">
+						<button type="button" id="toggler" style="padding: 0; border: none; background-color: transparent" data-toggle="collapse" data-target="#mobileNavigation" aria-controls="mobileNavigation" aria-expanded="false" aria-label="Toggle navigation" onclick="navbar_xs_show()">
+							<img src="/img/icon-menu-open.png" width="34" height="25" alt="Open Navigation Icon" title="Open Navigation" style="height: 25px; width: auto; float: left">
+						</button>
+					</div>
+					
+					<div class="col-9">
+						<a href="#" class="btn-subscribe" data-toggle="modal" data-target="#subscriptionModal">Subscribe</a>
+					</div>
+					
+				</div>
+				<div class="row collapse" id="mobileNavigation">
+					<div class="col-12">
+						<a href="/">Home</a>
+						<a href="/page/1">Blog</a>
+						<a href="https://podcast.cloudonaut.io/">Podcast</a>
+						<a href="/books-and-video-courses/">Books & Video Courses</a>
+						<a href="/support-us/">Support us</a>
+					</div>
+				</div>
+			</div>
+
+			<script>
+			function navbar_xs_show() {
+				document.querySelectorAll("#toggler > img").forEach(function(el) {
+					el.src = "/img/icon-menu-close.svg";
+				});
+				document.querySelectorAll("#mobileNavigation").forEach(function(el) {
+					el.style.display = '';
+				});
+				document.querySelectorAll("main").forEach(function(el) {
+					el.style.display = 'none';
+				});
+				document.querySelectorAll("footer").forEach(function(el) {
+					el.style.display = 'none';
+				});
+				document.querySelectorAll("#toggler").forEach(function(el) {
+					el.setAttribute("onclick", "navbar_xs_hide()");
+				});
+			}
+
+			function navbar_xs_hide() {
+				document.querySelectorAll("#toggler > img").forEach(function(el) {
+					el.src = "/img/icon-menu-open.png";
+				});
+				document.querySelectorAll("#mobileNavigation").forEach(function(el) {
+					el.style.display = 'none';
+				});
+				document.querySelectorAll("main").forEach(function(el) {
+					el.style.display = '';
+				});
+				document.querySelectorAll("footer").forEach(function(el) {
+					el.style.display = '';
+				});
+				document.querySelectorAll("#toggler").forEach(function(el) {
+					el.setAttribute("onclick", "navbar_xs_show()");
+				});
+			}
+			</script>
+
+			<div class="modal fade" id="subscriptionModal" tabindex="-1" role="dialog" aria-hidden="true">
+				<div class="modal-dialog modal-dialog-centered" role="document">
+					<div class="modal-content">
+						<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+						</button>
+						<div class="d-none d-md-block">
+							<p class="headline">Stay up-to-date!</p>
+							<p>We launched the cloudonaut blog in 2015. Since then, we have published 347 articles, 45 podcast episodes, and 37 videos. Our weekly newsletter keeps you up-to-date. Subscribe now! <strong>It's all free</strong>.</p>
+						</div>
+						<div class="d-block d-md-none">
+							<p class="headline">Subscribe</p>
+							<p>Our weekly newsletter keeps you up-to-date. Subscribe now! <strong>It's all free</strong>.</p>
+						</div>
+						<form class="newsletter">
+							<div class="form-group">
+								<input type="text" class="form-control" name="firstname" placeholder="First Name">
+							</div>
+							<div class="form-group">
+								<input type="email" class="form-control" name="email" placeholder="Email Address">
+							</div>
+							<div class="form-group">
+								<select class="form-control" name="formid">
+									<option value="1210692">Weekly Newsletter</option>
+									<option value="1210696">Monthly Newsletter</option>
+								</select>
+							</div>
+							<div class="form-group form-check">
+								<input type="checkbox" class="form-check-input" name="gdpr" value="true">
+								<label class="form-check-label" for="gdpr">I want to subscribe to the newsletter with new content as well as announcements regarding products and services. The newsletter performance is measured based on opens and clicks. I agree with the <a href="/privacy-policy/">privacy policy</a>.</label>
+							</div>
+							<button type="submit" class="btn btn-primary" disabled="true" style="margin-bottom: 25px">Subscribe</button>
+							<div class="alert alert-primary d-none" role="alert">
+								Please check your inbox and confirm your subscription.
+							</div>
+							<div class="alert alert-success d-none" role="alert">
+								Great, all done.
+							</div>
+							<div class="alert alert-danger d-none" role="alert">
+								Sorry, something went wrong. Please try again!
+							</div>
+						</form>
+						<div style="margin-top: 30px">
+							<i>Do you prefer RSS? <a href="https://feedly.com/i/subscription/feed/https://cloudonaut.io/feed/rss.xml">Feedly</a> or <a href="/feed/rss.xml">RSS feed</a>.</i>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="modal fade" id="podcastModal" tabindex="-1" role="dialog" aria-hidden="true">
+				<div class="modal-dialog modal-dialog-centered" role="document">
+					<div class="modal-content">
+						<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+						</button>
+						<p class="headline">Podcast</p>
+						<p>We are dropping a new episode every other week.</p>
+						<a class="btn btn-primary" href="https://podcasts.apple.com/podcast/id1476505149">
+							<div>Apple Podcasts</div>
+						</a>
+						<a class="btn btn-primary" href="https://www.google.com/podcasts?feed=aHR0cHM6Ly9wb2RjYXN0LmNsb3Vkb25hdXQuaW8vZmVlZC9hYWM%3D">
+							<div>Google Podcasts</div>
+						</a>
+						<a class="btn btn-primary" href="https://open.spotify.com/show/1M44gYEuSZs3YX6zDUcVZs">
+							<div>Spotify</div>
+						</a>
+						<a class="btn btn-primary" href="https://overcast.fm/itunes1476505149">
+							<div>Overcast</div>
+						</a>
+						<a class="btn btn-primary" href="https://castro.fm/itunes/1476505149">
+							<div>Castro</div>
+						</a>
+						<a class="btn btn-primary" href="https://pca.st/itunes/1476505149">
+							<div>Pocket Casts</div>
+						</a>
+						<br>
+						<p>Alternatively search for "cloudonaut" or add the <a href="https://podcast.cloudonaut.io/feed/aac">feed</a> in your podcast app.</p>
+					</div>
+				</div>
+			</div>
+		</header>
+
+		<main>
+			<article> <!-- needed for Safari's reader view -->
+<div class="post">
+	<div class="container">
+		<div class="row">
+			<div class="col-sm-8 offset-sm-2">
+				<h1 class="post-title">Amazon MSK versus Amazon MQ</h1>
+				<div class="meta-information">25 May 2022</div>
+			</div>
+		</div>
+		<div class="row content">
+			<div class="col-sm-10 offset-sm-1">
+				<p>Learn how Amazon MSK differs from Amazon MQ.</p>
+				<div class="table-responsive">
+					<table class="table table-striped">
+						<thead>
+							<tr>
+								<th width="30%"></th>
+								<th width="35%">Amazon MSK</th>
+								<th width="35%">Amazon MQ</th>
+							</tr>
+						</thead>
+						<tbody>
+							
+							<tr>
+								<td>Scaling</td>
+								<td><p>30 brokers per cluster; you need add/remove brokers and reassign partitions manually</p></td>
+								<td><p>80 msg/sec; can be increased with a <a href="https://docs.aws.amazon.com/amazon-mq/latest/developer-guide/network-of-brokers.html">network of brokers</a></p></td>
+							</tr>
+							
+							<tr>
+								<td>Max. message size</td>
+								<td><p>configurable (default 1 MB)</p></td>
+								<td><p> limited by disk space</p></td>
+							</tr>
+							
+							<tr>
+								<td>Persistence</td>
+								<td><p>forever (up to 16384 GiB per broker)</p></td>
+								<td><p>forever (up to 200 GB)</p></td>
+							</tr>
+							
+							<tr>
+								<td>Replication</td>
+								<td><p>Multi-AZ (optional)</p></td>
+								<td><p>Multi-AZ (optional)</p></td>
+							</tr>
+							
+							<tr>
+								<td>Order guarantee</td>
+								<td><p>within a partition</p></td>
+								<td><p>yes</p></td>
+							</tr>
+							
+							<tr>
+								<td>Delivery guarantee</td>
+								<td><p><a href="https://kafka.apache.org/documentation/#semantics">up to the consumer</a></p></td>
+								<td><p>exactly once; supports distributed (XA) transactions</p></td>
+							</tr>
+							
+							<tr>
+								<td>Pricing</td>
+								<td><p>per broker hour + provisioned storage</p></td>
+								<td><p>per broker hour + used storage</p></td>
+							</tr>
+							
+							<tr>
+								<td>Protocols</td>
+								<td><p><a href="https://kafka.apache.org/protocol">Kafka protocol</a></p></td>
+								<td><p>JMS, AMQP, MQTT, STOMP, OpenWire</p></td>
+							</tr>
+							
+							<tr>
+								<td>AWS Integrations</td>
+								<td><p>Lambda</p></td>
+								<td><p>Lambda</p></td>
+							</tr>
+							
+							<tr>
+								<td>License</td>
+								<td><p>open source (<a href="https://kafka.apache.org/">Apache Kafka</a>)</p></td>
+								<td><p>open source (<a href="https://activemq.apache.org/">Apache ActiveMQ</a>)</p></td>
+							</tr>
+							
+							<tr>
+								<td>Encryption at rest</td>
+								<td><p>yes</p></td>
+								<td><p>yes</p></td>
+							</tr>
+							
+							<tr>
+								<td>Encryption in transit</td>
+								<td><p>yes</p></td>
+								<td><p>yes</p></td>
+							</tr>
+							
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+		
+		<div class="row further-reading">
+			<div class="col-12">
+				<h2>Further reading</h2>
+				<ul>
+					
+					<li><a href="/versus/messaging/sqs-standard-vs-msk/">Amazon SQS Standard versus Amazon MSK</a></li>
+					
+					<li><a href="/versus/messaging/sqs-standard-vs-mq/">Amazon SQS Standard versus Amazon MQ</a></li>
+					
+					<li><a href="/versus/messaging/sqs-fifo-vs-msk/">Amazon SQS FIFO versus Amazon MSK</a></li>
+					
+					<li><a href="/versus/messaging/sqs-fifo-vs-mq/">Amazon SQS FIFO versus Amazon MQ</a></li>
+					
+					<li><a href="/versus/messaging/sns-vs-msk/">Amazon SNS Standard versus Amazon MSK</a></li>
+					
+					<li><a href="/versus/messaging/sns-vs-mq/">Amazon SNS Standard versus Amazon MQ</a></li>
+					
+					<li><a href="/versus/messaging/sns-fifo-vs-msk/">Amazon SNS FIFO versus Amazon MSK</a></li>
+					
+					<li><a href="/versus/messaging/sns-fifo-vs-mq/">Amazon SNS FIFO versus Amazon MQ</a></li>
+					
+					<li><a href="/versus/messaging/eventbridge-vs-msk/">Amazon EventBridge (formerly CloudWatch Events) versus Amazon MSK</a></li>
+					
+					<li><a href="/versus/messaging/eventbridge-vs-mq/">Amazon EventBridge (formerly CloudWatch Events) versus Amazon MQ</a></li>
+					
+					<li><a href="/versus/messaging/kinesis-data-streams-vs-msk/">Amazon Kinesis Data Streams versus Amazon MSK</a></li>
+					
+					<li><a href="/versus/messaging/kinesis-data-streams-vs-mq/">Amazon Kinesis Data Streams versus Amazon MQ</a></li>
+					
+					<li><a href="/versus/messaging/msk-vs-iot-core/">Amazon MSK versus AWS IoT Core</a></li>
+					
+					<li><a href="/versus/messaging/mq-vs-iot-core/">Amazon MQ versus AWS IoT Core</a></li>
+					
+				</ul>
+			</div>
+		</div>
+		
+	</div>
+</div>
+</article>
+		</main>
+
+		<footer>
+			<div class="footer">
+				<div class="container">
+					
+					<div class="row">
+						<div class="d-none d-md-block col-md-6">
+							<p class="headline">Deepen your knowledge,<br>stay up to date!</p>
+							<p>Subscribe to our newsletter with indepentent insights into all things AWS.</p>
+						</div>
+						<div class="col-12 d-block d-md-none">
+							<p class="headline">Subscribe</p>
+							<p>Deepen your knowledge about AWS, stay up to date!</p>
+						</div>
+						<div class="col-12 col-md-5 offset-md-1">
+							<form class="newsletter">
+								<div class="form-group">
+									<input type="text" class="form-control" name="firstname" placeholder="First Name">
+								</div>
+								<div class="form-group">
+									<input type="email" class="form-control" name="email" placeholder="Email Address">
+								</div>
+								<div class="form-group">
+									<select class="form-control" name="formid">
+										<option value="1210692">Weekly Newsletter</option>
+										<option value="1210696">Monthly Newsletter</option>
+									</select>
+								</div>
+								<div class="form-group form-check">
+									<input type="checkbox" class="form-check-input" name="gdpr" value="true">
+									<label class="form-check-label" for="gdpr">I want to subscribe to the newsletter with new content as well as announcements regarding products and services. The newsletter performance is measured based on opens and clicks. I agree with the <a href="/privacy-policy/">privacy policy</a>.</label>
+								</div>
+								<button type="submit" class="btn btn-primary" disabled="true" style="margin-bottom: 25px">Subscribe</button>
+								<div class="alert alert-primary d-none" role="alert">
+									Please check your inbox and confirm your subscription.
+								</div>
+								<div class="alert alert-success d-none" role="alert">
+									Great, all done.
+								</div>
+								<div class="alert alert-danger d-none" role="alert">
+									Sorry, something went wrong. Please try again!
+								</div>
+							</form>
+							<div style="margin-top: 30px">
+								<i>Do you prefer RSS? <a href="https://feedly.com/i/subscription/feed/https://cloudonaut.io/feed/rss.xml">Feedly</a> or <a href="https://cloudonaut.io/feed/rss.xml">RSS feed</a></i>
+							</div>
+						</div>
+					</div>
+					
+					<div class="row">
+						
+						<div class="col-md-3">
+							<h3>Network</h3>
+							<ul>
+								<li><a href="/">Blog</a></li>
+								<li><a href="https://podcast.cloudonaut.io/">Podcast</a></li>
+								<li><a href="https://twitter.com/cloudonaut_io">Twitter</a></li>
+								<li><a href="https://www.youtube.com/c/cloudonaut">YouTube</a></li>
+							</ul>
+						</div>
+						
+						<div class="col-md-3">
+							<h3>Legal</h3>
+							<ul>
+								<li><a href="/imprint/">Imprint</a></li>
+								<li><a href="/privacy-policy/">Privacy Policy</a></li>
+							</ul>
+						</div>
+						
+						<div class="col-md-5 offset-md-1">
+							<h3>Projects</h3>
+							<ul>
+								<li><a href="https://bucketav.com/?utm_source=cloudonautio&utm_medium=blog&utm_campaign=footer">Malware protection for Amazon S3</a></li>
+								<li><a href="https://marbot.io/?utm_source=cloudonautio&utm_medium=blog&utm_campaign=footer">Chatbot for AWS Monitoring</a></li>
+								<li><a href="https://iam.cloudonaut.io/?utm_source=cloudonautio&utm_medium=blog&utm_campaign=footer">Complete AWS IAM Reference</a></li>
+								<li><a href="https://github.com/widdix/aws-cf-templates">Free Templates for AWS CloudFormation</a></li>
+								<li><a href="https://github.com/cfn-modules/docs">Rapid CloudFormation: modular, production ready, open source.</a></li>
+							</ul>
+						</div>
+						
+					</div>
+				</div>
+			</div>
+		</footer>
+
+		<script src="/dist/main.js"></script>
+<script src="/dist/video.js"></script>
+	</body>
+</html>

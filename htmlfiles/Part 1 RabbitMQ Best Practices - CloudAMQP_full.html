@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='utf-8'>
+<title>Part 1: RabbitMQ Best Practices - CloudAMQP</title>
+<meta content='We have been working with RabbitMQ a long time, and we have probably seen way more configuration mistakes than anybody else. We know how to configure for optimal performance and how to get the most stable cluster. We will in this series share our knowledge!' name='description'>
+<meta content='RabbitMQ, MQ, CloudAMQP, AMQP, hosted RabbitMQ, RabbitMQ hosting, cloud AMQP, message, queues, hosting, cloud, decouple, distrubute, scale, ' name='keywords'>
+<meta content='qP-zj5OL535dQC2SNy0qko_ofW5GWeYpfrE23axJIvE' name='google-site-verification'>
+<link href='https://www.cloudamqp.com/blog/part1-rabbitmq-best-practice.html' rel='canonical'>
+<link href='/css/cloudamqp.css' rel='stylesheet' type='text/css'>
+<link href='/favicon.ico' rel='icon' type='image/x-icon'>
+<link href='/rss' rel='alternate' title='CloudAMQP Blog feed' type='application/rss+xml'>
+<link href='/changelog/rss' rel='alternate' title='CloudAMQP Changelog feed' type='application/rss+xml'>
+<meta content='width=device-width, initial-scale=1.0' name='viewport'>
+<meta content='Part 1: RabbitMQ Best Practices - CloudAMQP' property='og:title'>
+<meta content='https://www.cloudamqp.com/img/blog/sm-rabbitmq-best-practice.png' property='og:image'>
+<meta content='CloudAMQP' property='og:site_name'>
+<meta content='website' property='og:type'>
+<meta content='We have been working with RabbitMQ a long time, and we have probably seen way more configuration mistakes than anybody else. We know how to configure for optimal performance and how to get the most stable cluster. We will in this series share our knowledge!' property='og:description'>
+<meta content='https://www.cloudamqp.com/blog/part1-rabbitmq-best-practice.html' property='og:url'>
+<meta content='summary_large_image' name='twitter:card'>
+<meta content='@cloudamqp' name='twitter:site'>
+<meta content='Part 1: RabbitMQ Best Practices - CloudAMQP' name='twitter:title'>
+<meta content='We have been working with RabbitMQ a long time, and we have probably seen way more configuration mistakes than anybody else. We know how to configure for optimal performance and how to get the most stable cluster. We will in this series share our knowledge!' name='twitter:description'>
+<meta content='https://www.cloudamqp.com/img/blog/sm-rabbitmq-best-practice.png' name='twitter:image'>
+<script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-29704653-1', 'auto');
+  ga('set', 'anonymizeIp', true);
+  ga('send', 'pageview');
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+</head>
+<body>
+<script src='/js/jquery-3.6.0.min.js' type='text/javascript'></script>
+<script src='/js/popper.min.js' type='text/javascript'></script>
+<script src='/js/bootstrap.min.js' type='text/javascript'></script>
+<nav class='navbar navbar-expand-md navbar-light'>
+<div class='container'>
+<a class='navbar-brand' href='/'>
+<img class='logo' src='/img/cloudamqp-logo.png'>
+CloudAMQP
+</a>
+<button aria-controls='camqpnavbar' aria-expanded='false' aria-label='Toggle navigation' class='navbar-toggler navbar-toggler-right' data-target='#camqpnavbar' data-toggle='collapse' type='button'>
+<span class='navbar-toggler-icon'></span>
+</button>
+<div class='collapse navbar-collapse' id='camqpnavbar'>
+<ul class='navbar-nav mx-auto'>
+<li class='nav-item'>
+<a class='nav-link' href='/tour.html'>Tour</a>
+</li>
+<li class='nav-item'>
+<a class='nav-link' href='/plans.html'>Pricing</a>
+</li>
+<li class='nav-item'>
+<a class='nav-link' href='/docs/index.html'>Documentation</a>
+</li>
+<li class='nav-item'>
+<a class='nav-link' href='/support.html'>Support</a>
+</li>
+<li class='nav-item active'>
+<a class='nav-link' href='/blog/index.html'>Blog</a>
+</li>
+</ul>
+<ul class='navbar-nav'>
+<li class='nav-item'>
+<a class='nav-link' href='https://customer.cloudamqp.com/'>Login</a>
+</li>
+<li class='nav-item'>
+<a class='btn btn-outline-secondary' href='https://customer.cloudamqp.com/signup'>
+<span class='d-md-none d-lg-inline'>Get Started</span>
+<span class='d-none d-md-inline d-lg-none'>Start</span>
+</a>
+</li>
+</ul>
+</div>
+</div>
+</nav>
+<section class='blog'></section>
+<div class='blog-header text-center' style='background-image: url(/img/blog/header-beginner.jpg);'>
+<div class='blog-title' style='background-color: rgba(170, 83, 33, 0.8);'>
+<h1>Part 1: RabbitMQ Best Practices</h1>
+<p class='post-meta'>
+<i aria-hidden='true' class='fa fa-clock-o'></i>
+Last updated:
+<time datetime='2019-09-24'>
+2019-09-24
+</time>
+</p>
+</div>
+</div>
+<section class='blog-post'>
+<div class='container'>
+<div class='row'>
+<div class='col-lg-9 col-md-8 col-sm-12 blog-content'>
+<div class='lead'>
+As an organization, we have been working with RabbitMQ for a long time and
+have seen more configuration mistakes than most. We know how to configure
+for optimal performance and how to get the most stable cluster. With this
+series, we are going to share all this knowledge so you can follow the
+best practices with your own RabbitMQ platform.
+</div>
+<p>
+Some applications require really high throughput while other applications
+are publishing batch jobs that aren’t as demanding. The goal when designing
+your system should be to maximize combinations of performance and availability
+that make sense for your specific application. Bad architecture design decisions
+or client-side bugs can damage your broker, halt your publisher, crash your server,
+or affect your throughput in other ways.
+</p>
+<p>
+This article series focuses on the best practices for RabbitMQ including dos
+and don'ts for two different usage categories - high availability and high
+performance (high throughput). Among other topics, we will discuss queue size,
+common mistakes, lazy queues, prefetch values, connections and channels, Quorum Queues,
+and the number of nodes in a cluster. These topics have general best-practice
+rules based on the experience we have gained while working with RabbitMQ.
+</p>
+<div class='row'>
+<div class='col-md-4 col-sm-6 mb-4 mt-5'>
+<div class='mini-card'>
+<div class='mini-header' style='background-image: url(/img/blog/sm-rabbitmq-best-practice-high-performance.png);'>
+<a href='/blog/part2-rabbitmq-best-practice-for-high-performance.html'></a>
+</div>
+<div class='mini-block'>
+<h3>
+Part 2 - Best Practice for High Performance
+</h3>
+<a class='btn btn-secondary d-block' href='/blog/part2-rabbitmq-best-practice-for-high-performance.html'>
+High Performance
+</a>
+</div>
+</div>
+</div>
+<div class='col-md-4 col-sm-6 mb-4 mb-4 mt-5'>
+<div class='mini-card'>
+<div class='mini-header' style='background-image: url(/img/blog/sm-rabbitmq-best-availability.png);'>
+<a href='/blog/part3-rabbitmq-best-practice-for-high-availability.html'></a>
+</div>
+<div class='mini-block'>
+<h3>
+Part 3 - Best Practice for High Availability
+</h3>
+<a class='btn btn-secondary d-block' href='/blog/part3-rabbitmq-best-practice-for-high-availability.html'>
+High Availability
+</a>
+</div>
+</div>
+</div>
+<div class='col-md-4 col-sm-6 mb-4 mb-4 mt-5'>
+<div class='mini-card'>
+<div class='mini-header' style='background-image: url(/img/blog/sm-rabbitmq-best-practice-common-mistakes.png);'>
+<a href='/blog/part4-rabbitmq-13-common-errors.html'></a>
+</div>
+<div class='mini-block'>
+<h3>
+Part 4 - 13 common RabbitMQ mistakes
+</h3>
+<p></p>
+<a class='btn btn-secondary d-block' href='/blog/part4-rabbitmq-13-common-errors.html'>
+RabbitMQ mistakes
+</a>
+</div>
+</div>
+</div>
+</div>
+<h3>Update: Diagnostics Tool for RabbitMQ</h3>
+<p>
+We have, due to popular demand, created a diagnostic tool for RabbitMQ that is
+available for all dedicated instances in CloudAMQP. A link to the tool can be
+found in the control panel for your instances.
+</p>
+<h2>
+Queues
+</h2>
+<h3>
+Keep your queue short (if possible)
+</h3>
+<p>
+Many messages in a queue can put a heavy load on RAM usage. In order to free up
+RAM, RabbitMQ starts flushing (page out) messages to disk. The page out process
+usually takes time and blocks the queue from processing messages when there are
+many messages to page out, deteriorating queueing speed. Having many messages
+in the queue might negatively affect the performance of the broker.
+</p>
+<p>
+Additionally, it is time-consuming to restart a cluster with many messages
+since the index has to be rebuilt. It also takes time to sync messages between
+nodes in the cluster after a restart.
+</p>
+<h3>
+Use Quorum Queues
+</h3>
+<p>
+Perhaps one of the most significant changes in RabbitMQ 3.8 was the new queue
+type called Quorum Queues. This is a replicated queue to provide high
+availability and data safety. CloudAMQP recommends the use of Quorum Queues,
+and all our
+<a href='/plans.html'>
+current plans on CloudAMQP
+are using Quorum Queues by default.
+</a>
+</p>
+<p>
+<a href='/blog/reasons-you-should-switch-to-quorum-queues.html'>
+The reasons you should switch to Quorum Queues
+</a>
+and design flaws of classic mirrored queues
+are described in the article.
+</p>
+<h3>
+Enable lazy queues to get predictable performance
+</h3>
+<p>
+A feature called
+<i>lazy queues</i>
+was added in RabbitMQ 3.6. Lazy queues are queues where the messages are
+automatically stored to disk, thereby minimizing the RAM usage,
+but extending the throughput time.
+</p>
+<p>
+In our experience, lazy queues create a more stable cluster with better
+<b>predictive performance.</b>
+Messages will not get flushed to disk without a warning. You will not suddenly
+experience a hit to queue performance. If you are sending a lot of messages
+at once (e.g. processing batch jobs) or if you think that your consumers
+will not keep up with the speed of the publishers all the time, we recommend
+that you enable lazy queues.
+</p>
+<p>
+<i>
+Please note that you should disable lazy queues if you require really high
+performance, if the queues are always short, or if you have set a max-length policy.
+</i>
+</p>
+<h3>
+Limit queue size with TTL or max-length
+</h3>
+<p>
+Another recommendation for applications that often get hit by spikes of messages,
+and where throughput is more important than anything else, is to set a max-length
+on the queue. This keeps the queue short by discarding messages from the head
+of the queue so that it never gets larger than the max-length setting.
+</p>
+<h3>
+Number of queues
+</h3>
+<p>
+Queues are single-threaded in RabbitMQ, and one queue can handle up to about
+50 thousand messages. You will achieve better throughput on a multi-core
+system if you have multiple queues and consumers and if you have as many
+queues as cores on the underlying node(s).
+</p>
+<p>
+The RabbitMQ management interface collects and calculates metrics for every
+queue in the cluster. This might slow down the server if you have thousands
+upon thousands of active queues and consumers. The CPU and RAM usage may also
+be affected negatively if you have too many queues.
+</p>
+<p>
+Disable busy polling in RabbitMQ if you have many
+entities (connections or queues), to decrease CPU usage.
+</p>
+<h3>
+Split your queues over different cores
+</h3>
+<p>
+Queue performance is limited to one CPU core. You will, therefore, get better performance if you split your queues into different cores, and into different nodes, if you have a RabbitMQ cluster.
+</p>
+<p>
+RabbitMQ queues are bound to the node where they were first declared. Even if you create a cluster of RabbitMQ brokers, all messages routed to a specific queue will go to the node where that queue lives. You can manually split your queues evenly between nodes, but; the downside is remembering where your queue is located.
+</p>
+<p>
+We recommend two plugins that will help you if you have multiple nodes or a single node cluster with multiple cores:
+</p>
+<b>
+Consistent hash exchange plugin
+</b>
+<p>
+The consistent hash exchange plugin allows you to use an exchange to load-balance messages between queues.
+Messages sent to the exchange are consistently and equally distributed across many queues, based on the routing key of the
+message. The plugin creates a hash of the routing key and spreads the messages out between queues that have a binding to that exchange. It could quickly become problematically to do this manually, without adding too much information about numbers of queues and their bindings into the publisher.
+</p>
+<p>
+The consistent hash exchange plugin can be used if you need to get the maximum use of many cores in your cluster. Note that it’s important to consume from all queues. Read more about the consistent hash exchange plugin
+<a href='https://github.com/rabbitmq/rabbitmq-consistent-hash-exchange'>here.</a>
+</p>
+<b>
+RabbitMQ sharding
+</b>
+<p>
+The RabbitMQ sharding plugin does the partitioning of queues automatically; i.e., once you define an exchange as sharded, then the supporting queues are automatically created on every cluster node and messages are sharded accordingly. The RabbitMQ sharding plugin gives you a centralized place where you can send your messages, plus load balancing across many nodes, by adding queues to the other nodes in the cluster. Note that it’s important to consume from all queues.
+<img src='/img/blog/rabbitmq-sharding.png'>
+</p>
+<p>
+Read more about RabbitMQ sharding
+<a href='https://github.com/rabbitmq/rabbitmq-sharding'>here.</a>
+</p>
+<h3>
+Don’t set your own names on temporary queues
+</h3>
+<p>
+Giving a queue a name is important when you want to share the queue between producers and consumers, but it's not important if you are using temporary queues. Instead, you should let the server choose a random queue name instead of making up your own names, or modify the RabbitMQ policies.
+</p>
+<h3>
+Auto-delete queues you are not using
+</h3>
+<p>
+Client connections can fail and potentially leave unused resources (queues) behind, which could affect performance. There are three ways to delete a queue automatically.
+</p>
+<p>
+Set a
+<b>TTL policy</b>
+in the queue; e.g. a TTL policy of 28 days deletes queues that haven't been consumed from for 28 days.
+</p>
+<p>
+An
+<b>auto-delete</b>
+queue is deleted when its last consumer has canceled or when the channel/connection is closed (or when it has lost the TCP connection with the server).
+</p>
+<p>
+An
+<b>exclusive queue</b>
+can only be used (consumed from, purged, deleted, etc.) by its declaring connection. Exclusive queues are deleted when their declaring connection is closed or gone (e.g., due to underlying TCP connection loss).
+</p>
+<h3>
+Set limited use of priority queues
+</h3>
+<p>
+Each priority level uses an internal queue on the Erlang VM, which takes up some resources. In most use cases it is sufficient to have no more than 5 priority levels.
+</p>
+<h2>
+Payload - RabbitMQ message size and types
+</h2>
+<p>
+How to handle the payload (message size) of messages sent to RabbitMQ is a common question among users. Keep in mind that the amount of messages per second is a way larger bottleneck than the message size itself. While sending large messages is not a good practice, sending multiple small messages might be a bad alternative. A better idea is to bundle them into one larger message and let the consumer split it up. However, if you bundle multiple messages you need to keep in mind that this might affect the processing time. If one of the bundled messages fails, will all messages need to be re-processed? When setting up bundled messages, consider your bandwidth and architecture.
+</p>
+<h2>
+Connections and channels
+</h2>
+<p>
+Each connection uses about 100 KB of RAM (more, if TLS is used). Thousands of connections can be a heavy burden on a RabbitMQ server. In the worst case, the server can crash because it is out of memory. The AMQP protocol has a mechanism called channels that “multiplexes” a single TCP connection. It is recommended that each process only creates one TCP connection, using multiple channels in that connection for different threads. Connections should be long-lived. The handshake process for an AMQP connection is quite involved and requires at least 7 TCP packets (more, if TLS is used).
+</p>
+<p>
+Alternatively, channels can be opened and closed more frequently, if required, and channels should be long-lived if possible, e.g. reuse the same channel per thread of publishing. Don’t open a channel each time you are publishing. The best practice is to reuse connections and multiplex a connection between threads with channels. You should ideally only have one connection per process, and then use a channel per thread in your application.
+</p>
+<h3>
+Don’t share channels between threads
+</h3>
+<p>
+Make sure that you don’t share channels between threads as most clients don’t make channels thread-safe (it would have a serious negative effect on the performance impact).
+</p>
+<h3>
+Don’t open and close connections or channels repeatedly
+</h3>
+<p>
+Make sure you don’t open and close connections and channels repeatedly - doing so gives you a higher latency, as more TCP packages has to be sent and received.
+</p>
+<h3>
+Separate connections for publisher and consumer
+</h3>
+<p>
+Separate the connections for publishers and consumers to achieve high throughput. RabbitMQ can apply back pressure on the TCP connection when the publisher is sending too many messages for the server to handle. If you consume on the same TCP connection, the server might not receive the message acknowledgments from the client, thus effecting the consume performance. With a lower consume speed, the server will be overwhelmed.
+</p>
+<h3>
+A large number of connections and channels might affect the RabbitMQ management interface performance
+</h3>
+<p>
+Another effect of having a large number of connections and channels is the performance of the RabbitMQ management interface. For each connection and channel performance, metrics have to be collected, analyzed and displayed.
+</p>
+<h2>
+Acknowledgements and Confirms
+</h2>
+<p>
+Messages in transit might get lost in an event of a connection failure and need to be retransmitted. Acknowledgments let the server and clients know when to retransmit messages. The client can either ack the message when it receives it, or when the client has completely processed the message. Acknowledgment has a performance impact, so for the fastest possible throughput, manual acks should be disabled.
+</p>
+<p>
+A consuming application that receives important messages should not acknowledge messages until it has finished with them so that unprocessed messages (worker crashes, exceptions, etc.) don't go missing.
+</p>
+<p>
+Publish confirm is the same concept for publishing. The server acks when it has received a message from a publisher. Publish confirm also has a performance impact, however, keep in mind that it’s required if the publisher needs at-least-once processing of messages.
+</p>
+<h3>
+Unacknowledged messages
+</h3>
+<p>
+All unacknowledged messages must reside in RAM on the servers. If you have too many unacknowledged messages, you will run out of memory. An efficient way to limit unacknowledged messages is to limit how many messages your clients prefetch. Read more about prefetch in the prefetch section.
+</p>
+<h2>
+Persistent messages and durable queues
+</h2>
+<p>
+If you cannot afford to lose any messages, make sure that your queue is declared as “durable” and that messages are sent with delivery mode "persistent".
+</p>
+<p>
+In order to avoid losing messages in the broker, you need to be prepared for broker restarts, broker hardware failure, or broker crashes. To ensure that messages and broker definitions survive restarts, ensure that they are on the disk. Messages, exchanges, and queues that are not durable and persistent will be lost during a broker restart.
+</p>
+<p>
+Persistent messages are heavier with regard to performance, as they have to be written to disk. Keep in mind that lazy queues will have the same effect on performance, even though you are sending transient messages. For high performance, the best practice is to use transient messages.
+</p>
+<h2>
+TLS and AMQPS
+</h2>
+<p>
+You can connect to RabbitMQ over AMQPS, which is the AMQP protocol wrapped in TLS. TLS has a performance impact since all traffic has to be encrypted and decrypted. For maximum performance, we recommend using VPC peering instead as the traffic is private and isolated without involving the AMQP client/server.
+</p>
+<p>
+At CloudAMQP we configure the RabbitMQ servers to accept and prioritize fast but secure encryption ciphers.
+</p>
+<h2>
+Prefetch
+</h2>
+<p>
+The prefetch value is used to specify how many messages are being sent to the consumer at the same time. It is used to get as much out of your consumers as possible.
+</p>
+<p>
+From RabbitMQ.com:
+<i>“The goal is to keep the consumers saturated with work, but to minimize the client's buffer size so that more messages stay in Rabbit's queue and are thus available for new consumers or to just be sent out to consumers as they become free.”</i>
+</p>
+<p>
+The RabbitMQ default prefetch setting gives clients an unlimited buffer, meaning that RabbitMQ by default sends as many messages as it can to any consumer that looks ready to accept them. Sent messages are cached by the RabbitMQ client library (in the consumer) until processed. Prefetch limits how many messages the client can receive before acknowledging a message. All pre-fetched messages are removed from the queue and invisible to other consumers.
+</p>
+<p>
+A too-small prefetch count may hurt performance since RabbitMQ is typically waiting to get permission to send more messages. The image below illustrates a long idling time. In the example, we have a QoS prefetch setting of one (1). This means that RabbitMQ won't send out the next message until after the round trip completes (deliver, process, acknowledge). Round-trip time in this picture is in total 125ms with a processing time of only 5ms.
+</p>
+<img class='no-border' src='/img/blog/rabbitmq-prefetch-roundtime.jpg'>
+<p>
+A large prefetch count, on the other hand, could take lots of messages off the queue and deliver to one single consumer, keeping the other consumers in an idling state.
+</p>
+<img class='no-border' src='/img/blog/rabbitmq-prefetch-full.jpg'>
+<h3>
+How to set correct prefetch value?
+</h3>
+<p>
+If you have one single or few consumers processing messages quickly, we recommend prefetching many messages at once. Try to keep your client as busy as possible. If you have about the same processing time all the time and network behavior remains the same, simply take the total round trip time and divide by the processing time on the client for each message to get an estimated prefetch value.
+</p>
+<p>
+In a situation with many consumers and short processing time, we recommend a lower prefetch value. A too low value will keep the consumers idling a lot since they need to wait for messages to arrive. A too high value may keep one consumer busy, while other consumers are being kept in an idling state.
+</p>
+<p>
+If you have many consumers and/or long processing time, we recommend you to set the prefetch count to one (1) so that messages are evenly distributed among all your workers.
+</p>
+<p>
+Please note that if your client auto-ack’s messages, the prefetch value will have no effect.
+</p>
+<p>
+A typical mistake is to have an unlimited prefetch, where one client receives all messages and runs out of memory and crashes, causing all the messages to be re-delivered.
+</p>
+<p>
+More information about RabbitMQ prefetch can be found in this recommended
+<a href='https://www.rabbitmq.com/blog/2012/05/11/some-queuing-theory-throughput-latency-and-bandwidth/'>
+RabbitMQ documentation.
+</a>
+</p>
+<h2>
+Number of nodes in your cluster (clustering and high availability)
+</h2>
+<p>
+When you create a CloudAMQP instance with one node, you will get one single node with high performance, because messages don’t need to be mirrored between multiple nodes.
+</p>
+<p>
+Creating a CloudAMQP instance with two nodes, on the other hand, will get you half the performance compared to the same plan size for a single node. The nodes are located in different availability zones and queues are automatically mirrored between availability zones. Two nodes will give you high availability since one node might crash or be marked as impaired, but the other node will still be up and running, ready to receive messages.
+</p>
+<p>
+When you create a CloudAMQP instance with three nodes, you will get one-quarter of the performance compared to the same plan size for a single node. The nodes are located in different availability zones and queues are automatically mirrored between availability zones. You will also get pause minority; a partition handling strategy in a three-node cluster that protects data from being inconsistent due to net-splits. By shutting down the minority component, duplicate deliveries are reduced compared to allowing every node to respond.
+</p>
+<h3>
+Remember to enable HA on new vhosts
+</h3>
+<p>
+A common error made on CloudAMQP clusters is creating a new vhost but forgetting to enable an HA-policy for it. Without an HA-policy, messages will not be synced between nodes.
+</p>
+<h2>
+Routing (exchanges setup)
+</h2>
+<p>
+Direct exchanges are the fastest to use; many bindings mean that RabbitMQ has to take time to calculate where to send the message.
+</p>
+<h2>
+Disable unused plugins
+</h2>
+<p>
+Some plugins might be great, but they also consume a lot of CPU or may use a high amount of RAM. Because of this, they are not recommended for a production server. Disable plugins that are not in use. Use the control panel in CloudAMQP to enable - or disable - plugins.
+</p>
+<h2>
+Do not set the RabbitMQ Management statistics rate mode to detailed in production
+</h2>
+<p>
+Setting the RabbitMQ Management statistics rate mode to detailed has a serious performance impact and should not be used in production.
+</p>
+<h2>
+Use updated RabbitMQ client libraries
+</h2>
+<p>
+Make sure that you are using the latest recommended version of client libraries. Check our documentation, and feel free to ask us if you have any questions regarding which library to use.
+</p>
+<h2>
+Use the latest stable RabbitMQ and Erlang version
+</h2>
+<p>
+Stay up-to-date with the latest stable versions of RabbitMQ and Erlang. We go to great lengths to test new major versions before we release them to our customers. Please be aware that we always have the most recommended version as the selected option (default) in the dropdown menu area where selection is made of the version for a new cluster.
+</p>
+<h2>
+Use TTL with caution
+</h2>
+<p>
+Dead lettering and TTL are two popular features in RabbitMQ that should be used with caution. TTL and dead lettering can generate unforeseen negative performance effects, such as:
+</p>
+<h3>
+Dead lettering
+</h3>
+<p>
+A queue that is declared with the
+<i>x-dead-letter-exchange</i>
+property will send messages which are either rejected, nacked or expired (with TTL) to the specified dead-letter-exchange. If you specify
+<i>x-dead-letter-routing-key</i>
+the routing key of the message with be changed when dead lettered.
+</p>
+<h3>
+TTL
+</h3>
+<p>
+By declaring a queue with the x-message-ttl property, messages will be discarded from the queue if they haven't been consumed within the time specified.
+</p>
+<h4 class='mb-3 mt-5 text-center'>Guide - RabbitMQ Best Practice</h4>
+<div class='guide-cta'>
+<a class='next' href='/blog/part2-rabbitmq-best-practice-for-high-performance.html'>
+<span class='float-right chevron'>
+<i aria-hidden='true' class='fa fa-chevron-right'></i>
+</span>
+<h3 class='mt-0'>Continue with part 2</h3>
+<p>RabbitMQ Best Practice for High Performance (High Throughput)</p>
+</a>
+<a class='signup dark-bg' href='/plans.html' onclick='ga(&#39;send&#39;, &#39;event&#39;, &#39;Best practice guide&#39;, &#39;CTA&#39;, &#39;Part 1: RabbitMQ Best Practices&#39;);'>
+<h2>
+CloudAMQP - industry-leading
+<br>
+RabbitMQ as a Service
+</h2>
+<p class='btn btn-secondary mt-4 pl-5 pr-5'>Sign Up</p>
+</a>
+</div>
+
+<div class='blog-post-footer social-buttons'>
+<h3>
+Enjoy this article? Don't forget to share it with others. 😉
+</h3>
+<a class='facebook' href='https://www.facebook.com/sharer/sharer.php?u=https://www.cloudamqp.com/blog/part1-rabbitmq-best-practice.html' rel='noopener' target='_blank'>
+<span class='fa-stack fa-lg'>
+<i class='fa fa-square fa-stack-2x'></i>
+<i class='fa fa-facebook fa-stack-1x fa-inverse'></i>
+</span>
+</a>
+<a class='twitter' href='https://twitter.com/share?text=Part 1: RabbitMQ Best Practices&amp;url=https://www.cloudamqp.com/blog/part1-rabbitmq-best-practice.html&amp;hashtags=cloudamqp,blog,rabbitmq' rel='noopener' target='_blank'>
+<span class='fa-stack fa-lg'>
+<i class='fa fa-square fa-stack-2x'></i>
+<i class='fa fa-twitter fa-stack-1x fa-inverse'></i>
+</span>
+</a>
+<a class='linkedin' href='https://www.linkedin.com/shareArticle?mini=true&amp;title=Part 1: RabbitMQ Best Practices&amp;url=https://www.cloudamqp.com/blog/part1-rabbitmq-best-practice.html&amp;source=CloudAMQP' rel='noopener' target='_blank'>
+<span class='fa-stack fa-lg'>
+<i class='fa fa-square fa-stack-2x'></i>
+<i class='fa fa-linkedin fa-stack-1x fa-inverse'></i>
+</span>
+</a>
+<a class='email' href='mailto:?&amp;subject=Check out this blog post from CloudAMQP&amp;body=Hi,%0A%0AI%20just%20found%20this%20blog%20post%20and%20thought%20you%20might%20find%20it%20interesting.%20Check%20it%20out!%0A%0A%22Part 1: RabbitMQ Best Practices%22,%0Ahttps://www.cloudamqp.com/blog/part1-rabbitmq-best-practice.html'>
+<span class='fa-stack fa-lg'>
+<i class='fa fa-square fa-stack-2x'></i>
+<i class='fa fa-envelope-o fa-stack-1x fa-inverse'></i>
+</span>
+</a>
+<div id='disqus_thread'></div>
+</div>
+</div>
+<div class='col-lg-3 col-md-4 col-sm-12 blog-sidebar text-center'>
+<div class='sidebar-card mb-4'>
+<div class='sidebar-card-block'>
+<img class='img-thumbnail mx-auto img-fluid profile' src='/img/profiles/lovisajohansson.jpg'>
+<h3>
+Lovisa Johansson
+</h3>
+<p class='team-role'>
+Developer
+</p>
+</div>
+</div>
+<div class='sidebar-card mb-4'>
+<div class='header-image'>
+<a href='/rabbitmq_ebook.html' onclick='ga(&#39;send&#39;, &#39;event&#39;, &#39;Ebook Download&#39;, &#39;CTA&#39;, &#39;Blog ebook sidebar&#39;);'></a>
+</div>
+<div class='sidebar-card-block ebook-block arrow'>
+<h4 class='ebook-title'>
+<a href='/rabbitmq_ebook.html' onclick='ga(&#39;send&#39;, &#39;event&#39;, &#39;Ebook Download&#39;, &#39;CTA&#39;, &#39;Blog ebook sidebar&#39;);'>Free Ebook</a>
+</h4>
+<p class='ebook-text mt-3 mb-3'>
+"The Optimal
+<br>
+RabbitMQ Guide"
+</p>
+</div>
+<div class='row social-links no-gutters'>
+<div class='col'>
+<a href='/rabbitmq_ebook.html' onclick='ga(&#39;send&#39;, &#39;event&#39;, &#39;Ebook Download&#39;, &#39;CTA&#39;, &#39;Blog ebook sidebar&#39;);'>
+<i aria-hidden='true' class='fa fa-download'></i>
+Download
+<span class='d-none d-md-inline'>your copy</span>
+</a>
+</div>
+</div>
+</div>
+<div class='card mb-4 d-none d-md-block'>
+<a class='twitter-timeline' data-height='500' data-theme='light' data-width='255' href='https://twitter.com/CloudAMQP'>Tweets by CloudAMQP</a>
+<script async='' charset='utf-8' src='//platform.twitter.com/widgets.js'></script>
+</div>
+</div>
+</div>
+</div>
+</section>
+<script src='/js/jquery-3.1.1.min.js' type='text/javascript'></script>
+<script>
+  jQuery(document).ready(function($){
+    var shareWindow = function(url, medium, path) {
+      var width = $(window).width();
+      var height = $(window).height();
+      var H=Math.round((width/2)-(550/2)),
+      G=0;
+      if(height>450) {
+        G=Math.round((height/2)-(450/2));
+      }
+      if (typeof ga === 'function') {
+        ga('send', 'event', 'Share', medium, path);
+      }
+      if (medium == 'email') {
+        window.location.href = url;
+      } else {
+        window.open(url,'','left='+H+',top='+G+',width=550,height=450,personalbar=0,toolbar=0,scrollbars=1,resizable=1');
+      }
+    };
+    $(".social-buttons a").click(function(e){
+      e.preventDefault();
+      shareWindow($(this).attr("href"),$(this).attr("class"), window.location.pathname);
+    });
+  });
+</script>
+<script>
+  var disqus_config = function () {
+  this.page.url = "https://www.cloudamqp.com/blog/part1-rabbitmq-best-practice.html";
+  this.page.identifier = "https://www.cloudamqp.com/blog/part1-rabbitmq-best-practice.html";
+  };
+  
+  (function() {
+  var d = document, s = d.createElement('script');
+  s.src = 'https://cloudamqp.disqus.com/embed.js';
+  s.setAttribute('data-timestamp', +new Date());
+  (d.head || d.body).appendChild(s);
+  })();
+</script>
+<section class='mid-cta dark-bg'>
+<div class='container'>
+<div class='row'>
+<div class='col-md-12 text-center'>
+<h2 class='cta-title mb-4'>CloudAMQP - industry leading RabbitMQ as a service</h2>
+<p class='sub-title'>
+Start your managed cluster today. CloudAMQP is 100% free to try.
+</p>
+</div>
+</div>
+<div class='row'>
+<div class='col-md-12 text-center'>
+<p class='mb-0'>
+<a class='btn btn-lg btn-secondary mt-4 pr-5 pl-5' href='https://customer.cloudamqp.com/signup' onclick='ga(&#39;send&#39;, &#39;event&#39;, &#39;Blog general&#39;, &#39;CTA&#39;, &#39;Part 1: RabbitMQ Best Practices&#39;);'>Start your FREE plan today!</a>
+</p>
+</div>
+</div>
+</div>
+</section>
+<section class='customers'>
+<div class='container'>
+<div class='row'>
+<div class='col-md-12 text-center'>
+<h2 class='title mb-4'>
+<span>13,000+</span>
+users including these smart companies
+</h2>
+</div>
+</div>
+<div class='row'>
+<div class='col-lg-2 col-md-4 col-sm-6 col-6 customer-logo mb-3'>
+<div>
+<img alt='DraftKings' class='img-fluid' src='/img/customers/logo-draftkings.jpg'>
+</div>
+</div>
+<div class='col-lg-2 col-md-4 col-sm-6 col-6 customer-logo mb-3'>
+<div>
+<img alt='Mozilla' class='img-fluid' src='/img/customers/logo-mozilla.jpg'>
+</div>
+</div>
+<div class='col-lg-2 col-md-4 col-sm-6 col-6 customer-logo mb-3'>
+<div>
+<img alt='Docker' class='img-fluid' src='/img/customers/logo-docker.jpg'>
+</div>
+</div>
+<div class='col-lg-2 col-md-4 col-sm-6 col-6 customer-logo mb-3'>
+<div>
+<img alt='Heroku' class='img-fluid' src='/img/customers/logo-heroku.jpg'>
+</div>
+</div>
+<div class='col-lg-2 col-md-4 col-sm-6 col-6 customer-logo mb-3 d-none d-sm-block'>
+<div>
+<img alt='Discovery' class='img-fluid' src='/img/customers/logo-discovery.jpg'>
+</div>
+</div>
+<div class='col-lg-2 col-md-4 col-sm-6 col-6 customer-logo mb-3 d-none d-sm-block'>
+<div>
+<img alt='Salesforce' class='img-fluid' src='/img/customers/logo-salesforce.jpg'>
+</div>
+</div>
+</div>
+</div>
+</section>
+<script src='/js/anchor-titles.js' type='text/javascript'></script>
+<link href='/prettify/prettify.css' rel='stylesheet' type='text/css'>
+<script src='/prettify/prettify.js' type='text/javascript'></script>
+
+<footer class='dark-bg hidden-print'>
+<div class='footer-top pt-5 pb-4'>
+<div class='container'>
+<div class='row justify-content-center'>
+<div class='col-md-3 col-sm-3 col-6 hidden-print'>
+<h4>Menu</h4>
+<ul class='quicklinks list-unstyled'>
+<li>
+<a href='/'>Home</a>
+</li>
+<li>
+<a href='/tour.html'>Tour</a>
+</li>
+<li>
+<a href='/plans.html'>Pricing</a>
+</li>
+<li>
+<a href='/docs/index.html'>Documentation</a>
+</li>
+<li>
+<a href='/support.html'>Support</a>
+</li>
+<li>
+<a href='/blog/index.html'>Blog</a>
+</li>
+<li>
+<a href='/customers.html'>Customers</a>
+</li>
+<li>
+<a href='/about_us.html'>About Us</a>
+</li>
+</ul>
+</div>
+<div class='col-md-3 col-sm-3 col-6 hidden-print'>
+<h4>Resources</h4>
+<ul class='quicklinks list-unstyled'>
+<li>
+<a href='/changelog.html'>Changelog</a>
+</li>
+<li>
+<a href='/docs/faq.html'>FAQ</a>
+</li>
+<li>
+<a href='/legal/legal_and_policies.html'>Legal and Policies</a>
+</li>
+<li>
+<a href='/legal/security_and_compliance.html'>Security and Compliance</a>
+</li>
+<li>
+<a href='https://status.cloudamqp.com/' target='_new'>Status</a>
+</li>
+</ul>
+</div>
+<div class='col-md-3 col-sm-3 col-6 hidden-print'></div>
+<div class='col-12 col-sm-3 col-md-3 ml-auto mx-auto text-center support-call-out'>
+<h4 class='mt-3 mt-md-0 mb-3'>Need help?</h4>
+<a class='btn btn-xl btn-secondary mb-3 hidden-print' href='/support.html'>Contact Support</a>
+<p class='opening-hours hidden-print'>Open 24 hours a day, 7 days a week.</p>
+<h4 class='mt-4 mb-2'>Talk to Sales</h4>
+<ul class='quicklinks list-unstyled mb-2'>
+<li>
+<a href='tel:+01-812-461-6841'>+1 812 461 6841</a>
+</li>
+</ul>
+<p class='opening-hours hidden-print'>Sales inquiries only. Open: 8-5 CST</p>
+</div>
+</div>
+</div>
+</div>
+<div class='footer-bottom pt-4'>
+<div class='container'>
+<div class='row justify-content-center'>
+<div class='col-12 col-xl-3 col-lg-4 col-md-5 mb-4 mb-md-0'>
+<h4>Brought to you by</h4>
+<a class='codes-link' href='https://www.84codes.com' rel='noopener' target='_blank'>
+<img alt='84codes' class='logo mb-0' src='/img/84codes-logo.png'>
+<span>www.84codes.com</span>
+</a>
+</div>
+<div class='col-12 col-xl-3 col-lg-4 col-md-5 ml-auto'>
+<h4>Our Services</h4>
+<div class='dropdown'>
+<a aria-expanded='false' aria-haspopup='true' class='btn btn-secondary dropdown-toggle' data-toggle='dropdown' href='#' id='dropdownMenuLink' role='button'>
+<img alt='CloudAMQP' src='/img/logo-cloudamqp-footer.png'>
+</a>
+<div aria-labelledby='dropdownMenuLink' class='dropdown-menu'>
+<a class='dropdown-item' href='https://www.cloudkarafka.com/' rel='noopener' target='_blank'>
+<strong>CloudKarafka</strong>
+&ndash; Apache Kafka
+</a>
+<a class='dropdown-item' href='https://www.elephantsql.com/' rel='noopener' target='_blank'>
+<strong>ElephantSQL</strong>
+&ndash; PostgreSQL
+</a>
+<a class='dropdown-item' href='https://www.cloudmqtt.com/' rel='noopener' target='_blank'>
+<strong>CloudMQTT</strong>
+&ndash; MQTT
+</a>
+</div>
+</div>
+</div>
+</div>
+<div class='row'>
+<div class='col-md-12 text-center pt-3 pb-3'>
+<hr>
+<p class='mb-0'>© Copyright 2011-2022 CloudAMQP. RabbitMQ and the RabbitMQ Logo are trademarks of VMware, Inc.</p>
+</div>
+</div>
+</div>
+</div>
+</footer>
+<script>
+  !function(e,t,n){function a(){var e=t.getElementsByTagName("script")[0],n=t.createElement("script");n.type="text/javascript",n.async=!0,n.src="https://beacon-v2.helpscout.net",e.parentNode.insertBefore(n,e)}if(e.Beacon=n=function(t,n,a){e.Beacon.readyQueue.push({method:t,options:n,data:a})},n.readyQueue=[],"complete"===t.readyState)return a();e.attachEvent?e.attachEvent("onload",a):e.addEventListener("load",a,!1)}(window,document,window.Beacon||function(){});
+  window.Beacon('init', 'ff675097-ec55-404b-999e-a3d16efa5340')
+</script>
+</body>
+<script>
+  function follow () {
+    var footerHeight = document.querySelector('footer').offsetHeight
+    var viewHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0)
+    window.scrollTo(0, document.body.scrollHeight - viewHeight - footerHeight);
+  }
+</script>
+</html>

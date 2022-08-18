@@ -1,0 +1,942 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="">
+  <meta name="keywords" content="application, Apache Camel, Thread pool, processing, Design, java">
+
+  <meta property="og:description" content="">
+  <meta property="og:site_name" content="dzone.com">
+  <meta property="og:title" content="Performance Tuning Ideas for Apache Camel - DZone Integration">
+  <meta property="og:url" content="https://dzone.com/articles/performance-tuning-ideas-for-apache-camel">
+  <meta property="og:image" content="https://dz2cdn1.dzone.com/storage/article-thumb/2332892-thumb.jpg">
+  <meta property="og:type" content="article">
+
+  <meta name="twitter:site" content="@DZoneInc">
+  <meta name="twitter:image" content="https://dz2cdn1.dzone.com/storage/article-thumb/2332892-thumb.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:description" content="">
+  <meta name="twitter:title" content="Performance Tuning Ideas for Apache Camel - DZone Integration">
+
+  <meta name="referrer" content="origin-when-cross-origin">
+  <meta name="google-site-verification" content="kndbhxcupfEqWmZclhCpB6vlgOs7QSmx2UHAGGnP2mA">
+  <meta name="df-verify" content="df0d76632b4543">
+
+  <link rel="icon" type="image/x-icon" href="https://dz2cdn3.dzone.com/themes/dz20/images/favicon.png">
+  <link rel="image_src" href="https://dz2cdn1.dzone.com/storage/article-thumb/2332892-thumb.jpg">
+  <link rel="canonical" href="https://dzone.com/articles/performance-tuning-ideas-for-apache-camel">
+
+  <title>Performance Tuning Ideas for Apache Camel - DZone Integration</title>
+
+  <link rel="preload" href="https://fonts.dzone.com/themes/dz20/font/fontello.woff?11773374" as="font" type="font/woff" crossorigin="anonymous">
+
+  <link rel="stylesheet" media="all" href="https://dz2cdn3.dzone.com/themes/dz20/ftl/icons.css">
+  <link rel="stylesheet" media="all" href="https://dz2cdn3.dzone.com/themes/dz20/lib/static/bootstrap/bootstrap.min.css">
+  <link rel="stylesheet" media="all" href="https://dz2cdn3.dzone.com/themes/dz20/ftl/article/global.css">
+  <link rel="stylesheet" media="all" href="https://dz2cdn3.dzone.com/themes/dz20/ftl/header/styles.css">
+</head>
+<body>
+<div id="ftl-header">
+  <div class="container-fluid header">
+    <div class="row">
+      <div class="col-md-12" style="padding: 0;">
+        <div class="header-top">
+          <div class="header-container">
+            <div class="pull-left logo-container">
+              <div class="logo">
+                <a class="inner" href="/">
+                  <picture>
+                    <source srcset="https://dz2cdn3.dzone.com/themes/dz20/images/dz_logo_2021_cropped.webp" type="image/webp">
+                    <source srcset="https://dz2cdn3.dzone.com/themes/dz20/images/dz_logo_2021_cropped.png" type="image/png">
+                    <img src="https://dz2cdn3.dzone.com/themes/dz20/images/dz_logo_2021_cropped.png" width="160" height="52" alt="DZone">
+                  </picture>
+                </a>
+              </div>
+
+                <div class="active-portal"><a href="/enterprise-integration-training-tools-news">Integration Zone</a></div>
+            </div>
+
+            <div class="pull-right login-and-search">
+              <div id="authenticated-block" class="logged-in">
+                <div class="welcome-back">Thanks for visiting DZone today,</div>
+                <div id="user-header" class="user-info">
+                  <button class="user-avatar">
+                    <span id="header-username" class="username"></span>
+                    <img id="header-avatar" src="" alt="user avatar">
+                  </button>
+                  <div id="user-dropdown" class="browse-user-menu">
+                    <div class="user-content">
+                      <a id="header-user-plug" href="#" class="user-description"></a>
+                      <a id="header-user-edit" href="#" class="edit-profile">Edit Profile</a>
+                    </div>
+                    <ul class="user-actions">
+                      <li id="first-user-action"><a id="header-dropdown-manage-email" href="#">Manage Email Subscriptions</a></li>
+                      <li>
+                        <a href="/articles/how-to-submit-a-post-to-dzone?utm_source=DZone&utm_medium=user_dropdown&utm_campaign=how_to_post">
+                          How to Post to DZone
+                        </a>
+                      </li>
+                      <li>
+                        <a href="/articles/dzones-article-submission-guidelines">
+                          Article Submission Guidelines
+                        </a>
+                      </li>
+                    </ul>
+                    <div class="bottom">
+                      <a href="/users/logout.html" class="sign-out">Sign Out</a>
+                      <a id="dropdown-view-profile" href="#" class="view-profile">View Profile</a>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="post-content">
+                  <button id="post-button" class="post-content--button">
+                    <span class="post-class">Post</span>
+                    <i class="icon-plus"></i>
+                  </button>
+
+                  <div id="post-menu" class="posting-links">
+                    <div class="posting-links-menu">
+                      <ul>
+                        <li>
+                          <img src="/themes/dz20/images/dz-postarticle.svg">
+                          <a href="/content/article/post.html">Post an Article</a>
+                        </li>
+                        <li>
+                          <a id="drafts-link" href="#">Manage My Drafts</a>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div id="unauthenticated-block">
+                <div class="dz-intro">Over 2 million developers have joined DZone.</div>
+                <div class="mobile-invisible sign-in-join">
+                  <a href="/users/login.html">Log In</a>
+                  <span class="dz-intro-span">/</span>
+                  <a href="/static/registration.html">Join</a>
+                </div>
+                <a class="join-icon" href="/users/login.html"><i class="icon-user"></i></a>
+              </div>
+              <div class="headerSearch">
+                <a class="icon-search dropdown-toggle" href="/search"></a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="header-bottom">
+
+
+          <ul class="portals header-container scrollable-ul">
+            <li>
+              <a href="/refcardz" id="header-refcardz">
+                <em>Refcardz</em>
+              </a>
+            </li>
+            <li>
+              <a href="/trendreports" id="header-research">
+                <em>Trend Reports</em>
+              </a>
+            </li>
+            <li>
+              <a href="/webinars" id="header-webinars">
+                <em>Webinars</em>
+              </a>
+            </li>
+            <li class="last-portal-link">
+              <a href="#" id="header-portals">
+                <em>
+                  Zones
+                  <span id="zone-arrow" class="collapsible-toggle">
+                    <i class="icon-angle-down"></i>
+                    <i class="icon-angle-up"></i>
+                  </span>
+                </em>
+              </a>
+            </li>
+
+            <li class="separator" aria-hidden="true" style="color: #d9dcdd;">|</li>
+            <li id="portal-list" class="portal-topics">
+              <ul>
+                  <li>
+                    <a href="/agile-methodology-training-tools-news" id="header-2">Agile</a>
+                  </li>
+                  <li>
+                    <a href="/artificial-intelligence-tutorials-tools-news" id="header-4001">AI</a>
+                  </li>
+                  <li>
+                    <a href="/big-data-analytics-tutorials-tools-news" id="header-3">Big Data</a>
+                  </li>
+                  <li>
+                    <a href="/cloud-computing-tutorials-tools-news" id="header-4">Cloud</a>
+                  </li>
+                  <li>
+                    <a href="/database-sql-nosql-tutorials-tools-news" id="header-5">Database</a>
+                  </li>
+                  <li>
+                    <a href="/devops-tutorials-tools-news" id="header-6">DevOps</a>
+                  </li>
+                  <li>
+                    <a href="/enterprise-integration-training-tools-news" id="header-7">Integration</a>
+                  </li>
+                  <li>
+                    <a href="/iot-developer-tutorials-tools-news-reviews" id="header-8">IoT</a>
+                  </li>
+                  <li>
+                    <a href="/java-jdk-development-tutorials-tools-news" id="header-1">Java</a>
+                  </li>
+                  <li>
+                    <a href="/microservices-news-tutorials-tools" id="header-6001">Microservices</a>
+                  </li>
+                  <li>
+                    <a href="/open-source-news-tutorials-tools" id="header-7001">Open Source</a>
+                  </li>
+                  <li>
+                    <a href="/apm-tools-performance-monitoring-optimization" id="header-10">Performance</a>
+                  </li>
+                  <li>
+                    <a href="/application-web-network-security" id="header-2001">Security</a>
+                  </li>
+                  <li>
+                    <a href="/web-development-programming-tutorials-tools-news" id="header-11">Web Dev</a>
+                  </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script async src="https://dz2cdn3.dzone.com/themes/dz20/ftl/header/bundle.js"></script><link rel="stylesheet" media="all" href="https://dz2cdn3.dzone.com/themes/dz20/ftl/article/styles.css">
+
+
+
+
+<div id="ftl-article" >
+  <div class="container-fluid body">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="articles-wrap">
+              <div class="ad-container">
+                <div id="div-gpt-ad-1435246566686-0" class="ads-billboard-article" data-gpt-slot="top"></div>
+              </div>
+
+
+          <div class="article-stream widget-top-border">
+                <div class="content-right-images">
+                  <div id="div-gpt-ad-1435246566686-2" class="sidebar-ad" data-gpt-desktop="true" data-gpt-slot="sidebar1"></div>
+                </div>
+
+                <script type="application/ld+json">
+                  {
+                    "@context": "http://schema.org",
+                    "@type": "Article",
+                    "headline": "Performance Tuning Ideas for Apache Camel",
+                    "author": {
+                      "@type": "Person",
+                      "name": "Bilgin Ibryam"
+                    },
+                    "audience": "software developers",
+                    "keywords": "camel,integration,activemq,performace,tuning",
+                    "timeRequired": "PT8M",
+                    "commentCount": 0,
+                    "wordCount": "1975",
+                    "accessMode": "textual, visual",
+                    "dateCreated": "2016-06-10T05:01:07Z",
+                    "datePublished": "2016-06-10T00:00:00Z",
+                    "dateModified": "2016-06-10T05:01:07Z",
+                    "articleSection": "enterprise-integration-training-tools-news",
+                    "publisher": {
+                      "@type": "Organization",
+                      "name": "DZone",
+                      "url": "https://dzone.com",
+                      "logo": {
+                        "@type": "ImageObject",
+                        "url": "https://dzone.com/themes/dz20/images/dz_logo_2021_cropped.png"
+                      }
+                    },
+                    "articleBody": "Every now and then, I get questions around optimizing Camel applications with the argument that Camel is slow. Camel is just the glue connecting disparate systems, the routing engine is all in-memory, and it doesn’t require any persistent state. So in 99% of the cases, performance issues are due to bottlenecks in other systems, or having the application design done without performance considerations. If that is the case, there isn’t much you can achieve by tuning Camel further, and you have to go back to the drawing board. But sometimes, it might be worth squeezing few more milliseconds from your Camel routes. Tuning every application is very specific and dependent on the technology and the use case. Here are some ideas for tuning Camel based systems, which may apply for you (or not). Endpoint Tuning Endpoints in Camel are the integration points with other systems and the way they are configured will have a huge impact on the performance of the system. Understanding how different endpoints work and tuning those should be the one of the first places to start with. Here are few examples: Messaging - If your Camel application is using messaging, the overall performance will be heavily dependent on the performance of the messaging system. There are too many factors to consider here, but the main ones are: Message broker - the network and disk speed, combined with the broker topology will shape the broker performance. To give you an idea, with ActiveMQ, a relational database based persistent store will perform around 50% of a file-based store, and using a network of brokers to scale horizontally will cost another 30% of performance. It is amazing how one configuration change in ActiveMQ can have a huge impact on the messaging system and then the Camel application. There is a must-read ActiveMQ tuning guide by Red Hat with lot's of details to consider and evaluate. Also a real life example from Chrisitan Posta showing how to speed up the broker 25x times in certain cases. Another recent article by Simon Green shows how to approach an ActiveMQ Tunning Adventure step by step. Message client - if performance is a priority, there are also some hacks you can do on the ActiveMQ client side, such as: increasing TCP socketBufferSize and ioBufferSize, tuning the OpenWire protocol parameters, using message compression, batch acknowledgements with optimizeAcknowledge, asynchronous send with useAsyncSend, adjusting pre-fetch limit, etc. There are some nice slides again from Christina here and an old but still very relevant video from Rob Davies about tuning ActiveMQ. All of these resources should give you enough ideas to experiment and improve the performance from a messaging point of view. Database writes - use batching whenever possible. You can use an aggregator to collect a number of entries before performing a batch operation to interact with the database (for example with the SQL component. Working with templates - if you have to use a template component as part of the routing, try out the existing templating engines (FreeMarker, Velocity, SpringTeplate, Mustache, Chunk) with a small test as the following one and measure which one performs better. There is a great presentation titled Performance optimisation for Camel by Christian Mueller with the source code supporting the findings (UPDATE: after this blog post was published, Christian created new slides with latest version of Camel 2.16.2 and Java 7/8, check out those too). From those measurements we can see that FreeMarker performs better than Velocity and SprintTemplates in general. Using Web Services - whenever you have to use a web endpoint, the web container itself (has to be tuned separately. From Camel endpoint point of view, you can further optimise a little bit by skipping the unmarshalling if you don't need Java objects, and using asynchronous processing. concurrentConsumers - there are a number of components (Seda, VM, JMS, RabbitMQ, Disruptor, AWS-SQS, etc) that support parallel consumption. Before using an endpoint, check the component documentation for thread pool or batch processing capabilities. To give you an idea, see how Amzon SQS processing can be improved through these options. Data Type Choice The type and the format of the data the is passing through Camel routes will also have performance implications. To demonstrate that let's see few examples. Content based router, splitter, filter are examples of EIPs that perform some work based on the message content. And the type of the message affects the processing speed of these elements. Below is a chart from Christian Mueller's presentation, visualising how Content Based Router is performing with different kinds of messages: Content Based Routing based on different data types For example, if you have a large XML document in the Exchange, and based on it you perform content based routing, filtering, etc., that will affect the speed of the route. Instead you can extract some key information from the document and populate the Exchange headers for faster access and routing later. Marshaling/Unmarshaling - similarly to the templating engines, different data format covenrtors perform differently. To see some metrics check again Christian's presentation, but also keep in mind that performance of the supported data formats may vary between different versions and platforms so measure it for your use case. Streaming - Camel streaming and stream caching are one of the underrated features that can be useful for dealing with large messages. Claim check EIP - if the application logic allows it, consider using claim check pattern to improve performance and reduce resource consumption. Multithreading Camel offers multithreading support in a number of places. Using those can improve the application performance too. Paralel processing EIPs - the following Camel EIP implementations support parallel processing - multicast, recipient list, splitter, delayer, wiretap, throttler, error handler. If you are going to enable parallel processing for those, it would be even better if you also provide a custom thread pool specifically tuned for your use case rather than relying on Camel's default thread pool profile. Threads DSL construct - some Camel endpoints (such as the File consumer) are single threaded by design and cannot be parallelized at endpoint level. In case of File consumer, a single thread picks a file at a time and processes it through the route until it reaches the end of the route and then the consumer thread picks the next file. This is when Camel Threads construct can be useful. As visualised below, File consumer thread can pick a file and pass it to a thread from the Threads construct for further processing. Then the File consumer can pick another file without waiting for the previous Exchange to complete processing fully. Parallel File Consuming Seda component - Seda is another way to achieve parallelism in Camel. The Seda component has in-memory list to accumulate incoming messages from the producer and concurrentConsumers to process those incoming request in parallel by multiple threads. Asynchronous Redelivery/Retry - if you are using an error handler with a redelivery policy as part of the routing process, you can configure it to be asynchronous and do the redeliveries in a separate thread. That will use a separate thread pool for the redelivery not block the main request processing thread while waiting. If you need long delayed redeliveries, it might be a better approach to use ActiveMQ broker redelivery (that is different from consumer redelivery BTW) where the redeliveries will be persisted on the message broker and not kept in Camel application memory. Another benefit of this mechanism is that the redeliveries will survive application restart and also play nicely when the application is clustered. I have described different retry patterns in Camel Design Patterns book. Other Optimisations There are few other tricks you can do to micro-tune Camel further. Logging configurations - hopefully you don't have to log every message and its content on the production environment. But if you have to, consider using some asynchronous logger. On a high throughput system, and option would be to log statistics and aggregated metrics through Camel Throughput logger. Throughput logger allows logging aggregated statistics on fixed intervals or based on the number of processed messages rather than per message bases. Another option would be to use the not so popular Camel Sampler EIP and log only sample messages every now and then. Disable JMX - by default, Camel JMX instrumentation is enabled which creates a lot of MBeans. This allows monitoring and management of Camel runtime, but also has some performance hit and requires more resources. I still remember the time when I had to fully turn off JMX in Camel in order to run it with 512MB heap on a free AWS account. As a minimum, consider whether you need any JMX enabled at all, and if so whether to use RoutesOnly, Default or Extended JMX profiles. Message History - Camel implements the Message History EIP and runs it by default. While on development environmnet, it might be useful to see every endpoint a message has been too, but on the produciton environment you might consider to disable this feature. Original message - Every Camel route will make a copy of the original incoming message before any modifications to it. This pristine copy of the message is kept in case it is needed to be redelivered during error handling or with onCompletion construct. If you are not using these features, you can disable creating and storing the original state of every incoming message. Other customisations - Almost every feature in CamelContext can be customized. For example you can use lazyLoadTypeConverters for a faster application startup, or configure the shutdownStrategy for a quicker shutdown when there are inflight messages, or a use a custom UuidGenerator that performs faster, etc. Application Design All of the previous tunings are micro optimizations compared to the application design and architecture. If your application is not designed for horizontal scalability and performance, sooner or later the small tuning hacks will hit their limit. The chances are, what you are doing has been done previously, and instead of reinventing the wheel or coming up with some clever designs, learn from the experience of others and use well known patterns, principles and practises. Use principles from SOA, Microservices architectures, resiliency principles, messaging best practises, etc. Some of those patterns such as Parallel Pipelines, CQRS, Load Leveling, Circuit Breaker are covered in Camel Design Patterns book and do help to improve the overall application design. JVM There are many articles about tuning the JVM. Here I only want to mention the JVM configuration generation application by Red Hat which can generate for you JVM configurations based on the latest industry best practices. You can use it as long as you have a Red Hat account (which is free for developers anyway). Using the latest JVM and latest version of Camel (with its updated dependencies) is another way to improve application performance for free. OS You can squeeze the application only so much. In order to do proper high load processing, tuning the host system is a must too. To get an idea for the various OS level options, have a look at the following check list from the Jetty project. In Conclusion This article is here just to give you some ideas and show you the extend of the possible areas to consider when you have to improve the performance of a Camel application. Instead of looking for a magical recipe or go through a checklist, do small incremental changes supported by measurements until you get to a desired state. And rather than focusing on micro optimisations and hacks, have an holistic view of the system, get the design right, and start tuning from the host system, to JVM, CamelContext, routing elements, endpoints and the data itself. Using well known patterns, principles and practises with focus on simple and scalable design is always a good start. Good luck. Related Refcard: Essential Camel Components",
+                    "mainEntityOfPage": {
+                      "@type": "WebPage",
+                      "@id": "https://dzone.com/articles/performance-tuning-ideas-for-apache-camel"
+                    },
+                    "image": {
+                      "@type": "ImageObject",
+                      "url": "https://dzone.com//dz2cdn1.dzone.com/storage/article-thumb/2332892-thumb.jpg"
+                    }
+                  }
+                </script>
+
+                  <script type="application/ld+json">
+                    {
+                      "@context": "https://schema.org",
+                      "@type": "BreadcrumbList",
+                      "itemListElement": [{
+                        "@type": "ListItem",
+                        "position": 1,
+                        "name": "DZone",
+                        "item": "https://dzone.com"
+                      }, {
+                        "@type": "ListItem",
+                        "position": 2,
+                        "name": "Integration Zone",
+                        "item": "https://dzone.com/enterprise-integration-training-tools-news"
+                      }, {
+                        "@type": "ListItem",
+                        "position": 3,
+                        "name": "Performance Tuning Ideas for Apache Camel",
+                        "item": "https://dzone.com/articles/performance-tuning-ideas-for-apache-camel"
+                      }]
+                    }
+                  </script>
+
+            <article>
+              <div class="content">
+                <div class="header">
+                  <div class="col-xs-12 breadcrumb-padding">
+                    <a href="/">DZone</a>
+                    >
+                      <a href="/enterprise-integration-training-tools-news">Integration Zone</a>
+                      >
+                      <a href="#">Performance Tuning Ideas for Apache Camel</a>
+                  </div>
+
+
+                  <div class="header-title">
+                    <div class="title">
+                      <h1 class="article-title">Performance Tuning Ideas for Apache Camel</h1>
+                    </div>
+
+                    <div class="subhead">
+                      <h3>Sometimes, it might be worth squeezing few more milliseconds from your Camel routes. Here are some ideas for tuning Camel based systems, which may apply for you.</h3>
+                    </div>
+
+                    <div class="publish-meta">
+                        <div class="article-author-meta">
+                          <img src="https://dz2cdn3.dzone.com/thumbnail?fid=4863266&w=80" class="avatar" alt="Bilgin Ibryam user avatar" width="40">
+                          by
+
+                          <div class="author-info">
+                            <span class="author-name">
+                              <a href="/users/1028163/bibryam.html" rel="nofollow">Bilgin Ibryam</a>
+                            </span>
+                          </div>
+
+
+                            <div class="mvb-award">
+                              <i title="Most Valuable Blogger" class="icon-mvb-1"></i>
+                            </div>
+                              <div class="mvb-partner">
+                                <i title="Partner User with Red Hat Developer Program" class="icon-partner-mbv"></i>
+                              </div>
+
+
+                          &middot;
+                        </div>
+                      <span class="author-date">
+                        Jun. 10, 16
+                      </span>
+                      &middot;
+                        <a href="/enterprise-integration-training-tools-news" id="portal-name">
+                          <span class="portal-name">Integration Zone</span>
+                        </a>
+                      &middot;
+                      <span>Opinion</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="author-n-useraction">
+                  <div class="like action">
+                    <div id="activity-like-icon" class="dz-like icon-thumbs-up">
+                      <span class="action-label">
+                        <span id="activity-like-text">Like</span>
+                      </span>
+                      <a href="#">
+                        <span id="activity-like-counter">(8)</span>
+                      </a>
+                    </div>
+                  </div>
+
+                  <div class="action">
+
+                    <button class="comment">
+                      <i class="icon-comment"></i>
+                      Comment
+                      <span id="activity-comment-counter" class="comment-count"></span>
+                    </button>
+                  </div>
+
+                  <div class="save action">
+                    <div id="activity-save-icon" class="save icon-star-empty">
+                      <span id="activity-save-text" class="action-label">Save</span>
+                    </div>
+                  </div>
+
+                  <div class="tweet action">
+                    <a id="tweet-link" href="" class="title" target="_blank">
+                      <span><i class="icon-twitter"></i></span>
+                      <span class="action-label">Tweet</span>
+                    </a>
+                  </div>
+
+                  <div class="pull-right">
+                    <div id="activity-view-container" class="article-views action">
+                      <i class="icon-eye"></i> 26.33K
+                      <span class="action-label">Views</span>
+                    </div>
+                  </div>
+                </div>
+
+                    <div class="signin-prompt">
+                      <p>Join the DZone community and get the full member experience.</p>
+                      <a id="article-signin-prompt" href="/static/registration.html">Join For Free</a>
+                    </div>
+                    <div class="arrow-down"></div>
+
+                  <div id="top-bumper-container"></div>
+
+                <div>
+                  <div class="content-html"><p pid="193">Every now and then, I get questions around optimizing Camel applications with the argument that Camel is slow. Camel is just the glue connecting disparate systems, the routing engine is all in-memory, and it doesn’t require any persistent state. <strong>So in 99% of the cases, performance issues are due to bottlenecks in other systems</strong>, or having the application design done without performance considerations. If that is the case, there isn’t much you can achieve by tuning Camel further, and you have to go back to the drawing board.</p><div class="separator"><a href="http://3.bp.blogspot.com/-K0WT1DP8WJ8/VqTbioVHKeI/AAAAAAAAD5w/6coe-eRAiuk/s1600/BoI5lo8IgAAOFHd.jpg"><img border="0" class="fr-fin fr-dib" height="323" src="https://3.bp.blogspot.com/-K0WT1DP8WJ8/VqTbioVHKeI/AAAAAAAAD5w/6coe-eRAiuk/s400/BoI5lo8IgAAOFHd.jpg" width="440"></a></div><p pid="194">But sometimes, it might be worth squeezing few more milliseconds from your Camel routes. Tuning every application is very specific and dependent on the technology and the use case. Here are some ideas for tuning Camel based systems, which may apply for you (or not).</p><h3>Endpoint Tuning</h3><p pid="195">Endpoints in Camel are the integration points with other systems and the way they are configured will have a huge impact on the performance of the system. Understanding how different endpoints work and tuning those should be the one of the first places to start with. Here are few examples:</p><ul><li><strong>Messaging</strong> - If your Camel application is using messaging, the overall performance will be heavily dependent on the performance of the messaging system. There are too many factors to consider here, but the main ones are:         <ul><li><strong>Message broker</strong> - the network and disk speed, combined with the broker topology will shape the broker performance. To give you an idea, with ActiveMQ, a relational database based persistent store will perform around 50% of a file-based store, and using a network of brokers to scale horizontally will cost another 30% of performance. It is amazing how one configuration change in ActiveMQ can have a huge impact on the messaging system and then the Camel application. There is a must-read ActiveMQ <a href="https://access.redhat.com/documentation/en-US/Red_Hat_JBoss_A-MQ/6.2/html-single/Tuning_Guide/index.html#GenTuning-Consumer-Prefetch" target="_blank">tuning guide</a> by Red Hat with lot's of details to consider and evaluate. Also a real life example from <a href="https://twitter.com/christianposta" target="_blank">Chrisitan Posta</a> showing how to speed up the <a href="http://blog.christianposta.com/activemq/speeding-up-activemq-persistent-messaging-performance-by-25x/" target="_blank">broker 25x times</a> in certain cases. Another recent article by Simon Green shows how to approach an <a href="http://sigreen.github.io/2016/02/10/amq-tuning.html" rel="nofollow" target="_blank">ActiveMQ Tunning Adventure</a> step by step.</li><li><strong>Message client</strong> - if performance is a priority, there are also some hacks you can do on the ActiveMQ client side, such as: increasing TCP socketBufferSize and ioBufferSize, tuning the OpenWire protocol parameters, using message compression, batch acknowledgements with optimizeAcknowledge, asynchronous send with useAsyncSend, adjusting pre-fetch limit, etc. There are some nice slides again from Christina <a href="http://www.slideshare.net/ceposta/activemq-performance-tuning" target="_blank">here</a> and an old but still very relevant <a href="http://download.progress.com/5331/open/adobe/prc/psc/perf_tuning_activemq/index.htm" target="_blank">video</a> from <a href="https://twitter.com/rajdavies" target="_blank">Rob Davies</a> about tuning ActiveMQ. All of these resources should give you enough ideas to experiment and improve the performance from a messaging point of view.</li></ul></li><li><strong>Database writes</strong> - use batching whenever possible. You can use an aggregator to collect a number of entries before performing a batch operation to interact with the database (for example with the SQL component.</li><li><strong>Working with templates</strong> - if you have to use a template component as part of the routing, try out the existing templating engines (FreeMarker, Velocity, SpringTeplate, Mustache, Chunk) with a small test as the <a href="https://github.com/muellerc/apachecon-na-2013/tree/master/template" target="_blank">following one</a> and measure which one performs better. There is a great presentation titled <a href="https://www.google.co.uk/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=1&amp;cad=rja&amp;uact=8&amp;ved=0ahUKEwjDq4KRgrjKAhWlLHIKHZ6RAJUQFggiMAA&amp;url=http%3A%2F%2Farchive.apachecon.com%2Fna2013%2Fpresentations%2F28-Thursday%2FCaravan%2F11%3A15-Performance%2520optimizations%2520for%2520Apache%2520Camel-Christian_Mueller.pdf&amp;usg=AFQjCNEVTIiKPW_kBtMjtqdtLi7dVaeYJw&amp;sig2=vs13dQaga2nKclBQp6h8_g" target="_blank">Performance optimisation for Camel</a> by Christian Mueller with the <a href="https://github.com/muellerc/apachecon-na-2013" target="_blank">source code</a> supporting the findings (<strong>UPDATE</strong>: after this blog post was published, Christian created new <a href="https://www.blogger.com/%5B1%5D%20http://www.slideshare.net/muellerc/apache-con-na2013updated2016-57756702" target="_blank">slides</a> with latest version of Camel 2.16.2 and Java 7/8, check out those too). From those measurements we can <a href="http://archive.apachecon.com/na2013/presentations/28-Thursday/Caravan/11:15-Performance%20optimizations%20for%20Apache%20Camel-Christian_Mueller.pdf#25" target="_blank">see</a> that FreeMarker performs better than Velocity and SprintTemplates in general.</li><li><strong>Using Web Services </strong>- whenever you have to use a web endpoint, the web container itself (has to be tuned separately. From Camel endpoint point of view, you can further optimise a little bit by skipping the unmarshalling if you don't need Java objects, and using asynchronous processing.</li><li><strong>concurrentConsumers</strong> - there are a number of components (Seda, VM, JMS, RabbitMQ, Disruptor, AWS-SQS, etc) that support parallel consumption. Before using an endpoint, check the component documentation for thread pool or batch processing capabilities. To give you an idea, see how Amzon SQS processing <a href="http://blog.christianposta.com/camel/very-fast-camels-and-cloud-messaging/" target="_blank">can be improved</a> through these options.</li></ul><h3>Data Type Choice</h3><p pid="196">The type and the format of the data the is passing through Camel routes will also have performance implications. To demonstrate that let's see few examples.</p><ul><li><strong>Content based router, splitter, filter</strong> are examples of EIPs that perform some work based on the message content. And the type of the message affects the processing speed of these elements. Below is a chart from Christian Mueller's presentation, visualising how Content Based Router is performing with different kinds of messages: <img alt="Content Based Routing for different data types" border="0" class="fr-fin fr-dib" height="250" src="https://4.bp.blogspot.com/-Y6RfzMVbWew/VqTQH6iKfzI/AAAAAAAAD5g/dtLxBuYdgiY/s400/CBR_TIMES.png" title="Content Based Routing for different data types" width="500"><p align="center"><em>Content Based Routing based on different data types </em></p></li></ul><p pid="197">For example, if you have a large XML document in the Exchange, and based on it you perform content based routing, filtering, etc., that will affect the speed of the route. Instead you can extract some key information from the document and populate the Exchange headers for faster access and routing later.</p><ul><li><strong>Marshaling/Unmarshaling</strong> - similarly to the templating engines, different data format covenrtors perform differently. To see some metrics check again Christian's presentation, but also keep in mind that performance of the <a href="http://camel.apache.org/data-format.html" target="_blank">supported data formats</a> may vary between different versions and platforms so measure it for your use case.</li><li><strong>Streaming</strong> - Camel streaming and <a href="http://camel.apache.org/stream-caching.html" target="_blank">stream caching</a> are one of the underrated features that can be useful for dealing with large messages.</li><li><strong>Claim check EIP</strong> - if the application logic allows it, consider using <a href="http://camel.apache.org/claim-check.html" target="_blank">claim check</a> pattern to improve performance and reduce resource consumption.</li></ul><h3>Multithreading</h3><p pid="198">Camel offers multithreading support in a number of places. Using those can improve the application performance too.</p><ul><li><strong>Paralel processing EIPs</strong> - the following Camel EIP implementations support parallel processing - multicast, recipient list, splitter, delayer, wiretap, throttler, error handler. If you are going to enable parallel processing for those, it would be even better if you also provide a custom thread pool specifically tuned for your use case rather than relying on Camel's default thread pool profile.</li><li><b>Threads DSL construct</b> - some Camel endpoints (such as the File consumer) are single threaded by design and cannot be parallelized at endpoint level. In case of File consumer, a single thread picks a file at a time and processes it through the route until it reaches the end of the route and then the consumer thread picks the next file. This is when Camel Threads construct can be useful. As visualised below, File consumer thread can pick a file and pass it to a thread from the Threads construct for further processing. Then the File consumer can pick another file without waiting for the previous Exchange to complete processing fully.         <table class="tr-caption-container" align="center" cellpadding="0" cellspacing="0"><tbody><tr><td><a href="http://1.bp.blogspot.com/-_4LO_gPyP40/VqYJmZx1XPI/AAAAAAAAD6E/FVwZWw-q8hQ/s1600/file_consume_parallel.png"><img alt="Parallel File Consuming" border="0" class="fr-dii fr-fil" height="90" src="https://1.bp.blogspot.com/-_4LO_gPyP40/VqYJmZx1XPI/AAAAAAAAD6E/FVwZWw-q8hQ/s400/file_consume_parallel.png" title="Parallel File Consuming" width="500"></a></td></tr><tr><td class="tr-caption">Parallel File Consuming</td></tr></tbody></table></li><li><strong>Seda component</strong> - Seda is another way to achieve parallelism in Camel. The Seda component has in-memory list to accumulate incoming messages from the producer and concurrentConsumers to process those incoming request in parallel by multiple threads.</li><li><strong>Asynchronous Redelivery/Retry - </strong>if you are using an error handler with a redelivery policy as part of the routing process, you can configure it to be asynchronous and do the redeliveries in a separate thread. That will use a separate thread pool for the redelivery not block the main request processing thread while waiting. If you need long delayed redeliveries, it might be a better approach to use ActiveMQ broker redelivery (that is different from consumer redelivery BTW) where the redeliveries will be persisted on the message broker and not kept in Camel application memory. Another benefit of this mechanism is that the redeliveries will survive application restart and also play nicely when the application is clustered. I have described different retry patterns in <a href="https://leanpub.com/camel-design-patterns" target="_blank">Camel Design Patterns</a> book.</li></ul><h3>Other Optimisations</h3><p pid="199">There are few other tricks you can do to micro-tune Camel further.</p><ul><li><strong>Logging configurations</strong> - hopefully you don't have to log every message and its content on the production environment. But if you have to, consider using some asynchronous logger. On a high throughput system, and option would be to log statistics and aggregated metrics through Camel Throughput logger. Throughput logger allows logging aggregated statistics on fixed intervals or based on the number of processed messages rather than per message bases. Another option would be to use the not so popular Camel <a href="http://camel.apache.org/sampling.html" target="_blank">Sampler EIP</a> and log only sample messages every now and then.</li><li><strong>Disable JMX</strong> - by default, Camel JMX instrumentation is enabled which creates a lot of MBeans. This allows monitoring and management of Camel runtime, but also has some performance hit and requires more resources. I still remember the time when I had to fully turn off JMX in Camel in order to run it with 512MB heap on a free AWS account. As a minimum, consider whether you need any JMX enabled at all, and if so whether to use RoutesOnly, Default or Extended JMX profiles.</li><li><strong>Message History </strong>- Camel implements the Message History EIP and runs it by default. While on development environmnet, it might be useful to see every endpoint a message has been too, but on the produciton environment you might consider to disable this feature.</li><b></b><li><strong>Original message</strong> - Every Camel route will make a copy of the original incoming message before any modifications to it. This <span data-dobid="hdw">pristine copy of the message is kept in case it is needed to be redelivered during error handling or with onCompletion construct. If you are not using these features, you can disable creating and storing the original state of every incoming message.</span></li><li><strong>Other customisations</strong> - Almost every feature in CamelContext can be customized. For example you can use lazyLoadTypeConverters for a faster application startup, or configure the shutdownStrategy for a quicker shutdown when there are inflight messages, or a use a custom UuidGenerator that performs faster, etc.</li></ul><h2>Application Design</h2><p pid="200">All of the previous tunings are micro optimizations compared to the application design and architecture. If your application is not designed for horizontal scalability and performance, sooner or later the small tuning hacks will hit their limit. The chances are, what you are doing has been done previously, and instead of reinventing the wheel or coming up with some clever designs, learn from the experience of others and use well known patterns, principles and practises. Use principles from SOA, Microservices architectures, resiliency principles, messaging best practises, etc. Some of those patterns such as Parallel Pipelines, CQRS, Load Leveling, Circuit Breaker are covered in <a href="https://leanpub.com/camel-design-patterns" target="_blank">Camel Design Patterns</a> book and do help to improve the overall application design.</p><h2>JVM</h2><p pid="201">There are many articles about tuning the JVM. Here I only want to mention the <a href="https://access.redhat.com/labsinfo/jvmconfig" target="_blank">JVM configuration generation</a> application by Red Hat which can generate for you JVM configurations based on the latest industry best practices. You can use it as long as you have a Red Hat account (which is free for developers anyway). Using the latest JVM and latest version of Camel (with its updated dependencies) is another way to improve application performance for free.</p><h2>OS</h2><p pid="202">You can squeeze the application only so much. In order to do proper high load processing, tuning the host system is a must too. To get an idea for the various OS level options, have a look at the <a href="http://www.eclipse.org/jetty/documentation/current/high-load.html" target="_blank">following check list</a> from the Jetty project.</p><h2>In Conclusion</h2><p pid="203">This article is here just to give you some ideas and show you the extend of the possible areas to consider when you have to improve the performance of a Camel application. Instead of looking for a magical recipe or go through a checklist, do small incremental changes supported by measurements until you get to a desired state. And rather than focusing on micro optimisations and hacks, have an holistic view of the system, get the design right, and start tuning from the host system, to JVM, CamelContext, routing elements, endpoints and the data itself. Using well known patterns, principles and practises with focus on simple and scalable design is always a good start. Good luck.</p><div style="width:100%;display:inline-block; border-top: 1px solid; border-top-color: #d9dcdd; border-bottom: 1px solid; border-bottom-color: #d9dcdd;"><div style="display:inline-block; font-family: Helvetica Neue; color:#333333; font-size: 14px; font-weight: 500; line-height: 20.3px;"><p>Related Refcard: </p></div><div style="margin-left:5px; display:inline-block; font-family: Helvetica Neue; color:#333333; font-size: 14px; font-weight: 500; line-height: 20.3px;"><p><a href="https://dzone.com/refcardz/essential-camel-components" style="text-decoration: none;">Essential Camel Components</a></p></div></div></div>
+                </div>
+
+                  <div id="bottom-bumper-container"></div>
+                  <div class="article-tag-pill-container">
+                      <span class="article-tag-pill">application</span>
+                      <span class="article-tag-pill">Apache Camel</span>
+                      <span class="article-tag-pill">Thread pool</span>
+                      <span class="article-tag-pill">Processing</span>
+                      <span class="article-tag-pill">Design</span>
+                      <span class="article-tag-pill">Java (programming language)</span>
+                  </div>
+
+                  <div class="attribution">
+                    <p>Opinions expressed by DZone contributors are their own.</p>
+                  </div>
+
+                    <div class="related">
+                      <h3>Popular on DZone</h3>
+                        <ul>
+                            <li class="relateddiv">
+                              <a href="/articles/java-outsourcing-a-strong-business-and-management?fromrel=true">Java Outsourcing, a Strong Business, and Management Approaches</a>
+                            </li>
+                            <li class="relateddiv">
+                              <a href="/articles/selenium-vs-protractor-whats-the-difference?fromrel=true">Selenium vs. Protractor: What's the Difference?</a>
+                            </li>
+                            <li class="relateddiv">
+                              <a href="/articles/servlets-listeners-introduction-amp-examples-java?fromrel=true">Servlets Listeners Introduction and Examples</a>
+                            </li>
+                            <li class="relateddiv">
+                              <a href="/articles/troubleshooting-memory-leaks-deep-dive-into-common-heap-profilers?fromrel=true">Troubleshooting Memory Leaks With Heap Profilers</a>
+                            </li>
+                        </ul>
+                      </div>
+<div class="comments-overlay"></div>
+<div id="comment-box">
+  <div class="comment-box-wrapper">
+    <div id="comment-input-editor"></div>
+  </div>
+  <div class="info hidden"></div>
+  <div class="comments-content">
+    <div class="comment-header">
+      <hr />
+      <span class="icon-comment">
+        <span class="numOfComments"></span> Comments
+      </span>
+    </div>
+    <div class="comments"></div>
+  </div>
+</div>
+            </article>
+          </div>
+
+            <div id="above-pr-ad" class="bottom-ad-container">
+              <div id="div-gpt-ad-1435246566686-11" data-gpt-slot="bottom"></div>
+            </div>
+            <div class="layout-card widget-top-border partner-resources-block" style="width:100%; margin-bottom: 1em;">
+              <div class="main-container">
+                <div class="featured-header">
+                  <h2>
+                      Integration<span> Partner Resources</span>
+                  </h2>
+                </div>
+                <div class="partner-resources-container">
+                  <div id="div-gpt-ad-1435246566686-5" class="resource-block" data-gpt-slot="partner" data-gpt-position="pr1"></div>
+                  <div id="div-gpt-ad-1435246566686-6" class="resource-block" data-gpt-slot="partner" data-gpt-position="pr2"></div>
+                  <div id="div-gpt-ad-1435246566686-7" class="resource-block" data-gpt-slot="partner" data-gpt-position="pr3"></div>
+                </div>
+              </div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <div id="bsa-parent" class="bottom-sticky-ad-container hide">
+      <div class="container">
+        <div class="col-md-9">
+          <div class="fixed-bottom-div">
+            <div class="inline-block">
+              <div id="div-gpt-ad-1635294790718-12" data-gpt-desktop="true" class="bottom-sticky-ad"></div>
+            </div>
+            <div class="inline-block">
+              <span id="close" class="bottom-sticky-ad-close-button" onclick="removeBottomStickyAd()">
+                X
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  <div class="modal fade bd-example-modal-lg" id="modal-message" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header"></div>
+        <div class="modal-body"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script async>const articleTitle = 'Performance Tuning Ideas for Apache Camel'
+const articleUrl = 'https://dzone.com/articles/performance-tuning-ideas-for-apache-camel'
+
+const retweetLink = document.querySelector('#tweet-link')
+
+function retweet(event) {
+    event.preventDefault()
+    event.stopPropagation()
+
+    const twitter = 'https://twitter.com/intent/tweet'
+    const params = '?text=' + encodeURIComponent(articleTitle) + '&url=' + articleUrl + '&ref=dzone.com&via=DZoneInc'
+    const win = window.open(twitter + params, '_blank')
+    win.focus()
+}
+
+retweetLink.addEventListener('click', retweet);
+
+function showStatusMessage(options) {
+  var modal = document.getElementById("modal-message");
+
+  if(modal) {
+    modal.classList.add(options.type);
+    var modalBody = modal.querySelector(".modal-content .modal-body");
+    var modalHeader = modal.querySelector(".modal-content .modal-header");
+
+    modalHeader.innerText = options.header ? options.header : "";
+    modalBody.innerText = options.body ? options.body : "" ;
+
+    $(modal).modal("show");
+
+    $(modal).on('hidden.bs.modal', function () {
+      modal.classList.remove(options.type);
+    });
+  }
+}
+
+function showConfirmMessage(options) {
+  var modal = document.getElementById("modal-message");
+
+  if(modal) {
+    modal.classList.add(options.type);
+    var modalBody = modal.querySelector(".modal-content .modal-body");
+    var modalHeader = modal.querySelector(".modal-content .modal-header");
+
+    modalHeader.innerText = options.header ? options.header : "";
+    modalBody.innerText = options.body ? options.body : "" ;
+
+    if (options.textarea) {
+      const textareaDiv = document.createElement('div')
+      const textareaLabel = document.createElement('label')
+      textareaLabel.setAttribute('for', 'modal-textarea')
+      textareaLabel.innerText = options.textarea.label
+
+      const textarea = document.createElement('textarea')
+      textarea.id = 'modal-textarea'
+      textarea.placeholder = (options.textarea.placeholder || '')
+      textarea.setAttribute('rows', (options.textarea.rows || 3))
+      textarea.classList.add('form-control', 'not-resizable')
+
+      if (options.textarea.maxlength) {
+        textarea.maxLength = options.textarea.maxlength
+      }
+
+      textareaDiv.appendChild(textareaLabel)
+      textareaDiv.appendChild(textarea)
+      modalBody.appendChild(textareaDiv)
+    }
+
+    var btnContainer = document.createElement("div");
+    btnContainer.classList.add("btn-container");
+
+    var noBtn = document.createElement("button");
+    noBtn.innerText = options.noBtnText ? options.noBtnText : "No";
+    noBtn.classList.add("no-btn");
+
+    var yesBtn = document.createElement("button");
+    yesBtn.innerText = options.yesBtnText ? options.yesBtnText : "Yes";
+    yesBtn.classList.add("yes-btn");
+
+    btnContainer.appendChild(noBtn);
+    btnContainer.appendChild(yesBtn);
+
+    modalBody.appendChild(btnContainer);
+
+    $(modal).modal("show");
+
+    $(noBtn).one("click", function() {
+      $(modal).modal("hide");
+
+      if(options.noCallback) {
+        $(modal).one('hidden.bs.modal', function () {
+          options.noCallback();
+        });
+      }
+    });
+
+    $(yesBtn).one("click", function() {
+      $(modal).modal("hide");
+
+      if(options.yesCallback) {
+        $(modal).one('hidden.bs.modal', function () {
+          options.yesCallback();
+        });
+      }
+    });
+
+    $(modal).on('hidden.bs.modal', function () {
+      modal.classList.remove(options.type);
+    });
+  }
+}
+</script><link rel="stylesheet" media="all" href="https://dz2cdn3.dzone.com/themes/dz20/ftl/footer/styles.css">
+
+<div id="ftl-footer">
+  <div class="container-fluid footerOuter">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="container">
+          <div class="row footer">
+            <div class="col-md-12 footerWidget">
+              <div class="row footerContainer footer">
+                <div class="left col-xs-12 col-sm-7">
+                  <div class="col-xs-12 social-media-icons footer-mobile">
+                    <ul class="icons-only">
+                      <li class="rss-icon" id="rss-footer-1">
+                        <a href="/pages/feeds" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-rss-1"></i>
+                        </a>
+                      </li>
+                      <li class="twitter-icon">
+                        <a href="https://twitter.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-twitter"></i>
+                        </a>
+                      </li>
+                      <li class="facebook-icon">
+                        <a href="https://www.facebook.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-facebook-1"></i>
+                        </a>
+                      </li>
+                      <li class="linkedin-icon">
+                        <a href="https://www.linkedin.com/company/dzone/" target="_blank"
+                           rel="noreferrer noopener">
+                          <i class="icon-linkedin-1"></i>
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div class="top-section col-xs-12">
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">ABOUT US</p>
+                      <ul class="link-group">
+                        <li><a href="/pages/about" rel="noreferrer noopener">About DZone</a></li>
+                        <li><a href="mailto:support@dzone.com" rel="noreferrer noopener">Send feedback</a></li>
+                        <li><a href="https://careers.dzone.com/" target="_blank" rel="noreferrer noopener">Careers</a></li>
+                          <li><a href="/sitemap" rel="noreferrer noopener">Sitemap</a></li>
+                      </ul>
+                    </div>
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">ADVERTISE</p>
+                      <ul class="link-group">
+                        <li><a href="https://advertise.dzone.com" target="_blank" rel="noreferrer noopener">Advertise with DZone</a></li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div class="bottom-section col-xs-12">
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">CONTRIBUTE ON DZONE</p>
+                      <ul class="bottom-top-list link-group">
+                        <li><a href="/articles/dzones-article-submission-guidelines">Article Submission Guidelines</a></li>
+                        <li><a href="/pages/mvb" rel="noreferrer noopener">MVB Program</a></li>
+                        <li><a href="/pages/contribute" rel="noreferrer noopener">Become a Contributor</a></li>
+                        <li><a href="/writers-zone" rel="noreferrer noopener">Visit the Writers' Zone</a></li>
+                      </ul>
+
+                      <p class="section-header">LEGAL</p>
+                      <ul class="link-group">
+                        <li><a href="/pages/tos" rel="noreferrer noopener">Terms of Service</a></li>
+                        <li><a href="/pages/privacy" rel="noreferrer noopener">Privacy Policy</a></li>
+                      </ul>
+                    </div>
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">CONTACT US</p>
+                      <ul class="link-group">
+                        <li>600 Park Offices Drive</li>
+                        <li>Suite 300</li>
+                        <li>Durham, NC 27709</li>
+                        <li><a href="mailto:support@dzone.com" rel="noreferrer noopener">support@dzone.com</a></li>
+                        <li><a href="tel:+19196780300" rel="noreferrer noopener">+1 (919) 678-0300</a></li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="right col-xs-12 col-sm-5">
+
+                  <p class="connect-text">Let's be friends:</p>
+                  <div class="col-xs-12 social-media-icons footer-wide">
+                    <ul class="icons-only">
+                      <li class="rss-icon" id="rss-footer-1">
+                        <a href="/pages/feeds" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-rss-1"></i>
+                        </a>
+                      </li>
+                      <li class="twitter-icon">
+                        <a href="https://twitter.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-twitter"></i>
+                        </a>
+                      </li>
+                      <li class="facebook-icon">
+                        <a href="https://www.facebook.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-facebook-1"></i>
+                        </a>
+                      </li>
+                      <li class="linkedin-icon">
+                        <a href="https://www.linkedin.com/company/dzone/" target="_blank"
+                           rel="noreferrer noopener">
+                          <i class="icon-linkedin-1"></i>
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div class="col-xs-12 powered-by">
+                    <p>DZone.com is powered by&nbsp;</p>
+                    <a href="https://devada.com/answerhub/" rel="noreferrer noopener">
+                      <img src=""
+                           data-src="https://dz2cdn3.dzone.com/themes/dz20/images/answerhub_logo_white_footer.png"
+                           width="150"
+                           height="56"
+                           class="lazyload"
+                           alt="AnswerHub logo">
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  <script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"></script>
+
+  <script async>
+      (function(w, d, s, l, i) {
+          w[l] = w[l] || [];
+          w[l].push({'gtm.start': new Date().getTime(), event: 'gtm.js'});
+          var f = d.getElementsByTagName(s)[0], j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : '';
+          j.async = true;
+          j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+          f.parentNode.insertBefore(j,f);
+      })(window, document, 'script', 'dataLayer', 'GTM-K25QL22');
+  </script>
+
+  <script>
+      window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+      ga('create', 'UA-410289-1', 'auto');
+      ga('require', 'linkid', 'linkid.js');
+      ga('require', 'GTM-TSD9TZP');
+      ga('set', 'siteSpeedSampleRate', 25);
+  </script>
+  <script async src="https://www.google-analytics.com/analytics.js"></script>
+  <script async>const analytics = {
+    'dimension1': 'integration',
+    'dimension2': 'article/opinion',
+    'dimension3': '2016-06-10',
+    'dimension4': '0',
+    'dimension5': '',
+    'dimension7': 'application, Apache Camel, Thread pool, processing, Design, java',
+    'dimension8': 'bibryam',
+    'dimension9': 'Red Hat Developer Program',
+    'dimension10': 'Red Hat'
+}
+
+if (window.ga) {
+    Object.keys(analytics).forEach(function(key) {
+        window.ga('set', key, analytics[key])
+    })
+
+    window.ga('send', 'pageview')
+}</script>
+
+  <script>
+      !function (e, o, n, i) {
+          if (!e) {
+              e = e || {}, window.permutive = e, e.q = [];
+              var t = function () {
+                  return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, function (e) {
+                      return (e ^ (window.crypto || window.msCrypto).getRandomValues(new Uint8Array(1))[0] & 15 >> e / 4).toString(16)
+                  })
+              };
+              e.config = i || {}, e.config.apiKey = o, e.config.workspaceId = n, e.config.environment = e.config.environment || "production", (window.crypto || window.msCrypto) && (e.config.viewId = t());
+              for (var g = ["addon", "identify", "track", "trigger", "query", "segment", "segments", "ready", "on", "once", "user", "consent"], r = 0; r < g.length; r++) {
+                  var w = g[r];
+                  e[w] = function (o) {
+                      return function () {
+                          var n = Array.prototype.slice.call(arguments, 0);
+                          e.q.push({
+                              functionName: o,
+                              arguments: n
+                          })
+                      }
+                  }(w)
+              }
+          }
+      }(window.permutive, "bca90777-e088-4f2a-96c2-13ad18deeccc", "18ad0c5b-460c-4d19-a729-dc537805538f", {});
+      window.googletag = window.googletag || {}, window.googletag.cmd = window.googletag.cmd || [], window.googletag.cmd.push(function () {
+          if (0 === window.googletag.pubads().getTargeting("permutive").length) {
+              var e = window.localStorage.getItem("_pdfps");
+              window.googletag.pubads().setTargeting("permutive", e ? JSON.parse(e) : []);
+              var o = window.localStorage.getItem("permutive-id");
+              o && (window.googletag.pubads().setTargeting("puid", o), window.googletag.pubads().setTargeting("ptime", Date.now().toString())), window.permutive.config.viewId && window.googletag.pubads().setTargeting("prmtvvid", window.permutive.config.viewId), window.permutive.config.workspaceId && window.googletag.pubads().setTargeting("prmtvwid", window.permutive.config.workspaceId)
+          }
+      });
+
+
+      permutive.addon('web', {
+          'page': {
+              'category': 'Integration',
+              'node': {
+                  'authorCompany': 'Red Hat',
+                  'authors': [1028163, ],
+                  'publishDate': new Date(1465516800000),
+                  'sponsorAuthor': true,
+                  'tags': ['application', 'Apache Camel', 'Thread pool', 'processing', 'Design', 'java', ],
+                  'title': 'Performance Tuning Ideas for Apache Camel',
+                  'type': 'article',
+              },
+              'section': 'article',
+          }
+      });
+  </script>
+  <script async src="https://18ad0c5b-460c-4d19-a729-dc537805538f.edge.permutive.app/18ad0c5b-460c-4d19-a729-dc537805538f-web.js"></script>
+
+  <script>
+      const csrf = '2893887904367223443'
+      const articleId = 1270446
+      const likes = 8
+      const assetDomain = 'https://dz2cdn3.dzone.com'
+      const codemirrorVars = {
+          modeURI: 'https://dz2cdn3.dzone.com/themes/dz20/lib/codemirror/mode/',
+          requiredScripts: [
+              'https://dz2cdn3.dzone.com/themes/dz20/lib/codemirror/lib/codemirror.js',
+              'https://dz2cdn3.dzone.com/themes/dz20/lib/codemirror/mode/meta.js'
+          ]
+      }
+
+      const gptTags = {
+          'zone': 'integration',
+          'topicTag': 'application,Apache Camel,Thread pool,processing,Design,java',
+          'company': 'Red Hat Developer Program',
+          'siteSection': 'Zones',
+          'articleCategory': 'opinion',
+          'nodeID': '1270446',
+          'authorID': '1028163',
+          'publishYear': '2016',
+          'publishMonth': '06',
+          'jobRole': '',
+          'companySize': ''
+      }
+
+      const minCommentChar = 10;
+      const peer39Enabled = true;
+  </script>
+
+  <script src="https://dz2cdn3.dzone.com/themes/dz20/lib/static/jquery/jquery.min.js"></script>
+  <script async src="https://dz2cdn3.dzone.com/themes/dz20/lib/static/bootstrap/bootstrap.min.js"></script>
+  <script async src="https://dz2cdn3.dzone.com/themes/dz20/ftl/article/ads.js"></script>
+
+
+
+  <script>
+      function loadScript(src) {
+          return new Promise(function (resolve, reject) {
+              const s = document.createElement('script')
+              s.src = src
+              s.onload = resolve
+              s.onerror = reject
+              document.head.appendChild(s)
+          })
+      }
+
+      function loadStyle(href) {
+          const link = document.createElement('link')
+          link.rel = 'stylesheet'
+          link.href = href
+          document.head.appendChild(link)
+      }
+
+      function loadScriptsSync(deferred) {
+          var p = Promise.resolve()
+          for (var i = 0; i < deferred.length; i++) {
+              let script = deferred[i]
+              p = p.then(function() {
+                  return loadScript(script)
+              })
+          }
+          return p
+      }
+
+      function loadStyles() {
+          const deferred = [
+              'https://dz2cdn3.dzone.com/themes/dz20/lib/codemirror/lib/codemirror.css',
+              'https://dz2cdn3.dzone.com/themes/dz20/ftl/comments/styles.css',
+              'https://dz2cdn3.dzone.com/themes/dz20/lib/froala3/css/froala_editor.pkgd.min.css',
+              'https://dz2cdn3.dzone.com/themes/dz20/lib/froala3/css/themes/gray.min.css',
+              'https://dz2cdn3.dzone.com/themes/dz20/ftl/article/mini-profile.css'
+          ]
+
+          for (var i = 0; i < deferred.length; i++) {
+              loadStyle(deferred[i])
+          }
+      }
+
+      window.addEventListener('load', function(event) {
+          loadStyles()
+          loadScriptsSync([
+              'https://dz2cdn3.dzone.com/themes/dz20/ftl/header/auth-status.js',
+              'https://dz2cdn3.dzone.com/themes/dz20/lib/lazysizes.min.js',
+              'https://dz2cdn3.dzone.com/themes/dz20/ftl/article/codeblocks.js',
+              'https://dz2cdn3.dzone.com/themes/dz20/ftl/article/activity-bar.js',
+              'https://dz2cdn3.dzone.com/themes/dz20/lib/froala3/js/froala_editor.pkgd.min.js',
+              'https://dz2cdn3.dzone.com/themes/dz20/ftl/froala/content.js',
+              'https://dz2cdn3.dzone.com/themes/dz20/ftl/comments/content.js',
+              'https://dz2cdn3.dzone.com/themes/dz20/ftl/article/content.js'
+          ])
+      })
+  </script>
+</body>
+</html>

@@ -1,0 +1,1658 @@
+<!DOCTYPE html>
+<html lang="en-US" class="no-js">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<link rel="profile" href="https://gmpg.org/xfn/11">
+<link rel="pingback" href="https://lemire.me/blog/xmlrpc.php">
+<!--[if lt IE 9]>
+	<script src="https://lemire.me/blog/wp-content/themes/twentyfifteen/js/html5.js?ver=3.7.0"></script>
+	<![endif]-->
+<script>(function(html){html.className = html.className.replace(/\bno-js\b/,'js')})(document.documentElement);</script>
+<title>We released simdjson 0.3: the fastest JSON parser in the world is even better! &#8211; Daniel Lemire&#039;s blog</title>
+<meta name='robots' content='max-image-preview:large' />
+<link rel='dns-prefetch' href='//fonts.googleapis.com' />
+<link rel='dns-prefetch' href='//s.w.org' />
+<link href='https://fonts.gstatic.com' crossorigin rel='preconnect' />
+<link rel="alternate" type="application/rss+xml" title="Daniel Lemire&#039;s blog &raquo; Feed" href="https://lemire.me/blog/feed/" />
+<link rel="alternate" type="application/rss+xml" title="Daniel Lemire&#039;s blog &raquo; Comments Feed" href="https://lemire.me/blog/comments/feed/" />
+<link rel="alternate" type="application/rss+xml" title="Daniel Lemire&#039;s blog &raquo; We released simdjson 0.3: the fastest JSON parser in the world is even better! Comments Feed" href="https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/feed/" />
+<script>
+window._wpemojiSettings = {"baseUrl":"https:\/\/s.w.org\/images\/core\/emoji\/13.1.0\/72x72\/","ext":".png","svgUrl":"https:\/\/s.w.org\/images\/core\/emoji\/13.1.0\/svg\/","svgExt":".svg","source":{"concatemoji":"https:\/\/lemire.me\/blog\/wp-includes\/js\/wp-emoji-release.min.js?ver=5.9.3"}};
+/*! This file is auto-generated */
+!function(e,a,t){var n,r,o,i=a.createElement("canvas"),p=i.getContext&&i.getContext("2d");function s(e,t){var a=String.fromCharCode;p.clearRect(0,0,i.width,i.height),p.fillText(a.apply(this,e),0,0);e=i.toDataURL();return p.clearRect(0,0,i.width,i.height),p.fillText(a.apply(this,t),0,0),e===i.toDataURL()}function c(e){var t=a.createElement("script");t.src=e,t.defer=t.type="text/javascript",a.getElementsByTagName("head")[0].appendChild(t)}for(o=Array("flag","emoji"),t.supports={everything:!0,everythingExceptFlag:!0},r=0;r<o.length;r++)t.supports[o[r]]=function(e){if(!p||!p.fillText)return!1;switch(p.textBaseline="top",p.font="600 32px Arial",e){case"flag":return s([127987,65039,8205,9895,65039],[127987,65039,8203,9895,65039])?!1:!s([55356,56826,55356,56819],[55356,56826,8203,55356,56819])&&!s([55356,57332,56128,56423,56128,56418,56128,56421,56128,56430,56128,56423,56128,56447],[55356,57332,8203,56128,56423,8203,56128,56418,8203,56128,56421,8203,56128,56430,8203,56128,56423,8203,56128,56447]);case"emoji":return!s([10084,65039,8205,55357,56613],[10084,65039,8203,55357,56613])}return!1}(o[r]),t.supports.everything=t.supports.everything&&t.supports[o[r]],"flag"!==o[r]&&(t.supports.everythingExceptFlag=t.supports.everythingExceptFlag&&t.supports[o[r]]);t.supports.everythingExceptFlag=t.supports.everythingExceptFlag&&!t.supports.flag,t.DOMReady=!1,t.readyCallback=function(){t.DOMReady=!0},t.supports.everything||(n=function(){t.readyCallback()},a.addEventListener?(a.addEventListener("DOMContentLoaded",n,!1),e.addEventListener("load",n,!1)):(e.attachEvent("onload",n),a.attachEvent("onreadystatechange",function(){"complete"===a.readyState&&t.readyCallback()})),(n=t.source||{}).concatemoji?c(n.concatemoji):n.wpemoji&&n.twemoji&&(c(n.twemoji),c(n.wpemoji)))}(window,document,window._wpemojiSettings);
+</script>
+<style>
+img.wp-smiley,
+img.emoji {
+	display: inline !important;
+	border: none !important;
+	box-shadow: none !important;
+	height: 1em !important;
+	width: 1em !important;
+	margin: 0 0.07em !important;
+	vertical-align: -0.1em !important;
+	background: none !important;
+	padding: 0 !important;
+}
+</style>
+<link rel='stylesheet' id='wp-block-library-css' href='https://lemire.me/blog/wp-includes/css/dist/block-library/style.min.css?ver=5.9.3' media='all' />
+<style id='wp-block-library-theme-inline-css'>
+.wp-block-audio figcaption{color:#555;font-size:13px;text-align:center}.is-dark-theme .wp-block-audio figcaption{color:hsla(0,0%,100%,.65)}.wp-block-code>code{font-family:Menlo,Consolas,monaco,monospace;color:#1e1e1e;padding:.8em 1em;border:1px solid #ddd;border-radius:4px}.wp-block-embed figcaption{color:#555;font-size:13px;text-align:center}.is-dark-theme .wp-block-embed figcaption{color:hsla(0,0%,100%,.65)}.blocks-gallery-caption{color:#555;font-size:13px;text-align:center}.is-dark-theme .blocks-gallery-caption{color:hsla(0,0%,100%,.65)}.wp-block-image figcaption{color:#555;font-size:13px;text-align:center}.is-dark-theme .wp-block-image figcaption{color:hsla(0,0%,100%,.65)}.wp-block-pullquote{border-top:4px solid;border-bottom:4px solid;margin-bottom:1.75em;color:currentColor}.wp-block-pullquote__citation,.wp-block-pullquote cite,.wp-block-pullquote footer{color:currentColor;text-transform:uppercase;font-size:.8125em;font-style:normal}.wp-block-quote{border-left:.25em solid;margin:0 0 1.75em;padding-left:1em}.wp-block-quote cite,.wp-block-quote footer{color:currentColor;font-size:.8125em;position:relative;font-style:normal}.wp-block-quote.has-text-align-right{border-left:none;border-right:.25em solid;padding-left:0;padding-right:1em}.wp-block-quote.has-text-align-center{border:none;padding-left:0}.wp-block-quote.is-large,.wp-block-quote.is-style-large,.wp-block-quote.is-style-plain{border:none}.wp-block-search .wp-block-search__label{font-weight:700}.wp-block-group:where(.has-background){padding:1.25em 2.375em}.wp-block-separator{border:none;border-bottom:2px solid;margin-left:auto;margin-right:auto;opacity:.4}.wp-block-separator:not(.is-style-wide):not(.is-style-dots){width:100px}.wp-block-separator.has-background:not(.is-style-dots){border-bottom:none;height:1px}.wp-block-separator.has-background:not(.is-style-wide):not(.is-style-dots){height:2px}.wp-block-table thead{border-bottom:3px solid}.wp-block-table tfoot{border-top:3px solid}.wp-block-table td,.wp-block-table th{padding:.5em;border:1px solid;word-break:normal}.wp-block-table figcaption{color:#555;font-size:13px;text-align:center}.is-dark-theme .wp-block-table figcaption{color:hsla(0,0%,100%,.65)}.wp-block-video figcaption{color:#555;font-size:13px;text-align:center}.is-dark-theme .wp-block-video figcaption{color:hsla(0,0%,100%,.65)}.wp-block-template-part.has-background{padding:1.25em 2.375em;margin-top:0;margin-bottom:0}
+</style>
+<style id='global-styles-inline-css'>
+body{--wp--preset--color--black: #000000;--wp--preset--color--cyan-bluish-gray: #abb8c3;--wp--preset--color--white: #fff;--wp--preset--color--pale-pink: #f78da7;--wp--preset--color--vivid-red: #cf2e2e;--wp--preset--color--luminous-vivid-orange: #ff6900;--wp--preset--color--luminous-vivid-amber: #fcb900;--wp--preset--color--light-green-cyan: #7bdcb5;--wp--preset--color--vivid-green-cyan: #00d084;--wp--preset--color--pale-cyan-blue: #8ed1fc;--wp--preset--color--vivid-cyan-blue: #0693e3;--wp--preset--color--vivid-purple: #9b51e0;--wp--preset--color--dark-gray: #111;--wp--preset--color--light-gray: #f1f1f1;--wp--preset--color--yellow: #f4ca16;--wp--preset--color--dark-brown: #352712;--wp--preset--color--medium-pink: #e53b51;--wp--preset--color--light-pink: #ffe5d1;--wp--preset--color--dark-purple: #2e2256;--wp--preset--color--purple: #674970;--wp--preset--color--blue-gray: #22313f;--wp--preset--color--bright-blue: #55c3dc;--wp--preset--color--light-blue: #e9f2f9;--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple: linear-gradient(135deg,rgba(6,147,227,1) 0%,rgb(155,81,224) 100%);--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan: linear-gradient(135deg,rgb(122,220,180) 0%,rgb(0,208,130) 100%);--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange: linear-gradient(135deg,rgba(252,185,0,1) 0%,rgba(255,105,0,1) 100%);--wp--preset--gradient--luminous-vivid-orange-to-vivid-red: linear-gradient(135deg,rgba(255,105,0,1) 0%,rgb(207,46,46) 100%);--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray: linear-gradient(135deg,rgb(238,238,238) 0%,rgb(169,184,195) 100%);--wp--preset--gradient--cool-to-warm-spectrum: linear-gradient(135deg,rgb(74,234,220) 0%,rgb(151,120,209) 20%,rgb(207,42,186) 40%,rgb(238,44,130) 60%,rgb(251,105,98) 80%,rgb(254,248,76) 100%);--wp--preset--gradient--blush-light-purple: linear-gradient(135deg,rgb(255,206,236) 0%,rgb(152,150,240) 100%);--wp--preset--gradient--blush-bordeaux: linear-gradient(135deg,rgb(254,205,165) 0%,rgb(254,45,45) 50%,rgb(107,0,62) 100%);--wp--preset--gradient--luminous-dusk: linear-gradient(135deg,rgb(255,203,112) 0%,rgb(199,81,192) 50%,rgb(65,88,208) 100%);--wp--preset--gradient--pale-ocean: linear-gradient(135deg,rgb(255,245,203) 0%,rgb(182,227,212) 50%,rgb(51,167,181) 100%);--wp--preset--gradient--electric-grass: linear-gradient(135deg,rgb(202,248,128) 0%,rgb(113,206,126) 100%);--wp--preset--gradient--midnight: linear-gradient(135deg,rgb(2,3,129) 0%,rgb(40,116,252) 100%);--wp--preset--duotone--dark-grayscale: url('#wp-duotone-dark-grayscale');--wp--preset--duotone--grayscale: url('#wp-duotone-grayscale');--wp--preset--duotone--purple-yellow: url('#wp-duotone-purple-yellow');--wp--preset--duotone--blue-red: url('#wp-duotone-blue-red');--wp--preset--duotone--midnight: url('#wp-duotone-midnight');--wp--preset--duotone--magenta-yellow: url('#wp-duotone-magenta-yellow');--wp--preset--duotone--purple-green: url('#wp-duotone-purple-green');--wp--preset--duotone--blue-orange: url('#wp-duotone-blue-orange');--wp--preset--font-size--small: 13px;--wp--preset--font-size--medium: 20px;--wp--preset--font-size--large: 36px;--wp--preset--font-size--x-large: 42px;}.has-black-color{color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-color{color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-color{color: var(--wp--preset--color--white) !important;}.has-pale-pink-color{color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-color{color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-color{color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-color{color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-color{color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-color{color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-color{color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-color{color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-color{color: var(--wp--preset--color--vivid-purple) !important;}.has-black-background-color{background-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-background-color{background-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-background-color{background-color: var(--wp--preset--color--white) !important;}.has-pale-pink-background-color{background-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-background-color{background-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-background-color{background-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-background-color{background-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-background-color{background-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-background-color{background-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-background-color{background-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-background-color{background-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-background-color{background-color: var(--wp--preset--color--vivid-purple) !important;}.has-black-border-color{border-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-border-color{border-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-border-color{border-color: var(--wp--preset--color--white) !important;}.has-pale-pink-border-color{border-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-border-color{border-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-border-color{border-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-border-color{border-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-border-color{border-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-border-color{border-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-border-color{border-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-border-color{border-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-border-color{border-color: var(--wp--preset--color--vivid-purple) !important;}.has-vivid-cyan-blue-to-vivid-purple-gradient-background{background: var(--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple) !important;}.has-light-green-cyan-to-vivid-green-cyan-gradient-background{background: var(--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan) !important;}.has-luminous-vivid-amber-to-luminous-vivid-orange-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange) !important;}.has-luminous-vivid-orange-to-vivid-red-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-orange-to-vivid-red) !important;}.has-very-light-gray-to-cyan-bluish-gray-gradient-background{background: var(--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray) !important;}.has-cool-to-warm-spectrum-gradient-background{background: var(--wp--preset--gradient--cool-to-warm-spectrum) !important;}.has-blush-light-purple-gradient-background{background: var(--wp--preset--gradient--blush-light-purple) !important;}.has-blush-bordeaux-gradient-background{background: var(--wp--preset--gradient--blush-bordeaux) !important;}.has-luminous-dusk-gradient-background{background: var(--wp--preset--gradient--luminous-dusk) !important;}.has-pale-ocean-gradient-background{background: var(--wp--preset--gradient--pale-ocean) !important;}.has-electric-grass-gradient-background{background: var(--wp--preset--gradient--electric-grass) !important;}.has-midnight-gradient-background{background: var(--wp--preset--gradient--midnight) !important;}.has-small-font-size{font-size: var(--wp--preset--font-size--small) !important;}.has-medium-font-size{font-size: var(--wp--preset--font-size--medium) !important;}.has-large-font-size{font-size: var(--wp--preset--font-size--large) !important;}.has-x-large-font-size{font-size: var(--wp--preset--font-size--x-large) !important;}
+</style>
+<link rel='stylesheet' id='wcjp-frontend.css-css' href='https://lemire.me/blog/wp-content/plugins/custom-css-js-php/assets/css/wcjp-frontend.css?ver=5.9.3' media='all' />
+<link crossorigin="anonymous" rel='stylesheet' id='twentyfifteen-fonts-css' href='https://fonts.googleapis.com/css?family=Noto+Sans%3A400italic%2C700italic%2C400%2C700%7CNoto+Serif%3A400italic%2C700italic%2C400%2C700%7CInconsolata%3A400%2C700&#038;subset=latin%2Clatin-ext&#038;display=fallback' media='all' />
+<link rel='stylesheet' id='genericons-css' href='https://lemire.me/blog/wp-content/themes/twentyfifteen/genericons/genericons.css?ver=20201208' media='all' />
+<link rel='stylesheet' id='twentyfifteen-style-css' href='https://lemire.me/blog/wp-content/themes/twentyfifteen/style.css?ver=20201208' media='all' />
+<style id='twentyfifteen-style-inline-css'>
+	/* Color Scheme */
+
+	/* Background Color */
+	body {
+		background-color: #e9f2f9;
+	}
+
+	/* Sidebar Background Color */
+	body:before,
+	.site-header {
+		background-color: #55c3dc;
+	}
+
+	/* Box Background Color */
+	.post-navigation,
+	.pagination,
+	.secondary,
+	.site-footer,
+	.hentry,
+	.page-header,
+	.page-content,
+	.comments-area,
+	.widecolumn {
+		background-color: #ffffff;
+	}
+
+	/* Box Background Color */
+	button,
+	input[type="button"],
+	input[type="reset"],
+	input[type="submit"],
+	.pagination .prev,
+	.pagination .next,
+	.widget_calendar tbody a,
+	.widget_calendar tbody a:hover,
+	.widget_calendar tbody a:focus,
+	.page-links a,
+	.page-links a:hover,
+	.page-links a:focus,
+	.sticky-post {
+		color: #ffffff;
+	}
+
+	/* Main Text Color */
+	button,
+	input[type="button"],
+	input[type="reset"],
+	input[type="submit"],
+	.pagination .prev,
+	.pagination .next,
+	.widget_calendar tbody a,
+	.page-links a,
+	.sticky-post {
+		background-color: #22313f;
+	}
+
+	/* Main Text Color */
+	body,
+	blockquote cite,
+	blockquote small,
+	a,
+	.dropdown-toggle:after,
+	.image-navigation a:hover,
+	.image-navigation a:focus,
+	.comment-navigation a:hover,
+	.comment-navigation a:focus,
+	.widget-title,
+	.entry-footer a:hover,
+	.entry-footer a:focus,
+	.comment-metadata a:hover,
+	.comment-metadata a:focus,
+	.pingback .edit-link a:hover,
+	.pingback .edit-link a:focus,
+	.comment-list .reply a:hover,
+	.comment-list .reply a:focus,
+	.site-info a:hover,
+	.site-info a:focus {
+		color: #22313f;
+	}
+
+	/* Main Text Color */
+	.entry-content a,
+	.entry-summary a,
+	.page-content a,
+	.comment-content a,
+	.pingback .comment-body > a,
+	.author-description a,
+	.taxonomy-description a,
+	.textwidget a,
+	.entry-footer a:hover,
+	.comment-metadata a:hover,
+	.pingback .edit-link a:hover,
+	.comment-list .reply a:hover,
+	.site-info a:hover {
+		border-color: #22313f;
+	}
+
+	/* Secondary Text Color */
+	button:hover,
+	button:focus,
+	input[type="button"]:hover,
+	input[type="button"]:focus,
+	input[type="reset"]:hover,
+	input[type="reset"]:focus,
+	input[type="submit"]:hover,
+	input[type="submit"]:focus,
+	.pagination .prev:hover,
+	.pagination .prev:focus,
+	.pagination .next:hover,
+	.pagination .next:focus,
+	.widget_calendar tbody a:hover,
+	.widget_calendar tbody a:focus,
+	.page-links a:hover,
+	.page-links a:focus {
+		background-color: #22313f; /* Fallback for IE7 and IE8 */
+		background-color: rgba( 34, 49, 63, 0.7);
+	}
+
+	/* Secondary Text Color */
+	blockquote,
+	a:hover,
+	a:focus,
+	.main-navigation .menu-item-description,
+	.post-navigation .meta-nav,
+	.post-navigation a:hover .post-title,
+	.post-navigation a:focus .post-title,
+	.image-navigation,
+	.image-navigation a,
+	.comment-navigation,
+	.comment-navigation a,
+	.widget,
+	.author-heading,
+	.entry-footer,
+	.entry-footer a,
+	.taxonomy-description,
+	.page-links > .page-links-title,
+	.entry-caption,
+	.comment-author,
+	.comment-metadata,
+	.comment-metadata a,
+	.pingback .edit-link,
+	.pingback .edit-link a,
+	.post-password-form label,
+	.comment-form label,
+	.comment-notes,
+	.comment-awaiting-moderation,
+	.logged-in-as,
+	.form-allowed-tags,
+	.no-comments,
+	.site-info,
+	.site-info a,
+	.wp-caption-text,
+	.gallery-caption,
+	.comment-list .reply a,
+	.widecolumn label,
+	.widecolumn .mu_register label {
+		color: #22313f; /* Fallback for IE7 and IE8 */
+		color: rgba( 34, 49, 63, 0.7);
+	}
+
+	/* Secondary Text Color */
+	blockquote,
+	.logged-in-as a:hover,
+	.comment-author a:hover {
+		border-color: #22313f; /* Fallback for IE7 and IE8 */
+		border-color: rgba( 34, 49, 63, 0.7);
+	}
+
+	/* Border Color */
+	hr,
+	.dropdown-toggle:hover,
+	.dropdown-toggle:focus {
+		background-color: #22313f; /* Fallback for IE7 and IE8 */
+		background-color: rgba( 34, 49, 63, 0.1);
+	}
+
+	/* Border Color */
+	pre,
+	abbr[title],
+	table,
+	th,
+	td,
+	input,
+	textarea,
+	.main-navigation ul,
+	.main-navigation li,
+	.post-navigation,
+	.post-navigation div + div,
+	.pagination,
+	.comment-navigation,
+	.widget li,
+	.widget_categories .children,
+	.widget_nav_menu .sub-menu,
+	.widget_pages .children,
+	.site-header,
+	.site-footer,
+	.hentry + .hentry,
+	.author-info,
+	.entry-content .page-links a,
+	.page-links > span,
+	.page-header,
+	.comments-area,
+	.comment-list + .comment-respond,
+	.comment-list article,
+	.comment-list .pingback,
+	.comment-list .trackback,
+	.comment-list .reply a,
+	.no-comments {
+		border-color: #22313f; /* Fallback for IE7 and IE8 */
+		border-color: rgba( 34, 49, 63, 0.1);
+	}
+
+	/* Border Focus Color */
+	a:focus,
+	button:focus,
+	input:focus {
+		outline-color: #22313f; /* Fallback for IE7 and IE8 */
+		outline-color: rgba( 34, 49, 63, 0.3);
+	}
+
+	input:focus,
+	textarea:focus {
+		border-color: #22313f; /* Fallback for IE7 and IE8 */
+		border-color: rgba( 34, 49, 63, 0.3);
+	}
+
+	/* Sidebar Link Color */
+	.secondary-toggle:before {
+		color: #ffffff;
+	}
+
+	.site-title a,
+	.site-description {
+		color: #ffffff;
+	}
+
+	/* Sidebar Text Color */
+	.site-title a:hover,
+	.site-title a:focus {
+		color: rgba( 255, 255, 255, 0.7);
+	}
+
+	/* Sidebar Border Color */
+	.secondary-toggle {
+		border-color: #ffffff; /* Fallback for IE7 and IE8 */
+		border-color: rgba( 255, 255, 255, 0.1);
+	}
+
+	/* Sidebar Border Focus Color */
+	.secondary-toggle:hover,
+	.secondary-toggle:focus {
+		border-color: #ffffff; /* Fallback for IE7 and IE8 */
+		border-color: rgba( 255, 255, 255, 0.3);
+	}
+
+	.site-title a {
+		outline-color: #ffffff; /* Fallback for IE7 and IE8 */
+		outline-color: rgba( 255, 255, 255, 0.3);
+	}
+
+	/* Meta Background Color */
+	.entry-footer {
+		background-color: #f1f1f1;
+	}
+
+	@media screen and (min-width: 38.75em) {
+		/* Main Text Color */
+		.page-header {
+			border-color: #22313f;
+		}
+	}
+
+	@media screen and (min-width: 59.6875em) {
+		/* Make sure its transparent on desktop */
+		.site-header,
+		.secondary {
+			background-color: transparent;
+		}
+
+		/* Sidebar Background Color */
+		.widget button,
+		.widget input[type="button"],
+		.widget input[type="reset"],
+		.widget input[type="submit"],
+		.widget_calendar tbody a,
+		.widget_calendar tbody a:hover,
+		.widget_calendar tbody a:focus {
+			color: #55c3dc;
+		}
+
+		/* Sidebar Link Color */
+		.secondary a,
+		.dropdown-toggle:after,
+		.widget-title,
+		.widget blockquote cite,
+		.widget blockquote small {
+			color: #ffffff;
+		}
+
+		.widget button,
+		.widget input[type="button"],
+		.widget input[type="reset"],
+		.widget input[type="submit"],
+		.widget_calendar tbody a {
+			background-color: #ffffff;
+		}
+
+		.textwidget a {
+			border-color: #ffffff;
+		}
+
+		/* Sidebar Text Color */
+		.secondary a:hover,
+		.secondary a:focus,
+		.main-navigation .menu-item-description,
+		.widget,
+		.widget blockquote,
+		.widget .wp-caption-text,
+		.widget .gallery-caption {
+			color: rgba( 255, 255, 255, 0.7);
+		}
+
+		.widget button:hover,
+		.widget button:focus,
+		.widget input[type="button"]:hover,
+		.widget input[type="button"]:focus,
+		.widget input[type="reset"]:hover,
+		.widget input[type="reset"]:focus,
+		.widget input[type="submit"]:hover,
+		.widget input[type="submit"]:focus,
+		.widget_calendar tbody a:hover,
+		.widget_calendar tbody a:focus {
+			background-color: rgba( 255, 255, 255, 0.7);
+		}
+
+		.widget blockquote {
+			border-color: rgba( 255, 255, 255, 0.7);
+		}
+
+		/* Sidebar Border Color */
+		.main-navigation ul,
+		.main-navigation li,
+		.widget input,
+		.widget textarea,
+		.widget table,
+		.widget th,
+		.widget td,
+		.widget pre,
+		.widget li,
+		.widget_categories .children,
+		.widget_nav_menu .sub-menu,
+		.widget_pages .children,
+		.widget abbr[title] {
+			border-color: rgba( 255, 255, 255, 0.1);
+		}
+
+		.dropdown-toggle:hover,
+		.dropdown-toggle:focus,
+		.widget hr {
+			background-color: rgba( 255, 255, 255, 0.1);
+		}
+
+		.widget input:focus,
+		.widget textarea:focus {
+			border-color: rgba( 255, 255, 255, 0.3);
+		}
+
+		.sidebar a:focus,
+		.dropdown-toggle:focus {
+			outline-color: rgba( 255, 255, 255, 0.3);
+		}
+	}
+
+		/* Custom Header Background Color */
+		body:before,
+		.site-header {
+			background-color: #0a89cc;
+		}
+
+		@media screen and (min-width: 59.6875em) {
+			.site-header,
+			.secondary {
+				background-color: transparent;
+			}
+
+			.widget button,
+			.widget input[type="button"],
+			.widget input[type="reset"],
+			.widget input[type="submit"],
+			.widget_calendar tbody a,
+			.widget_calendar tbody a:hover,
+			.widget_calendar tbody a:focus {
+				color: #0a89cc;
+			}
+		}
+	
+</style>
+<link rel='stylesheet' id='twentyfifteen-block-style-css' href='https://lemire.me/blog/wp-content/themes/twentyfifteen/css/blocks.css?ver=20190102' media='all' />
+<!--[if lt IE 9]>
+<link rel='stylesheet' id='twentyfifteen-ie-css'  href='https://lemire.me/blog/wp-content/themes/twentyfifteen/css/ie.css?ver=20170916' media='all' />
+<![endif]-->
+<!--[if lt IE 8]>
+<link rel='stylesheet' id='twentyfifteen-ie7-css'  href='https://lemire.me/blog/wp-content/themes/twentyfifteen/css/ie7.css?ver=20141210' media='all' />
+<![endif]-->
+<script src='https://lemire.me/blog/wp-includes/js/jquery/jquery.min.js?ver=3.6.0' id='jquery-core-js'></script>
+<script src='https://lemire.me/blog/wp-includes/js/jquery/jquery-migrate.min.js?ver=3.3.2' id='jquery-migrate-js'></script>
+<link rel="https://api.w.org/" href="https://lemire.me/blog/wp-json/" /><link rel="alternate" type="application/json" href="https://lemire.me/blog/wp-json/wp/v2/posts/18317" /><link rel="EditURI" type="application/rsd+xml" title="RSD" href="https://lemire.me/blog/xmlrpc.php?rsd" />
+<link rel="wlwmanifest" type="application/wlwmanifest+xml" href="https://lemire.me/blog/wp-includes/wlwmanifest.xml" />
+<meta name="generator" content="WordPress 5.9.3" />
+<link rel="canonical" href="https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/" />
+<link rel='shortlink' href='https://lemire.me/blog/?p=18317' />
+<link rel="alternate" type="application/json+oembed" href="https://lemire.me/blog/wp-json/oembed/1.0/embed?url=https%3A%2F%2Flemire.me%2Fblog%2F2020%2F03%2F31%2Fwe-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better%2F" />
+<link rel="alternate" type="text/xml+oembed" href="https://lemire.me/blog/wp-json/oembed/1.0/embed?url=https%3A%2F%2Flemire.me%2Fblog%2F2020%2F03%2F31%2Fwe-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better%2F&#038;format=xml" />
+
+<style>
+table {  
+    color: #333; /* Lighten up font color */
+    font-family: Helvetica, Arial, sans-serif; /* Nicer font */
+    width: 95%; 
+    border-collapse: 
+    collapse; border-spacing: 0; 
+}
+
+td, th { border: 1px solid #CCC; height: 30px; } /* Make cells a bit taller */
+
+th {  
+    background: #F3F3F3; /* Light grey background */
+    font-weight: bold; /* Make sure they're bold */
+}
+
+td {  
+    background: #FAFAFA; /* Lighter grey background */
+    text-align: center; /* Center our text */
+}
+
+</style>
+
+
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/" />
+<meta property="og:title" content="We released simdjson 0.3: the fastest JSON parser in the world is even better!" />
+<meta property="og:description" content="Last year (2019), we released the simjson library. It is a C++ library available under a liberal license (Apache) that can parse JSON documents very fast. How fast? We reach and exceed 3 gigabytes per second in many instances. It can also parse millions of small JSON documents per second. The new version is much &hellip; Continue reading We released simdjson 0.3: the fastest JSON parser in the world is even better!" />
+<meta property="og:site_name" content="Daniel Lemire&#039;s blog" />
+<meta property="og:image" content="https://lemire.me/img/portrait2018facebook.jpg" />
+<meta property="og:image:alt" content="" />
+<meta property="og:image:width" content="" />
+<meta property="og:image:height" content="" />
+<meta itemscope itemtype="article" />
+<meta itemprop="description" content="Last year (2019), we released the simjson library. It is a C++ library available under a liberal license (Apache) that can parse JSON documents very fast. How fast? We reach and exceed 3 gigabytes per second in many instances. It can also parse millions of small JSON documents per second. The new version is much &hellip; Continue reading We released simdjson 0.3: the fastest JSON parser in the world is even better!" />
+<meta itemprop="image" content="https://lemire.me/img/portrait2018facebook.jpg" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:url" content="https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/" />
+<meta name="twitter:title" content="We released simdjson 0.3: the fastest JSON parser in the world is even better!" />
+<meta name="twitter:description" content="Last year (2019), we released the simjson library. It is a C++ library available under a liberal license (Apache) that can parse JSON documents very fast. How fast? We reach and exceed 3 gigabytes per second in many instances. It can also parse millions of small JSON documents per second. The new version is much &hellip; Continue reading We released simdjson 0.3: the fastest JSON parser in the world is even better!" />
+<meta name="twitter:image" content="" />
+<style> .entry-footer .byline{ display:none !important; } </style><style> .entry-meta .byline{ display:none !important; } </style><style> .entry-footer .posted-on{ display:none !important; } </style><style> .entry-meta .entry-date{ display:none !important; } </style><style> .entry-meta .date{ display:none !important; } </style><style> .entry-footer .cat-links{ display:none !important; } </style><style> .entry-meta .cat-links{ display:none !important; } </style><style> .entry-meta .categories-links{ display:none !important; } </style><style>.recentcomments a{display:inline !important;padding:0 !important;margin:0 !important;}</style><link rel="amphtml" href="https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/?amp"><link rel="icon" href="https://lemire.me/blog/wp-content/uploads/2015/10/profile2011_152-150x150.jpg" sizes="32x32" />
+<link rel="icon" href="https://lemire.me/blog/wp-content/uploads/2015/10/profile2011_152.jpg" sizes="192x192" />
+<link rel="apple-touch-icon" href="https://lemire.me/blog/wp-content/uploads/2015/10/profile2011_152.jpg" />
+<meta name="msapplication-TileImage" content="https://lemire.me/blog/wp-content/uploads/2015/10/profile2011_152.jpg" />
+</head>
+<body class="post-template-default single single-post postid-18317 single-format-standard wp-embed-responsive">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 0 0" width="0" height="0" focusable="false" role="none" style="visibility: hidden; position: absolute; left: -9999px; overflow: hidden;"><defs><filter id="wp-duotone-dark-grayscale"><feColorMatrix color-interpolation-filters="sRGB" type="matrix" values=" .299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 " /><feComponentTransfer color-interpolation-filters="sRGB"><feFuncR type="table" tableValues="0 0.49803921568627" /><feFuncG type="table" tableValues="0 0.49803921568627" /><feFuncB type="table" tableValues="0 0.49803921568627" /><feFuncA type="table" tableValues="1 1" /></feComponentTransfer><feComposite in2="SourceGraphic" operator="in" /></filter></defs></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 0 0" width="0" height="0" focusable="false" role="none" style="visibility: hidden; position: absolute; left: -9999px; overflow: hidden;"><defs><filter id="wp-duotone-grayscale"><feColorMatrix color-interpolation-filters="sRGB" type="matrix" values=" .299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 " /><feComponentTransfer color-interpolation-filters="sRGB"><feFuncR type="table" tableValues="0 1" /><feFuncG type="table" tableValues="0 1" /><feFuncB type="table" tableValues="0 1" /><feFuncA type="table" tableValues="1 1" /></feComponentTransfer><feComposite in2="SourceGraphic" operator="in" /></filter></defs></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 0 0" width="0" height="0" focusable="false" role="none" style="visibility: hidden; position: absolute; left: -9999px; overflow: hidden;"><defs><filter id="wp-duotone-purple-yellow"><feColorMatrix color-interpolation-filters="sRGB" type="matrix" values=" .299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 " /><feComponentTransfer color-interpolation-filters="sRGB"><feFuncR type="table" tableValues="0.54901960784314 0.98823529411765" /><feFuncG type="table" tableValues="0 1" /><feFuncB type="table" tableValues="0.71764705882353 0.25490196078431" /><feFuncA type="table" tableValues="1 1" /></feComponentTransfer><feComposite in2="SourceGraphic" operator="in" /></filter></defs></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 0 0" width="0" height="0" focusable="false" role="none" style="visibility: hidden; position: absolute; left: -9999px; overflow: hidden;"><defs><filter id="wp-duotone-blue-red"><feColorMatrix color-interpolation-filters="sRGB" type="matrix" values=" .299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 " /><feComponentTransfer color-interpolation-filters="sRGB"><feFuncR type="table" tableValues="0 1" /><feFuncG type="table" tableValues="0 0.27843137254902" /><feFuncB type="table" tableValues="0.5921568627451 0.27843137254902" /><feFuncA type="table" tableValues="1 1" /></feComponentTransfer><feComposite in2="SourceGraphic" operator="in" /></filter></defs></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 0 0" width="0" height="0" focusable="false" role="none" style="visibility: hidden; position: absolute; left: -9999px; overflow: hidden;"><defs><filter id="wp-duotone-midnight"><feColorMatrix color-interpolation-filters="sRGB" type="matrix" values=" .299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 " /><feComponentTransfer color-interpolation-filters="sRGB"><feFuncR type="table" tableValues="0 0" /><feFuncG type="table" tableValues="0 0.64705882352941" /><feFuncB type="table" tableValues="0 1" /><feFuncA type="table" tableValues="1 1" /></feComponentTransfer><feComposite in2="SourceGraphic" operator="in" /></filter></defs></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 0 0" width="0" height="0" focusable="false" role="none" style="visibility: hidden; position: absolute; left: -9999px; overflow: hidden;"><defs><filter id="wp-duotone-magenta-yellow"><feColorMatrix color-interpolation-filters="sRGB" type="matrix" values=" .299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 " /><feComponentTransfer color-interpolation-filters="sRGB"><feFuncR type="table" tableValues="0.78039215686275 1" /><feFuncG type="table" tableValues="0 0.94901960784314" /><feFuncB type="table" tableValues="0.35294117647059 0.47058823529412" /><feFuncA type="table" tableValues="1 1" /></feComponentTransfer><feComposite in2="SourceGraphic" operator="in" /></filter></defs></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 0 0" width="0" height="0" focusable="false" role="none" style="visibility: hidden; position: absolute; left: -9999px; overflow: hidden;"><defs><filter id="wp-duotone-purple-green"><feColorMatrix color-interpolation-filters="sRGB" type="matrix" values=" .299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 " /><feComponentTransfer color-interpolation-filters="sRGB"><feFuncR type="table" tableValues="0.65098039215686 0.40392156862745" /><feFuncG type="table" tableValues="0 1" /><feFuncB type="table" tableValues="0.44705882352941 0.4" /><feFuncA type="table" tableValues="1 1" /></feComponentTransfer><feComposite in2="SourceGraphic" operator="in" /></filter></defs></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 0 0" width="0" height="0" focusable="false" role="none" style="visibility: hidden; position: absolute; left: -9999px; overflow: hidden;"><defs><filter id="wp-duotone-blue-orange"><feColorMatrix color-interpolation-filters="sRGB" type="matrix" values=" .299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 " /><feComponentTransfer color-interpolation-filters="sRGB"><feFuncR type="table" tableValues="0.098039215686275 1" /><feFuncG type="table" tableValues="0 0.66274509803922" /><feFuncB type="table" tableValues="0.84705882352941 0.41960784313725" /><feFuncA type="table" tableValues="1 1" /></feComponentTransfer><feComposite in2="SourceGraphic" operator="in" /></filter></defs></svg><div id="page" class="hfeed site">
+<a class="skip-link screen-reader-text" href="#content">Skip to content</a>
+<div id="sidebar" class="sidebar">
+<header id="masthead" class="site-header" role="banner">
+<div class="site-branding">
+<p class="site-title"><a href="https://lemire.me/blog/" rel="home">Daniel Lemire&#039;s blog</a></p>
+<p class="site-description">Daniel Lemire is a computer science professor at the University of Quebec (TELUQ) in Montreal. His research is focused on software performance and data engineering. He is a techno-optimist and a free-speech advocate.</p>
+<button class="secondary-toggle">Menu and widgets</button>
+</div>
+</header>
+<div id="secondary" class="secondary">
+<nav id="site-navigation" class="main-navigation" role="navigation">
+<div class="menu-main-links-container"><ul id="menu-main-links" class="nav-menu"><li id="menu-item-13529" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-13529"><a href="https://lemire.me/en/">My home page</a></li>
+<li id="menu-item-13530" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-13530"><a href="https://lemire.me/en/#publications">My papers</a></li>
+<li id="menu-item-13531" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-13531"><a href="https://github.com/lemire">My software</a></li>
+</ul></div> </nav>
+<div id="widget-area" class="widget-area" role="complementary">
+<aside id="custom_html-7" class="widget_text widget widget_custom_html"><h2 class="widget-title">Subscribe</h2><div class="textwidget custom-html-widget">Join 12,500 subscribers:
+<link href="//cdn-images.mailchimp.com/embedcode/classic-10_7.css" rel="stylesheet" type="text/css">
+<div id="mc_embed_signup">
+<form action="https://lemire.us1.list-manage.com/subscribe/post?u=d2a811d4dc215f3a7ca2db0cd&amp;id=a7e34b951f" method="post" id="mc-embedded-subscribe-form" name="mc-embedded-subscribe-form" class="validate" target="_blank" novalidate>
+<div id="mc_embed_signup_scroll">
+<div class="mc-field-group">
+<label for="mce-EMAIL">Email Address
+</label>
+<input type="email" value="" name="EMAIL" class="required email" id="mce-EMAIL">
+</div>
+<div id="mce-responses" class="clear">
+<div class="response" id="mce-error-response" style="display:none"></div>
+<div class="response" id="mce-success-response" style="display:none"></div>
+</div> 
+<div style="position: absolute; left: -5000px;" aria-hidden="true"><input type="text" name="b_d2a811d4dc215f3a7ca2db0cd_a7e34b951f" tabindex="-1" value=""></div>
+<div class="clear;border:white ,1em;"><input type="submit" value="Subscribe by email" name="subscribe" id="mc-embedded-subscribe" class="button" style="background:none"></div>
+</div>
+</form>
+</div>
+<script type='text/javascript' src='//s3.amazonaws.com/downloads.mailchimp.com/js/mc-validate.js'></script><script type='text/javascript'>(function($) {window.fnames = new Array(); window.ftypes = new Array();fnames[0]='EMAIL';ftypes[0]='email';fnames[1]='FNAME';ftypes[1]='text';fnames[2]='LNAME';ftypes[2]='text';fnames[3]='ADDRESS';ftypes[3]='address';fnames[4]='PHONE';ftypes[4]='phone';fnames[5]='BIRTHDAY';ftypes[5]='birthday';}(jQuery));var $mcj = jQuery.noConflict(true);</script>
+
+You can also follow this blog on <a href="https://t.me/dlemire">telegram</a>.
+</div></aside><aside id="search-3" class="widget widget_search"><form role="search" method="get" class="search-form" action="https://lemire.me/blog/">
+<label>
+<span class="screen-reader-text">Search for:</span>
+<input type="search" class="search-field" placeholder="Search &hellip;" value="" name="s" />
+</label>
+<input type="submit" class="search-submit screen-reader-text" value="Search" />
+</form></aside><aside id="custom_html-5" class="widget_text widget widget_custom_html"><h2 class="widget-title">Support my work!</h2><div class="textwidget custom-html-widget">I do not accept any advertisement. However, you can support the blog with <a href="https://www.paypal.me/daniellemirephd/25">donations through paypal</a>. Please consider getting in touch if you are a supporter so that I can thank you.
+<a href="https://github.com/sponsors/lemire">You can also support my work on GitHub</a>.</div></aside>
+<aside id="recent-posts-2" class="widget widget_recent_entries">
+<h2 class="widget-title">Recent Posts</h2><nav aria-label="Recent Posts">
+<ul>
+<li>
+<a href="https://lemire.me/blog/2022/05/25/parsing-json-faster-with-intel-avx-512/">Parsing JSON faster with Intel AVX-512</a>
+</li>
+<li>
+<a href="https://lemire.me/blog/2022/05/13/avoid-exception-throwing-in-performance-sensitive-code/">Avoid exception throwing in performance-sensitive code</a>
+</li>
+<li>
+<a href="https://lemire.me/blog/2022/05/10/faster-bitset-decoding-using-intel-avx-512/">Faster bitset decoding using Intel AVX-512</a>
+</li>
+<li>
+<a href="https://lemire.me/blog/2022/05/06/fast-bitset-decoding-using-intel-avx-512/">Fast bitset decoding using Intel AVX-512</a>
+</li>
+<li>
+<a href="https://lemire.me/blog/2022/04/28/removing-characters-from-strings-faster-with-avx-512/">Removing characters from strings faster with AVX-512</a>
+</li>
+</ul>
+</nav></aside><aside id="recent-comments-3" class="widget widget_recent_comments"><h2 class="widget-title">Recent Comments</h2><nav aria-label="Recent Comments"><ul id="recentcomments"><li class="recentcomments"><span class="comment-author-link">me</span> on <a href="https://lemire.me/blog/2022/05/13/avoid-exception-throwing-in-performance-sensitive-code/#comment-634255">Avoid exception throwing in performance-sensitive code</a></li><li class="recentcomments"><span class="comment-author-link"><a href="https://lemire.me/en/" rel='external nofollow ugc' class='url'>Daniel Lemire</a></span> on <a href="https://lemire.me/blog/2022/05/13/avoid-exception-throwing-in-performance-sensitive-code/#comment-633547">Avoid exception throwing in performance-sensitive code</a></li><li class="recentcomments"><span class="comment-author-link">Joern Engel</span> on <a href="https://lemire.me/blog/2022/05/13/avoid-exception-throwing-in-performance-sensitive-code/#comment-633518">Avoid exception throwing in performance-sensitive code</a></li><li class="recentcomments"><span class="comment-author-link">grid</span> on <a href="https://lemire.me/blog/2017/07/07/are-your-strings-immutable/#comment-633494">Are your strings immutable?</a></li><li class="recentcomments"><span class="comment-author-link">krytyczna</span> on <a href="https://lemire.me/blog/2017/11/10/should-computer-scientists-keep-the-lena-picture/#comment-633465">Should computer scientists keep the Lena picture?</a></li></ul></nav></aside><aside id="pages-3" class="widget widget_pages"><h2 class="widget-title">Pages</h2><nav aria-label="Pages">
+<ul>
+<li class="page_item page-item-14034"><a href="https://lemire.me/blog/a-short-history-of-technology/">A short history of technology</a></li>
+<li class="page_item page-item-345"><a href="https://lemire.me/blog/about-me/">About me</a></li>
+<li class="page_item page-item-4194"><a href="https://lemire.me/blog/book-recommendations/">Book recommendations</a></li>
+<li class="page_item page-item-18957"><a href="https://lemire.me/blog/cognitive-biases/">Cognitive biases</a></li>
+<li class="page_item page-item-18798"><a href="https://lemire.me/blog/interviews-and-talks/">Interviews and talks</a></li>
+<li class="page_item page-item-12110"><a href="https://lemire.me/blog/my-bets/">My bets</a></li>
+<li class="page_item page-item-14029"><a href="https://lemire.me/blog/my-favorite-articles/">My favorite articles</a></li>
+<li class="page_item page-item-19051"><a href="https://lemire.me/blog/favorite-quotes/">My favorite quotes</a></li>
+<li class="page_item page-item-1794"><a href="https://lemire.me/blog/my-readers/">My readers</a></li>
+<li class="page_item page-item-18456"><a href="https://lemire.me/blog/my-sayings/">My sayings</a></li>
+<li class="page_item page-item-8035"><a href="https://lemire.me/blog/predictions/">Predictions</a></li>
+<li class="page_item page-item-18821"><a href="https://lemire.me/blog/recommended-video-games/">Recommended video games</a></li>
+<li class="page_item page-item-987"><a href="https://lemire.me/blog/terms-of-use/">Terms of use</a></li>
+<li class="page_item page-item-725"><a href="https://lemire.me/blog/rules-to-write-a-good-research-paper/">Write good papers</a></li>
+</ul>
+</nav></aside><aside id="archives-2" class="widget widget_archive"><h2 class="widget-title">Archives</h2> <label class="screen-reader-text" for="archives-dropdown-2">Archives</label>
+<select id="archives-dropdown-2" name="archive-dropdown">
+<option value="">Select Month</option>
+<option value='https://lemire.me/blog/2022/05/'> May 2022 &nbsp;(4)</option>
+<option value='https://lemire.me/blog/2022/04/'> April 2022 &nbsp;(4)</option>
+<option value='https://lemire.me/blog/2022/03/'> March 2022 &nbsp;(2)</option>
+<option value='https://lemire.me/blog/2022/02/'> February 2022 &nbsp;(4)</option>
+<option value='https://lemire.me/blog/2022/01/'> January 2022 &nbsp;(3)</option>
+<option value='https://lemire.me/blog/2021/12/'> December 2021 &nbsp;(2)</option>
+<option value='https://lemire.me/blog/2021/11/'> November 2021 &nbsp;(7)</option>
+<option value='https://lemire.me/blog/2021/10/'> October 2021 &nbsp;(12)</option>
+<option value='https://lemire.me/blog/2021/09/'> September 2021 &nbsp;(5)</option>
+<option value='https://lemire.me/blog/2021/08/'> August 2021 &nbsp;(2)</option>
+<option value='https://lemire.me/blog/2021/07/'> July 2021 &nbsp;(4)</option>
+<option value='https://lemire.me/blog/2021/06/'> June 2021 &nbsp;(5)</option>
+<option value='https://lemire.me/blog/2021/05/'> May 2021 &nbsp;(8)</option>
+<option value='https://lemire.me/blog/2021/04/'> April 2021 &nbsp;(6)</option>
+<option value='https://lemire.me/blog/2021/03/'> March 2021 &nbsp;(5)</option>
+<option value='https://lemire.me/blog/2021/02/'> February 2021 &nbsp;(4)</option>
+<option value='https://lemire.me/blog/2021/01/'> January 2021 &nbsp;(6)</option>
+<option value='https://lemire.me/blog/2020/12/'> December 2020 &nbsp;(11)</option>
+<option value='https://lemire.me/blog/2020/11/'> November 2020 &nbsp;(10)</option>
+<option value='https://lemire.me/blog/2020/10/'> October 2020 &nbsp;(6)</option>
+<option value='https://lemire.me/blog/2020/09/'> September 2020 &nbsp;(6)</option>
+<option value='https://lemire.me/blog/2020/08/'> August 2020 &nbsp;(4)</option>
+<option value='https://lemire.me/blog/2020/07/'> July 2020 &nbsp;(6)</option>
+<option value='https://lemire.me/blog/2020/06/'> June 2020 &nbsp;(7)</option>
+<option value='https://lemire.me/blog/2020/05/'> May 2020 &nbsp;(6)</option>
+<option value='https://lemire.me/blog/2020/04/'> April 2020 &nbsp;(7)</option>
+<option value='https://lemire.me/blog/2020/03/'> March 2020 &nbsp;(8)</option>
+<option value='https://lemire.me/blog/2020/02/'> February 2020 &nbsp;(7)</option>
+<option value='https://lemire.me/blog/2020/01/'> January 2020 &nbsp;(7)</option>
+<option value='https://lemire.me/blog/2019/12/'> December 2019 &nbsp;(10)</option>
+<option value='https://lemire.me/blog/2019/11/'> November 2019 &nbsp;(6)</option>
+<option value='https://lemire.me/blog/2019/10/'> October 2019 &nbsp;(7)</option>
+<option value='https://lemire.me/blog/2019/09/'> September 2019 &nbsp;(9)</option>
+<option value='https://lemire.me/blog/2019/08/'> August 2019 &nbsp;(9)</option>
+<option value='https://lemire.me/blog/2019/07/'> July 2019 &nbsp;(10)</option>
+<option value='https://lemire.me/blog/2019/06/'> June 2019 &nbsp;(9)</option>
+<option value='https://lemire.me/blog/2019/05/'> May 2019 &nbsp;(10)</option>
+<option value='https://lemire.me/blog/2019/04/'> April 2019 &nbsp;(8)</option>
+<option value='https://lemire.me/blog/2019/03/'> March 2019 &nbsp;(15)</option>
+<option value='https://lemire.me/blog/2019/02/'> February 2019 &nbsp;(9)</option>
+<option value='https://lemire.me/blog/2019/01/'> January 2019 &nbsp;(10)</option>
+<option value='https://lemire.me/blog/2018/12/'> December 2018 &nbsp;(9)</option>
+<option value='https://lemire.me/blog/2018/11/'> November 2018 &nbsp;(8)</option>
+<option value='https://lemire.me/blog/2018/10/'> October 2018 &nbsp;(10)</option>
+<option value='https://lemire.me/blog/2018/09/'> September 2018 &nbsp;(9)</option>
+<option value='https://lemire.me/blog/2018/08/'> August 2018 &nbsp;(10)</option>
+<option value='https://lemire.me/blog/2018/07/'> July 2018 &nbsp;(14)</option>
+<option value='https://lemire.me/blog/2018/06/'> June 2018 &nbsp;(9)</option>
+<option value='https://lemire.me/blog/2018/05/'> May 2018 &nbsp;(11)</option>
+<option value='https://lemire.me/blog/2018/04/'> April 2018 &nbsp;(11)</option>
+<option value='https://lemire.me/blog/2018/03/'> March 2018 &nbsp;(10)</option>
+<option value='https://lemire.me/blog/2018/02/'> February 2018 &nbsp;(7)</option>
+<option value='https://lemire.me/blog/2018/01/'> January 2018 &nbsp;(15)</option>
+<option value='https://lemire.me/blog/2017/12/'> December 2017 &nbsp;(9)</option>
+<option value='https://lemire.me/blog/2017/11/'> November 2017 &nbsp;(16)</option>
+<option value='https://lemire.me/blog/2017/10/'> October 2017 &nbsp;(13)</option>
+<option value='https://lemire.me/blog/2017/09/'> September 2017 &nbsp;(20)</option>
+<option value='https://lemire.me/blog/2017/08/'> August 2017 &nbsp;(12)</option>
+<option value='https://lemire.me/blog/2017/07/'> July 2017 &nbsp;(8)</option>
+<option value='https://lemire.me/blog/2017/06/'> June 2017 &nbsp;(9)</option>
+<option value='https://lemire.me/blog/2017/05/'> May 2017 &nbsp;(10)</option>
+<option value='https://lemire.me/blog/2017/04/'> April 2017 &nbsp;(11)</option>
+<option value='https://lemire.me/blog/2017/03/'> March 2017 &nbsp;(11)</option>
+<option value='https://lemire.me/blog/2017/02/'> February 2017 &nbsp;(6)</option>
+<option value='https://lemire.me/blog/2017/01/'> January 2017 &nbsp;(8)</option>
+<option value='https://lemire.me/blog/2016/12/'> December 2016 &nbsp;(8)</option>
+<option value='https://lemire.me/blog/2016/11/'> November 2016 &nbsp;(4)</option>
+<option value='https://lemire.me/blog/2016/10/'> October 2016 &nbsp;(6)</option>
+<option value='https://lemire.me/blog/2016/09/'> September 2016 &nbsp;(10)</option>
+<option value='https://lemire.me/blog/2016/08/'> August 2016 &nbsp;(6)</option>
+<option value='https://lemire.me/blog/2016/07/'> July 2016 &nbsp;(4)</option>
+<option value='https://lemire.me/blog/2016/06/'> June 2016 &nbsp;(6)</option>
+<option value='https://lemire.me/blog/2016/05/'> May 2016 &nbsp;(5)</option>
+<option value='https://lemire.me/blog/2016/04/'> April 2016 &nbsp;(10)</option>
+<option value='https://lemire.me/blog/2016/03/'> March 2016 &nbsp;(9)</option>
+<option value='https://lemire.me/blog/2016/02/'> February 2016 &nbsp;(8)</option>
+<option value='https://lemire.me/blog/2016/01/'> January 2016 &nbsp;(5)</option>
+<option value='https://lemire.me/blog/2015/12/'> December 2015 &nbsp;(8)</option>
+<option value='https://lemire.me/blog/2015/11/'> November 2015 &nbsp;(4)</option>
+<option value='https://lemire.me/blog/2015/10/'> October 2015 &nbsp;(8)</option>
+<option value='https://lemire.me/blog/2015/09/'> September 2015 &nbsp;(5)</option>
+<option value='https://lemire.me/blog/2015/08/'> August 2015 &nbsp;(6)</option>
+<option value='https://lemire.me/blog/2015/07/'> July 2015 &nbsp;(5)</option>
+<option value='https://lemire.me/blog/2015/06/'> June 2015 &nbsp;(2)</option>
+<option value='https://lemire.me/blog/2015/05/'> May 2015 &nbsp;(4)</option>
+<option value='https://lemire.me/blog/2015/04/'> April 2015 &nbsp;(4)</option>
+<option value='https://lemire.me/blog/2015/03/'> March 2015 &nbsp;(5)</option>
+<option value='https://lemire.me/blog/2015/02/'> February 2015 &nbsp;(5)</option>
+<option value='https://lemire.me/blog/2015/01/'> January 2015 &nbsp;(3)</option>
+<option value='https://lemire.me/blog/2014/12/'> December 2014 &nbsp;(6)</option>
+<option value='https://lemire.me/blog/2014/11/'> November 2014 &nbsp;(4)</option>
+<option value='https://lemire.me/blog/2014/10/'> October 2014 &nbsp;(3)</option>
+<option value='https://lemire.me/blog/2014/09/'> September 2014 &nbsp;(5)</option>
+<option value='https://lemire.me/blog/2014/08/'> August 2014 &nbsp;(5)</option>
+<option value='https://lemire.me/blog/2014/07/'> July 2014 &nbsp;(4)</option>
+<option value='https://lemire.me/blog/2014/06/'> June 2014 &nbsp;(2)</option>
+<option value='https://lemire.me/blog/2014/05/'> May 2014 &nbsp;(6)</option>
+<option value='https://lemire.me/blog/2014/04/'> April 2014 &nbsp;(7)</option>
+<option value='https://lemire.me/blog/2014/03/'> March 2014 &nbsp;(3)</option>
+<option value='https://lemire.me/blog/2014/02/'> February 2014 &nbsp;(5)</option>
+<option value='https://lemire.me/blog/2014/01/'> January 2014 &nbsp;(6)</option>
+<option value='https://lemire.me/blog/2013/12/'> December 2013 &nbsp;(8)</option>
+<option value='https://lemire.me/blog/2013/11/'> November 2013 &nbsp;(5)</option>
+<option value='https://lemire.me/blog/2013/10/'> October 2013 &nbsp;(5)</option>
+<option value='https://lemire.me/blog/2013/09/'> September 2013 &nbsp;(5)</option>
+<option value='https://lemire.me/blog/2013/08/'> August 2013 &nbsp;(3)</option>
+<option value='https://lemire.me/blog/2013/07/'> July 2013 &nbsp;(4)</option>
+<option value='https://lemire.me/blog/2013/06/'> June 2013 &nbsp;(4)</option>
+<option value='https://lemire.me/blog/2013/05/'> May 2013 &nbsp;(3)</option>
+<option value='https://lemire.me/blog/2013/04/'> April 2013 &nbsp;(7)</option>
+<option value='https://lemire.me/blog/2013/03/'> March 2013 &nbsp;(6)</option>
+<option value='https://lemire.me/blog/2013/02/'> February 2013 &nbsp;(6)</option>
+<option value='https://lemire.me/blog/2013/01/'> January 2013 &nbsp;(8)</option>
+<option value='https://lemire.me/blog/2012/12/'> December 2012 &nbsp;(2)</option>
+<option value='https://lemire.me/blog/2012/11/'> November 2012 &nbsp;(5)</option>
+<option value='https://lemire.me/blog/2012/10/'> October 2012 &nbsp;(4)</option>
+<option value='https://lemire.me/blog/2012/09/'> September 2012 &nbsp;(6)</option>
+<option value='https://lemire.me/blog/2012/08/'> August 2012 &nbsp;(4)</option>
+<option value='https://lemire.me/blog/2012/07/'> July 2012 &nbsp;(4)</option>
+<option value='https://lemire.me/blog/2012/06/'> June 2012 &nbsp;(3)</option>
+<option value='https://lemire.me/blog/2012/05/'> May 2012 &nbsp;(3)</option>
+<option value='https://lemire.me/blog/2012/04/'> April 2012 &nbsp;(6)</option>
+<option value='https://lemire.me/blog/2012/03/'> March 2012 &nbsp;(5)</option>
+<option value='https://lemire.me/blog/2012/02/'> February 2012 &nbsp;(3)</option>
+<option value='https://lemire.me/blog/2012/01/'> January 2012 &nbsp;(9)</option>
+<option value='https://lemire.me/blog/2011/12/'> December 2011 &nbsp;(3)</option>
+<option value='https://lemire.me/blog/2011/11/'> November 2011 &nbsp;(5)</option>
+<option value='https://lemire.me/blog/2011/10/'> October 2011 &nbsp;(5)</option>
+<option value='https://lemire.me/blog/2011/09/'> September 2011 &nbsp;(4)</option>
+<option value='https://lemire.me/blog/2011/08/'> August 2011 &nbsp;(8)</option>
+<option value='https://lemire.me/blog/2011/07/'> July 2011 &nbsp;(3)</option>
+<option value='https://lemire.me/blog/2011/06/'> June 2011 &nbsp;(5)</option>
+<option value='https://lemire.me/blog/2011/05/'> May 2011 &nbsp;(6)</option>
+<option value='https://lemire.me/blog/2011/04/'> April 2011 &nbsp;(6)</option>
+<option value='https://lemire.me/blog/2011/03/'> March 2011 &nbsp;(5)</option>
+<option value='https://lemire.me/blog/2011/02/'> February 2011 &nbsp;(4)</option>
+<option value='https://lemire.me/blog/2011/01/'> January 2011 &nbsp;(10)</option>
+<option value='https://lemire.me/blog/2010/12/'> December 2010 &nbsp;(7)</option>
+<option value='https://lemire.me/blog/2010/11/'> November 2010 &nbsp;(6)</option>
+ <option value='https://lemire.me/blog/2010/10/'> October 2010 &nbsp;(3)</option>
+<option value='https://lemire.me/blog/2010/09/'> September 2010 &nbsp;(3)</option>
+<option value='https://lemire.me/blog/2010/08/'> August 2010 &nbsp;(5)</option>
+<option value='https://lemire.me/blog/2010/07/'> July 2010 &nbsp;(4)</option>
+<option value='https://lemire.me/blog/2010/06/'> June 2010 &nbsp;(7)</option>
+<option value='https://lemire.me/blog/2010/05/'> May 2010 &nbsp;(5)</option>
+<option value='https://lemire.me/blog/2010/04/'> April 2010 &nbsp;(7)</option>
+<option value='https://lemire.me/blog/2010/03/'> March 2010 &nbsp;(8)</option>
+<option value='https://lemire.me/blog/2010/02/'> February 2010 &nbsp;(5)</option>
+<option value='https://lemire.me/blog/2010/01/'> January 2010 &nbsp;(7)</option>
+<option value='https://lemire.me/blog/2009/12/'> December 2009 &nbsp;(4)</option>
+<option value='https://lemire.me/blog/2009/11/'> November 2009 &nbsp;(6)</option>
+<option value='https://lemire.me/blog/2009/10/'> October 2009 &nbsp;(10)</option>
+<option value='https://lemire.me/blog/2009/09/'> September 2009 &nbsp;(8)</option>
+<option value='https://lemire.me/blog/2009/08/'> August 2009 &nbsp;(11)</option>
+<option value='https://lemire.me/blog/2009/07/'> July 2009 &nbsp;(9)</option>
+<option value='https://lemire.me/blog/2009/06/'> June 2009 &nbsp;(7)</option>
+<option value='https://lemire.me/blog/2009/05/'> May 2009 &nbsp;(7)</option>
+<option value='https://lemire.me/blog/2009/04/'> April 2009 &nbsp;(7)</option>
+<option value='https://lemire.me/blog/2009/03/'> March 2009 &nbsp;(7)</option>
+<option value='https://lemire.me/blog/2009/02/'> February 2009 &nbsp;(14)</option>
+<option value='https://lemire.me/blog/2009/01/'> January 2009 &nbsp;(14)</option>
+<option value='https://lemire.me/blog/2008/12/'> December 2008 &nbsp;(16)</option>
+<option value='https://lemire.me/blog/2008/11/'> November 2008 &nbsp;(25)</option>
+<option value='https://lemire.me/blog/2008/10/'> October 2008 &nbsp;(13)</option>
+<option value='https://lemire.me/blog/2008/09/'> September 2008 &nbsp;(15)</option>
+<option value='https://lemire.me/blog/2008/08/'> August 2008 &nbsp;(14)</option>
+<option value='https://lemire.me/blog/2008/07/'> July 2008 &nbsp;(15)</option>
+<option value='https://lemire.me/blog/2008/06/'> June 2008 &nbsp;(14)</option>
+<option value='https://lemire.me/blog/2008/05/'> May 2008 &nbsp;(15)</option>
+<option value='https://lemire.me/blog/2008/04/'> April 2008 &nbsp;(20)</option>
+<option value='https://lemire.me/blog/2008/03/'> March 2008 &nbsp;(18)</option>
+<option value='https://lemire.me/blog/2008/02/'> February 2008 &nbsp;(12)</option>
+<option value='https://lemire.me/blog/2008/01/'> January 2008 &nbsp;(19)</option>
+<option value='https://lemire.me/blog/2007/12/'> December 2007 &nbsp;(24)</option>
+<option value='https://lemire.me/blog/2007/11/'> November 2007 &nbsp;(23)</option>
+<option value='https://lemire.me/blog/2007/10/'> October 2007 &nbsp;(19)</option>
+<option value='https://lemire.me/blog/2007/09/'> September 2007 &nbsp;(13)</option>
+<option value='https://lemire.me/blog/2007/08/'> August 2007 &nbsp;(23)</option>
+<option value='https://lemire.me/blog/2007/07/'> July 2007 &nbsp;(18)</option>
+<option value='https://lemire.me/blog/2007/06/'> June 2007 &nbsp;(15)</option>
+<option value='https://lemire.me/blog/2007/05/'> May 2007 &nbsp;(19)</option>
+<option value='https://lemire.me/blog/2007/04/'> April 2007 &nbsp;(9)</option>
+<option value='https://lemire.me/blog/2007/03/'> March 2007 &nbsp;(7)</option>
+<option value='https://lemire.me/blog/2007/02/'> February 2007 &nbsp;(27)</option>
+<option value='https://lemire.me/blog/2007/01/'> January 2007 &nbsp;(20)</option>
+<option value='https://lemire.me/blog/2006/12/'> December 2006 &nbsp;(20)</option>
+<option value='https://lemire.me/blog/2006/11/'> November 2006 &nbsp;(18)</option>
+<option value='https://lemire.me/blog/2006/10/'> October 2006 &nbsp;(9)</option>
+<option value='https://lemire.me/blog/2006/09/'> September 2006 &nbsp;(11)</option>
+<option value='https://lemire.me/blog/2006/08/'> August 2006 &nbsp;(25)</option>
+<option value='https://lemire.me/blog/2006/07/'> July 2006 &nbsp;(10)</option>
+<option value='https://lemire.me/blog/2006/06/'> June 2006 &nbsp;(18)</option>
+<option value='https://lemire.me/blog/2006/05/'> May 2006 &nbsp;(27)</option>
+<option value='https://lemire.me/blog/2006/04/'> April 2006 &nbsp;(25)</option>
+<option value='https://lemire.me/blog/2006/03/'> March 2006 &nbsp;(11)</option>
+<option value='https://lemire.me/blog/2006/02/'> February 2006 &nbsp;(11)</option>
+<option value='https://lemire.me/blog/2006/01/'> January 2006 &nbsp;(39)</option>
+<option value='https://lemire.me/blog/2005/12/'> December 2005 &nbsp;(23)</option>
+<option value='https://lemire.me/blog/2005/11/'> November 2005 &nbsp;(25)</option>
+<option value='https://lemire.me/blog/2005/10/'> October 2005 &nbsp;(20)</option>
+<option value='https://lemire.me/blog/2005/09/'> September 2005 &nbsp;(26)</option>
+<option value='https://lemire.me/blog/2005/08/'> August 2005 &nbsp;(39)</option>
+<option value='https://lemire.me/blog/2005/07/'> July 2005 &nbsp;(17)</option>
+<option value='https://lemire.me/blog/2005/06/'> June 2005 &nbsp;(16)</option>
+<option value='https://lemire.me/blog/2005/05/'> May 2005 &nbsp;(9)</option>
+<option value='https://lemire.me/blog/2005/04/'> April 2005 &nbsp;(13)</option>
+<option value='https://lemire.me/blog/2005/03/'> March 2005 &nbsp;(30)</option>
+<option value='https://lemire.me/blog/2005/02/'> February 2005 &nbsp;(20)</option>
+<option value='https://lemire.me/blog/2005/01/'> January 2005 &nbsp;(30)</option>
+<option value='https://lemire.me/blog/2004/12/'> December 2004 &nbsp;(11)</option>
+<option value='https://lemire.me/blog/2004/11/'> November 2004 &nbsp;(19)</option>
+<option value='https://lemire.me/blog/2004/10/'> October 2004 &nbsp;(14)</option>
+<option value='https://lemire.me/blog/2004/09/'> September 2004 &nbsp;(17)</option>
+<option value='https://lemire.me/blog/2004/08/'> August 2004 &nbsp;(13)</option>
+<option value='https://lemire.me/blog/2004/07/'> July 2004 &nbsp;(16)</option>
+<option value='https://lemire.me/blog/2004/06/'> June 2004 &nbsp;(16)</option>
+<option value='https://lemire.me/blog/2004/05/'> May 2004 &nbsp;(12)</option>
+</select>
+<script>
+/* <![CDATA[ */
+(function() {
+	var dropdown = document.getElementById( "archives-dropdown-2" );
+	function onSelectChange() {
+		if ( dropdown.options[ dropdown.selectedIndex ].value !== '' ) {
+			document.location.href = this.options[ this.selectedIndex ].value;
+		}
+	}
+	dropdown.onchange = onSelectChange;
+})();
+/* ]]> */
+</script>
+</aside><aside id="meta-3" class="widget widget_meta"><h2 class="widget-title">Boring stuff</h2><nav aria-label="Boring stuff">
+<ul>
+<li><a href="https://lemire.me/blog/wp-login.php">Log in</a></li>
+<li><a href="https://lemire.me/blog/feed/">Entries feed</a></li>
+<li><a href="https://lemire.me/blog/comments/feed/">Comments feed</a></li>
+<li><a href="https://wordpress.org/">WordPress.org</a></li>
+</ul>
+</nav></aside> </div>
+</div>
+</div>
+<div id="content" class="site-content">
+<div id="primary" class="content-area">
+<main id="main" class="site-main" role="main">
+<article id="post-18317" class="post-18317 post type-post status-publish format-standard hentry category-84">
+<header class="entry-header">
+<h1 class="entry-title">We released simdjson 0.3: the fastest JSON parser in the world is even better!</h1> </header>
+<div class="entry-content">
+<p>Last year (2019), we released the simjson library. It is a C++ library available under a liberal license (Apache) that can parse JSON documents very fast. How fast? We reach and exceed 3 gigabytes per second in many instances. It can also parse millions of small JSON documents per second.</p>
+<p>The new version is much faster. How much faster? Last year, we could parse a file like simdjson at a speed of 2.0 GB/s, and then we reached 2.2 GB/s. We are now reaching 2.5 GB/s. Why go so fast? In comparison, a fast disk can reach  5 GB/s and the best network adapters are even faster.</p>
+<p>The following plot presents the 2020 simdjson library (version 0.3) compared with the fastest standard compliant C++ JSON parsers (RapidJSON and sajson). It ran on a single Intel Skylake core, and the code was compiled with the GNU GCC 9 compiler. <a href="https://github.com/simdjson/simdjson_experiments_vldb2019">All tests are reproducible using Docker containers</a>.</p>
+<p><a href="https://lemire.me/blog/wp-content/uploads/2020/03/image.png"><img class="alignnone size-full wp-image-18318" src="https://lemire.me/blog/wp-content/uploads/2020/03/image.png" alt="" width="750" height="450" srcset="https://lemire.me/blog/wp-content/uploads/2020/03/image.png 750w, https://lemire.me/blog/wp-content/uploads/2020/03/image-300x180.png 300w" sizes="(max-width: 750px) 100vw, 750px" /></a></p>
+<p>In this plot, RapidJSON and simjson have exact number parsing, while RapidJSON (fast float) and sajson use approximate number parsing. Furthermore, sajson has only partial unicode validation whereas other parsers offer exact encoding (UTF8) validation.</p>
+<p>If we only improved the performance, it would already be amazing. But our new release pack a whole lot of improvements:</p>
+<ol>
+<li>Multi-Document Parsing: Read a bundle of JSON documents (ndjson) 2-4x faster than doing it individually.</li>
+<li>Simplified API: The API has been completely revamped for ease of use, including a new JSON navigation API and fluent support for error code and exception styles of error handling with a single API. In the past, using simdjson was a bit of a chore, the new approach is definitively modern, see for yourself:
+<pre style="color: #000000; background: #ffffff;">auto cars_json <span style="color: #808030;">=</span> R"<span style="color: #808030;">(</span> <span style="color: #808030;">[</span>
+  <span style="color: #800080;">{</span> <span style="color: #800000;">"</span><span style="color: #0000e6;">make</span><span style="color: #800000;">"</span><span style="color: #808030;">:</span> <span style="color: #800000;">"</span><span style="color: #0000e6;">Toyota</span><span style="color: #800000;">"</span><span style="color: #808030;">,</span> <span style="color: #800000;">"</span><span style="color: #0000e6;">model</span><span style="color: #800000;">"</span><span style="color: #808030;">:</span> <span style="color: #800000;">"</span><span style="color: #0000e6;">Camry</span><span style="color: #800000;">"</span><span style="color: #808030;">,</span>  <span style="color: #800000;">"</span><span style="color: #0000e6;">year</span><span style="color: #800000;">"</span><span style="color: #808030;">:</span> <span style="color: #008c00;">2018</span><span style="color: #808030;">,</span> 
+       <span style="color: #800000;">"</span><span style="color: #0000e6;">tire_pressure</span><span style="color: #800000;">"</span><span style="color: #808030;">:</span> <span style="color: #808030;">[</span> <span style="color: #008000;">40.1</span><span style="color: #808030;">,</span> <span style="color: #008000;">39.9</span> <span style="color: #808030;">]</span> <span style="color: #800080;">}</span><span style="color: #808030;">,</span>
+  <span style="color: #800080;">{</span> <span style="color: #800000;">"</span><span style="color: #0000e6;">make</span><span style="color: #800000;">"</span><span style="color: #808030;">:</span> <span style="color: #800000;">"</span><span style="color: #0000e6;">Kia</span><span style="color: #800000;">"</span><span style="color: #808030;">,</span>    <span style="color: #800000;">"</span><span style="color: #0000e6;">model</span><span style="color: #800000;">"</span><span style="color: #808030;">:</span> <span style="color: #800000;">"</span><span style="color: #0000e6;">Soul</span><span style="color: #800000;">"</span><span style="color: #808030;">,</span>   <span style="color: #800000;">"</span><span style="color: #0000e6;">year</span><span style="color: #800000;">"</span><span style="color: #808030;">:</span> <span style="color: #008c00;">2012</span><span style="color: #808030;">,</span> 
+       <span style="color: #800000;">"</span><span style="color: #0000e6;">tire_pressure</span><span style="color: #800000;">"</span><span style="color: #808030;">:</span> <span style="color: #808030;">[</span> <span style="color: #008000;">30.1</span><span style="color: #808030;">,</span> <span style="color: #008000;">31.0</span> <span style="color: #808030;">]</span> <span style="color: #800080;">}</span><span style="color: #808030;">,</span>
+  <span style="color: #800080;">{</span> <span style="color: #800000;">"</span><span style="color: #0000e6;">make</span><span style="color: #800000;">"</span><span style="color: #808030;">:</span> <span style="color: #800000;">"</span><span style="color: #0000e6;">Toyota</span><span style="color: #800000;">"</span><span style="color: #808030;">,</span> <span style="color: #800000;">"</span><span style="color: #0000e6;">model</span><span style="color: #800000;">"</span><span style="color: #808030;">:</span> <span style="color: #800000;">"</span><span style="color: #0000e6;">Tercel</span><span style="color: #800000;">"</span><span style="color: #808030;">,</span> <span style="color: #800000;">"</span><span style="color: #0000e6;">year</span><span style="color: #800000;">"</span><span style="color: #808030;">:</span> <span style="color: #008c00;">1999</span><span style="color: #808030;">,</span> 
+       <span style="color: #800000;">"</span><span style="color: #0000e6;">tire_pressure</span><span style="color: #800000;">"</span><span style="color: #808030;">:</span> <span style="color: #808030;">[</span> <span style="color: #008000;">29.8</span><span style="color: #808030;">,</span> <span style="color: #008000;">30.0</span> <span style="color: #808030;">]</span> <span style="color: #800080;">}</span>
+<span style="color: #808030;">]</span> <span style="color: #808030;">)</span>"_padded<span style="color: #800080;">;</span>
+dom<span style="color: #808030;">:</span><span style="color: #808030;">:</span>parser parser<span style="color: #800080;">;</span>
+dom<span style="color: #808030;">:</span><span style="color: #808030;">:</span>array cars <span style="color: #808030;">=</span> parser<span style="color: #808030;">.</span>parse<span style="color: #808030;">(</span>cars_json<span style="color: #808030;">)</span><span style="color: #808030;">.</span><span style="color: #800000; font-weight: bold;">get</span><span style="color: #808030;">&lt;</span>dom<span style="color: #808030;">:</span><span style="color: #808030;">:</span>array<span style="color: #808030;">&gt;</span><span style="color: #808030;">(</span><span style="color: #808030;">)</span><span style="color: #800080;">;</span>
+
+<span style="color: #696969;">// Iterating through an array of objects</span>
+<span style="color: #800000; font-weight: bold;">for</span> <span style="color: #808030;">(</span>dom<span style="color: #808030;">:</span><span style="color: #808030;">:</span><span style="color: #800000; font-weight: bold;">object</span> car <span style="color: #808030;">:</span> cars<span style="color: #808030;">)</span> <span style="color: #800080;">{</span>
+  <span style="color: #696969;">// Accessing a field by name</span>
+  cout <span style="color: #808030;">&lt;</span><span style="color: #808030;">&lt;</span> <span style="color: #800000;">"</span><span style="color: #0000e6;">Make/Model: </span><span style="color: #800000;">"</span> <span style="color: #808030;">&lt;</span><span style="color: #808030;">&lt;</span> car<span style="color: #808030;">[</span><span style="color: #800000;">"</span><span style="color: #0000e6;">make</span><span style="color: #800000;">"</span><span style="color: #808030;">]</span> 
+           <span style="color: #808030;">&lt;</span><span style="color: #808030;">&lt;</span> <span style="color: #800000;">"</span><span style="color: #0000e6;">/</span><span style="color: #800000;">"</span> <span style="color: #808030;">&lt;</span><span style="color: #808030;">&lt;</span> car<span style="color: #808030;">[</span><span style="color: #800000;">"</span><span style="color: #0000e6;">model</span><span style="color: #800000;">"</span><span style="color: #808030;">]</span> <span style="color: #808030;">&lt;</span><span style="color: #808030;">&lt;</span> endl<span style="color: #800080;">;</span>
+
+  <span style="color: #696969;">// Casting a JSON element to an integer</span>
+  uint64_t year <span style="color: #808030;">=</span> car<span style="color: #808030;">[</span><span style="color: #800000;">"</span><span style="color: #0000e6;">year</span><span style="color: #800000;">"</span><span style="color: #808030;">]</span><span style="color: #800080;">;</span>
+  cout <span style="color: #808030;">&lt;</span><span style="color: #808030;">&lt;</span> <span style="color: #800000;">"</span><span style="color: #0000e6;">- This car is </span><span style="color: #800000;">"</span> <span style="color: #808030;">&lt;</span><span style="color: #808030;">&lt;</span> <span style="color: #008c00;">2020</span> <span style="color: #808030;">-</span> year 
+           <span style="color: #808030;">&lt;</span><span style="color: #808030;">&lt;</span> <span style="color: #800000;">"</span><span style="color: #0000e6;">years old.</span><span style="color: #800000;">"</span> <span style="color: #808030;">&lt;</span><span style="color: #808030;">&lt;</span> endl<span style="color: #800080;">;</span>
+
+  <span style="color: #696969;">// Iterating through an array of floats</span>
+  <span style="color: #800000; font-weight: bold;">double</span> total_tire_pressure <span style="color: #808030;">=</span> <span style="color: #008c00;">0</span><span style="color: #800080;">;</span>
+  <span style="color: #800000; font-weight: bold;">for</span> <span style="color: #808030;">(</span><span style="color: #800000; font-weight: bold;">double</span> tire_pressure <span style="color: #808030;">:</span> car<span style="color: #808030;">[</span><span style="color: #800000;">"</span><span style="color: #0000e6;">tire_pressure</span><span style="color: #800000;">"</span><span style="color: #808030;">]</span><span style="color: #808030;">)</span> <span style="color: #800080;">{</span>
+    total_tire_pressure <span style="color: #808030;">+</span><span style="color: #808030;">=</span> tire_pressure<span style="color: #800080;">;</span>
+  <span style="color: #800080;">}</span>
+  cout <span style="color: #808030;">&lt;</span><span style="color: #808030;">&lt;</span> <span style="color: #800000;">"</span><span style="color: #0000e6;">- Average tire pressure: </span><span style="color: #800000;">"</span> 
+      <span style="color: #808030;">&lt;</span><span style="color: #808030;">&lt;</span> <span style="color: #808030;">(</span>total_tire_pressure <span style="color: #808030;">/</span> 2<span style="color: #808030;">)</span> <span style="color: #808030;">&lt;</span><span style="color: #808030;">&lt;</span> endl<span style="color: #800080;">;</span>
+
+  <span style="color: #696969;">// Writing out all the information about the car</span>
+  <span style="color: #800000; font-weight: bold;">for</span> <span style="color: #808030;">(</span>auto <span style="color: #808030;">[</span>key<span style="color: #808030;">,</span> value<span style="color: #808030;">]</span> <span style="color: #808030;">:</span> car<span style="color: #808030;">)</span> <span style="color: #800080;">{</span>
+    cout <span style="color: #808030;">&lt;</span><span style="color: #808030;">&lt;</span> <span style="color: #800000;">"</span><span style="color: #0000e6;">- </span><span style="color: #800000;">"</span> <span style="color: #808030;">&lt;</span><span style="color: #808030;">&lt;</span> key <span style="color: #808030;">&lt;</span><span style="color: #808030;">&lt;</span> <span style="color: #800000;">"</span><span style="color: #0000e6;">: </span><span style="color: #800000;">"</span> <span style="color: #808030;">&lt;</span><span style="color: #808030;">&lt;</span> value <span style="color: #808030;">&lt;</span><span style="color: #808030;">&lt;</span> endl<span style="color: #800080;">;</span>
+  <span style="color: #800080;">}</span>
+<span style="color: #800080;">}</span>
+</pre>
+<p></li>
+<li>Exact Float Parsing: simdjson parses floats flawlessly at high speed.</li>
+<li>Fallback implementation: simdjson now has a non-SIMD fallback implementation, and can run even on very old 64-bit machines. This means that you no longer need to check whether the system supports simdjson.</li>
+<li>Automatic allocation: as part of API simplification, the parser no longer has to be preallocated: it will adjust automatically when it encounters larger files.</li>
+<li>Runtime selection API: We have exposed simdjson&#8217;s runtime CPU detection and implementation selection as an API, so you can tell what implementation we detected and test with other implementations.</li>
+<li>Error handling your way: Whether you use exceptions or check error codes, simdjson lets you handle errors in your style. APIs that can fail return simdjson_result, letting you check the error code before using the result. But if you are more comfortable with exceptions, skip the error code<br />
+and cast straight to the value you need, and exceptions will be thrown automatically if an error happens. Use the same API either way!</li>
+<li>Error chaining: We also worked to keep non-exception error-handling short and sweet. Instead of having to check the error code after every single operation, now you can chain JSON navigation calls like looking up an object field or array element, or casting to a string, so that you only have to check the error code once at the very end.</li>
+<li>We now have a dedicated web site (<a href="https://simdjson.org">https://simdjson.org</a>) in addition to the GitHub site (<a href="https://github.com/simdjson/simdjson">https://github.com/simdjson/simdjson</a>).</li>
+</ol>
+<p><strong>Credit</strong>: many people contributed to simdjson, but John Keiser played a substantial role worthy of mention.</p>
+</div>
+<div class="author-info">
+<h2 class="author-heading">Published by</h2>
+<div class="author-avatar">
+<img alt='' src='https://secure.gravatar.com/avatar/2ca999bef9535950f5b84281a4dab006?s=56&#038;d=mm&#038;r=g' srcset='https://secure.gravatar.com/avatar/2ca999bef9535950f5b84281a4dab006?s=112&#038;d=mm&#038;r=g 2x' class='avatar avatar-56 photo' height='56' width='56' loading='lazy' /> </div>
+<div class="author-description">
+<h3 class="author-title">Daniel Lemire</h3>
+<p class="author-bio">
+A computer science professor at the University of Quebec (TELUQ). <a class="author-link" href="https://lemire.me/blog/author/lemire/" rel="author">
+View all posts by Daniel Lemire </a>
+</p>
+</div>
+</div>
+<footer class="entry-footer">
+<span class="posted-on"><span class="screen-reader-text">Posted on </span><a href="https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/" rel="bookmark"><time class="entry-date published" datetime="2020-03-31T22:20:36+00:00">March 31, 2020</time><time class="updated" datetime="2020-04-01T22:05:31+00:00">April 1, 2020</time></a></span><span class="byline"><span class="author vcard"><span class="screen-reader-text">Author </span><a class="url fn n" href="https://lemire.me/blog/author/lemire/">Daniel Lemire</a></span></span><span class="cat-links"><span class="screen-reader-text">Categories </span><a href="https://lemire.me/blog/category/84/" rel="category tag"></a></span> </footer>
+</article>
+<div id="comments" class="comments-area">
+<h2 class="comments-title">
+30 thoughts on &ldquo;We released simdjson 0.3: the fastest JSON parser in the world is even better!&rdquo; </h2>
+<ol class="comment-list">
+<li id="comment-498792" class="comment even thread-even depth-1">
+<article id="div-comment-498792" class="comment-body">
+<footer class="comment-meta">
+<div class="comment-author vcard">
+<img alt='' src='https://secure.gravatar.com/avatar/6cb92a8593df0352e0e2b8cd05ffc334?s=56&#038;d=mm&#038;r=g' srcset='https://secure.gravatar.com/avatar/6cb92a8593df0352e0e2b8cd05ffc334?s=112&#038;d=mm&#038;r=g 2x' class='avatar avatar-56 photo' height='56' width='56' loading='lazy' /> <b class="fn"><a href='https://github.com/naver/tamgu' rel='external nofollow ugc' class='url'>Claude</a></b> <span class="says">says:</span> </div>
+<div class="comment-metadata">
+<a href="https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/#comment-498792"><time datetime="2020-04-01T08:10:14+00:00">April 1, 2020 at 8:10 am</time></a> </div>
+</footer>
+<div class="comment-content">
+<p>Congratulations is de rigueur here.</p>
+<p>I guess the next challenge will be an API to speed up YAML parsing. YAML files are an important part of deploying PyTorch on most platforms, it will be worth seeing if you can easily adapt this library to this type of parsing.</p>
+</div>
+<div class="reply"><a rel='nofollow' class='comment-reply-link' href='https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/?replytocom=498792#respond' data-commentid="498792" data-postid="18317" data-belowelement="div-comment-498792" data-respondelement="respond" data-replyto="Reply to Claude" aria-label='Reply to Claude'>Reply</a></div> </article>
+</li>
+<li id="comment-498803" class="comment odd alt thread-odd thread-alt depth-1 parent">
+<article id="div-comment-498803" class="comment-body">
+<footer class="comment-meta">
+<div class="comment-author vcard">
+<img alt='' src='https://secure.gravatar.com/avatar/67fc9e7ebee46734d34f03f251cfa09f?s=56&#038;d=mm&#038;r=g' srcset='https://secure.gravatar.com/avatar/67fc9e7ebee46734d34f03f251cfa09f?s=112&#038;d=mm&#038;r=g 2x' class='avatar avatar-56 photo' height='56' width='56' loading='lazy' /> <b class="fn">Michal Lazo</b> <span class="says">says:</span> </div>
+<div class="comment-metadata">
+<a href="https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/#comment-498803"><time datetime="2020-04-01T09:20:17+00:00">April 1, 2020 at 9:20 am</time></a> </div>
+</footer>
+<div class="comment-content">
+<p>Are there any SIMD accelerated XML parser?</p>
+</div>
+<div class="reply"><a rel='nofollow' class='comment-reply-link' href='https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/?replytocom=498803#respond' data-commentid="498803" data-postid="18317" data-belowelement="div-comment-498803" data-respondelement="respond" data-replyto="Reply to Michal Lazo" aria-label='Reply to Michal Lazo'>Reply</a></div> </article>
+<ol class="children">
+<li id="comment-498832" class="comment byuser comment-author-lemire bypostauthor even depth-2">
+<article id="div-comment-498832" class="comment-body">
+<footer class="comment-meta">
+<div class="comment-author vcard">
+<img alt='' src='https://secure.gravatar.com/avatar/2ca999bef9535950f5b84281a4dab006?s=56&#038;d=mm&#038;r=g' srcset='https://secure.gravatar.com/avatar/2ca999bef9535950f5b84281a4dab006?s=112&#038;d=mm&#038;r=g 2x' class='avatar avatar-56 photo' height='56' width='56' loading='lazy' /> <b class="fn"><a href="https://lemire.me/en/" rel='external nofollow ugc' class='url'>Daniel Lemire</a></b> <span class="says">says:</span> </div>
+<div class="comment-metadata">
+<a href="https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/#comment-498832"><time datetime="2020-04-01T12:47:13+00:00">April 1, 2020 at 12:47 pm</time></a> </div>
+</footer>
+<div class="comment-content">
+<p>There has been some XML parsers, at least at the prototype level, that have used SIMD instructions deliberately. However, I do not think that there has ever been something like simdjson for XML.</p>
+</div>
+<div class="reply"><a rel='nofollow' class='comment-reply-link' href='https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/?replytocom=498832#respond' data-commentid="498832" data-postid="18317" data-belowelement="div-comment-498832" data-respondelement="respond" data-replyto="Reply to Daniel Lemire" aria-label='Reply to Daniel Lemire'>Reply</a></div> </article>
+</li>
+<li id="comment-525927" class="comment odd alt depth-2 parent">
+<article id="div-comment-525927" class="comment-body">
+<footer class="comment-meta">
+<div class="comment-author vcard">
+<img alt='' src='https://secure.gravatar.com/avatar/46a12c8cf24f9d7f8ad7a1ef3ee5a010?s=56&#038;d=mm&#038;r=g' srcset='https://secure.gravatar.com/avatar/46a12c8cf24f9d7f8ad7a1ef3ee5a010?s=112&#038;d=mm&#038;r=g 2x' class='avatar avatar-56 photo' height='56' width='56' loading='lazy' /> <b class="fn"><a href='https://www.joseduarte.com' rel='external nofollow ugc' class='url'>José Duarte</a></b> <span class="says">says:</span> </div>
+<div class="comment-metadata">
+<a href="https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/#comment-525927"><time datetime="2020-06-11T02:38:25+00:00">June 11, 2020 at 2:38 am</time></a> </div>
+</footer>
+<div class="comment-content">
+<p>The Parabix XML project.</p>
+</div>
+<div class="reply"><a rel='nofollow' class='comment-reply-link' href='https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/?replytocom=525927#respond' data-commentid="525927" data-postid="18317" data-belowelement="div-comment-525927" data-respondelement="respond" data-replyto="Reply to José Duarte" aria-label='Reply to José Duarte'>Reply</a></div> </article>
+<ol class="children">
+<li id="comment-525970" class="comment byuser comment-author-lemire bypostauthor even depth-3 parent">
+<article id="div-comment-525970" class="comment-body">
+<footer class="comment-meta">
+<div class="comment-author vcard">
+<img alt='' src='https://secure.gravatar.com/avatar/2ca999bef9535950f5b84281a4dab006?s=56&#038;d=mm&#038;r=g' srcset='https://secure.gravatar.com/avatar/2ca999bef9535950f5b84281a4dab006?s=112&#038;d=mm&#038;r=g 2x' class='avatar avatar-56 photo' height='56' width='56' loading='lazy' /> <b class="fn"><a href="https://lemire.me/en/" rel='external nofollow ugc' class='url'>Daniel Lemire</a></b> <span class="says">says:</span> </div>
+<div class="comment-metadata">
+<a href="https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/#comment-525970"><time datetime="2020-06-11T13:35:19+00:00">June 11, 2020 at 1:35 pm</time></a> </div>
+</footer>
+<div class="comment-content">
+<blockquote>
+<p>The Parabix XML project.</p>
+</blockquote>
+<p>Yes, we know of parabix, but no, it is nothing like simdjson for XML.</p>
+</div>
+<div class="reply"><a rel='nofollow' class='comment-reply-link' href='https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/?replytocom=525970#respond' data-commentid="525970" data-postid="18317" data-belowelement="div-comment-525970" data-respondelement="respond" data-replyto="Reply to Daniel Lemire" aria-label='Reply to Daniel Lemire'>Reply</a></div> </article>
+<ol class="children">
+<li id="comment-525977" class="comment odd alt depth-4 parent">
+<article id="div-comment-525977" class="comment-body">
+<footer class="comment-meta">
+<div class="comment-author vcard">
+<img alt='' src='https://secure.gravatar.com/avatar/46a12c8cf24f9d7f8ad7a1ef3ee5a010?s=56&#038;d=mm&#038;r=g' srcset='https://secure.gravatar.com/avatar/46a12c8cf24f9d7f8ad7a1ef3ee5a010?s=112&#038;d=mm&#038;r=g 2x' class='avatar avatar-56 photo' height='56' width='56' loading='lazy' /> <b class="fn"><a href='https://www.joseduarte.com' rel='external nofollow ugc' class='url'>José Duarte</a></b> <span class="says">says:</span> </div>
+<div class="comment-metadata">
+<a href="https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/#comment-525977"><time datetime="2020-06-11T14:12:31+00:00">June 11, 2020 at 2:12 pm</time></a> </div>
+</footer>
+<div class="comment-content">
+<p>And? How does it compare? It looks innovative. Is simdjson&#8217;s approach applicable to XML too?</p>
+</div>
+<div class="reply"><a rel='nofollow' class='comment-reply-link' href='https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/?replytocom=525977#respond' data-commentid="525977" data-postid="18317" data-belowelement="div-comment-525977" data-respondelement="respond" data-replyto="Reply to José Duarte" aria-label='Reply to José Duarte'>Reply</a></div> </article>
+<ol class="children">
+<li id="comment-525986" class="comment byuser comment-author-lemire bypostauthor even depth-5 parent">
+<article id="div-comment-525986" class="comment-body">
+<footer class="comment-meta">
+<div class="comment-author vcard">
+<img alt='' src='https://secure.gravatar.com/avatar/2ca999bef9535950f5b84281a4dab006?s=56&#038;d=mm&#038;r=g' srcset='https://secure.gravatar.com/avatar/2ca999bef9535950f5b84281a4dab006?s=112&#038;d=mm&#038;r=g 2x' class='avatar avatar-56 photo' height='56' width='56' loading='lazy' /> <b class="fn"><a href="https://lemire.me/en/" rel='external nofollow ugc' class='url'>Daniel Lemire</a></b> <span class="says">says:</span> </div>
+<div class="comment-metadata">
+<a href="https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/#comment-525986"><time datetime="2020-06-11T15:41:32+00:00">June 11, 2020 at 3:41 pm</time></a> </div>
+</footer>
+<div class="comment-content">
+<p><a href="https://arxiv.org/abs/1902.08318" rel="nofollow ugc">Please see the paper where it is discussed in details</a>. If you have questions after reading the paper, I will be happy to answer them.</p>
+</div>
+<div class="reply"><a rel='nofollow' class='comment-reply-link' href='https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/?replytocom=525986#respond' data-commentid="525986" data-postid="18317" data-belowelement="div-comment-525986" data-respondelement="respond" data-replyto="Reply to Daniel Lemire" aria-label='Reply to Daniel Lemire'>Reply</a></div> </article>
+<ol class="children">
+<li id="comment-526160" class="comment odd alt depth-6 parent">
+<article id="div-comment-526160" class="comment-body">
+<footer class="comment-meta">
+<div class="comment-author vcard">
+<img alt='' src='https://secure.gravatar.com/avatar/46a12c8cf24f9d7f8ad7a1ef3ee5a010?s=56&#038;d=mm&#038;r=g' srcset='https://secure.gravatar.com/avatar/46a12c8cf24f9d7f8ad7a1ef3ee5a010?s=112&#038;d=mm&#038;r=g 2x' class='avatar avatar-56 photo' height='56' width='56' loading='lazy' /> <b class="fn"><a href='https://www.joseduarte.com' rel='external nofollow ugc' class='url'>Joe Duarte</a></b> <span class="says">says:</span> </div>
+<div class="comment-metadata">
+<a href="https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/#comment-526160"><time datetime="2020-06-14T19:43:41+00:00">June 14, 2020 at 7:43 pm</time></a> </div>
+</footer>
+<div class="comment-content">
+<p>Okay, I read it. Very nice work.</p>
+<p>Q1: Why do you use 8 bytes to encode things like null, true, false, etc.? Couldn&#8217;t you just use one byte, or even a few bits? After all, there&#8217;s a null codepoint in ASCII / UTF-8 &#8212; it&#8217;s the first one, the binary zero byte 0000 0000. Do you need everything to be eight bytes for some reason?</p>
+<p>Q2: Why are you focused only on huge files, over 50 KB? For JSON that&#8217;s huge. The most common use of JSON is slinging around requests and responses on the web, with small payloads. For example, a REST API for payments might involve JSON payloads that are about 1 to 3 KB each. (GraphQL, like REST, also uses JSON.) See PayPal&#8217;s API, or here&#8217;s an example of a typical request payload: <a href="https://doc.gopay.com/en/?lang=shell#standard-payment" rel="nofollow ugc">https://doc.gopay.com/en/?lang=shell#standard-payment</a></p>
+<p>Q3: What do you do if you can&#8217;t use <code>tzcnt</code> to count trailing zeros? That instruction is part of BMI, which came out in Haswell. Ivy Bridge and Sandy Bridge won&#8217;t have it, and there are still a lot of servers running on those families. How far back do you go on SIMD? Is something like Westmere or Nehalem you&#8217;re floor? They would have SSE4.2, carryless multiplication, and I think AES.</p>
+<p>You might be understating simdjson performance with all those number-heavy files, since number parsing should be your slowest.</p>
+<p>FYI, I opened an issue on GitHub asking about CPU and memory overhead. That&#8217;s an important dimension that the paper and the website don&#8217;t address. It&#8217;s also important to know if it causes cores to throttle down when you use AVX2 or whatever. I think Skylake and Cascade Lake might be okay on that front, but there might be an issue using AVX or AVX2 on earlier families. If so, using simdjson would slow down all the other applications and workloads on the server. I know that AVX512 throttles cores, but I don&#8217;t remember about AVX2.</p>
+</div>
+<div class="reply"><a rel='nofollow' class='comment-reply-link' href='https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/?replytocom=526160#respond' data-commentid="526160" data-postid="18317" data-belowelement="div-comment-526160" data-respondelement="respond" data-replyto="Reply to Joe Duarte" aria-label='Reply to Joe Duarte'>Reply</a></div> </article>
+<ol class="children">
+<li id="comment-526172" class="comment byuser comment-author-lemire bypostauthor even depth-7 parent">
+<article id="div-comment-526172" class="comment-body">
+<footer class="comment-meta">
+<div class="comment-author vcard">
+<img alt='' src='https://secure.gravatar.com/avatar/2ca999bef9535950f5b84281a4dab006?s=56&#038;d=mm&#038;r=g' srcset='https://secure.gravatar.com/avatar/2ca999bef9535950f5b84281a4dab006?s=112&#038;d=mm&#038;r=g 2x' class='avatar avatar-56 photo' height='56' width='56' loading='lazy' /> <b class="fn"><a href="https://lemire.me/en/" rel='external nofollow ugc' class='url'>Daniel Lemire</a></b> <span class="says">says:</span> </div>
+<div class="comment-metadata">
+<a href="https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/#comment-526172"><time datetime="2020-06-14T21:59:00+00:00">June 14, 2020 at 9:59 pm</time></a> </div>
+</footer>
+<div class="comment-content">
+<blockquote>
+<p>Why do you use 8 bytes to encode things like null, true, false, etc.? Couldn’t you just use one byte, or even a few bits?</p>
+</blockquote>
+<p>The tape uses a flat 8-byte per element, with some exceptions (numbers use two 8-byte entries).</p>
+<blockquote>
+<p>Why are you focused only on huge files, over 50 KB? For JSON that’s huge.</p>
+</blockquote>
+<p>That is what the paper benchmarks. But you can find other results on GitHub, including on tiny files.</p>
+<blockquote>
+<p>What do you do if you can’t use tzcnt to count trailing zeros? That instruction is part of BMI, which came out in Haswell. Ivy Bridge and Sandy Bridge won’t have it, and there are still a lot of servers running on those families. How far back do you go on SIMD? Is something like Westmere or Nehalem you’re floor? They would have SSE4.2, carryless multiplication, and I think AES.</p>
+</blockquote>
+<p>The simdjson relies on runtime dispatching. It runs on every x64 processing under a 64-bit system. It is open source.</p>
+<blockquote>
+<p>FYI, I opened an issue on GitHub asking about CPU and memory overhead. That’s an important dimension that the paper and the website don’t address. It’s also important to know if it causes cores to throttle down when you use AVX2 or whatever. I think Skylake and Cascade Lake might be okay on that front, but there might be an issue using AVX or AVX2 on earlier families. If so, using simdjson would slow down all the other applications and workloads on the server. I know that AVX512 throttles cores, but I don’t remember about AVX2.</p>
+</blockquote>
+<p>We do not support AVX-512. No downclocking is expected: we do not use AVX2 instructions requiring it (e.g., FMA). But, in any case, as the user, you are in charge of kernel that runs, so you can select SSSE3 is you prefer, even when your system supports AVX2. The simdjson has a non-allocation policy for parsing, so you can parse terabytes of data without allocating memory.</p>
+</div>
+<div class="reply"><a rel='nofollow' class='comment-reply-link' href='https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/?replytocom=526172#respond' data-commentid="526172" data-postid="18317" data-belowelement="div-comment-526172" data-respondelement="respond" data-replyto="Reply to Daniel Lemire" aria-label='Reply to Daniel Lemire'>Reply</a></div> </article>
+<ol class="children">
+<li id="comment-526211" class="comment odd alt depth-8 parent">
+<article id="div-comment-526211" class="comment-body">
+<footer class="comment-meta">
+<div class="comment-author vcard">
+<img alt='' src='https://secure.gravatar.com/avatar/46a12c8cf24f9d7f8ad7a1ef3ee5a010?s=56&#038;d=mm&#038;r=g' srcset='https://secure.gravatar.com/avatar/46a12c8cf24f9d7f8ad7a1ef3ee5a010?s=112&#038;d=mm&#038;r=g 2x' class='avatar avatar-56 photo' height='56' width='56' loading='lazy' /> <b class="fn"><a href='https://www.joseduarte.com' rel='external nofollow ugc' class='url'>Joe Duarte</a></b> <span class="says">says:</span> </div>
+<div class="comment-metadata">
+<a href="https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/#comment-526211"><time datetime="2020-06-15T08:53:24+00:00">June 15, 2020 at 8:53 am</time></a> </div>
+</footer>
+<div class="comment-content">
+<p>Okay, so on the issue of CPU overhead you said on GitHub that speed <strong><em>is</em></strong> CPU overhead or something. That&#8217;s not quite right. The equation is:</p>
+<p><em>Overhead</em> = <em>(JSON GB / Parsing speed)</em> × <em>CPU usage</em></p>
+<p>Where CPU usage is the percentage of CPU. There could also be a form that uses CPU clock cycles per byte or something. It&#8217;s not enough to know how fast some software is – we normally have to know its cost in resources like CPU and memory. It looks like you&#8217;re good on memory since you don&#8217;t allocate, but I&#8217;m surprised that you&#8217;re unwilling to report CPU overhead.</p>
+<p>Another suggestions.</p>
+<p>It would be great to know some things about simdjson&#8217;s security properties, to have some basic assurances. This is a strange era for computing given how insecure and primitive our programming languages and tools are. C++ is an unsafe language where exploitable memory bugs are inevitable on medium to large projects. One light assurance would be if you follow the <a href="https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines" rel="nofollow ugc">C++ Core Guidelines</a>. Much stronger assurance would be to pass something <a href="https://scan.coverity.com/" rel="nofollow ugc">Coverity Scan</a>. It&#8217;s free for open source projects.</p>
+<p>A JSON parser might parse untrusted input, which can be malformed or not JSON at all. Ideally a parser would be formally verified, but hardly anyone does that since popular programming languages like C++ aren&#8217;t designed to facilitate verification and the tooling sucks. So Coverity is about as good as it gets. Address Sanitizer and Memory Sanitizer in the LLVM project are interesting too. The Software Engineering Institute at Carnegie Mellon has a Secure C++ Coding Guidelines too: <a href="https://insights.sei.cmu.edu/sei_blog/2017/04/cert-c-secure-coding-guidelines.html" rel="nofollow ugc">https://insights.sei.cmu.edu/sei_blog/2017/04/cert-c-secure-coding-guidelines.html</a></p>
+<p>If you had some kind of formal assurances like those it would be pretty distinctive.</p>
+</div>
+<div class="reply"><a rel='nofollow' class='comment-reply-link' href='https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/?replytocom=526211#respond' data-commentid="526211" data-postid="18317" data-belowelement="div-comment-526211" data-respondelement="respond" data-replyto="Reply to Joe Duarte" aria-label='Reply to Joe Duarte'>Reply</a></div> </article>
+<ol class="children">
+<li id="comment-526220" class="comment byuser comment-author-lemire bypostauthor even depth-9">
+<article id="div-comment-526220" class="comment-body">
+<footer class="comment-meta">
+<div class="comment-author vcard">
+<img alt='' src='https://secure.gravatar.com/avatar/2ca999bef9535950f5b84281a4dab006?s=56&#038;d=mm&#038;r=g' srcset='https://secure.gravatar.com/avatar/2ca999bef9535950f5b84281a4dab006?s=112&#038;d=mm&#038;r=g 2x' class='avatar avatar-56 photo' height='56' width='56' loading='lazy' /> <b class="fn"><a href="https://lemire.me/en/" rel='external nofollow ugc' class='url'>Daniel Lemire</a></b> <span class="says">says:</span> </div>
+<div class="comment-metadata">
+<a href="https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/#comment-526220"><time datetime="2020-06-15T12:24:39+00:00">June 15, 2020 at 12:24 pm</time></a> </div>
+</footer>
+<div class="comment-content">
+<p><em>I’m surprised that you’re unwilling to report CPU overhead.</em></p>
+<p>If you have interesting performance metrics you would like to propose, we are always inviting new pull requests. The simdjson library is a community-based project. Please write up some code, and we shall be glad to discuss it.</p>
+</div>
+<div class="reply"><a rel='nofollow' class='comment-reply-link' href='https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/?replytocom=526220#respond' data-commentid="526220" data-postid="18317" data-belowelement="div-comment-526220" data-respondelement="respond" data-replyto="Reply to Daniel Lemire" aria-label='Reply to Daniel Lemire'>Reply</a></div> </article>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+<li id="comment-498808" class="comment odd alt thread-even depth-1 parent">
+<article id="div-comment-498808" class="comment-body">
+<footer class="comment-meta">
+<div class="comment-author vcard">
+<img alt='' src='https://secure.gravatar.com/avatar/6b5a01511b13d8cfff6f3605ba06a70e?s=56&#038;d=mm&#038;r=g' srcset='https://secure.gravatar.com/avatar/6b5a01511b13d8cfff6f3605ba06a70e?s=112&#038;d=mm&#038;r=g 2x' class='avatar avatar-56 photo' height='56' width='56' loading='lazy' /> <b class="fn"><a href='https://blog.metaobject.com/' rel='external nofollow ugc' class='url'>Marcel Weiher</a></b> <span class="says">says:</span> </div>
+<div class="comment-metadata">
+<a href="https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/#comment-498808"><time datetime="2020-04-01T09:53:49+00:00">April 1, 2020 at 9:53 am</time></a> </div>
+</footer>
+<div class="comment-content">
+<p>Awesome work! When I looked at integrating the previous version into a higher level parser, it didn&#8217;t look like it handled streaming. Was that impression correct and if so, has that changed? Thanks!</p>
+</div>
+<div class="reply"><a rel='nofollow' class='comment-reply-link' href='https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/?replytocom=498808#respond' data-commentid="498808" data-postid="18317" data-belowelement="div-comment-498808" data-respondelement="respond" data-replyto="Reply to Marcel Weiher" aria-label='Reply to Marcel Weiher'>Reply</a></div> </article>
+<ol class="children">
+<li id="comment-498831" class="comment byuser comment-author-lemire bypostauthor even depth-2 parent">
+<article id="div-comment-498831" class="comment-body">
+<footer class="comment-meta">
+<div class="comment-author vcard">
+<img alt='' src='https://secure.gravatar.com/avatar/2ca999bef9535950f5b84281a4dab006?s=56&#038;d=mm&#038;r=g' srcset='https://secure.gravatar.com/avatar/2ca999bef9535950f5b84281a4dab006?s=112&#038;d=mm&#038;r=g 2x' class='avatar avatar-56 photo' height='56' width='56' loading='lazy' /> <b class="fn"><a href="https://lemire.me/en/" rel='external nofollow ugc' class='url'>Daniel Lemire</a></b> <span class="says">says:</span> </div>
+<div class="comment-metadata">
+<a href="https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/#comment-498831"><time datetime="2020-04-01T12:45:02+00:00">April 1, 2020 at 12:45 pm</time></a> </div>
+</footer>
+<div class="comment-content">
+<p>We do handle long inputs containing multiple JSON documents (e.g., line separated). We even have a nifty API for it (see &#8220;parse_many&#8221;).</p>
+<p>If you mean streaming as in &#8220;reading from a C++ istream&#8221;, then, no, we do not support this and won&#8217;t. It is too slow. We are faster than getline applied to an in-memory istream.</p>
+</div>
+<div class="reply"><a rel='nofollow' class='comment-reply-link' href='https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/?replytocom=498831#respond' data-commentid="498831" data-postid="18317" data-belowelement="div-comment-498831" data-respondelement="respond" data-replyto="Reply to Daniel Lemire" aria-label='Reply to Daniel Lemire'>Reply</a></div> </article>
+<ol class="children">
+<li id="comment-498834" class="comment odd alt depth-3 parent">
+<article id="div-comment-498834" class="comment-body">
+<footer class="comment-meta">
+<div class="comment-author vcard">
+<img alt='' src='https://secure.gravatar.com/avatar/6b5a01511b13d8cfff6f3605ba06a70e?s=56&#038;d=mm&#038;r=g' srcset='https://secure.gravatar.com/avatar/6b5a01511b13d8cfff6f3605ba06a70e?s=112&#038;d=mm&#038;r=g 2x' class='avatar avatar-56 photo' height='56' width='56' loading='lazy' /> <b class="fn"><a href='https://blog.metaobject.com/' rel='external nofollow ugc' class='url'>Marcel Weiher</a></b> <span class="says">says:</span> </div>
+<div class="comment-metadata">
+<a href="https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/#comment-498834"><time datetime="2020-04-01T12:54:20+00:00">April 1, 2020 at 12:54 pm</time></a> </div>
+</footer>
+<div class="comment-content">
+<p>Don&#8217;t care about C++ istream. In order to stream, the parser must be able to deal with partial/incomplete inputs and with resuming such an incomplete parse.</p>
+<p>Feeding it is then Somebody Else&#8217;s Problem.</p>
+<p>One of the things I learned early on in building high-perf components is that having the component itself be fast is (at most) half the bette. The crucial bit is that it must be possible, preferably easy/straightforward, to use it in such a way the the whole ensemble is fast.</p>
+<p>A lot of the &#8220;fast&#8221; XML parsers tended to fall flat in that regard.</p>
+</div>
+<div class="reply"><a rel='nofollow' class='comment-reply-link' href='https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/?replytocom=498834#respond' data-commentid="498834" data-postid="18317" data-belowelement="div-comment-498834" data-respondelement="respond" data-replyto="Reply to Marcel Weiher" aria-label='Reply to Marcel Weiher'>Reply</a></div> </article>
+<ol class="children">
+<li id="comment-498835" class="comment even depth-4">
+<article id="div-comment-498835" class="comment-body">
+<footer class="comment-meta">
+<div class="comment-author vcard">
+<img alt='' src='https://secure.gravatar.com/avatar/6b5a01511b13d8cfff6f3605ba06a70e?s=56&#038;d=mm&#038;r=g' srcset='https://secure.gravatar.com/avatar/6b5a01511b13d8cfff6f3605ba06a70e?s=112&#038;d=mm&#038;r=g 2x' class='avatar avatar-56 photo' height='56' width='56' loading='lazy' /> <b class="fn"><a href='https://blog.metaobject.com/' rel='external nofollow ugc' class='url'>Marcel Weiher</a></b> <span class="says">says:</span> </div>
+<div class="comment-metadata">
+<a href="https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/#comment-498835"><time datetime="2020-04-01T12:55:29+00:00">April 1, 2020 at 12:55 pm</time></a> </div>
+</footer>
+<div class="comment-content">
+<p><em>battle</em>, of course. I blame autocorrect&#8230;</p>
+</div>
+<div class="reply"><a rel='nofollow' class='comment-reply-link' href='https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/?replytocom=498835#respond' data-commentid="498835" data-postid="18317" data-belowelement="div-comment-498835" data-respondelement="respond" data-replyto="Reply to Marcel Weiher" aria-label='Reply to Marcel Weiher'>Reply</a></div> </article>
+</li>
+<li id="comment-498839" class="comment byuser comment-author-lemire bypostauthor odd alt depth-4 parent">
+<article id="div-comment-498839" class="comment-body">
+<footer class="comment-meta">
+<div class="comment-author vcard">
+<img alt='' src='https://secure.gravatar.com/avatar/2ca999bef9535950f5b84281a4dab006?s=56&#038;d=mm&#038;r=g' srcset='https://secure.gravatar.com/avatar/2ca999bef9535950f5b84281a4dab006?s=112&#038;d=mm&#038;r=g 2x' class='avatar avatar-56 photo' height='56' width='56' loading='lazy' /> <b class="fn"><a href="https://lemire.me/en/" rel='external nofollow ugc' class='url'>Daniel Lemire</a></b> <span class="says">says:</span> </div>
+<div class="comment-metadata">
+<a href="https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/#comment-498839"><time datetime="2020-04-01T13:13:59+00:00">April 1, 2020 at 1:13 pm</time></a> </div>
+</footer>
+<div class="comment-content">
+<p>The way simdjson is currently designed is that it won&#8217;t let you access a document (at all) unless it has been fully validated. The rationale behind this is that many people do not want to start ingesting documents that are incorrect. And, of course, you can only know that a document is valid if you have seen all of it.</p>
+<p>For line-separated JSON documents, it is not an issue because you get to see the whole JSON document before returning it to the user, it is just that you have a long stream of them.</p>
+<p>We plan to offer more options in future releases.</p>
+</div>
+<div class="reply"><a rel='nofollow' class='comment-reply-link' href='https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/?replytocom=498839#respond' data-commentid="498839" data-postid="18317" data-belowelement="div-comment-498839" data-respondelement="respond" data-replyto="Reply to Daniel Lemire" aria-label='Reply to Daniel Lemire'>Reply</a></div> </article>
+<ol class="children">
+<li id="comment-556534" class="comment even depth-5 parent">
+<article id="div-comment-556534" class="comment-body">
+<footer class="comment-meta">
+<div class="comment-author vcard">
+<img alt='' src='https://secure.gravatar.com/avatar/d498869d39c19039fce0b2cc55caddaf?s=56&#038;d=mm&#038;r=g' srcset='https://secure.gravatar.com/avatar/d498869d39c19039fce0b2cc55caddaf?s=112&#038;d=mm&#038;r=g 2x' class='avatar avatar-56 photo' height='56' width='56' loading='lazy' /> <b class="fn">Pawel Terlecki</b> <span class="says">says:</span> </div>
+<div class="comment-metadata">
+<a href="https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/#comment-556534"><time datetime="2020-10-29T23:32:59+00:00">October 29, 2020 at 11:32 pm</time></a> </div>
+</footer>
+<div class="comment-content">
+<p>The parsing speed is impressive, great work.</p>
+<p>I second Marcel&#8217;s point. The current interface works well if a processing pipeline starts with a file. However, the parser cannot be used in the middle of a pipeline in a larger system. Without supporting streaming input, materializing large intermediate result clogs the flow. Downloading a file from cloud storage or user-defined document transformations are common scenarios here.</p>
+<p>The parser would not have to output incorrect or incomplete documents. It would wait for another chunk of input to continue parsing a document that is in-flight.</p>
+</div>
+<div class="reply"><a rel='nofollow' class='comment-reply-link' href='https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/?replytocom=556534#respond' data-commentid="556534" data-postid="18317" data-belowelement="div-comment-556534" data-respondelement="respond" data-replyto="Reply to Pawel Terlecki" aria-label='Reply to Pawel Terlecki'>Reply</a></div> </article>
+<ol class="children">
+<li id="comment-556537" class="comment byuser comment-author-lemire bypostauthor odd alt depth-6">
+<article id="div-comment-556537" class="comment-body">
+<footer class="comment-meta">
+<div class="comment-author vcard">
+<img alt='' src='https://secure.gravatar.com/avatar/2ca999bef9535950f5b84281a4dab006?s=56&#038;d=mm&#038;r=g' srcset='https://secure.gravatar.com/avatar/2ca999bef9535950f5b84281a4dab006?s=112&#038;d=mm&#038;r=g 2x' class='avatar avatar-56 photo' height='56' width='56' loading='lazy' /> <b class="fn"><a href="https://lemire.me/en/" rel='external nofollow ugc' class='url'>Daniel Lemire</a></b> <span class="says">says:</span> </div>
+<div class="comment-metadata">
+<a href="https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/#comment-556537"><time datetime="2020-10-29T23:59:25+00:00">October 29, 2020 at 11:59 pm</time></a> </div>
+</footer>
+<div class="comment-content">
+<p>You write &#8220;materializing large intermediate&#8221;, and with that constraint, I agree. But be mindful that large means &#8220;out of cache&#8221;, and we have megabytes of cache on current processor cores. For small to medium files, querying cache lines through an interface is an anti-design.</p>
+<p>Note that we have since released version 0.6 which introduces a new API that we call On Demand API. So this blog post is somewhat obsolete at this point.</p>
+</div>
+<div class="reply"><a rel='nofollow' class='comment-reply-link' href='https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/?replytocom=556537#respond' data-commentid="556537" data-postid="18317" data-belowelement="div-comment-556537" data-respondelement="respond" data-replyto="Reply to Daniel Lemire" aria-label='Reply to Daniel Lemire'>Reply</a></div> </article>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+<li id="comment-498817" class="comment even thread-odd thread-alt depth-1">
+<article id="div-comment-498817" class="comment-body">
+<footer class="comment-meta">
+<div class="comment-author vcard">
+<img alt='' src='https://secure.gravatar.com/avatar/f52a99e6bec57a971cbe232b7c5cc49f?s=56&#038;d=mm&#038;r=g' srcset='https://secure.gravatar.com/avatar/f52a99e6bec57a971cbe232b7c5cc49f?s=112&#038;d=mm&#038;r=g 2x' class='avatar avatar-56 photo' height='56' width='56' loading='lazy' /> <b class="fn">eb</b> <span class="says">says:</span> </div>
+<div class="comment-metadata">
+<a href="https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/#comment-498817"><time datetime="2020-04-01T11:03:02+00:00">April 1, 2020 at 11:03 am</time></a> </div>
+</footer>
+<div class="comment-content">
+<p>Minor inconsistency in the example: the average tire pressure of the cars will not be what one would expect (only half of it)!</p>
+</div>
+<div class="reply"><a rel='nofollow' class='comment-reply-link' href='https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/?replytocom=498817#respond' data-commentid="498817" data-postid="18317" data-belowelement="div-comment-498817" data-respondelement="respond" data-replyto="Reply to eb" aria-label='Reply to eb'>Reply</a></div> </article>
+</li>
+<li id="comment-498869" class="comment odd alt thread-even depth-1 parent">
+<article id="div-comment-498869" class="comment-body">
+<footer class="comment-meta">
+<div class="comment-author vcard">
+<img alt='' src='https://secure.gravatar.com/avatar/f35fdbd4e1f1e3d92de7e627085789f4?s=56&#038;d=mm&#038;r=g' srcset='https://secure.gravatar.com/avatar/f35fdbd4e1f1e3d92de7e627085789f4?s=112&#038;d=mm&#038;r=g 2x' class='avatar avatar-56 photo' height='56' width='56' loading='lazy' /> <b class="fn">Alex Mikhalev</b> <span class="says">says:</span> </div>
+<div class="comment-metadata">
+<a href="https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/#comment-498869"><time datetime="2020-04-01T16:05:54+00:00">April 1, 2020 at 4:05 pm</time></a> </div>
+</footer>
+<div class="comment-content">
+<p>Any plans for Rust bindings?</p>
+</div>
+<div class="reply"><a rel='nofollow' class='comment-reply-link' href='https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/?replytocom=498869#respond' data-commentid="498869" data-postid="18317" data-belowelement="div-comment-498869" data-respondelement="respond" data-replyto="Reply to Alex Mikhalev" aria-label='Reply to Alex Mikhalev'>Reply</a></div> </article>
+<ol class="children">
+<li id="comment-498875" class="comment byuser comment-author-lemire bypostauthor even depth-2">
+<article id="div-comment-498875" class="comment-body">
+<footer class="comment-meta">
+<div class="comment-author vcard">
+<img alt='' src='https://secure.gravatar.com/avatar/2ca999bef9535950f5b84281a4dab006?s=56&#038;d=mm&#038;r=g' srcset='https://secure.gravatar.com/avatar/2ca999bef9535950f5b84281a4dab006?s=112&#038;d=mm&#038;r=g 2x' class='avatar avatar-56 photo' height='56' width='56' loading='lazy' /> <b class="fn"><a href="https://lemire.me/en/" rel='external nofollow ugc' class='url'>Daniel Lemire</a></b> <span class="says">says:</span> </div>
+<div class="comment-metadata">
+<a href="https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/#comment-498875"><time datetime="2020-04-01T16:36:03+00:00">April 1, 2020 at 4:36 pm</time></a> </div>
+</footer>
+<div class="comment-content">
+<p>There are Rust bindings but help is needed to get it updated:<br />
+<a href="https://github.com/SunDoge/simdjson-rust" rel="nofollow ugc">https://github.com/SunDoge/simdjson-rust</a></p>
+</div>
+<div class="reply"><a rel='nofollow' class='comment-reply-link' href='https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/?replytocom=498875#respond' data-commentid="498875" data-postid="18317" data-belowelement="div-comment-498875" data-respondelement="respond" data-replyto="Reply to Daniel Lemire" aria-label='Reply to Daniel Lemire'>Reply</a></div> </article>
+</li>
+</ol>
+</li>
+<li id="comment-518374" class="comment odd alt thread-odd thread-alt depth-1 parent">
+<article id="div-comment-518374" class="comment-body">
+<footer class="comment-meta">
+<div class="comment-author vcard">
+<img alt='' src='https://secure.gravatar.com/avatar/afe4c934b2064530d24db56b458c6de7?s=56&#038;d=mm&#038;r=g' srcset='https://secure.gravatar.com/avatar/afe4c934b2064530d24db56b458c6de7?s=112&#038;d=mm&#038;r=g 2x' class='avatar avatar-56 photo' height='56' width='56' loading='lazy' /> <b class="fn">Catherine</b> <span class="says">says:</span> </div>
+<div class="comment-metadata">
+<a href="https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/#comment-518374"><time datetime="2020-05-22T20:11:25+00:00">May 22, 2020 at 8:11 pm</time></a> </div>
+</footer>
+<div class="comment-content">
+<p>Congrats !</p>
+<p>What about a mooc/levure on parsing with C++ ?</p>
+</div>
+<div class="reply"><a rel='nofollow' class='comment-reply-link' href='https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/?replytocom=518374#respond' data-commentid="518374" data-postid="18317" data-belowelement="div-comment-518374" data-respondelement="respond" data-replyto="Reply to Catherine" aria-label='Reply to Catherine'>Reply</a></div> </article>
+<ol class="children">
+<li id="comment-518375" class="comment byuser comment-author-lemire bypostauthor even depth-2 parent">
+<article id="div-comment-518375" class="comment-body">
+<footer class="comment-meta">
+<div class="comment-author vcard">
+<img alt='' src='https://secure.gravatar.com/avatar/2ca999bef9535950f5b84281a4dab006?s=56&#038;d=mm&#038;r=g' srcset='https://secure.gravatar.com/avatar/2ca999bef9535950f5b84281a4dab006?s=112&#038;d=mm&#038;r=g 2x' class='avatar avatar-56 photo' height='56' width='56' loading='lazy' /> <b class="fn"><a href="https://lemire.me/en/" rel='external nofollow ugc' class='url'>Daniel Lemire</a></b> <span class="says">says:</span> </div>
+<div class="comment-metadata">
+<a href="https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/#comment-518375"><time datetime="2020-05-22T20:15:07+00:00">May 22, 2020 at 8:15 pm</time></a> </div>
+</footer>
+<div class="comment-content">
+<p>@Catherine</p>
+<p>I have a talk on YouTube, does that count?</p>
+<p><a href="https://www.youtube.com/watch?v=wlvKAT7SZIQ" rel="nofollow ugc">https://www.youtube.com/watch?v=wlvKAT7SZIQ</a></p>
+</div>
+<div class="reply"><a rel='nofollow' class='comment-reply-link' href='https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/?replytocom=518375#respond' data-commentid="518375" data-postid="18317" data-belowelement="div-comment-518375" data-respondelement="respond" data-replyto="Reply to Daniel Lemire" aria-label='Reply to Daniel Lemire'>Reply</a></div> </article>
+<ol class="children">
+<li id="comment-518498" class="comment odd alt depth-3">
+<article id="div-comment-518498" class="comment-body">
+<footer class="comment-meta">
+<div class="comment-author vcard">
+<img alt='' src='https://secure.gravatar.com/avatar/afe4c934b2064530d24db56b458c6de7?s=56&#038;d=mm&#038;r=g' srcset='https://secure.gravatar.com/avatar/afe4c934b2064530d24db56b458c6de7?s=112&#038;d=mm&#038;r=g 2x' class='avatar avatar-56 photo' height='56' width='56' loading='lazy' /> <b class="fn">Catherine</b> <span class="says">says:</span> </div>
+<div class="comment-metadata">
+<a href="https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/#comment-518498"><time datetime="2020-05-22T22:28:34+00:00">May 22, 2020 at 10:28 pm</time></a> </div>
+</footer>
+<div class="comment-content">
+<p>Thanks. Great talk and aha moments.</p>
+</div>
+<div class="reply"><a rel='nofollow' class='comment-reply-link' href='https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/?replytocom=518498#respond' data-commentid="518498" data-postid="18317" data-belowelement="div-comment-518498" data-respondelement="respond" data-replyto="Reply to Catherine" aria-label='Reply to Catherine'>Reply</a></div> </article>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+<li id="comment-525928" class="comment even thread-even depth-1 parent">
+<article id="div-comment-525928" class="comment-body">
+<footer class="comment-meta">
+<div class="comment-author vcard">
+<img alt='' src='https://secure.gravatar.com/avatar/46a12c8cf24f9d7f8ad7a1ef3ee5a010?s=56&#038;d=mm&#038;r=g' srcset='https://secure.gravatar.com/avatar/46a12c8cf24f9d7f8ad7a1ef3ee5a010?s=112&#038;d=mm&#038;r=g 2x' class='avatar avatar-56 photo' height='56' width='56' loading='lazy' /> <b class="fn"><a href='https://www.joseduarte.com' rel='external nofollow ugc' class='url'>José Duarte</a></b> <span class="says">says:</span> </div>
+<div class="comment-metadata">
+<a href="https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/#comment-525928"><time datetime="2020-06-11T02:47:56+00:00">June 11, 2020 at 2:47 am</time></a> </div>
+</footer>
+<div class="comment-content">
+<p>By the way, it would be neat to have an ultrafast SIMD JSON <strong>minifier</strong>, something very light in terms of CPU and memory use.</p>
+<p>This would presumably be much simpler than a parser, since all it would have to do is strip spaces, tabs, newlines, and carriage returns. Well, it would have to know not to touch the contents of quoted strings.</p>
+<p>There&#8217;s an enormous amount of waste with all the unminified JSON people are slinging around. You can save 10% most of the time by minifying, but there aren&#8217;t any good minifiers out there.</p>
+</div>
+<div class="reply"><a rel='nofollow' class='comment-reply-link' href='https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/?replytocom=525928#respond' data-commentid="525928" data-postid="18317" data-belowelement="div-comment-525928" data-respondelement="respond" data-replyto="Reply to José Duarte" aria-label='Reply to José Duarte'>Reply</a></div> </article>
+<ol class="children">
+<li id="comment-525969" class="comment byuser comment-author-lemire bypostauthor odd alt depth-2">
+<article id="div-comment-525969" class="comment-body">
+<footer class="comment-meta">
+<div class="comment-author vcard">
+<img alt='' src='https://secure.gravatar.com/avatar/2ca999bef9535950f5b84281a4dab006?s=56&#038;d=mm&#038;r=g' srcset='https://secure.gravatar.com/avatar/2ca999bef9535950f5b84281a4dab006?s=112&#038;d=mm&#038;r=g 2x' class='avatar avatar-56 photo' height='56' width='56' loading='lazy' /> <b class="fn"><a href="https://lemire.me/en/" rel='external nofollow ugc' class='url'>Daniel Lemire</a></b> <span class="says">says:</span> </div>
+<div class="comment-metadata">
+<a href="https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/#comment-525969"><time datetime="2020-06-11T13:33:48+00:00">June 11, 2020 at 1:33 pm</time></a> </div>
+</footer>
+<div class="comment-content">
+<blockquote>
+<p>By the way, it would be neat to have an ultrafast SIMD JSON minifier,<br />
+something very light in terms of CPU and memory use.</p>
+</blockquote>
+<p>But we do have that!!!! It is part of simdjson.</p>
+</div>
+<div class="reply"><a rel='nofollow' class='comment-reply-link' href='https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/?replytocom=525969#respond' data-commentid="525969" data-postid="18317" data-belowelement="div-comment-525969" data-respondelement="respond" data-replyto="Reply to Daniel Lemire" aria-label='Reply to Daniel Lemire'>Reply</a></div> </article>
+</li>
+</ol>
+</li>
+<li id="comment-525976" class="comment even thread-odd thread-alt depth-1 parent">
+<article id="div-comment-525976" class="comment-body">
+<footer class="comment-meta">
+<div class="comment-author vcard">
+<img alt='' src='https://secure.gravatar.com/avatar/46a12c8cf24f9d7f8ad7a1ef3ee5a010?s=56&#038;d=mm&#038;r=g' srcset='https://secure.gravatar.com/avatar/46a12c8cf24f9d7f8ad7a1ef3ee5a010?s=112&#038;d=mm&#038;r=g 2x' class='avatar avatar-56 photo' height='56' width='56' loading='lazy' /> <b class="fn"><a href='https://www.joseduarte.com' rel='external nofollow ugc' class='url'>José Duarte</a></b> <span class="says">says:</span> </div>
+<div class="comment-metadata">
+<a href="https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/#comment-525976"><time datetime="2020-06-11T14:09:12+00:00">June 11, 2020 at 2:09 pm</time></a> </div>
+</footer>
+<div class="comment-content">
+<p>Oh nice! Does it minify by default, or is it a flag?</p>
+</div>
+<div class="reply"><a rel='nofollow' class='comment-reply-link' href='https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/?replytocom=525976#respond' data-commentid="525976" data-postid="18317" data-belowelement="div-comment-525976" data-respondelement="respond" data-replyto="Reply to José Duarte" aria-label='Reply to José Duarte'>Reply</a></div> </article>
+<ol class="children">
+<li id="comment-525982" class="comment byuser comment-author-lemire bypostauthor odd alt depth-2">
+<article id="div-comment-525982" class="comment-body">
+<footer class="comment-meta">
+<div class="comment-author vcard">
+<img alt='' src='https://secure.gravatar.com/avatar/2ca999bef9535950f5b84281a4dab006?s=56&#038;d=mm&#038;r=g' srcset='https://secure.gravatar.com/avatar/2ca999bef9535950f5b84281a4dab006?s=112&#038;d=mm&#038;r=g 2x' class='avatar avatar-56 photo' height='56' width='56' loading='lazy' /> <b class="fn"><a href="https://lemire.me/en/" rel='external nofollow ugc' class='url'>Daniel Lemire</a></b> <span class="says">says:</span> </div>
+<div class="comment-metadata">
+<a href="https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/#comment-525982"><time datetime="2020-06-11T14:46:01+00:00">June 11, 2020 at 2:46 pm</time></a> </div>
+</footer>
+<div class="comment-content">
+<blockquote>
+<p>Oh nice! Does it minify by default, or is it a flag?</p>
+</blockquote>
+<p>It is a function that you may call on JSON string. It does not parse. It is highly optimized.</p>
+<p>It is not currently very well exposed or documented, since it has been updated to be multiplatform only recently.</p>
+</div>
+<div class="reply"><a rel='nofollow' class='comment-reply-link' href='https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/?replytocom=525982#respond' data-commentid="525982" data-postid="18317" data-belowelement="div-comment-525982" data-respondelement="respond" data-replyto="Reply to Daniel Lemire" aria-label='Reply to Daniel Lemire'>Reply</a></div> </article>
+</li>
+</ol>
+</li>
+<li id="comment-561186" class="comment even thread-even depth-1 parent">
+<article id="div-comment-561186" class="comment-body">
+<footer class="comment-meta">
+<div class="comment-author vcard">
+<img alt='' src='https://secure.gravatar.com/avatar/c848e4312e9ea7551b2a0755ef61a232?s=56&#038;d=mm&#038;r=g' srcset='https://secure.gravatar.com/avatar/c848e4312e9ea7551b2a0755ef61a232?s=112&#038;d=mm&#038;r=g 2x' class='avatar avatar-56 photo' height='56' width='56' loading='lazy' /> <b class="fn">Daniel Ryan</b> <span class="says">says:</span> </div>
+<div class="comment-metadata">
+<a href="https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/#comment-561186"><time datetime="2020-12-08T00:49:25+00:00">December 8, 2020 at 12:49 am</time></a> </div>
+</footer>
+<div class="comment-content">
+<p>How&#8217;s the performance for mobile? E.g Android and iOS devices.<br />
+I&#8217;m currently using rapidjson for a library that&#8217;s used for mobile devices and wondering if I should move over to simjson, if it&#8217;s faster and easier to use.</p>
+</div>
+<div class="reply"><a rel='nofollow' class='comment-reply-link' href='https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/?replytocom=561186#respond' data-commentid="561186" data-postid="18317" data-belowelement="div-comment-561186" data-respondelement="respond" data-replyto="Reply to Daniel Ryan" aria-label='Reply to Daniel Ryan'>Reply</a></div> </article>
+<ol class="children">
+<li id="comment-561189" class="comment byuser comment-author-lemire bypostauthor odd alt depth-2">
+<article id="div-comment-561189" class="comment-body">
+<footer class="comment-meta">
+<div class="comment-author vcard">
+<img alt='' src='https://secure.gravatar.com/avatar/2ca999bef9535950f5b84281a4dab006?s=56&#038;d=mm&#038;r=g' srcset='https://secure.gravatar.com/avatar/2ca999bef9535950f5b84281a4dab006?s=112&#038;d=mm&#038;r=g 2x' class='avatar avatar-56 photo' height='56' width='56' loading='lazy' /> <b class="fn"><a href="https://lemire.me/en/" rel='external nofollow ugc' class='url'>Daniel Lemire</a></b> <span class="says">says:</span> </div>
+<div class="comment-metadata">
+<a href="https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/#comment-561189"><time datetime="2020-12-08T01:05:20+00:00">December 8, 2020 at 1:05 am</time></a> </div>
+</footer>
+<div class="comment-content">
+<p>We support 64-bit ARM platforms with accelerated kernels. See <a href="https://lemire.me/blog/2019/08/01/a-new-release-of-simdjson-runtime-dispatching-64-bit-arm-support-and-more/" rel="nofollow ugc">https://lemire.me/blog/2019/08/01/a-new-release-of-simdjson-runtime-dispatching-64-bit-arm-support-and-more/</a></p>
+</div>
+<div class="reply"><a rel='nofollow' class='comment-reply-link' href='https://lemire.me/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/?replytocom=561189#respond' data-commentid="561189" data-postid="18317" data-belowelement="div-comment-561189" data-respondelement="respond" data-replyto="Reply to Daniel Lemire" aria-label='Reply to Daniel Lemire'>Reply</a></div> </article>
+</li>
+</ol>
+</li>
+</ol>
+<div id="respond" class="comment-respond">
+<h3 id="reply-title" class="comment-reply-title">Leave a Reply <small><a rel="nofollow" id="cancel-comment-reply-link" href="/blog/2020/03/31/we-released-simdjson-0-3-the-fastest-json-parser-in-the-world-is-even-better/#respond" style="display:none;">Cancel reply</a></small></h3><form action="https://lemire.me/blog/wp-comments-post.php" method="post" id="commentform" class="comment-form" novalidate><p class="comment_notes">Your email address will not be published. The comment form expects plain text. If you need to format your text, you can use HTML elements such strong, blockquote, cite, code and em. <strong>For formatting code as HTML automatically, I recommend <a href="http://tohtml.com">tohtml.com</a>.</strong></p><p class="comment-form-comment"><label for="comment">Comment <span class="required" aria-hidden="true">*</span></label> <textarea id="comment" name="comment" cols="45" rows="8" maxlength="65525" required></textarea></p><p class="comment-form-author"><label for="author">Name <span class="required" aria-hidden="true">*</span></label> <input id="author" name="author" type="text" value="" size="30" maxlength="245" required /></p>
+<p class="comment-form-email"><label for="email">Email <span class="required" aria-hidden="true">*</span></label> <input id="email" name="email" type="email" value="" size="30" maxlength="100" required /></p>
+<p class="comment-form-url"><label for="url">Website</label> <input id="url" name="url" type="url" value="" size="30" maxlength="200" /></p>
+<p class="comment-form-cookies-consent"><input id="wp-comment-cookies-consent" name="wp-comment-cookies-consent" type="checkbox" value="yes" /> <label for="wp-comment-cookies-consent">Save my name, email, and website in this browser for the next time I comment.</label></p>
+<div class="comment-sub-ops" data-auto="position">
+<label for="comment-mail-sub-type" class="cso-sub-type">
+<span class="cso-icon"><svg style="width:1em; height:1em; vertical-align:middle;" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg">
+<g fill="currentColor" fill-rule="evenodd">
+<path d="M14.1,5.63571636 C14.9517714,6.33967604 15.450459,7.19287046 15.450459,8.11238878 C15.450459,9.00675525 14.9786798,9.83837654 14.1691007,10.5309611 L15.9373937,14.0087185 L12.3204301,12.0078104 C11.9296094,13.5858368 9.54844584,14.7997638 6.66936474,14.7997638 C5.53232152,14.7997638 4.47293941,14.6104254 3.58314938,14.2840966 L3.58314938,14.2840966 L0.600000024,15.934378 L1.91489821,13.3483263 C1.31289726,12.8333222 0.962083376,12.2149306 0.962083376,11.549882 C0.962083376,11.165606 1.07921023,10.7969075 1.29424428,10.4547307 L1.29424428,10.4547307 C0.538036753,9.77771086 0.100000001,8.97417858 0.100000001,8.11238878 C0.100000001,7.04123575 0.776722924,6.06008476 1.89999998,5.30000019 L1.89999998,7.0658888 C1.89999998,7.30870143 2.09163284,7.50553995 2.34867325,7.50553995 L13.6513267,7.50553995 C13.8991221,7.50553995 14.1,7.31362877 14.1,7.0658888 L14.1,5.63571636 L14.1,5.63571636 Z M1.91455086,10.9345943 C1.80464172,11.1556337 1.74596704,11.3882813 1.74596704,11.6284523 C1.74596704,12.1628789 2.03649339,12.660053 2.53556999,13.0749705 L1.89355472,14.5590821 L3.60073421,13.7061116 L3.60073421,13.7061116 C4.4110062,14.0513606 5.42865146,14.2569046 6.53374306,14.2569046 C8.94591699,14.2569046 10.9414496,13.2775827 11.2731076,12.0036603 C10.2241563,12.3100096 9.03514487,12.482874 7.77522952,12.482874 C5.42553187,12.482874 3.3224447,11.8816356 1.91455086,10.9345943 L1.91455086,10.9345943 Z M3.03674893,0 C2.79553911,0 2.5999999,0.198275445 2.5999999,0.450938832 L2.5999999,6.42178844 C2.5999999,6.67083508 2.80610042,6.87272727 3.03674893,6.87272727 L12.9632509,6.87272727 C13.2044607,6.87272727 13.3999999,6.67445183 13.3999999,6.42178844 L13.3999999,0.450938832 C13.3999999,0.201892192 13.1938994,0 12.9632509,0 L3.03674893,0 Z M7.99999989,4.5999999 L12.5,0.600000013 L11.5625,0.600000013 L7.99999989,2.78181813 L4.43749976,0.600000013 L3.5,0.599999905 L7.99999989,4.5999999 Z"></path>
+</g>
+</svg></span> Receive Email Notifications?
+</label>
+<select id="comment-mail-sub-type" name="comment_mail_sub_type" class="cso-sub-type form-control" title="Receive Notifications?">
+<option value="" selected='selected'>no, do not subscribe</option>
+<option value="comment">yes, replies to my comment</option>
+<option value="comments">yes, all comments/replies</option>
+</select>
+<select id="comment-mail-sub-deliver" name="comment_mail_sub_deliver" class="cso-sub-deliver form-control" title="Notify Me">
+<option value="asap" selected='selected'>instantly</option>
+<option value="hourly">hourly digest</option>
+<option value="daily">daily digest</option>
+<option value="weekly">weekly digest</option>
+</select>
+<div class="cso-links">
+<span class="cso-link-new">Or, you can <a href="https://lemire.me/blog/?comment_mail%5Bmanage%5D%5Bsub_new%5D=0&amp;comment_mail%5Bmanage%5D%5Bsub_form%5D%5Bpost_id%5D=18317" rel="nofollow">subscribe without commenting</a>.</span>
+</div>
+</div>
+<style type="text/css">
+        .comment-sub-ops
+        {
+            margin : 1em 0 1em 0;
+        }
+        .comment-sub-ops label
+        {
+            display : block;
+        }
+        .comment-sub-ops select
+        {
+            box-sizing : border-box;
+            display    : inline-block;
+        }
+        .comment-sub-ops select.cso-sub-type
+        {
+            width : 70%;
+            float : left;
+        }
+        .comment-sub-ops select.cso-sub-deliver
+        {
+            width : 28%;
+            float : right;
+        }
+        .comment-sub-ops select.cso-sub-deliver[disabled]
+        {
+            opacity : 0.3;
+        }
+        .comment-sub-ops .cso-links
+        {
+            font-size   : 80%;
+            line-height : 1.5em;
+            margin      : 0 0 0 .5em;
+            clear       : both;
+        }
+        .comment-sub-ops .cso-links .cso-link-summary
+        {
+            display     : block;
+            line-height : 1em;
+        }
+        .comment-sub-ops .cso-sub-list
+        {
+            margin: 1em 0 0 0;
+        }
+        .comment-sub-ops .cso-sub-list label
+        {
+            cursor: pointer;
+        }
+    </style><p class="form-submit"><input name="submit" type="submit" id="submit" class="submit" value="Post Comment" /> <input type='hidden' name='comment_post_ID' value='18317' id='comment_post_ID' />
+<input type='hidden' name='comment_parent' id='comment_parent' value='0' />
+</p><p style="display: none;"><input type="hidden" id="akismet_comment_nonce" name="akismet_comment_nonce" value="98f878f638" /></p><p style="display: none !important;"><label>&#916;<textarea name="ak_hp_textarea" cols="45" rows="8" maxlength="100"></textarea></label><input type="hidden" id="ak_js" name="ak_js" value="81" /><script>document.getElementById( "ak_js" ).setAttribute( "value", ( new Date() ).getTime() );</script></p></form> </div>
+<p class="comment_text_after"><p><a href="https://mailchi.mp/176401b2d4f2/subscribe-to-daniel-lemires-blog">You may subscribe to this blog by email.</a></p></p>
+</div>
+<nav class="navigation post-navigation" aria-label="Posts">
+<h2 class="screen-reader-text">Post navigation</h2>
+<div class="nav-links"><div class="nav-previous"><a href="https://lemire.me/blog/2020/03/28/science-and-technology-links-march-28th-2020/" rel="prev"><span class="meta-nav" aria-hidden="true">Previous</span> <span class="screen-reader-text">Previous post:</span> <span class="post-title">Science and Technology links (March 28th 2020)</span></a></div><div class="nav-next"><a href="https://lemire.me/blog/2020/04/04/science-and-technology-links-april-4th-2020/" rel="next"><span class="meta-nav" aria-hidden="true">Next</span> <span class="screen-reader-text">Next post:</span> <span class="post-title">Science and Technology links (April 4th 2020)</span></a></div></div>
+</nav>
+</main>
+</div>
+</div>
+<footer id="colophon" class="site-footer" role="contentinfo">
+<div class="site-info">
+<a class="privacy-policy-link" href="https://lemire.me/blog/terms-of-use/">Terms of use</a><span role="separator" aria-hidden="true"></span> <a href="https://wordpress.org/" class="imprint">
+Proudly powered by WordPress </a>
+</div>
+</footer>
+</div>
+<script>
+					document.addEventListener('DOMContentLoaded', function(event) {
+						
+						// check remember me by default
+						var forms = document.querySelectorAll('form'); 						
+						if (forms) {
+						
+							// look out for inputs named rememberme
+								var rememberArray = [];
+								var rememberMe = document.getElementsByName('rememberme');
+								if( rememberMe.length ) {
+									rememberArray.push(rememberMe);
+								}
+							
+							// look out for inputs named remember
+								var remember = document.getElementsByName('remember');
+								if( remember.length ) {
+									rememberArray.push(remember);
+								}
+							
+							// if there are remember me inputs
+							if( rememberArray.length ) { 	
+							
+								// 'check' the inputs so they're active		
+									for (i = 0; i < rememberArray.length; i++) {
+										for (x = 0; x < rememberArray[i].length; x++) {
+										  rememberArray[i][x].checked = true;
+										}
+									}
+							
+							}
+		
+							
+							// test for Ultimate Member Plugin forms
+								
+								// find the UM checkboxes
+								var UmCheckboxIcon = document.querySelectorAll('.um-icon-android-checkbox-outline-blank');
+								var UmCheckboxLabel = document.querySelectorAll('.um-field-checkbox');
+								
+								if( UmCheckboxIcon.length && UmCheckboxLabel.length ) {
+									
+									// loop through UM checkboxes
+									for (i = 0; i < UmCheckboxLabel.length; i++) {
+										
+										// find the UM input element
+										var UMCheckboxElement = UmCheckboxLabel[i].children;
+										var UMCheckboxElementName = UMCheckboxElement[0].getAttribute('name');
+										
+										// check if UM input element is remember me box
+										if( UMCheckboxElementName === 'remember' || UMCheckboxElementName === 'rememberme' ) {
+											
+											// activate the UM checkbox if it is a remember me box
+											UmCheckboxLabel[i].classList.add('active');
+											
+											// swap out UM classes to show the active state
+											UmCheckboxIcon[i].classList.add('um-icon-android-checkbox-outline');
+											UmCheckboxIcon[i].classList.remove('um-icon-android-checkbox-outline-blank');
+											
+										} // endif
+									
+									} // end for
+	
+								} // endif UM
+								
+								
+								
+							// test for AR Member
+								
+								var ArmRememberMeCheckboxContainer = document.querySelectorAll('.arm_form_input_container_rememberme');
+								
+								if( ArmRememberMeCheckboxContainer.length ) {
+									
+									for (i = 0; i < ArmRememberMeCheckboxContainer.length; i++) {
+										
+										var ArmRememberMeCheckbox = ArmRememberMeCheckboxContainer[i].querySelectorAll('md-checkbox');
+										
+										if( ArmRememberMeCheckbox.length ) {
+											// loop through AR Member checkboxes
+											for (x = 0; x < ArmRememberMeCheckbox.length; x++) {
+												if( ArmRememberMeCheckbox[x].classList.contains('ng-empty') ) {
+													ArmRememberMeCheckbox[x].click();
+												}
+											}
+										}
+										
+									}
+									
+								} // end if AR Member
+									
+									
+					
+						} // endif forms
+						
+					});
+		
+					</script><script id='wp_power_stats-js-extra'>
+var PowerStatsParams = {"ajaxurl":"https:\/\/lemire.me\/blog\/wp-admin\/admin-ajax.php","ci":"YTo0OntzOjEyOiJjb250ZW50X3R5cGUiO3M6NDoicG9zdCI7czo4OiJjYXRlZ29yeSI7czoyOiI4NCI7czoxMDoiY29udGVudF9pZCI7aToxODMxNztzOjY6ImF1dGhvciI7czo2OiJsZW1pcmUiO30=.92ea72aadf99640cda3aff9aec85c9e1"};
+</script>
+<script src='https://lemire.me/blog/wp-content/plugins/wp-power-stats/wp-power-stats.js' id='wp_power_stats-js'></script>
+<script src='https://lemire.me/blog/wp-content/plugins/custom-css-js-php/assets/js/wcjp-frontend.js?ver=5.9.3' id='wcjp-frontend.js-js'></script>
+<script src='https://lemire.me/blog/wp-content/themes/twentyfifteen/js/skip-link-focus-fix.js?ver=20141028' id='twentyfifteen-skip-link-focus-fix-js'></script>
+<script src='https://lemire.me/blog/wp-includes/js/comment-reply.min.js?ver=5.9.3' id='comment-reply-js'></script>
+<script id='twentyfifteen-script-js-extra'>
+var screenReaderText = {"expand":"<span class=\"screen-reader-text\">expand child menu<\/span>","collapse":"<span class=\"screen-reader-text\">collapse child menu<\/span>"};
+</script>
+<script src='https://lemire.me/blog/wp-content/themes/twentyfifteen/js/functions.js?ver=20171218' id='twentyfifteen-script-js'></script>
+<script id='BestAzonScript-js-extra'>
+var BestAzon_Configuration = {"Conf_Subsc_Model":"1","Amzn_AfiliateID_US":"daniellemires-20","Amzn_AfiliateID_CA":"danilemisblog-20","Amzn_AfiliateID_GB":"danilemisblog-21","Amzn_AfiliateID_DE":"danilemisbl05-21","Amzn_AfiliateID_FR":"danilemisbl0e-21","Amzn_AfiliateID_ES":"","Amzn_AfiliateID_IT":"danilemisbl02-21","Amzn_AfiliateID_JP":"danilemisblog-22","Amzn_AfiliateID_IN":"","Amzn_AfiliateID_CN":"danilemisblog-23","Amzn_AfiliateID_MX":"","Amzn_AfiliateID_BR":"","Amzn_AfiliateID_AU":"","Conf_Custom_Class":"","Conf_New_Window":"3","Conf_Link_Follow":"2","Conf_Product_Link":"1","Conf_Tracking":"2","Conf_Footer":"2","Conf_Link_Keywords":"","Conf_Hide_Redirect_Link":"2","Conf_Honor_Existing_Tag":"1","Conf_No_Aff_Country_Redirect":"2","Conf_GA_Tracking":"2","Conf_GA_ID":"","Conf_Source":"Wordpress-52"};
+</script>
+<script src='https://bestazon.io/script/BestAzonScript.js?ver=5.9.3' id='BestAzonScript-js'></script>
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-25286235-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+<script type="text/javascript">
+    (function($) // Comment Mail™ subscr. options.
+    {
+        'use strict'; // Strict standards.
+
+        $(document).ready(
+            function() // On DOM ready handler.
+            {
+                var $subOps = $('.comment-sub-ops'),
+                    $subType, $subDeliver; // Initialize vars.
+
+                if($subOps.data('auto') === 'position') $subOps.prevUntil('form')
+                    .each(function(/* Auto-position subscription options. */)
+                          {
+                              var $this = $(this); // Cache this.
+                              if($this.find(':input[type="submit"]').length)
+                              {
+                                  $subOps.remove(), $this.before($subOps);
+                                  return false; // Break the each() loop.
+                              }
+                          });
+                $subOps = $('.comment-sub-ops'),
+                    $subType = $subOps.find('select.cso-sub-type'),
+                    $subDeliver = $subOps.find('select.cso-sub-deliver');
+
+                $subType.on('change', function()
+                {
+                    if($(this).val() === '')
+                        $subDeliver.attr('disabled', 'disabled');
+                    else $subDeliver.removeAttr('disabled');
+                })
+                    .trigger('change');
+            });
+    })(jQuery);
+</script>
+</body>
+</html>

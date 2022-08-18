@@ -1,0 +1,1005 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Inter-service communication is crucial when building microservices. Learn about the different communication styles in this DZone Microservices Guide article.">
+  <meta name="keywords" content="microservice, web service, Spring Cloud, Circuit Breaker Pattern, Relational database, requests, Database, application, Architecture, web protocol">
+
+  <meta property="og:description" content="Inter-service communication is crucial when building microservices. Learn about the different communication styles in this DZone Microservices Guide article.">
+  <meta property="og:site_name" content="dzone.com">
+  <meta property="og:title" content="Communicating Between Microservices - DZone Microservices">
+  <meta property="og:url" content="https://dzone.com/articles/communicating-between-microservices">
+  <meta property="og:image" content="https://dz2cdn3.dzone.com/storage/article-thumb/7599362-thumb.jpg">
+  <meta property="og:type" content="article">
+
+  <meta name="twitter:site" content="@DZoneInc">
+  <meta name="twitter:image" content="https://dz2cdn3.dzone.com/storage/article-thumb/7599362-thumb.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:description" content="Inter-service communication is crucial when building microservices. Learn about the different communication styles in this DZone Microservices Guide article.">
+  <meta name="twitter:title" content="Communicating Between Microservices - DZone Microservices">
+
+  <meta name="referrer" content="origin-when-cross-origin">
+  <meta name="google-site-verification" content="kndbhxcupfEqWmZclhCpB6vlgOs7QSmx2UHAGGnP2mA">
+  <meta name="df-verify" content="df0d76632b4543">
+
+  <link rel="icon" type="image/x-icon" href="https://dz2cdn1.dzone.com/themes/dz20/images/favicon.png">
+  <link rel="image_src" href="https://dz2cdn3.dzone.com/storage/article-thumb/7599362-thumb.jpg">
+  <link rel="canonical" href="https://dzone.com/articles/communicating-between-microservices">
+
+  <title>Communicating Between Microservices - DZone Microservices</title>
+
+  <link rel="preload" href="https://fonts.dzone.com/themes/dz20/font/fontello.woff?11773374" as="font" type="font/woff" crossorigin="anonymous">
+
+  <link rel="stylesheet" media="all" href="https://dz2cdn1.dzone.com/themes/dz20/ftl/icons.css">
+  <link rel="stylesheet" media="all" href="https://dz2cdn1.dzone.com/themes/dz20/lib/static/bootstrap/bootstrap.min.css">
+  <link rel="stylesheet" media="all" href="https://dz2cdn1.dzone.com/themes/dz20/ftl/article/global.css">
+  <link rel="stylesheet" media="all" href="https://dz2cdn1.dzone.com/themes/dz20/ftl/header/styles.css">
+</head>
+<body>
+<div id="ftl-header">
+  <div class="container-fluid header">
+    <div class="row">
+      <div class="col-md-12" style="padding: 0;">
+        <div class="header-top">
+          <div class="header-container">
+            <div class="pull-left logo-container">
+              <div class="logo">
+                <a class="inner" href="/">
+                  <picture>
+                    <source srcset="https://dz2cdn1.dzone.com/themes/dz20/images/dz_logo_2021_cropped.webp" type="image/webp">
+                    <source srcset="https://dz2cdn1.dzone.com/themes/dz20/images/dz_logo_2021_cropped.png" type="image/png">
+                    <img src="https://dz2cdn1.dzone.com/themes/dz20/images/dz_logo_2021_cropped.png" width="160" height="52" alt="DZone">
+                  </picture>
+                </a>
+              </div>
+
+                <div class="active-portal"><a href="/microservices-news-tutorials-tools">Microservices Zone</a></div>
+            </div>
+
+            <div class="pull-right login-and-search">
+              <div id="authenticated-block" class="logged-in">
+                <div class="welcome-back">Thanks for visiting DZone today,</div>
+                <div id="user-header" class="user-info">
+                  <button class="user-avatar">
+                    <span id="header-username" class="username"></span>
+                    <img id="header-avatar" src="" alt="user avatar">
+                  </button>
+                  <div id="user-dropdown" class="browse-user-menu">
+                    <div class="user-content">
+                      <a id="header-user-plug" href="#" class="user-description"></a>
+                      <a id="header-user-edit" href="#" class="edit-profile">Edit Profile</a>
+                    </div>
+                    <ul class="user-actions">
+                      <li id="first-user-action"><a id="header-dropdown-manage-email" href="#">Manage Email Subscriptions</a></li>
+                      <li>
+                        <a href="/articles/how-to-submit-a-post-to-dzone?utm_source=DZone&utm_medium=user_dropdown&utm_campaign=how_to_post">
+                          How to Post to DZone
+                        </a>
+                      </li>
+                      <li>
+                        <a href="/articles/dzones-article-submission-guidelines">
+                          Article Submission Guidelines
+                        </a>
+                      </li>
+                    </ul>
+                    <div class="bottom">
+                      <a href="/users/logout.html" class="sign-out">Sign Out</a>
+                      <a id="dropdown-view-profile" href="#" class="view-profile">View Profile</a>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="post-content">
+                  <button id="post-button" class="post-content--button">
+                    <span class="post-class">Post</span>
+                    <i class="icon-plus"></i>
+                  </button>
+
+                  <div id="post-menu" class="posting-links">
+                    <div class="posting-links-menu">
+                      <ul>
+                        <li>
+                          <img src="/themes/dz20/images/dz-postarticle.svg">
+                          <a href="/content/article/post.html">Post an Article</a>
+                        </li>
+                        <li>
+                          <a id="drafts-link" href="#">Manage My Drafts</a>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div id="unauthenticated-block">
+                <div class="dz-intro">Over 2 million developers have joined DZone.</div>
+                <div class="mobile-invisible sign-in-join">
+                  <a href="/users/login.html">Log In</a>
+                  <span class="dz-intro-span">/</span>
+                  <a href="/static/registration.html">Join</a>
+                </div>
+                <a class="join-icon" href="/users/login.html"><i class="icon-user"></i></a>
+              </div>
+              <div class="headerSearch">
+                <a class="icon-search dropdown-toggle" href="/search"></a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="header-bottom">
+
+
+          <ul class="portals header-container scrollable-ul">
+            <li>
+              <a href="/refcardz" id="header-refcardz">
+                <em>Refcardz</em>
+              </a>
+            </li>
+            <li>
+              <a href="/trendreports" id="header-research">
+                <em>Trend Reports</em>
+              </a>
+            </li>
+            <li>
+              <a href="/webinars" id="header-webinars">
+                <em>Webinars</em>
+              </a>
+            </li>
+            <li class="last-portal-link">
+              <a href="#" id="header-portals">
+                <em>
+                  Zones
+                  <span id="zone-arrow" class="collapsible-toggle">
+                    <i class="icon-angle-down"></i>
+                    <i class="icon-angle-up"></i>
+                  </span>
+                </em>
+              </a>
+            </li>
+
+            <li class="separator" aria-hidden="true" style="color: #d9dcdd;">|</li>
+            <li id="portal-list" class="portal-topics">
+              <ul>
+                  <li>
+                    <a href="/agile-methodology-training-tools-news" id="header-2">Agile</a>
+                  </li>
+                  <li>
+                    <a href="/artificial-intelligence-tutorials-tools-news" id="header-4001">AI</a>
+                  </li>
+                  <li>
+                    <a href="/big-data-analytics-tutorials-tools-news" id="header-3">Big Data</a>
+                  </li>
+                  <li>
+                    <a href="/cloud-computing-tutorials-tools-news" id="header-4">Cloud</a>
+                  </li>
+                  <li>
+                    <a href="/database-sql-nosql-tutorials-tools-news" id="header-5">Database</a>
+                  </li>
+                  <li>
+                    <a href="/devops-tutorials-tools-news" id="header-6">DevOps</a>
+                  </li>
+                  <li>
+                    <a href="/enterprise-integration-training-tools-news" id="header-7">Integration</a>
+                  </li>
+                  <li>
+                    <a href="/iot-developer-tutorials-tools-news-reviews" id="header-8">IoT</a>
+                  </li>
+                  <li>
+                    <a href="/java-jdk-development-tutorials-tools-news" id="header-1">Java</a>
+                  </li>
+                  <li>
+                    <a href="/microservices-news-tutorials-tools" id="header-6001">Microservices</a>
+                  </li>
+                  <li>
+                    <a href="/open-source-news-tutorials-tools" id="header-7001">Open Source</a>
+                  </li>
+                  <li>
+                    <a href="/apm-tools-performance-monitoring-optimization" id="header-10">Performance</a>
+                  </li>
+                  <li>
+                    <a href="/application-web-network-security" id="header-2001">Security</a>
+                  </li>
+                  <li>
+                    <a href="/web-development-programming-tutorials-tools-news" id="header-11">Web Dev</a>
+                  </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script async src="https://dz2cdn1.dzone.com/themes/dz20/ftl/header/bundle.js"></script><link rel="stylesheet" media="all" href="https://dz2cdn1.dzone.com/themes/dz20/ftl/article/styles.css">
+
+
+
+
+<div id="ftl-article" >
+  <div class="container-fluid body">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="articles-wrap">
+              <div class="ad-container">
+                <div id="div-gpt-ad-1435246566686-0" class="ads-billboard-article" data-gpt-slot="top"></div>
+              </div>
+
+
+          <div class="article-stream widget-top-border">
+                <div class="content-right-images">
+                  <div id="div-gpt-ad-1435246566686-2" class="sidebar-ad" data-gpt-desktop="true" data-gpt-slot="sidebar1"></div>
+                </div>
+
+                <script type="application/ld+json">
+                  {
+                    "@context": "http://schema.org",
+                    "@type": "Article",
+                    "headline": "Communicating Between Microservices",
+                    "author": {
+                      "@type": "Person",
+                      "name": "Piotr Mińkowski"
+                    },
+                    "audience": "software developers",
+                    "keywords": "integration,microservices,hystrix,load balancing",
+                    "timeRequired": "PT7M",
+                    "commentCount": 6,
+                    "wordCount": "1620",
+                    "accessMode": "textual, visual",
+                    "dateCreated": "2017-12-19T15:01:01Z",
+                    "datePublished": "2017-12-19T00:00:00Z",
+                    "dateModified": "2018-03-16T14:41:32Z",
+                    "articleSection": "microservices-news-tutorials-tools",
+                    "publisher": {
+                      "@type": "Organization",
+                      "name": "DZone",
+                      "url": "https://dzone.com",
+                      "logo": {
+                        "@type": "ImageObject",
+                        "url": "https://dzone.com/themes/dz20/images/dz_logo_2021_cropped.png"
+                      }
+                    },
+                    "articleBody": "This article is featured in the new DZone Guide to Microservices. Get your free copy for more insightful articles, industry statistics, and more! One of the most important aspects of developing microservices rather than a monolithic application is an inter-service communication. With a monolithic application, running on single process invokes between components are realized on language-level method calls. If you are following the MVC design pattern during development, you usually have model classes that map relational databases to an object model. Then, you create components which expose methods that help to perform standard operations on database tables like create, read, update, and delete. The components most commonly known as DAO or repository objects should not be directly called from a controller, but through an additional layer of components which can also add some portion of business logic if needed. Usually, when I’m talking with others about migrating from a monolith to a microservices-based application, they see the biggest challenge just in changing their communication mechanism. If you’ve ever looked back on working on a typical monolithic application with a database backend, you probably realized how important it was to properly design relations between tables and then map them into object models. In microservices-based architecture, it’s important to divide this often very complex structure into independently developed and deployed services, which are also forming a mesh with many communication links. Often the division is not as obvious as it would seem, and not every component which encapsulates logic related to a table becomes a separated microservice. Decisions related to such a division require knowledge about the business aspects of a system, but communication standards can be easily defined, and they are unchangeable no matter which approach to architecture we decide to implement. If we are talking about communication styles, itis possible to classify them in two axes. The first step is to define whether a protocol is synchronous or asynchronous. Synchronous – For web application communication, the HTTP protocol has been the standard for many years, and that is no different for microservices. It is a synchronous, stateless protocol, which does have its drawbacks. However, they do not have a negative impact on its popularity. In synchronous communication, the client sends a request and waits for a response from the service. Interestingly, using that protocol, the client can communicate asynchronously with a server, which means that a thread is not blocked, and the response will reach a callback eventually. An example of such a library, which provides the most common pattern for synchronous REST communication,is Spring Cloud Netflix. For asynchronous callback, there are frameworks like Vert.x or Node.js platform. Asynchronous - The key point here is that the client should not have blocked a thread while waiting for a response. In most cases, such communication is realized with messaging brokers. The message producer usually does not wait for a response. It just waits for acknowledgment that the message has been received by the broker. The most popular protocol for this type of communication is AMQP (Advanced Message QueuingProtocol), which is supported by many operating systems and cloud providers. An asynchronous messaging system may be implemented in a one-to-one(queue) or one-to-many (topic) mode. The most popular message brokers are RabbitMQ and Apache Kafka. An interesting framework which provides mechanisms for building message-driven microservices based on those brokers is Spring Cloud Stream. Most think that building microservices is based on the same principle as REST with a JSON web service. Of course, this is the most common method, but as you can see it is not the only one. Not only that, in some articles, you might read that synchronous communication is an anti-pattern, especially when there are many services in a calling route. The other frequent comparison we might read about compares microservices to SOA architecture. In SOA, the most common communication protocol is SOAP. There has been a great deal of discussion as to whether SOAP is better than REST or vice versa. As we all know, they each have advantages and drawbacks, but REST is lightweight and independent from the type of language, so it has won the competition for modern applications, and is slowly taking over the enterprise sector. Honestly, I don’t have anything against microservices based on SOAP if there is a good reason for it. Let’s look back at the criteria of division to different types of communication. I have already mentioned that we can classify them into synchronous vs. asynchronous, the latter of which defines whether the communication has a single receiver or multiple receivers. In one-to-one communication, each client request is processed by exactly one service instance, while each request can be processed by many different services. It is worth it to point out here that one message is received by different services, but usually it should not be received by different instances of a single service. Microservices frameworks usually implement a consumer grouping mechanism whereby different instances of a single application have been placed in a competing consumer relationship in which only one instance is expected to handle an incoming message. For one-to-one synchronous services, the same can be achieved with a load-balancing mechanism performed on the client side. Each service has information about the location addresses of all instances that are calling services.This information can be taken from a service discovery server or may be provided manually in configuration properties. Each service has a built-in routing client that can choose one instance of a target service, using the right algorithm, and send a request there. These are the most popular load balancing methods: Round Robin - The simplest and most common way. Requests are distributed across all the instances sequentially. Least Connections - A request goes to the instance that is processing the least number of active connections at the current time. Weighted Round Robin - This algorithm assigns a weight to each instance in the pool, and new connections are forwarded in proportion to the assigned weight. IP Hash – This method generates a unique hash key from the source IP address and determines which instance receives the request. Here’s a figure that illustrates different types of communication used for microservices-based architecture, assuming the existence of multiple instances of each service: In more complex architectures, there can be cases where those three communication types are mixed with each other. Then, some microservices are built on the basis of synchronous interaction, some on one-to-one messaging, and others on a publish/subscribe model. There’s been a lot of talk recently about reactive microservices, so I think it is worth it to devote a few words to it. It is based on the Reactive Programming paradigm, oriented around data flows and the propagation of change.Such microservices are non-blocking, asynchronous, event-driven, and require a small number of threads to scale.Their greatest advantage is excellent performance with little resource consumption. The most popular frameworks for building reactive microservices are Lagom and Vert.x. Let’s get back to synchronous request/response communication. It is very important to prepare systems in case of partial failure, especially for a microservices-based architecture, where there are many applications running in separated processes. A single request from the client point of view might be forwarded through many different services. It’s possible that one of those services is down because of a failure, maintenance, or just might be overloaded, which causes an extremely slow response to client requests coming into the system. There are several best practices for dealing with failures and errors.The first recommends that we should always set network connect and read timeouts to avoid waiting too long for the response. The second approach is about limiting the number of accepted requests if a service fails or responses take too long. In this case, there is no sense in sending additional requests by the client. The last two patterns are closely connected to each other. I’m thinking about the circuit breaker pattern and fallback. The major assumption of this approach relies on monitoring successful and failed requests. If too many requests fail or services take too long to respond, the configured circuit breaker is tripped and all further requests are rejected. On the other hand, fallback provides some portion of logic which has to be performed if a request fails or circuit breaker had been tripped. In some cases, it could be useful, especially when data returned by a service is not critical for the client or does not change frequently and may be taken from the cache. The most popular implementation of the described patterns is available in Netflix Hystrix, which is used by many Java frameworks, providing components for microservices like Spring Cloud or Apache Camel. Implementation of a circuit breaker with Spring Cloud Netflix is quite simple. In the main class, it can be enabled with one annotation: @SpringBootApplication @EnableFeignClients @EnableCircuitBreaker public class Application { public static void main(String[] args) { SpringApplication.run(Application.class, args); } } To communicate with another microservice, we can use the Feign REST client, which handles fallback. Here, we return an empty list: @FeignClient(value = “account - service”, fallback = AccountFallback.class) public interface AccountClient { @RequestMapping(method = RequestMethod.GET, value = “/accounts/customer / { customerId }”) List &lt; Account &gt; getAccounts(@PathVariable(“customerId”) Integer customerId); } @Component public class AccountFallback implements AccountClient { @Override public List &lt; Account &gt; getAccounts(Integer customerId) { List &lt; Account &gt; acc = new ArrayList &lt; Account &gt; (); return acc; } } Hystrix default settings may be overridden with configuration properties. The property visible below sets the time after which the caller will receive a timeout while waiting for a response: hystrix.command.default.execution.isolation.thread. timeoutInMilliseconds=500 This article is featured in the new DZone Guide to Microservices. Get your free copy for more insightful articles, industry statistics, and more!",
+                    "mainEntityOfPage": {
+                      "@type": "WebPage",
+                      "@id": "https://dzone.com/articles/communicating-between-microservices"
+                    },
+                    "image": {
+                      "@type": "ImageObject",
+                      "url": "https://dzone.com//dz2cdn3.dzone.com/storage/article-thumb/7599362-thumb.jpg"
+                    }
+                  }
+                </script>
+
+                  <script type="application/ld+json">
+                    {
+                      "@context": "https://schema.org",
+                      "@type": "BreadcrumbList",
+                      "itemListElement": [{
+                        "@type": "ListItem",
+                        "position": 1,
+                        "name": "DZone",
+                        "item": "https://dzone.com"
+                      }, {
+                        "@type": "ListItem",
+                        "position": 2,
+                        "name": "Microservices Zone",
+                        "item": "https://dzone.com/microservices-news-tutorials-tools"
+                      }, {
+                        "@type": "ListItem",
+                        "position": 3,
+                        "name": "Communicating Between Microservices",
+                        "item": "https://dzone.com/articles/communicating-between-microservices"
+                      }]
+                    }
+                  </script>
+
+            <article>
+              <div class="content">
+                <div class="header">
+                  <div class="col-xs-12 breadcrumb-padding">
+                    <a href="/">DZone</a>
+                    >
+                      <a href="/microservices-news-tutorials-tools">Microservices Zone</a>
+                      >
+                      <a href="#">Communicating Between Microservices</a>
+                  </div>
+
+
+                  <div class="header-title">
+                    <div class="title">
+                      <h1 class="article-title">Communicating Between Microservices</h1>
+                    </div>
+
+                    <div class="subhead">
+                      <h3>Inter-service communication is essential to consider when building microservices. Learn about the characteristics and benefits of different communication styles.</h3>
+                    </div>
+
+                    <div class="publish-meta">
+                        <div class="article-author-meta">
+                          <img src="https://dz2cdn4.dzone.com/thumbnail?fid=4329630&w=80" class="avatar" alt="Piotr Mińkowski user avatar" width="40">
+                          by
+
+                          <div class="author-info">
+                            <span class="author-name">
+                              <a href="/users/2918001/piotrminkowski.html" rel="nofollow">Piotr Mińkowski</a>
+                            </span>
+                          </div>
+
+
+                            <div class="mvb-award">
+                              <i title="Most Valuable Blogger" class="icon-mvb-1"></i>
+                            </div>
+
+
+                            <span class="badge-container">
+                              <i title="DZone Core" class="icon-core-1"></i>CORE
+                            </span>
+                          &middot;
+                        </div>
+                      <span class="author-date">
+                        Dec. 19, 17
+                      </span>
+                      &middot;
+                        <a href="/microservices-news-tutorials-tools" id="portal-name">
+                          <span class="portal-name">Microservices Zone</span>
+                        </a>
+                      &middot;
+                      <span>Analysis</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="author-n-useraction">
+                  <div class="like action">
+                    <div id="activity-like-icon" class="dz-like icon-thumbs-up">
+                      <span class="action-label">
+                        <span id="activity-like-text">Like</span>
+                      </span>
+                      <a href="#">
+                        <span id="activity-like-counter">(82)</span>
+                      </a>
+                    </div>
+                  </div>
+
+                  <div class="action">
+
+                    <button class="comment">
+                      <i class="icon-comment"></i>
+                      Comment
+                      <span id="activity-comment-counter" class="comment-count"></span>
+                    </button>
+                  </div>
+
+                  <div class="save action">
+                    <div id="activity-save-icon" class="save icon-star-empty">
+                      <span id="activity-save-text" class="action-label">Save</span>
+                    </div>
+                  </div>
+
+                  <div class="tweet action">
+                    <a id="tweet-link" href="" class="title" target="_blank">
+                      <span><i class="icon-twitter"></i></span>
+                      <span class="action-label">Tweet</span>
+                    </a>
+                  </div>
+
+                  <div class="pull-right">
+                    <div id="activity-view-container" class="article-views action">
+                      <i class="icon-eye"></i> 174.91K
+                      <span class="action-label">Views</span>
+                    </div>
+                  </div>
+                </div>
+
+                    <div class="signin-prompt">
+                      <p>Join the DZone community and get the full member experience.</p>
+                      <a id="article-signin-prompt" href="/static/registration.html">Join For Free</a>
+                    </div>
+                    <div class="arrow-down"></div>
+
+                  <div id="top-bumper-container"></div>
+
+                <div>
+                  <div class="content-html"><p pid="2"><em><a href="https://dzone.com/guides/microservices-breaking-down-the-monolith" target="_blank">This article is featured in the new&nbsp;DZone&nbsp;Guide to&nbsp;Microservices.&nbsp;Get your free copy for more insightful articles, industry statistics, and more!&nbsp;</a></em></p>
+<p pid="3">One of the most important aspects of developing microservices rather than a monolithic application is an inter-service communication. With a monolithic application, running on single process invokes between components are realized on language-level method calls. If you are following the MVC design pattern during development, you usually have model classes that map relational databases to an object model. Then, you create components which expose methods that help to perform standard operations on database tables like create, read, update, and delete. The components most commonly known as DAO or repository objects should not be directly called from a controller, but through an additional layer of components which can also add some portion of business logic if needed.</p>
+<p pid="3">Usually, when I’m talking with others about migrating from a monolith to a microservices-based application, they see the biggest challenge just in changing their communication mechanism. If you’ve ever looked back on working on a typical monolithic application with a database backend, you probably realized how important it was to properly design relations between tables and then map them into object models. In microservices-based architecture, it’s important to divide this often very complex structure into independently developed and deployed services, which&nbsp;are also forming a mesh with many communication links. Often the division is not as obvious as it would seem, and not every component which encapsulates logic related to a table becomes a separated microservice.</p>
+<p pid="3">Decisions related to such a division require knowledge about the business aspects of a system, but communication standards can be easily defined, and they are unchangeable no matter which approach to architecture we decide to implement. If we are talking about communication styles, itis possible to classify them in two axes. The first step is to define whether a protocol is synchronous or asynchronous.</p>
+<ul>
+ <li><p pid="3">Synchronous – For web application communication, the HTTP protocol has been the standard for many years, and that is no different for microservices. It is a synchronous, stateless protocol, which does have its drawbacks. However, they do not have a negative impact on its popularity. In synchronous communication, the client sends a request and waits for a response from the service. Interestingly, using that protocol, the client can communicate asynchronously with a server, which means that a thread is not blocked, and the response will reach a callback eventually. An example of such a library, which provides the most common pattern for synchronous REST communication,is Spring Cloud Netflix. For asynchronous callback, there are frameworks like Vert.x or Node.js platform.</p></li>
+ <li><p pid="3">Asynchronous - The key point here is that the client should not have blocked a thread while waiting for a response. In most cases, such communication is&nbsp;realized with messaging brokers. The message producer usually does not wait for a response. It just waits for acknowledgment that the message has been received by the broker. The most popular protocol for this type of communication is AMQP (Advanced Message QueuingProtocol), which is supported by many operating systems and cloud providers. An asynchronous messaging system may be implemented in a one-to-one(queue) or one-to-many (topic) mode. The most popular message brokers are RabbitMQ and Apache Kafka. An interesting framework which provides mechanisms for building message-driven microservices based on those brokers is Spring Cloud Stream.</p></li>
+</ul>
+<p pid="5">Most think that building microservices is based on the same principle as REST with a JSON web service. Of course, this is the most common method, but as you can see it is not the only one. Not only that, in some articles, you might read that synchronous communication is an anti-pattern, especially when there are many services in a calling route.</p>
+<p pid="5">The other frequent comparison we might read about compares microservices to SOA architecture. In SOA, the most common communication protocol is SOAP. There has been a great deal of discussion as to whether SOAP is better than REST or vice versa. As we all know, they each have advantages and drawbacks, but REST is lightweight and independent from the type of language, so it has won the competition for modern applications, and is slowly taking over the enterprise sector. Honestly, I don’t have anything against microservices based on SOAP if there is a good reason for it.</p>
+<p pid="5">Let’s look back at the criteria of division to different types of communication. I have already mentioned that we can classify them into synchronous vs. asynchronous, the latter of which defines whether the communication has a single receiver or multiple receivers. In one-to-one communication, each client request is processed by exactly one service instance, while each request can be processed by many different services. It is worth it to point out here that one message is received by different services, but usually it should not be received by different instances of a single service. Microservices frameworks usually implement a consumer grouping mechanism whereby different instances of a single application have been placed in a competing consumer relationship in which only one instance is expected to handle an incoming message.</p>
+<p pid="6">For one-to-one synchronous services, the same can be achieved with a load-balancing mechanism performed&nbsp;on the client side. Each service has information about the location addresses of all instances that are calling services.This information can be taken from a service discovery server or may be provided manually in configuration properties. Each service has a built-in routing client that can choose one instance of a target service, using the right algorithm, and send a request there. These are the most popular load balancing methods:</p>
+<ul>
+ <li><p pid="6">Round Robin - The simplest and most common way. Requests are distributed across all the instances sequentially.</p></li>
+ <li><p pid="6">Least Connections - A request goes to the instance that is processing the least number of active connections at the current time.</p></li>
+ <li><p pid="6">Weighted Round Robin - This algorithm assigns a weight to each instance in the pool, and new connections are forwarded in proportion to the assigned weight.</p></li>
+ <li><p pid="6">IP Hash – This method generates a unique hash key from the source IP address and determines which instance receives the request.</p></li>
+</ul>
+<p pid="6">Here’s a figure that illustrates different types of communication used for microservices-based architecture, assuming the existence of multiple instances of each service:</p>
+<p pid="8"><img alt="Image title" class="fr-fin fr-dib" src="https://dz2cdn1.dzone.com/storage/temp/7542942-screen-shot-2017-12-14-at-42543-pm.png" width="791">In more complex architectures, there can be cases where those three communication types are mixed with each other. Then, some microservices are built on the basis of synchronous interaction, some on one-to-one messaging, and others on a publish/subscribe model.</p>
+<p pid="3">There’s been a lot of talk recently about reactive microservices, so I think it is worth it to devote a few words to it. It is based on the Reactive Programming paradigm, oriented around data flows and the propagation of change.Such microservices are non-blocking, asynchronous, event-driven, and require a small number of threads to scale.Their greatest advantage is excellent performance with little resource consumption. The most popular frameworks for building reactive microservices are Lagom and Vert.x.</p>
+<p pid="4">Let’s get back to synchronous request/response communication. It is very important to prepare systems in case of partial failure, especially for a microservices-based architecture, where there are many applications running in separated processes. A single request from the client point of view might be forwarded through many different services. It’s possible that one of those services is down because of a failure, maintenance, or just might be overloaded, which causes an extremely slow response to client requests coming into the system. There are several best practices for dealing with failures and errors.The first recommends that we should always set network connect and read timeouts to avoid waiting too long for the response. The second approach is about limiting the number of accepted requests if a service fails or responses take too long. In this case, there is no sense in sending additional requests by the client.</p>
+<p pid="6">The last two patterns are closely connected to each other. I’m thinking about the circuit breaker pattern and fallback. The major assumption of this approach relies on monitoring successful and failed requests. If too many requests fail or services take too long to respond, the configured circuit breaker is tripped and all further requests are rejected. On the other hand, fallback provides some portion of logic which has to be performed if a request fails or circuit breaker had been tripped. In some cases, it could be useful, especially when data returned by a service is not critical for the client or does not change frequently and may be taken from the cache. The most popular implementation of the described patterns is available in Netflix Hystrix, which is used by many Java frameworks, providing components for microservices like Spring Cloud or Apache Camel.</p>
+<p pid="7">Implementation of a circuit breaker with Spring Cloud Netflix is quite simple. In the main class, it can be enabled with one annotation:</p>
+<pre><code lang="text/x-java">@SpringBootApplication
+@EnableFeignClients
+@EnableCircuitBreaker
+public class Application {
+ public static void main(String[] args) {
+  SpringApplication.run(Application.class, args);
+ }
+}</code></pre>
+<p pid="9">To communicate with another microservice, we can use the Feign REST client, which handles fallback. Here, we return an empty list:</p>
+<pre><code lang="text/x-java">@FeignClient(value = “account - service”, fallback =
+ AccountFallback.class)
+public interface AccountClient {
+ @RequestMapping(method = RequestMethod.GET, value = “/accounts/customer / {
+  customerId
+ }”)
+ List &lt; Account &gt; getAccounts(@PathVariable(“customerId”) Integer customerId);
+}
+@Component
+public class AccountFallback implements AccountClient {
+ @Override
+ public List &lt; Account &gt; getAccounts(Integer customerId) {
+  List &lt; Account &gt; acc = new ArrayList &lt; Account &gt; ();
+  return acc;
+ }
+}</code></pre>
+<p pid="11">Hystrix default settings may be overridden with configuration properties. The property visible below sets the time after which the caller will receive a timeout while waiting for a response:</p>
+<pre><code lang="text/x-java">hystrix.command.default.execution.isolation.thread.
+timeoutInMilliseconds=500</code></pre>
+<p pid="13"><em><a href="https://dzone.com/guides/microservices-breaking-down-the-monolith" target="_blank">This article is featured in the new&nbsp;DZone&nbsp;Guide to&nbsp;Microservices.&nbsp;Get your free copy for more insightful articles, industry statistics, and more!&nbsp;</a></em></p></div>
+                </div>
+
+                  <div id="bottom-bumper-container"></div>
+                  <div class="article-tag-pill-container">
+                      <span class="article-tag-pill">microservice</span>
+                      <span class="article-tag-pill">Web Service</span>
+                      <span class="article-tag-pill">Spring Cloud</span>
+                      <span class="article-tag-pill">Circuit Breaker Pattern</span>
+                      <span class="article-tag-pill">Relational database</span>
+                      <span class="article-tag-pill">Requests</span>
+                      <span class="article-tag-pill">Database</span>
+                      <span class="article-tag-pill">application</span>
+                      <span class="article-tag-pill">Architecture</span>
+                      <span class="article-tag-pill">Web Protocols</span>
+                  </div>
+
+                  <div class="attribution">
+                      <p>Published at DZone with permission of <span>Piotr Mińkowski<span>, DZone MVB</span></span>.
+                        <span>
+                          <a href="https://dzone.com/guides/microservices-breaking-down-the-monolith?3" target="_blank">See the original article here.
+                            <i class="icon-link-ext-alt"></i>
+                          </a>
+                        </span>
+                      </p>
+                    <p>Opinions expressed by DZone contributors are their own.</p>
+                  </div>
+
+                    <div class="related">
+                      <h3>Popular on DZone</h3>
+                        <ul>
+                            <li class="relateddiv">
+                              <a href="/articles/implementing-one-way-and-two-way-ssl-mutual-authen?fromrel=true">Implementing One and Two Way SSL (Mutual Authentication) for MuleSoft Application</a>
+                            </li>
+                            <li class="relateddiv">
+                              <a href="/articles/augmented-analytics-the-future-of-business-intelli?fromrel=true">Augmented Analytics: The Future of Business Intelligence</a>
+                            </li>
+                            <li class="relateddiv">
+                              <a href="/articles/what-are-cookies-in-servlets-and-cookies-examples?fromrel=true">What Are Cookies in Servlets?</a>
+                            </li>
+                            <li class="relateddiv">
+                              <a href="/articles/conducting-sprint-retrospective-meetings?fromrel=true">Conducting Sprint Retrospective Meetings</a>
+                            </li>
+                        </ul>
+                      </div>
+<div class="comments-overlay"></div>
+<div id="comment-box">
+  <div class="comment-box-wrapper">
+    <div id="comment-input-editor"></div>
+  </div>
+  <div class="info hidden"></div>
+  <div class="comments-content">
+    <div class="comment-header">
+      <hr />
+      <span class="icon-comment">
+        <span class="numOfComments"></span> Comments
+      </span>
+    </div>
+    <div class="comments"></div>
+  </div>
+</div>
+            </article>
+          </div>
+
+            <div id="above-pr-ad" class="bottom-ad-container">
+              <div id="div-gpt-ad-1435246566686-11" data-gpt-slot="bottom"></div>
+            </div>
+            <div class="layout-card widget-top-border partner-resources-block" style="width:100%; margin-bottom: 1em;">
+              <div class="main-container">
+                <div class="featured-header">
+                  <h2>
+                      Microservices<span> Partner Resources</span>
+                  </h2>
+                </div>
+                <div class="partner-resources-container">
+                  <div id="div-gpt-ad-1435246566686-5" class="resource-block" data-gpt-slot="partner" data-gpt-position="pr1"></div>
+                  <div id="div-gpt-ad-1435246566686-6" class="resource-block" data-gpt-slot="partner" data-gpt-position="pr2"></div>
+                  <div id="div-gpt-ad-1435246566686-7" class="resource-block" data-gpt-slot="partner" data-gpt-position="pr3"></div>
+                </div>
+              </div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <div id="bsa-parent" class="bottom-sticky-ad-container hide">
+      <div class="container">
+        <div class="col-md-9">
+          <div class="fixed-bottom-div">
+            <div class="inline-block">
+              <div id="div-gpt-ad-1635294790718-12" data-gpt-desktop="true" class="bottom-sticky-ad"></div>
+            </div>
+            <div class="inline-block">
+              <span id="close" class="bottom-sticky-ad-close-button" onclick="removeBottomStickyAd()">
+                X
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  <div class="modal fade bd-example-modal-lg" id="modal-message" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header"></div>
+        <div class="modal-body"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script async>const articleTitle = 'Communicating Between Microservices'
+const articleUrl = 'https://dzone.com/articles/communicating-between-microservices'
+
+const retweetLink = document.querySelector('#tweet-link')
+
+function retweet(event) {
+    event.preventDefault()
+    event.stopPropagation()
+
+    const twitter = 'https://twitter.com/intent/tweet'
+    const params = '?text=' + encodeURIComponent(articleTitle) + '&url=' + articleUrl + '&ref=dzone.com&via=DZoneInc'
+    const win = window.open(twitter + params, '_blank')
+    win.focus()
+}
+
+retweetLink.addEventListener('click', retweet);
+
+function showStatusMessage(options) {
+  var modal = document.getElementById("modal-message");
+
+  if(modal) {
+    modal.classList.add(options.type);
+    var modalBody = modal.querySelector(".modal-content .modal-body");
+    var modalHeader = modal.querySelector(".modal-content .modal-header");
+
+    modalHeader.innerText = options.header ? options.header : "";
+    modalBody.innerText = options.body ? options.body : "" ;
+
+    $(modal).modal("show");
+
+    $(modal).on('hidden.bs.modal', function () {
+      modal.classList.remove(options.type);
+    });
+  }
+}
+
+function showConfirmMessage(options) {
+  var modal = document.getElementById("modal-message");
+
+  if(modal) {
+    modal.classList.add(options.type);
+    var modalBody = modal.querySelector(".modal-content .modal-body");
+    var modalHeader = modal.querySelector(".modal-content .modal-header");
+
+    modalHeader.innerText = options.header ? options.header : "";
+    modalBody.innerText = options.body ? options.body : "" ;
+
+    if (options.textarea) {
+      const textareaDiv = document.createElement('div')
+      const textareaLabel = document.createElement('label')
+      textareaLabel.setAttribute('for', 'modal-textarea')
+      textareaLabel.innerText = options.textarea.label
+
+      const textarea = document.createElement('textarea')
+      textarea.id = 'modal-textarea'
+      textarea.placeholder = (options.textarea.placeholder || '')
+      textarea.setAttribute('rows', (options.textarea.rows || 3))
+      textarea.classList.add('form-control', 'not-resizable')
+
+      if (options.textarea.maxlength) {
+        textarea.maxLength = options.textarea.maxlength
+      }
+
+      textareaDiv.appendChild(textareaLabel)
+      textareaDiv.appendChild(textarea)
+      modalBody.appendChild(textareaDiv)
+    }
+
+    var btnContainer = document.createElement("div");
+    btnContainer.classList.add("btn-container");
+
+    var noBtn = document.createElement("button");
+    noBtn.innerText = options.noBtnText ? options.noBtnText : "No";
+    noBtn.classList.add("no-btn");
+
+    var yesBtn = document.createElement("button");
+    yesBtn.innerText = options.yesBtnText ? options.yesBtnText : "Yes";
+    yesBtn.classList.add("yes-btn");
+
+    btnContainer.appendChild(noBtn);
+    btnContainer.appendChild(yesBtn);
+
+    modalBody.appendChild(btnContainer);
+
+    $(modal).modal("show");
+
+    $(noBtn).one("click", function() {
+      $(modal).modal("hide");
+
+      if(options.noCallback) {
+        $(modal).one('hidden.bs.modal', function () {
+          options.noCallback();
+        });
+      }
+    });
+
+    $(yesBtn).one("click", function() {
+      $(modal).modal("hide");
+
+      if(options.yesCallback) {
+        $(modal).one('hidden.bs.modal', function () {
+          options.yesCallback();
+        });
+      }
+    });
+
+    $(modal).on('hidden.bs.modal', function () {
+      modal.classList.remove(options.type);
+    });
+  }
+}
+</script><link rel="stylesheet" media="all" href="https://dz2cdn1.dzone.com/themes/dz20/ftl/footer/styles.css">
+
+<div id="ftl-footer">
+  <div class="container-fluid footerOuter">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="container">
+          <div class="row footer">
+            <div class="col-md-12 footerWidget">
+              <div class="row footerContainer footer">
+                <div class="left col-xs-12 col-sm-7">
+                  <div class="col-xs-12 social-media-icons footer-mobile">
+                    <ul class="icons-only">
+                      <li class="rss-icon" id="rss-footer-1">
+                        <a href="/pages/feeds" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-rss-1"></i>
+                        </a>
+                      </li>
+                      <li class="twitter-icon">
+                        <a href="https://twitter.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-twitter"></i>
+                        </a>
+                      </li>
+                      <li class="facebook-icon">
+                        <a href="https://www.facebook.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-facebook-1"></i>
+                        </a>
+                      </li>
+                      <li class="linkedin-icon">
+                        <a href="https://www.linkedin.com/company/dzone/" target="_blank"
+                           rel="noreferrer noopener">
+                          <i class="icon-linkedin-1"></i>
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div class="top-section col-xs-12">
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">ABOUT US</p>
+                      <ul class="link-group">
+                        <li><a href="/pages/about" rel="noreferrer noopener">About DZone</a></li>
+                        <li><a href="mailto:support@dzone.com" rel="noreferrer noopener">Send feedback</a></li>
+                        <li><a href="https://careers.dzone.com/" target="_blank" rel="noreferrer noopener">Careers</a></li>
+                          <li><a href="/sitemap" rel="noreferrer noopener">Sitemap</a></li>
+                      </ul>
+                    </div>
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">ADVERTISE</p>
+                      <ul class="link-group">
+                        <li><a href="https://advertise.dzone.com" target="_blank" rel="noreferrer noopener">Advertise with DZone</a></li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div class="bottom-section col-xs-12">
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">CONTRIBUTE ON DZONE</p>
+                      <ul class="bottom-top-list link-group">
+                        <li><a href="/articles/dzones-article-submission-guidelines">Article Submission Guidelines</a></li>
+                        <li><a href="/pages/mvb" rel="noreferrer noopener">MVB Program</a></li>
+                        <li><a href="/pages/contribute" rel="noreferrer noopener">Become a Contributor</a></li>
+                        <li><a href="/writers-zone" rel="noreferrer noopener">Visit the Writers' Zone</a></li>
+                      </ul>
+
+                      <p class="section-header">LEGAL</p>
+                      <ul class="link-group">
+                        <li><a href="/pages/tos" rel="noreferrer noopener">Terms of Service</a></li>
+                        <li><a href="/pages/privacy" rel="noreferrer noopener">Privacy Policy</a></li>
+                      </ul>
+                    </div>
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">CONTACT US</p>
+                      <ul class="link-group">
+                        <li>600 Park Offices Drive</li>
+                        <li>Suite 300</li>
+                        <li>Durham, NC 27709</li>
+                        <li><a href="mailto:support@dzone.com" rel="noreferrer noopener">support@dzone.com</a></li>
+                        <li><a href="tel:+19196780300" rel="noreferrer noopener">+1 (919) 678-0300</a></li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="right col-xs-12 col-sm-5">
+
+                  <p class="connect-text">Let's be friends:</p>
+                  <div class="col-xs-12 social-media-icons footer-wide">
+                    <ul class="icons-only">
+                      <li class="rss-icon" id="rss-footer-1">
+                        <a href="/pages/feeds" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-rss-1"></i>
+                        </a>
+                      </li>
+                      <li class="twitter-icon">
+                        <a href="https://twitter.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-twitter"></i>
+                        </a>
+                      </li>
+                      <li class="facebook-icon">
+                        <a href="https://www.facebook.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-facebook-1"></i>
+                        </a>
+                      </li>
+                      <li class="linkedin-icon">
+                        <a href="https://www.linkedin.com/company/dzone/" target="_blank"
+                           rel="noreferrer noopener">
+                          <i class="icon-linkedin-1"></i>
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div class="col-xs-12 powered-by">
+                    <p>DZone.com is powered by&nbsp;</p>
+                    <a href="https://devada.com/answerhub/" rel="noreferrer noopener">
+                      <img src=""
+                           data-src="https://dz2cdn1.dzone.com/themes/dz20/images/answerhub_logo_white_footer.png"
+                           width="150"
+                           height="56"
+                           class="lazyload"
+                           alt="AnswerHub logo">
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  <script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"></script>
+
+  <script async>
+      (function(w, d, s, l, i) {
+          w[l] = w[l] || [];
+          w[l].push({'gtm.start': new Date().getTime(), event: 'gtm.js'});
+          var f = d.getElementsByTagName(s)[0], j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : '';
+          j.async = true;
+          j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+          f.parentNode.insertBefore(j,f);
+      })(window, document, 'script', 'dataLayer', 'GTM-K25QL22');
+  </script>
+
+  <script>
+      window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+      ga('create', 'UA-410289-1', 'auto');
+      ga('require', 'linkid', 'linkid.js');
+      ga('require', 'GTM-TSD9TZP');
+      ga('set', 'siteSpeedSampleRate', 25);
+  </script>
+  <script async src="https://www.google-analytics.com/analytics.js"></script>
+  <script async>const analytics = {
+    'dimension1': 'microservices',
+    'dimension2': 'article/analysis',
+    'dimension3': '2017-12-19',
+    'dimension4': '0',
+    'dimension5': '',
+    'dimension7': 'microservice, web service, Spring Cloud, Circuit Breaker Pattern, Relational database, requests, Database, application, Architecture, web protocol',
+    'dimension8': 'piotr.minkowski',
+    'dimension9': 'undefined',
+    'dimension10': 'P4'
+}
+
+if (window.ga) {
+    Object.keys(analytics).forEach(function(key) {
+        window.ga('set', key, analytics[key])
+    })
+
+    window.ga('send', 'pageview')
+}</script>
+
+  <script>
+      !function (e, o, n, i) {
+          if (!e) {
+              e = e || {}, window.permutive = e, e.q = [];
+              var t = function () {
+                  return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, function (e) {
+                      return (e ^ (window.crypto || window.msCrypto).getRandomValues(new Uint8Array(1))[0] & 15 >> e / 4).toString(16)
+                  })
+              };
+              e.config = i || {}, e.config.apiKey = o, e.config.workspaceId = n, e.config.environment = e.config.environment || "production", (window.crypto || window.msCrypto) && (e.config.viewId = t());
+              for (var g = ["addon", "identify", "track", "trigger", "query", "segment", "segments", "ready", "on", "once", "user", "consent"], r = 0; r < g.length; r++) {
+                  var w = g[r];
+                  e[w] = function (o) {
+                      return function () {
+                          var n = Array.prototype.slice.call(arguments, 0);
+                          e.q.push({
+                              functionName: o,
+                              arguments: n
+                          })
+                      }
+                  }(w)
+              }
+          }
+      }(window.permutive, "bca90777-e088-4f2a-96c2-13ad18deeccc", "18ad0c5b-460c-4d19-a729-dc537805538f", {});
+      window.googletag = window.googletag || {}, window.googletag.cmd = window.googletag.cmd || [], window.googletag.cmd.push(function () {
+          if (0 === window.googletag.pubads().getTargeting("permutive").length) {
+              var e = window.localStorage.getItem("_pdfps");
+              window.googletag.pubads().setTargeting("permutive", e ? JSON.parse(e) : []);
+              var o = window.localStorage.getItem("permutive-id");
+              o && (window.googletag.pubads().setTargeting("puid", o), window.googletag.pubads().setTargeting("ptime", Date.now().toString())), window.permutive.config.viewId && window.googletag.pubads().setTargeting("prmtvvid", window.permutive.config.viewId), window.permutive.config.workspaceId && window.googletag.pubads().setTargeting("prmtvwid", window.permutive.config.workspaceId)
+          }
+      });
+
+
+      permutive.addon('web', {
+          'page': {
+              'category': 'Microservices',
+              'node': {
+                  'authorCompany': 'P4',
+                  'authors': [2918001, ],
+                  'publishDate': new Date(1513641600000),
+                  'sponsorAuthor': false,
+                  'tags': ['microservice', 'web service', 'Spring Cloud', 'Circuit Breaker Pattern', 'Relational database', 'requests', 'Database', 'application', 'Architecture', 'web protocol', ],
+                  'title': 'Communicating Between Microservices',
+                  'type': 'article',
+              },
+              'section': 'article',
+          }
+      });
+  </script>
+  <script async src="https://18ad0c5b-460c-4d19-a729-dc537805538f.edge.permutive.app/18ad0c5b-460c-4d19-a729-dc537805538f-web.js"></script>
+
+  <script>
+      const csrf = '7094390301271995818'
+      const articleId = 1903471
+      const likes = 82
+      const assetDomain = 'https://dz2cdn1.dzone.com'
+      const codemirrorVars = {
+          modeURI: 'https://dz2cdn1.dzone.com/themes/dz20/lib/codemirror/mode/',
+          requiredScripts: [
+              'https://dz2cdn1.dzone.com/themes/dz20/lib/codemirror/lib/codemirror.js',
+              'https://dz2cdn1.dzone.com/themes/dz20/lib/codemirror/mode/meta.js'
+          ]
+      }
+
+      const gptTags = {
+          'zone': 'microservices',
+          'topicTag': 'microservice,web service,Spring Cloud,Circuit Breaker Pattern,Relational database,requests,Database,application,Architecture,web protocol',
+          'company': '',
+          'siteSection': 'Zones',
+          'articleCategory': 'analysis',
+          'nodeID': '1903471',
+          'authorID': '2918001',
+          'publishYear': '2017',
+          'publishMonth': '12',
+          'jobRole': '',
+          'companySize': ''
+      }
+
+      const minCommentChar = 10;
+      const peer39Enabled = true;
+  </script>
+
+  <script src="https://dz2cdn1.dzone.com/themes/dz20/lib/static/jquery/jquery.min.js"></script>
+  <script async src="https://dz2cdn1.dzone.com/themes/dz20/lib/static/bootstrap/bootstrap.min.js"></script>
+  <script async src="https://dz2cdn1.dzone.com/themes/dz20/ftl/article/ads.js"></script>
+
+
+
+  <script>
+      function loadScript(src) {
+          return new Promise(function (resolve, reject) {
+              const s = document.createElement('script')
+              s.src = src
+              s.onload = resolve
+              s.onerror = reject
+              document.head.appendChild(s)
+          })
+      }
+
+      function loadStyle(href) {
+          const link = document.createElement('link')
+          link.rel = 'stylesheet'
+          link.href = href
+          document.head.appendChild(link)
+      }
+
+      function loadScriptsSync(deferred) {
+          var p = Promise.resolve()
+          for (var i = 0; i < deferred.length; i++) {
+              let script = deferred[i]
+              p = p.then(function() {
+                  return loadScript(script)
+              })
+          }
+          return p
+      }
+
+      function loadStyles() {
+          const deferred = [
+              'https://dz2cdn1.dzone.com/themes/dz20/lib/codemirror/lib/codemirror.css',
+              'https://dz2cdn1.dzone.com/themes/dz20/ftl/comments/styles.css',
+              'https://dz2cdn1.dzone.com/themes/dz20/lib/froala3/css/froala_editor.pkgd.min.css',
+              'https://dz2cdn1.dzone.com/themes/dz20/lib/froala3/css/themes/gray.min.css',
+              'https://dz2cdn1.dzone.com/themes/dz20/ftl/article/mini-profile.css'
+          ]
+
+          for (var i = 0; i < deferred.length; i++) {
+              loadStyle(deferred[i])
+          }
+      }
+
+      window.addEventListener('load', function(event) {
+          loadStyles()
+          loadScriptsSync([
+              'https://dz2cdn1.dzone.com/themes/dz20/ftl/header/auth-status.js',
+              'https://dz2cdn1.dzone.com/themes/dz20/lib/lazysizes.min.js',
+              'https://dz2cdn1.dzone.com/themes/dz20/ftl/article/codeblocks.js',
+              'https://dz2cdn1.dzone.com/themes/dz20/ftl/article/activity-bar.js',
+              'https://dz2cdn1.dzone.com/themes/dz20/lib/froala3/js/froala_editor.pkgd.min.js',
+              'https://dz2cdn1.dzone.com/themes/dz20/ftl/froala/content.js',
+              'https://dz2cdn1.dzone.com/themes/dz20/ftl/comments/content.js',
+              'https://dz2cdn1.dzone.com/themes/dz20/ftl/article/content.js'
+          ])
+      })
+  </script>
+</body>
+</html>

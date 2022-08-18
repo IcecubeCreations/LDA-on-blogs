@@ -1,0 +1,292 @@
+
+
+ActiveMQ, Qpid, HornetQ und RabbitMQ im VergleichEntwicklungBranchenSSOSchnittstellenESB EinführungBeispiel ClientsBeratungAnwendungsintegrationAPI ReviewSchulungWebinareMicroservicesIntegrationREST APIsBig DataSOAOnsiteKursmaterialAGBsTeilnahme FAQBewertungenTermineTermine nach DatumRaumanforderungenReferenzenFallstudienAppsSOAAppsWeb 2.0SonstigesVeröffentlichungenMicroservicesKubernetes & DockerRESTSecurityOpen Source IntegrationMobileEnterpriseIoTJavaScriptSOA & Web ServicesVorträgeAutorenVideoOpen SourceAPI GatewaySOA MonitorService VirtualisierungVirtuelle ServicesKontaktHotelsAnreiseFreizeittippsJobsSenior Java Entwickler w/m/dJava Entwickler m/w/dJava Student m/w/dKubernetes-Administrator m/w/dFreiberufler m/w/dBachelorarbeitenBewerbung als CoderInhalt der BewerbungAzubi Fachinformatiker w/m/dActiveMQ, Qpid, HornetQ und RabbitMQ im VergleichVon: Thomas BayerDatum: 17. Januar 2013Aktualisiert: 6. Juli 2018Neuere Architekturen und das standardisierte AMQP Protokoll haben zu einer wahren Flut an Message Brokern geführt. Alle Broker nehmen für sich in Anspruch schnell, robust und zuverlässig zu sein. Aber worin unterscheiden sich die Broker wirklich? Wie wähle ich einen geeigneten Broker aus? Sollte man weiterhin etablierte Broker wie zum Beispiel den ActiveMQ verwenden? Dieser Artikel versucht diese Fragen zu beantworten und den Leser bei der Auswahl eines geeigneten Brokers zu unterstützen.
+Die in diesem  Artikel beschriebenen Broker mussten:
+    unter einer Open Source Lizenz verfügbar seinZugriff von Java aus ermöglichenQuality of Service Eigenschaften wie garantierte Zustellung und Persistenz bieten
+    In den nächsten Abschnitten werden die Broker mit ihren Besonderheiten vorgestellt. Danach werden Kriterien wie Persistenz, unterstützte Plattformen, Performanz und Verbreitung behandelt. Die Beschreibung der einzelnen Broker beginnt mit dem Verteidiger dem etablierten ActiveMQ Broker.
+  Apache ActiveMQApache ActiveMQ ist mit der größten Anzahl von Installationen der Open Source Message Broker mit der größten Verbreitung. ActiveMQ implementiert die Java Message Service Spezifikation und bietet zahlreiche Features wie z.B. Unterstützung für die Enterprise Integration Patterns, für das Spring Framework und für Transaktionen.Für die Persistierung von Nachrichten können verschiedene Speicher verwendet werden. Die Datei-basierte Kaha Datenbank bietet eine sehr gute Performanz, da Sie in der Java VM des Brokers ausgeführt wird, wenige Ressourcen benötigt und für Nachrichten optimiert ist. Beliebt ist im Enterprise-Umfeld aber die Verwendung einer relationalen Datenbank wie z.B. IBMs DB/2 oder die Datenbank von Oracle. Die Verwendung eines JDBC Speicher zusammen mit einer relationalen Datenbank ist mit einer Geschwindigkeitseinbuße verbunden, bringt jedoch Vorteile für den Betrieb: die Datenbank für die Persistenz von Nachrichten kann in das Operating eines Rechenzentrums eingebunden werden und für das Backup kann der bestehende Mechanismus verwendet werden. Es macht jedoch nicht immer Sinn ein Backup für einen Nachrichten Speicher zu erstellen.Ein Highlight beim ActiveMQ sind die zahlreichen Möglichkeiten für Clustering und Verteilung. Um beim Ausfall eines Brokers den Betrieb aufrecht zu erhalten kann ActiveMQ in einer Master/Slave Konfiguration betrieben werden. Ferner können mehrere Broker zu einem Network of Brokers verbunden werden. In einem Network of Brokers sind Queues und Topics (Publish/Subscribe) virtuell, d.h. eine Queue ist auf allen Knoten verfügbar und das Routing findet automatisch statt.Abbildung 1 skizziert einen virtuellen Broker den man mit verteilten ActiveMQ Installation realisieren könnte.Abbildung 1: Virtueller Broker mit weltweit verteilten KnotenActiveMQ wird in einigen Enterprise Service Bus Produkten wie z.B. beim ServiceMix und Mule ESB als Bus Infrastruktur verwendet. Daneben gibt es noch zahlreiche andere Projekte, die ActiveMQ für den Transport von Nachrichten verwenden. Apache Geronimo und TomEE, die Java Enterprise Edition des Tomcat Web Containers, verwenden ActiveMQ als JMS Implementierung.Der Fuse MQ Enterprise Broker von Progress Software basiert auf dem Apache ActiveMQ Broker. Bugfix-Versionen der Fuse Variante werden öfter released als die ActiveMQ Versionen von Apache.Seit seinen Anfängen in 2004 ist der ActiveMQ Broker gereift und hat eine große Verbreitung erlangt. Kinderkrankheiten wie Speicherlöcher sind längst beseitigt. Für die meisten Messaging Aufgaben arbeitet ActiveMQ zuverlässig, hoch performant und Ressourcen schonend.Für das Enterprise Messaging ist ActiveMQ immer noch eine sehr gute Wahl. ActiveMQ hat jedoch Konkurrenz bekommen, die mit neueren Architekturen, besserer Performanz und mit der Unterstützung von standardisierten Protokollen im Revier des Platzhirsches wildert.
+  Apache ApolloUpdate: 2015 wurde Apache Apollo nichtoffiziell für tot erklärt. Eine weitere Entwicklung findet nicht statt. Möglicherweise ist Apache Artemis die nächste Version des ActiveMQ Brokers.ActiveMQ bekommt von Apache Apollo Konkurrenz aus dem eigenen Hause. Apollo ist eine Neuentwicklung basierend auf den Erfahrungen des ActiveMQ Projektes.Um schneller, robuster und besser wartbar zu sein als ActiveMQ wurde eine komplett neue Architektur eingeführt. Die Architektur basiert auf der Programmiersprache Scala, die gut die Entwicklung von nebenläufigen Systemen unterstützt. Das Threading des Apollo Brokers unterscheidet sich grundlegend von dem des ActiveMQ. Alle Aufgaben werden asynchron und nicht-blockierend ausgeführt, was zu erhöhter Performanz und Stabilität beiträgt. Dadurch können die Fähigkeiten von Mehrkernprozessoren besser genutzt werden.Für Apollo gibt es derzeit zwei Speicher für persistente Nachrichten. Zum einen über die NoSQL Datenbank LevelDB von Google und zum anderen über die Java Edition der Berkeley DB.Über den HTML5 WebSocket Connector kann ein Messaging Client direkt in eine Webseite eingebunden werden. Das folgende Listing zeigt, wie man mit JavaScript und der stomp.js Bibliothek auf einen Apollo Broker von einer Webseite aus zugreifen kann. Beim Verbindungsaufbau wird eine Callback-Funktion angemeldet, die beim Eintreffen einer Nachricht den Inhalt in einem Dialog anzeigt.
+  
+
+var client = Stomp.client("ws://apollo.predic8.com:61623");
+
+client.connect("admin", "pwd", function(frame) {
+   client.subscribe("/topic/like", function(msg) {
+ 	  alert(msg.body);
+   });
+});
+        
+Listing 1: Zugriff auf den Apollo Broker mit STOMP und JavaScript 
+
+  Das Senden von Nachrichten aus dem Browser heraus kann mit dem folgenden JavaScript Ein-Zeiler erfolgen:
+  
+
+client.send("/topic/like", {}, inhalt);
+        
+
+  Apollo ist zwar in Scala geschrieben, der Broker kann aber ohne Bedenken in einer Java Umgebung betrieben werden. Dass Apollo mit Scala realisiert ist erkennt man nur daran, dass die Distribution neben vielen Java Bibliotheken auch einige Scala Bibliotheken enthält.Für die Verwaltung bietet Apollo eine einfache Web Konsole wie der folgende Screenshot zeigt.Abbildung 2: Admin Konsole des Apollo BrokersÄndert man in der URL das Anhängsel von .htmlnach .json bekommt man eine JSON Repräsentation anstatt einer Web Seite.Abbildung 3: Apollo Konsole als JSON RepräsentationÜber REST und JSON kann auch schreibend auf die Apollo Web Anwendung zugegriffen werden um beispielsweise eine neue Queue anzulegen. Abbildung 4 zeigt einen Screenshot mit einer Visualisierung des Apollo REST APIs. Die Visualisierung ist in Apollo integriert und über das Swagger Tool realisiert. Beschreibung mit Swagger ist eine Spezifikation und ein Framework zur Beschreibung von REST APIs.Abbildung 4: REST API Beschreibung mit SwaggerFür Apollo selbst gibt es keine Client Bibliothek. Dafür können andere Clients für die von Apollo unterstützten Protokolle MQTT, OpenWire und STOMP verwendet werden.FFMQDer Full-Java, native JMS, message Queuer ist eine leichtgewichtige JMS Implementierung. Der gesamt Server ist kleiner als 600 KByte dafür gibt es eine Reihe von Einschränkungen bezüglich JMS Konformität oder Transaktionen. Wer auf fortgeschrittene JMS Funktionalität wie z.B. Message Groups verzichten kann bekommt mit FFMQ einen einfachen, schnellen und unkomplizierten Message Broker.HornetQUpdate: Der Quellcode von HornetQ wurde 2015 von JBoss an Apache gestiftet. Bei Apache wird der Code unter dem Namen Apache Apache Artemis weiter entwickelt. Bestehende HornetQ Clients können leicht auf Artemis portiert werden, da Artemis das HornetQ Protokoll beherrscht. Möglicherweise wird Artemis der Nachfolger des beliebten ActiveMQ Brokers. Vielleicht als ActiveMQ Version 6? Wer HornetQ nicht einsetzt, für den lohnt sich eine Beschäftigung mit dem Broker nicht mehr. Statt dessen könnte man Artemis betrachten.Die Code Basis von HornetQ war lange unter dem Namen JBoss Messaging 2.0 bekannt bis sie als eigenes Projekt unter dem Namen HornetQ weiterentwickelt wurde. HornetQ kann unabhängig vom JBoss Application Server eingesetzt werden. Ab der Version 6 ist HornetQ der vorkonfigurierte Message Broker für JMS beim JBoss Server.HornetQ ist als Enterprise Message Broker ausgelegt. Er bietet zahlreiche Features sowie viele Einstellungen und ist eine vollwertige Umsetzung der Java Message Service Spezifikation.Das User Manual ist mit 334 Seiten das umfangreichste der hier aufgeführten Message Broker. Die Dokumentation ist sehr ausführlich von den Konzepten über die Architektur bis hin zu XA Transaktionen und Clustering.Für HornetQ gibt es keine eigenständige Konsole für die Administration. Über die Konsole des JBoss Application Servers kann HornetQ administriert werden. Über JMX und MBeans können beispielsweise Queues angelegt oder Statistiken ausgelesen werden. Da ich den HornetQ gerne in der Standalone-Version einsetzen möchte steht eine spezielle Konsole auf meiner Wunschliste.HornetQ hat seine Stärken im Einsatz als Enterprise Broker und als JMS Implementierung. Die Integration im JBoss wird sicher auch zu seiner Verbreitung beitragen. Damit verbunden ist eine gewisse Komplexität, so dass es für einfachere Konfigurationen geeignetere Broker gibt. Für den Enterprise Einsatz hat HornetQ auf jeden Fall einen spitzen Stachel.JBoss MessagingDie Weiterentwicklung von JBoss Messaging wurde eingestellt. Neue Funktionen werden ausschließlich im Nachfolgeprojekt HornetQ umgesetzt. Für JBoss Messaging wird es noch eine Zeitlang Support und Bugfixes geben.
+  OpenJMSOpenJMS war die Open Source JMS Implementierung von SUN Microsystems. In den letzten Jahren konnte ich nicht mehr viel Aktivität rund um OpenJMS beobachten. Es hat den Anschein, dass dieses Projekt nicht mehr besonders lebendig ist.
+  Apache Qpid™Neben ActiveMQ und Apollo gibt es bei Apache einen weiteren Message Broker, Apache Qpid. Ziel des Qpid Projektes ist die 100 prozentige Kompatibilität zum Advanced Message Queuing Protocol Standard.Der Qpid Broker ist in einer Version für C++ und in einer für Java verfügbar. Dieser Artikel beschreibt die Eigenschaften der Java Version. Für Java Clients gibt es ein JMS API für Qpid. Für C++, Python und Microsofts .Net gibt es das Qpid Messaging API.Für die Persistenz von Nachrichten wird die relationale Apache Derby Datenbank und die Oracle Berkeley DB unterstützt.Auf der Basis von Apache Qpid bietet Red Hat das Enterprise Messaging Produkt MRG an. Für MRG gibt es langjährigen Support sowie Versionen mit zusätzlichen Bug Fixes.Proton™, ein Subprojekt von Qpid, ist eine leichtgewichtige Implementierung des AMQP Protokolls. Mit Proton soll es gleichermaßen möglich sein Clients und Server zu entwickeln. Proton ist für C und Java verfügbar. Die C Implementierung enthält auch Bindings für PHP, Python und Ruby.
+  RabbitMQDer RabbitMQ Broker ist mit der funktionalen Sprache Erlang erstellt. Erlang eignet sich besonders für verteilte Anwendungen, da Nebenläufigkeit und Verfügbarkeit gut unterstützt wird.Lassen Sie sich nicht davon abschrecken, dass RabbitMQ in Erlang implementiert ist. Die Installation erfolgt unter Windows und Mac OS schnell und unkompliziert. Für das Programmieren in Java oder anderen Sprachen stehen Client Bibliotheken zur Verfügung.Über Plugins kann RabbitMQ Protokolle wie z.B. STOMP verstehen.  Der Kern von RabbitMQ ist vollkommen auf das AMQP Protokoll ausgerichtet. Leider wird Stand heute noch kein AMQP in der Version 1.0 unterstützt. Unterstützung für AMQP 1.0 ist aber bereits in der Planung.Das Management Plugin bietet eine ansprechende Web Konsole die eine einfache Administration ermöglicht. Dort werden auch Statistiken wie z.B. die Anzahl der Nachrichten pro Sekunde und der Verbrauch an Ressourcen wie z.B. Speicher, Sockets und die entscheidenden File Descriptoren angezeit.Abbildung 5: RabbitMQ KonsoleZeroMQZeroMQ ist kein klassischer Broker, der Message Queues seinen Clients zur Verfügung stellt, sondern eine Bibliothek mit der verteilte, nebenläufige Anwendungen erstellt werden können. Das API für ZeroMQ gleicht der low Level Socket API für die Kommunikation über Netzwerke.Im Gegensatz zu einer Message orientierten Middleware wird beim ZeroMQ kein zentraler Server benötigt. Der Sender einer Nachricht ist für das Routing zum richtigen Ziel und der Empfänger einer Nachricht ist für das Queueing verantwortlich.Für ZeroMQ gibt es noch die folgenden Schreibweisen: MQ, OMQ und ZMQ. ZeroMQ wird von iMatix entwickelt, die mit an der Entwicklung von AMQP beteiligt waren. Mittlerweile hat sich iMatix von der Mitarbeit an AMQP zurückgezogen und konzentriert sich ganz auf ZeroMQ. Der Ansatz von ZeroMQ ist recht elegant und ermöglicht Topologien mit 0 bis n Knoten bzw. Brokern zwischen Sender und Empfänger.Der Verzicht eines zentralen Brokers ermöglicht sehr geringe Verzögerungszeiten und große Bandbreiten. ZeroMQ ist damit ideal für größte Nachrichtenmengen z.B. für Messwerte, für Echtzeit Kurse in der Finanzbranche oder für Onlinespiele.Skalierbarkeit und ZuverlässigkeitGut skalierbar, robust und zuverlässig sind grundsätzlich alle Broker. Bei fast jedem Projekt wird dies als herausragende Eigenschaft gepriesen. Daher wurden in den Beschreibungen der Broker diese Eigenschaften nicht extra erwähnt, es sei den ein Broker unterscheidet sich wesentlich von den anderen. Als Auswahlkriterium dient dieser Punkt daher nur eingeschränkt.Der ActiveMQ Broker hat bedingt durch seine Architektur Grenzen was die Skalierbarkeit, Robustheit und Zuverlässigkeit angeht. Aber nur bei extrem hoher Last  oder bei Tausenden von Queues sollte ActiveMQ an seine Grenzen stoßen. In der Praxis ist der  ActiveMQ durch seine Reife oft noch stabiler als seine moderneren Herausforderer.PerformanzWichtig bei der Beurteilung der Geschwindigkeit eines Brokers ist sein Anwendungsgebiet. Nur einen schnellen Broker zu suchen ist meist zu simpel. Um die Performanz eines Brokers richtig beurteilen zu können sollte man sich folgende Fragen stellen:
+    Benötige ich einen Broker für Finanztransaktionen oder Onlinespiele?Was ist für den Einsatz wichtiger, eine garantierte transaktionale Zustellung oder die Geschwindigkeit und Bandbreite?Wie groß darf die Verzögerung bei der Zustellung von Nachrichten sein?Wie groß sind die zu übertragenden Nachrichten?Wieviele Queues werden benötigt?Wieviele Clients greifen gleichzeitig auf den/die Broker zu?
+  Eigenschaften wie Persistenz oder Transaktionalität kosten Performanz und führen dazu, dass Messaging Lösungen ohne QoS, die Nachrichten nur im Hauptspeicher halten, meist schneller sind als die, die QoS Merkmale anbieten.Falls mehr Durchsatz gewünscht wird, lassen sich Persistenz und eine garantierte Zustellung auch deaktivieren. Meist ist die Performanz trotz Persistenz mehr als ausreichend für die meisten Anwendungen.Selbst der mittlerweile in die Jahre gekommene ActiveMQ kann mehrere tausend Nachrichten pro Sekunde verarbeiten. Das reicht in der Regel für die meisten Business Anwendungen in den Bereichen Finanz, Versicherung und Handel. Höhere Anforderungen an die Performance stellt die Echtzeitverarbeitung von Messwerten oder Onlinespiele.Wird ein Durchsatz von 10.000 oder mehr Nachrichten pro Sekunde benötigt, sollte man zu einem der neueren Broker greifen. Der Durchsatz von Apollo, Qpid, RabbitMQ und den anderen Brokern liegt zwischen mehreren Hunderttausend bis zu mehreren Millionen Nachrichten pro Sekunde. Beispielsweise hat HornetQ beim SpecJMS Benchmark mehr als 8 Millionen Nachrichten pro Sekunde zustellen können. Getestet wurde auf einem 2 Chip Rechner mit 4 Kernen und 24 GB Hauptspeicher. Für die anderen Broker gibt es ähnliche Testergebnisse.Ein objektiver Vergleich selbst bei standardisierten Benchmarks ist nur schwer möglich, da sich meist die Konfigurationen, die Features oder die Protokolle unterscheiden. Von mehreren Brokern wurde behauptet, dass sie der schnellste seien. Diese Aussagen sind meist nur ein kurze Zeit und nur für ein bestimmtes Szenario gültig.Die oben genannten Richtwerte lassen den Schluss zu, dass die Performanz eines Brokers in den wenigsten Fällen ein Projektrisiko darstellt. Damit dient die Geschwindigkeit kaum als Auswahlkriterium zu Gunsten eines speziellen Brokers.
+Praxiserfahrung:
+Meist ist nicht der Broker der Flaschenhals, sondern Message Consumer, die durch langsame Backend Systeme oder Datenbankabfragen ausgebremst werden.
+  Message PersistenzDamit Nachrichten den Ausfall eines Brokers überleben können müssen diese auf einem Datenträger dauerhaft gesichert werden. Bei den meisten Brokern gibt es dafür austauschbare Message Stores.Werden Nachrichten dauerhaft zwischengespeichert trägt die verwendete Datenbank maßgeblich zur Geschwindigkeit des Brokers bei. Daher werden für die Speicherung von Nachrichten spezielle Datenbanken verwendet. Nachrichten müssen gespeichert, über den Namen einer Queue gesucht und gelöscht werden können. Das Verändern von Nachrichten ist nicht notwendig. Die für diese Aufgaben optimierten Datenbanken, die meist direkt auf die Festplatte zugreifen erzielen daher bei der Persistierung von Nachrichten eine wesentlich bessere Performanz als die universell verwendbaren relationalen Datenbanken. Die Größenordnung des Geschwindigkeitsunterschiedes zwischen einer relationalen Datenbank und einer speziellen Nachrichten Datenbank liegt ungefähr bei dem Zehnfachen.Trotz der Geschwindigkeitseinbuße durch einen relationalen Datenspeicher möchten viele Anwender Nachrichten in ihrer vertrauten Datenbank zwischenspeichern. Der JDBC Store des ActiveMQ Brokers erlaubt die Verwendung jeder beliebigen relationalen Datenbank für die es einen JDBC-Treiber gibt. Selbstverständlich kann mit ActiveMQ die Oracle Datenbank zur Speicherung verwendet werden.
+  JMS UnterstützungEin wichtiges Kriterium für die Entscheidung für einen Broker ist die Unterstützung des Java Message Service Standards. Viele bestehende Java Anwendungen verwenden das JMS API um mit einem Message Broker kommunizieren zu können. Die Migration auf einen neuen Broker kann dann ohne Änderungen des Anwendungscodes erfolgen.Bei ActiveMQ und HornetQ steht JMS Konformität ganz oben auf der Liste der Features.Apache Qpid kommt mit einem JMS Client API, welche es Clients ermöglicht sich über AMQP mit dem Broker zu verbinden. Über dieses API kann mit JMS auch auf andere Broker wie z.B. den RabbitMQ zugegriffen werden.Messaging ProtokolleLange gab es keinen Standard für ein Messaging Protokoll. Der Java Standard JMS beschreibt nur die Schnittstelle, über die Anwendungen mit einem Broker kommunizieren können. Das Protokoll zwischen der JMS Bibliothek und dem Server ist abhängig vom Hersteller.Abbildung 6 zeigt, wie mit Hilfe von JMS die selbe Anwendung mit unterschiedlichen Message Brokern betrieben werden kann. Die Anwendung verwendet das standardisierte JMS API über das sie auf eine JMS Implentierung eines bestimmten Brokers zugreift. Um die Anwendung mit einem anderen Broker betreiben zu können muss nur die JMS Client Bibliothek ausgetauscht werden.Abbildung 6: Austauschbarkeit des Brokers über JMSDie Broker untereinander verstehen sich aufgrund der verschiedene Protokolle nicht. JMS adressiert auch nicht die Interoperabilität mit anderen Programmiersprachen.Das Advanced Message Queuing Protocol ist ein Standard, der diese Lücke schließen möchte. AMQP ermöglicht die Zusammenarbeit von Brokern sowie Clients verschiedener Hersteller und Plattformen. AMQP beschreibt dazu ein Binärformat sowie die notwendige Anwendungslogik. Viele große Hersteller setzten auf AMQP. Allerdings gibt es aufgrund der Komplexität von AMQP und der Art und Weise wie die Standardisierung erfolgt ist einige Kritik.Die im Oktober 2012 als OASIS Standard verabschiedete AMQP 1.0 Version unterscheidet sich erheblich von den vorherigen Versionen, so dass man von einem komplett eigenständigen Protokoll sprechen könnte. Auch die Vorgänger Versionen 0-8, 0-9, 0-9-1 und 0-10-0 sind nicht alle untereinander kompatibel. Ob AMQP wirklich zu mehr Interoperabilität führt, hängt davon ab, wie gut die AMQP 1.0 Version akzeptiert und umgesetzt wird. Die Unterstützung von AMQP 1.0 im ActiveMQ, Apollo und Qpid Broker sowie die Ankündigungen für HornetQ und RabbitMQ lassen hoffen, dass AMQP zu einem Erfolg wird. Entscheidend dürfte auch die Abkehr von der viel zu überladenen Vorgängerversion 0-10-0 sein. Die AMQP 1.0 Version ist im Vergleich mit der 0-10-0 Version etwas einfacher.Ein für die Anbindung von Skriptsprachen beliebtes Protokoll ist das textbasierte STOMP. Es ist einfach, performant und es gibt eine Vielzahl von Servern und Klienten. Für STOMP gibt es die meisten Client Bibliotheken beispielsweise für C, Objective-C, PHP, Go, Python und Ruby. STOMP ist so einfach, dass man mit wenig Aufwand selbst eine Client Bibliothek erstellen kann für den unwahrscheinlichen Fall, dass es keine Bibliothek gibt. Die stomp.js Bibliothek für JavaScript ist zum Beispiel nur 7 KByte groß. Um Web Seiten mit JavaScript als Messaging Client nutzen zu können kann man STOMP mit dem WebSockets Protokoll kombinieren. Auf diese Weise lassen sich schlanke Web 2.0 Anwendungen erstellen.Die folgende Tabelle führt die unterstützten Protokolle der einzelnen Broker auf.
+      
+      
+
+
+Protokoll/Broker
+ActiveMQ
+Apollo
+HornetQ
+Qpid
+RabbitMQ
+ZeroMQ
+
+
+
+
+AMQP
+1.0
+1.0
+ist angekündigt
+1.0
+0-8, 0-9, 0-9-1
+❌
+
+
+MQTT
+✔
+✔
+❌
+❌
+✔
+❌
+
+
+OpenWire
+✔
+✔
+❌
+❌
+❌
+❌
+
+
+REST
+✔
+✔
+✔
+❌
+✔
+❌
+
+
+STOMP
+✔
+✔
+✔
+❌
+✔
+❌
+
+
+STOMP over Websockets
+✔
+✔
+✔
+❌
+✔
+❌
+
+
+XMPP
+✔
+❌
+❌
+❌
+Über Gateway
+❌
+
+
+
+  Tabelle 1: Unterstützung für Messaging Protokolle
+  Client SchnittstellenDer Zugriff auf einen Message Broker ist nicht allein Java Anwendungen vorbehalten. Für viele Broker gibt es Client APIs in den verschiedensten Programmiersprachen. Es ist sogar üblich für Client und Broker andere Plattformen einzusetzen, z.B. beim Zugriff von einer mit Java realisierten Anwendung auf den in Erlang geschriebenen RabbitMQ Broker.Da AMQP das Protokoll auf der „Kabelebene“ standardisiert hat, ist es sogar möglich die AMQP Client Bibliothek eines Brokers mit einem anderen Broker zu verbinden. Damit dies funktioniert muss die AMQP Version übereinstimmen, da die einzelnen Versionen des Protokolls nicht alle miteinander kompatibel sind.Über das STOMP Protokoll können verschiedene Client Plattformen mit einem Broker verbunden werden. Beliebt ist STOMP um von Skriptsprachen wie Perl, PHP und Ruby auf einen Broker zuzugreifen.
+
+
+
+ActiveMQ
+Apollo
+HornetQ
+Qpid
+RabbitMQ
+ZeroQ
+
+
+
+
+C
+✔
+❌
+❌
+✔
+✔
+✔
+
+
+C++
+❌
+❌
+❌
+✔
+✔
+✔
+
+
+Erlang
+❌
+❌
+❌
+❌
+✔
+✔
+
+
+Haskell
+❌
+❌
+❌
+❌
+✔
+✔
+
+
+Java JMS
+✔
+❌
+✔
+✔
+❌
+❌
+
+
+Java proprietär
+✔
+❌
+✔
+❌
+✔
+✔
+
+
+.NET
+❌
+❌
+❌
+✔
+✔
+✔
+
+
+Objective-C
+❌
+❌
+❌
+❌
+❌
+✔
+
+
+Perl
+❌
+❌
+❌
+❌
+✔
+✔
+
+
+PHP
+❌
+❌
+❌
+❌
+✔
+✔
+
+
+Python
+❌
+❌
+❌
+✔
+✔
+✔
+
+
+Ruby
+❌
+❌
+❌
+✔
+✔
+✔
+
+
+VerbreitungDie mit Abstand größte Verbreitung hat der ActiveMQ Broker. Viel Aufmerksamkeit hat der RabbitMQ in letzter Zeit erfahren.Das im Folgenden eingebettete Google Trends Diagramm zeigt wie häufig nach den Brokern gesucht wurde.Hinter dem AMQP Standard stehen viele Schwergewichte aus IT und Wirtschaft. Unter anderen waren an der Standardisierung die Deutsche Boerse, JPMorgan Chase, Microsoft, Progress Software, Red Hat, Software AG, US Dept of Homeland Security und VMware beteiligt. Seit Oktober 2012 ist AMQP ein offizieller OASIS Standard. Dies alles läßt den Schluß zu, dass AMQP eine große Verbreitung erfahren wird.FazitWie so oft in der IT gibt es auch bei der Auswahl eines Brokers keinen Königsweg. Mit ActiveMQ gibt es einen bewährten, schnellen und weit verbreiteten Broker, dessen Architektur jedoch an ihre Grenzen stößt. Der JDBC Message Store ist ein Alleinstellungsmerkmal des ActiveMQ für einen Betrieb im Rechenzentrum.Als Alternative gibt es eine Reihe von vielversprechenden und coolen Projekten, denen es aber noch etwas an Reife und Verbreitung mangelt. In den Projekten ist viel Bewegung, so dass ich davon ausgehe, dass 2013 viele Broker eine ausreichende Stabilität, Dokumentation und Kompatibilität erreichen werden.HornetQ bietet sich an, wenn es um Enterprise Messaging mit JMS Unterstützung geht. Die umfangreiche Dokumentation beschreibt selbst fortgeschrittene Konfigurationen mit Transaktionen und Clustering.Wer einen einfachen Broker für Web 2.0 Anwendungen sucht, direkt über JavaScript Nachrichten versenden und empfangen möchte oder wer außer Java noch Skriptsprachen einsetzt, sollte sich den Apache Apollo ansehen.Wenn Erlang als Plattform kein Ausschlusskriterium darstellt, könnte auch RabbitMQ interessant sein. Momentan wird beim RabbitMQ noch die AMQP 1.0 Kompatibilität vermisst.
+Thomas Bayer
+bayer@predic8.com
+
+Betrachtete VersionenDie in der folgenden Liste aufgeführten Versionen wurden für die Erstellung dieses Artikels betrachtet.Apache ActiveMQ 5.7.0Apache Apollo 1.5FFMQ 3.0.1HornetQ 2.3.0.Beta 3JBoss Messaging 2.0.0OpenJMS 0.7.7Qpid 0.18RabbitMQ 3.0.1ZeroMQ 3.2Quellen
+AMQP Homepage
+
+http://www.amqp.org/node/
+
+ActiveMQ Homepage
+
+http://activemq.apache.org/
+
+STOMP Protocol Specification
+
+http://stomp.github.com/stomp-specification-1.2.html
+
+HornetQ Homepage
+
+http://www.jboss.org/hornetq
+
+RabbitMQ support JMS in the future?
+
+http://rabbitmq.1065348.n5.nabble.com/RabbitMQ-support-JMS-in-the-future-td24361.html
+
+Message Queue Evaluation Notes
+
+http://wiki.secondlife.com/wiki/Message_Queue_Evaluation_Notes
+
+Enabling the ActiveMQ Broker for AMQP
+
+http://activemq.apache.org/amqp.html
+
+Open JMS Homepage
+
+http://openjms.sourceforge.net/
+
+Apache Qpid Homepage
+
+http://qpid.apache.org/
+
+RabbitMQ Homepage
+
+http://www.rabbitmq.com/
+
+ZeroMQ Homepage
+
+http://www.zeromq.org/
+Open SourceMessagingJMSActiveMQArtikelEnterpriseQpidHornetQRabbitMQAMQPSTOMPWebSocketsEnglish 
+
+ActiveMQ, Qpid, HornetQ und RabbitMQ im Vergleich is available in English, too.
+ActiveMQ Schulung
+Lerne Entwicklung, Installation, Konfiguration und Betrieb in unserem Seminar zum ActiveMQ.WebinareREST APIsMicroservicesAPI SicherheitIntegration mit Apache CamelKubernetes für ManagerKubernetes WorkshopApache ArtemisArtikelREST, GraphQL & gRPC im VergleichService Mesh: Einführung & Vergleich von Istio und LinkerdMicroservices mit Spring Boot & CloudAPI ManagementCamel, Nifi, JBoss Fuse, Mule
+                & Talend ESB im VergleichBlogUnterschied zwischen API Gateway und Service MeshMinimale Größe eines MicroserviceSitemapJobsImpressumDatenschutzerklärung© 2021 predic8 GmbH Bonn (0228) 5552576-0

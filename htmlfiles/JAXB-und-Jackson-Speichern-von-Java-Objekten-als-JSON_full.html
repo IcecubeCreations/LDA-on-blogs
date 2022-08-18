@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta name="generator" content="HTML Tidy for HTML5 for Linux version 5.2.0">
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+<meta content="Martin Kompf" name="author">
+<meta content="Java, Programmieren, Programmierung, JSON, JAXB, Java-Json Binding, Jackson" name="keywords">
+<meta content="Java, JAXB und JSON: Serialisierung von Java Objekten nach JSON mit Hilfe von JAXB Annotationen und dem Jackson JSON Prozessor (in deutscher Sprache)." name="description">
+<meta content="Martin Kompf" name="publisher">
+<meta content="INDEX,FOLLOW" name="robots">
+<title>JAXB und Jackson: Speichern von Java Objekten als JSON</title>
+
+<style media="all" type="text/css">
+@import "/style/kompf.css";
+</style>
+
+<style media="print" type="text/css">
+@import "/style/kompf-print.css";
+</style>
+
+<style media="only screen and (max-width: 480px)" type="text/css">
+@import "/style/kompf-mobile.css";
+</style>
+<meta content="2019-05-11T18:29:19+02:00" name="date">
+<meta content="initial-scale=1, minimum-scale=0.75, width=device-width" name="viewport">
+<link href="https://www.kompf.de/java/jaxbjson.html" rel="canonical">
+</head>
+<body>
+<img alt="" height="1" src="https://ssl-vg03.met.vgwort.de/na/251c590e02d04f13a1ddf649e919c6e1" width="1">
+<div id="Header"><a href="//www.kompf.de">Kompf.de</a> &gt; <a href="//www.kompf.de/java">Java</a></div>
+<div id="Content">
+<h1>JAXB und Jackson: Speichern von Java Objekten als JSON</h1>
+<p class="author">Martin Kompf</p>
+<img alt="" class="artikel_normal" src="images/jaxbjson.png">
+<p class="intro">Der <i>Jackson JSON Processor</i> und die <i>Java Architecture for XML Binding (JAXB)</i> bieten ein einfach anzuwendendes Werkzeug zur Serialisierung und Deserialisierung von Java Objekten nach und von JSON. Die Abbildung von Java Objekten auf JSON Daten erfolgt dabei mittels der bekannten JAXB Annotationen.</p>
+<div></div>
+<h3 id="json_oder_xml_">JSON oder XML?</h3>
+<p>Im Artikel <a href="jaxbjava.html">JAXB: Speichern von Java Objekten als XML</a> wurden JAXB Annotation verwendet, um die Abbildung von Java Objekten auf XML Daten zu beschreiben. Die annotierten Klassen des Datenmodells konnten dann unter Zuhilfenahme der JAXB API mittels einfacher Anweisungen in einen XML Datenstrom umgewandelt werden.</p>
+<p>Die Verwendung von XML ist ideal, wenn der EmpfÃ¤nger der Daten optimal darauf eingestellt ist, zum Beispiel wenn ein SOAP Webservice die Daten konsumiert oder ein Transformer das XML nach HTML oder PDF konvertiert. Handelt es sich bei der Gegenstelle dagegen um eine in JavaScript oder PHP geschriebene Webanwendung, so wird man bald feststellen, das XML hier nicht die richtige Wahl fÃ¼r das Datenformat war. PHP und JavaScript haben keine eingebaute JAXB API und damit auch keine MÃ¶glichkeit, das empfangene XML direkt in Objekte umzuwandeln.</p>
+<p>In diesem Anwendungsbereich hat sich in den letzten Jahren vielmehr die JavaScript Object Notation - kurz <a class="external" href="http://www.json.org/">JSON</a> - als universelles Datenaustauschformat durchgesetzt. Die meisten im Webumfeld verwendeten Programmiersprachen haben mittlerweile eingebaute Methoden, die aus einem ankommenden JSON Datenstrom direkt ein Objekt erzeugen beziehungsweise umgekehrt Objekte nach JSON serialisieren. Zum Beispiel bietet PHP hierfÃ¼r die beiden Funktionen <a class="external" href="http://de.php.net/manual/de/function.json-decode.php">json_decode</a> und <a class="external" href="http://de.php.net/manual/de/function.json-encode.php">json_encode</a>.</p>
+<h3 id="java___json____">Java + JSON = ?</h3>
+<p>Als Java Entwickler steht man daher oft vor der Aufgabe, Daten im JSON Format lesen oder schreiben zu mÃ¼ssen. Das JSON Projekt bietet dafÃ¼r eine <a class="external" href="https://github.com/stleary/JSON-java">Low-Level Java API</a> an, die auch Bestandteil vieler bekannter Produkte, wie zum Beispiel <a class="external" href="http://developer.android.com/reference/org/json/package-summary.html">Android</a> ist. Diese API bildet im Prinzip alle JSON Daten auf die zwei Java Klassen <b>JSONArray</b> und <b>JSONObjekt</b> ab:</p>
+<pre class="java">
+<span class="slashslashcomment">// create JSON</span>
+JSONObject o = <span class="keyword">new</span> JSONObject();
+o.put(<span class="quotedstring">"name"</span>, <span class="quotedstring">"Horst"</span>);
+o.put(<span class="quotedstring">"code"</span>, 7);
+String json = o.toString();
+ 
+System.out.println(json);
+
+<span class="slashslashcomment">// parse JSON</span>
+JSONObject p = <span class="keyword">new</span> JSONObject(json);
+String name = p.getString(<span class="quotedstring">"name"</span>);
+<span class="keyword">int</span> code = p.getInt(<span class="quotedstring">"code"</span>);
+System.out.printf(<span class="quotedstring">"%s hat Code %03d%n"</span>, name, code);
+</pre>
+<p>Dieses Vorgehen bietet zwar einen schnellen Einstieg und mag fÃ¼r kleine Projekte ausreichend sein. Aber schon bei der Aufgabe, das relativ simple Datenmodell aus <a href="jaxbjava.html">JAXB: Speichern von Java Objekten als XML</a> nach JSON zu serialisieren, zeigen sich die Nachteile dieser API: Man muss zuerst alle Objekte des domÃ¤nenspezifischen Datenmodells in ein <b>JSONObject</b> umbauen, damit man dieses dann serialisieren kann. Umgekehrt entstehen bei der Deserialisierung zunÃ¤chst <b>JSONObject</b> und <b>JSONArray</b> - doch wie bekommt man daraus dann Objekte des Typs <b>MyMusicCollection</b>, <b>Album</b> und <b>Title</b>?</p>
+<h3 id="java___json___jackson_">Java + JSON = Jackson!</h3>
+<p>Eine LÃ¶sung hierfÃ¼r ist der <a class="external" href="https://github.com/FasterXML/jackson">Jackson JSON Processor</a>. Er ermÃ¶glicht - analog zu JAXB - eine direkte Umwandlung von Java Objekten nach JSON und umgekehrt. Und das Beste daran ist, dass Jackson die gleichen Annotationen wie JAXB verwenden kann! Damit kÃ¶nnen die in <a href="jaxbjava.html">JAXB: Speichern von Java Objekten als XML</a> erarbeiteten Annotationen des Datenmodells direkt wiederverwendet werden! Mehr noch, soll das Programm sowohl XML als auch JSON erzeugen, dann muss am Datenmodell Ã¼berhaupt nichts geÃ¤ndert werden. Man ruft lediglich zur Laufzeit Jackson anstelle von JAXB auf.</p>
+<p>Jackson ist nicht Bestandteil der Standard Java API. Man muss daher die entsprechenden JAR Files separat herunterladen und in den CLASSPATH der Anwendung eintragen. FÃ¼r das Beispiel benÃ¶tigt man die drei Kernkomponenten <a class="external" href="https://github.com/FasterXML/jackson-core">Streaming</a>, <a class="external" href="https://github.com/FasterXML/jackson-databind">Databind</a> und <a class="external" href="https://github.com/FasterXML/jackson-annotations">Annotations</a> sowie das Modul <a class="external" href="https://github.com/FasterXML/jackson-module-jaxb-annotations">JAXB Annotations</a>.</p>
+<p>Ein bequemer Weg zur Installation der erforderlichen Jackson-Komponenten ist die Verwendung von <a class="external" href="http://ant.apache.org/ivy/">Apache Ivy</a>. Falls noch nicht geschehen, installiert man es zunÃ¤chst per</p>
+<pre class="shell">
+sudo apt-get install ivy
+</pre>
+<p>Dann erzeugt man eine Datei <span class="filename">ivy.xml</span> mit dem Inhalt:</p>
+<pre class="xml">
+<span class="element">&lt;ivy-<span class="attr">module</span> <span class="attr">version</span>=<span class="quotedstring">"2.0"</span>&gt;</span>
+  <span class="element">&lt;info <span class="attr">organisation</span>=<span class="quotedstring">"de.kompf"</span> <span class="attr">module</span>=<span class="quotedstring">"javaxml"</span> /&gt;</span>
+  <span class="element">&lt;configurations&gt;</span>
+    <span class="element">&lt;conf <span class="attr">name</span>=<span class="quotedstring">"default"</span> <span class="attr">visibility</span>=<span class="quotedstring">"public"</span> /&gt;</span>
+  <span class="element">&lt;/configurations&gt;</span>
+  <span class="element">&lt;dependencies&gt;</span>
+    <span class="element">&lt;dependency <span class="attr">org</span>=<span class="quotedstring">"com.fasterxml.jackson.module"</span> 
+      <span class="attr">name</span>=<span class="quotedstring">"jackson-module-jaxb-annotations"</span>
+      <span class="attr">rev</span>=<span class="quotedstring">"2.6.3"</span> <span class="attr">conf</span>=<span class="quotedstring">"default"</span> /&gt;</span>
+  <span class="element">&lt;/dependencies&gt;</span>
+<span class="element">&lt;/ivy-<span class="attr">module</span>&gt;</span> 
+</pre>
+<p>Der wesentliche Inhalt von <span class="filename">ivy.xml</span> ist die Definition der AbhÃ¤ngigkeit zu <b>jackson-module-jaxb-annotations</b> - im Beispiel mit der Version 2.6.3. Die zu diesem Modul gehÃ¶renden Artefakte inklusive aller AbhÃ¤ngigkeiten lÃ¤dt dann der ivy Task <b>retrieve</b> auf die Platte. Bei grÃ¶Ãeren Projekten integriert man den Aufruf von ivy:retrieve sinnvollerweise in sein <a href="/java/firststeps.html#automatisierung_mit_ant">Ant-Buildfile</a>. FÃ¼r den Anfang tut es aber auch folgender Einzeiler fÃ¼r die Shell:</p>
+<pre class="shell">
+java -jar /usr/share/java/ivy.jar -ivy ivy.xml -retrieve [artifact].[ext]
+</pre>
+<p>Nach diesen Vorarbeiten kann man direkt zur Tat schreiten. ZustÃ¤ndig fÃ¼r die Abbildung von Java Objekten auf JSON ist die Klasse <b>ObjectMapper</b>. Die Registierung des Moduls <b>JaxbAnnotationModule</b> versetzt ihn in die Lage, auch mit JAXB Annotationen umgehen zu kÃ¶nnen:</p>
+<pre class="java">
+<span class="keyword">import</span> com.fasterxml.jackson.databind.ObjectMapper;
+<span class="keyword">import</span> com.fasterxml.jackson.module.jaxb.JaxbAnnotationModule;
+
+<span class="keyword">public</span> <span class="keyword">class</span> JsonMusicDB {
+  
+  <span class="keyword">private</span> ObjectMapper m_mapper;
+
+  <span class="keyword">public</span> JsonMusicDB() {
+    <span class="slashslashcomment">// Create Jackson object mapper</span>
+    m_mapper = <span class="keyword">new</span> ObjectMapper();
+    <span class="slashslashcomment">// make Jackson use JAXB annotations</span>
+    JaxbAnnotationModule module = <span class="keyword">new</span> JaxbAnnotationModule();
+    m_mapper.registerModule(module);
+  }
+</pre>
+<p>Die Methoden zum Serialisieren und Deserialisieren eines Java Objektbaums sind an Einfachheit kaum zu Ã¼bertreffen:</p>
+<pre class="java">
+  <span class="keyword">private</span> <span class="keyword">void</span> writeMusic(MyMusicCollection music, File file) <span class="keyword">throws</span> IOException {
+    m_mapper.writeValue(file, music);
+  }
+  
+  <span class="keyword">private</span> MyMusicCollection readMusic(File file) <span class="keyword">throws</span> IOException {
+    <span class="keyword">return</span> m_mapper.readValue(file, MyMusicCollection.<span class="keyword">class</span>);
+  }
+</pre>
+<p>Die Klasse <b>MyMusicCollection</b> stammt aus dem bereits erwÃ¤hnten Artikel <a href="jaxbjava.html">JAXB: Speichern von Java Objekten als XML</a>, aus dem auch der restliche Beispielcode Ã¼bernommen werden kann.</p>
+<h3 id="fazit">Fazit</h3>
+<p>Das Beispiel zeigt, wie einfach sich die Umwandlung eines Java Datenmodells in eine JSON ReprÃ¤sentation mittels Jackson gestaltet. Als Benefit kÃ¶nnen dabei JAXB Annotationen wiederverwendet werden, um ohne Konfigurationsdateien die Art und Weise der Datenbindung zu beeinflussen. Damit ist auf elegante Art und Weise ein BrÃ¼ckenschlag zur Welt der Webanwendungen mÃ¶glich, die mit JavaScript, PHP und anderen Sprachen eine JSON API eingebaut haben. Auch die im Internet weit verbreiteten <a class="external" href="http://en.wikipedia.org/wiki/Representational_State_Transfer#RESTful_web_services">REST Services</a> benutzen als Datenformat oftmals JSON. Hier lohnt sich dann ein zusÃ¤tzlicher Blick auf die Jackson <a class="external" href="https://github.com/FasterXML/jackson-jaxrs-providers">Provider fÃ¼r JAX-RS</a>.</p>
+<h3 class="linklist" id="links">Links</h3>
+<ul class="linklist">
+<li><a class="external" href="http://www.json.org/">JSON</a></li>
+<li><a class="external" href="https://github.com/FasterXML/jackson">Jackson Project Home @github</a></li>
+</ul>
+<h3 class="linklist" id="weitere_interessante_artikel">Weitere interessante Artikel</h3>
+<ul class="linklist">
+<li><a href="jaxbjava.html">JAXB: Speichern von Java Objekten als XML</a></li>
+</ul>
+<div></div>
+</div>
+<div id="Footer">
+<div class="copyright">Copyright Â© 2019&nbsp;Martin Kompf. All rights reserved. <a href="/imprint.html">Impressum</a>&nbsp;<a href="/imprint.html">DatenschutzerklÃ¤rung</a></div>
+</div>
+<div id="Menu">
+<div xmlns="" class="menuLabel">Allgemeines</div>
+<div xmlns="" class="menuItem"><a href="index.html">Ãberblick</a></div>
+<div xmlns="" class="menuItem"><a href="../imprint.html">Impressum</a></div>
+<div xmlns="" class="menuLabel">Tutorials</div>
+<div xmlns="" class="menuItem"><a href="firststeps.html">Erste Schritte</a></div>
+<div xmlns="" class="menuItem"><a href="tutor.html">Java Tutorial</a></div>
+<div xmlns="" class="menuLabel">API</div>
+<div xmlns="" class="menuItem"><a href="regex.html">Regex</a></div>
+<div xmlns="" class="menuItem"><a href="java2d.html">Java 2D</a></div>
+<div xmlns="" class="menuItem"><a href="prefs.html">Preferences</a></div>
+<div xmlns="" class="menuItem"><a href="timezone.html">Zeitzonen</a></div>
+<div xmlns="" class="menuLabel">Testing</div>
+<div xmlns="" class="menuItem"><a href="junit.html">Testen mit JUnit</a></div>
+<div xmlns="" class="menuItem"><a href="junit_params.html">Parametrisiert Testen</a></div>
+<div xmlns="" class="menuItem"><a href="junit_proxy.html">JUnit und Proxy</a></div>
+<div xmlns="" class="menuLabel">Java und XML</div>
+<div xmlns="" class="menuItem"><a href="jaxpstream.html">XML Stream Reader</a></div>
+<div xmlns="" class="menuItem"><a href="jaxpsax.html">SAX Parser</a></div>
+<div xmlns="" class="menuItem"><a href="jaxpdom.html">DOM API</a></div>
+<div xmlns="" class="menuItem"><a href="jaxpstreamwriter.html">XML Stream Writer</a></div>
+<div xmlns="" class="menuItem"><a href="jaxpxpath.html">Die XPath API</a></div>
+<div xmlns="" class="menuItem"><a href="jaxbxsd.html">JAXB: Schema first</a></div>
+<div xmlns="" class="menuItem"><a href="jaxbjava.html">JAXB: Java first</a></div>
+<div xmlns="" class="menuLabel">Java und JSON</div>
+<div xmlns="" class="menuItem"><span class="menuSelected">JAXB und Jackson</span></div>
+<div xmlns="" class="menuLabel">Netzwerk</div>
+<div xmlns="" class="menuItem"><a href="netclient.html">Netzwerkclients</a></div>
+<div xmlns="" class="menuItem"><a href="multicast.html">UDP und Multicast</a></div>
+<div xmlns="" class="menuLabel">Libraries</div>
+<div xmlns="" class="menuItem"><a href="jna.html">JNA: Native Code</a></div>
+<div xmlns="" class="menuItem"><a href="tzdata.html">GeoTools: Zeitzone</a></div>
+</div>
+</body>
+</html>

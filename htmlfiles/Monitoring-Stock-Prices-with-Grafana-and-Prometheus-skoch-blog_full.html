@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Monitoring Stock Prices with Grafana and Prometheus - s.koch blog</title>
+  <meta name="description" content="In this article I will show you how you can do long-term monitoring of stockprices with Grafana and get alerts when your stocks rise above or fall belowa cer...">
+
+  
+  
+
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="canonical" href="https://blog.stefan-koch.name/2020/06/13/monitoring-stock-prices-with-grafana-and-prometheus">
+  <link rel="alternate" type="application/rss+xml" title="s.koch blog" href="https://blog.stefan-koch.name/feed.xml">
+  <script type="text/javascript" async
+    src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML">
+  </script>
+</head>
+
+
+  <body>
+
+    <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="/">s.koch blog</a>
+
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <svg viewBox="0 0 18 15">
+          <path fill="#424242" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+          <path fill="#424242" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484 h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+          <path fill="#424242" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+        </svg>
+      </a>
+
+      <div class="trigger">
+          <a class="page-link" href="/categories/">Kategorien</a>
+          <a class="page-link" href="/about/">Impressum</a>
+          <a href="/feed.xml" class="rss"><img src="/assets/site/rss.svg" alt="RSS" width="16" height="16"/></a>
+      </div>
+    </nav>
+
+    <nav class="tutorial-nav">
+        
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+          <a class="page-link" href="/tutorial-own-cloud-computing/">Tutorial: Your Own Cloud Computing</a>
+          
+        
+          
+          <a class="page-link" href="/tutorial-betriebssystem-programmierung/">Tutorial: Betriebssystem-Programmierung</a>
+          
+        
+          
+        
+          
+        
+    </nav>
+
+  </div>
+
+</header>
+
+<!--<div id="promo" class="wrapper">
+    <img src="https://pidar.eu/static/images/favicon.png" width="32" height="32"/> Try my new <a href="https://pidar.eu">application and website monitoring service</a> for free:
+    <a href="https://pidar.eu">PiDAR.eu</a>
+</div>-->
+
+
+
+    <div class="page-content">
+      <aside id="categories-list">
+          <h3>Categories</h3>
+          
+          <ul>
+          
+              <li><a href="/categories/#AWS">AWS</a></li>
+          
+              <li><a href="/categories/#Algorithmen">Algorithmen</a></li>
+          
+              <li><a href="/categories/#Assembler">Assembler</a></li>
+          
+              <li><a href="/categories/#Betriebssystem">Betriebssystem</a></li>
+          
+              <li><a href="/categories/#Big Data">Big Data</a></li>
+          
+              <li><a href="/categories/#Blockchain">Blockchain</a></li>
+          
+              <li><a href="/categories/#C">C</a></li>
+          
+              <li><a href="/categories/#Crawling">Crawling</a></li>
+          
+              <li><a href="/categories/#Croatian">Croatian</a></li>
+          
+              <li><a href="/categories/#Data Science">Data Science</a></li>
+          
+              <li><a href="/categories/#Data-Mining">Data-Mining</a></li>
+          
+              <li><a href="/categories/#Datenbanken">Datenbanken</a></li>
+          
+              <li><a href="/categories/#English">English</a></li>
+          
+              <li><a href="/categories/#Hacking">Hacking</a></li>
+          
+              <li><a href="/categories/#Hosting">Hosting</a></li>
+          
+              <li><a href="/categories/#Linux">Linux</a></li>
+          
+              <li><a href="/categories/#Maschinelles Lernen">Maschinelles Lernen</a></li>
+          
+              <li><a href="/categories/#Mikroelektronik">Mikroelektronik</a></li>
+          
+              <li><a href="/categories/#Molescrape">Molescrape</a></li>
+          
+              <li><a href="/categories/#Monitoring">Monitoring</a></li>
+          
+              <li><a href="/categories/#Natural Language Processing">Natural Language Processing</a></li>
+          
+              <li><a href="/categories/#Networking">Networking</a></li>
+          
+              <li><a href="/categories/#PHP">PHP</a></li>
+          
+              <li><a href="/categories/#Python">Python</a></li>
+          
+              <li><a href="/categories/#R">R</a></li>
+          
+              <li><a href="/categories/#RFC-Standards">RFC-Standards</a></li>
+          
+              <li><a href="/categories/#Sammelsurium">Sammelsurium</a></li>
+          
+              <li><a href="/categories/#Software Development">Software Development</a></li>
+          
+              <li><a href="/categories/#Software-Entwicklung">Software-Entwicklung</a></li>
+          
+              <li><a href="/categories/#Spieleentwicklung und -programmierung">Spieleentwicklung und -programmierung</a></li>
+          
+              <li><a href="/categories/#Suchmaschinen">Suchmaschinen</a></li>
+          
+              <li><a href="/categories/#Tools">Tools</a></li>
+          
+              <li><a href="/categories/#UniversitÃ¤t">UniversitÃ¤t</a></li>
+          
+              <li><a href="/categories/#VPC">VPC</a></li>
+          
+              <li><a href="/categories/#Version Control">Version Control</a></li>
+          
+              <li><a href="/categories/#Virtualisierung">Virtualisierung</a></li>
+          
+              <li><a href="/categories/#Visualisierung">Visualisierung</a></li>
+          
+              <li><a href="/categories/#Wissensdatenbank">Wissensdatenbank</a></li>
+          
+          </ul>
+      </aside>
+
+      <div class="wrapper">
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">Monitoring Stock Prices with Grafana and Prometheus</h1>
+
+    <div class="post-meta">
+        <time datetime="2020-06-13T12:25:00+02:00" itemprop="datePublished">Jun 13, 2020</time>
+        
+            â¢ <span itemprop="author" itemscope itemtype="http://schema.org/Person"><span itemprop="name">Stefan Koch</span></span>
+        
+        
+            
+            â¢ <ul id="post-categories-links">
+            
+                <li><a href="/categories/#Crawling">Crawling</a></li>
+            
+                <li><a href="/categories/#English">English</a></li>
+            
+                <li><a href="/categories/#Monitoring">Monitoring</a></li>
+            
+            </ul>
+        
+        
+            
+            â¢ Tags: <ul id="post-categories-links">
+            
+                
+                
+            
+                
+                
+                    <li><a href="/tags/molescrape">molescrape</a> (5)</li>
+                
+            
+                
+                
+                    <li><a href="/tags/prometheus">prometheus</a> (3)</li>
+                
+            
+                
+                
+                    <li><a href="/tags/python">python</a> (11)</li>
+                
+            
+                
+                
+                    <li><a href="/tags/stocks">stocks</a> (2)</li>
+                
+            
+            </ul>
+        
+    </div>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    
+
+    <p>In this article I will show you how you can do long-term monitoring of stock
+prices with Grafana and get alerts when your stocks rise above or fall below
+a certain threshold. This can help you to keep an eye on your stocks even
+if you do not want to check the charts every day.</p>
+
+<p>There has been quite some interest in my previous article about
+<a href="/2019/07/03/monitoring-stock-prices-with-prometheus-and-molescrape">monitoring of stock proces with Prometheus and Molescrape</a>. Since Molescrape is in no state where it can
+be used by the wide public, this time I want to show you how you can do
+stock monitoring with a simple custom Python script. We will use Grafana for
+the visualisation and alerts, Prometheus only as a data storage and a custom
+Python script to collect the stock data. If you prefer any other backend than
+Prometheus, of course you can also use another backend supported by Grafana
+(e.g. Graphite, InfluxDB, MySQL, PostgreSQL, and many more).</p>
+
+<p>Before we start, we have to remember that there are <a href="/2019/06/19/howto-different-monitoring-use-cases-prometheus">two ways how we can get data into
+Prometheus</a>.
+Either Prometheus can pull it from a running service or we can
+push it into the Prometheus Push Gateway (which is just a proxy, providing a
+service to Prometheus to pull from). One disadvantage about the  Push Gateway
+is that it does not automatically forget about pushed metrics. This means that
+our script has to make sure to manually delete old metrics when it cannot
+find new data for a stock price, anymore. Otherwise, the stock price will
+remain in the Push Gateway forever and we will think that the price
+is still the same and everything is OK.</p>
+
+<p>Knowing this, we can start to write a simple Python script that scrapes the
+data from any data source we want. I will not go into details about any
+specific site here, just choose any website you consider appropriate for
+your stocks (i.e. probably from your own country). Letâs start with a list
+of URLs we want to scrape and iterate over them:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">import</span> <span class="nn">lxml.html</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+
+<span class="n">logging</span><span class="p">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="p">.</span><span class="n">INFO</span><span class="p">)</span>
+
+<span class="n">urls</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span><span class="s">'https://stocks.example.com/Alphabet_Inc'</span><span class="p">,</span> <span class="s">'GOOGL'</span><span class="p">),</span>
+<span class="p">]</span>
+
+<span class="k">for</span> <span class="n">url</span><span class="p">,</span> <span class="n">symbol</span> <span class="ow">in</span> <span class="n">urls</span><span class="p">:</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+    <span class="n">tree</span> <span class="o">=</span> <span class="n">lxml</span><span class="p">.</span><span class="n">html</span><span class="p">.</span><span class="n">fromstring</span><span class="p">(</span><span class="n">response</span><span class="p">.</span><span class="n">text</span><span class="p">)</span>
+    <span class="n">elem</span> <span class="o">=</span> <span class="n">tree</span><span class="p">.</span><span class="n">cssselect</span><span class="p">(</span><span class="s">'#stock-price'</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">price</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">elem</span><span class="p">.</span><span class="n">text_content</span><span class="p">())</span>
+    <span class="n">logging</span><span class="p">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s">'Price of stock is </span><span class="si">{</span><span class="n">price</span><span class="si">}</span><span class="s">'</span><span class="p">)</span>
+
+    <span class="n">time</span><span class="p">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># sleep a bit to not query too fast
+</span></code></pre></div></div>
+
+<p>You still should add some error handling to this loop, but with these few lines
+we can already query the stock prices for the stocks we own or want to monitor.</p>
+
+<p>Next, we have to get the data into Prometheus. I expect you already have
+Prometheus and the Prometheus Push Gateway installed and they are listening
+on the default ports <code class="language-plaintext highlighter-rouge">9090</code> and <code class="language-plaintext highlighter-rouge">9091</code>.</p>
+
+<p>To push the metrics, we can either install the Python client called
+<code class="language-plaintext highlighter-rouge">prometheus_client</code> or we can just send an API request with <code class="language-plaintext highlighter-rouge">requests</code>. I will
+do the latter, since thatâs what simple REST APIs are for, we do not need to
+install yet another library just to do one simple request.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># ... previous code ...
+</span>    <span class="n">payload</span> <span class="o">=</span> <span class="s">'</span><span class="se">\n</span><span class="s">'</span><span class="p">.</span><span class="n">join</span><span class="p">([</span>
+        <span class="s">'# TYPE stock_price gauge'</span><span class="p">,</span>
+        <span class="s">'stock_price{sym="%s"} %f'</span> <span class="o">%</span> <span class="p">(</span><span class="n">symbol</span><span class="p">,</span> <span class="n">price</span><span class="p">),</span>
+    <span class="p">])</span> <span class="o">+</span> <span class="s">'</span><span class="se">\n</span><span class="s">'</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">requests</span><span class="p">.</span><span class="n">post</span><span class="p">(</span>
+            <span class="s">'http://localhost:9091/metrics/job/stocks-data'</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">payload</span><span class="p">)</span>
+    <span class="k">except</span> <span class="nb">IOError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logging</span><span class="p">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s">'Could not push price of </span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s">'</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Donât forget the trailing <code class="language-plaintext highlighter-rouge">\n</code> symbol in the payload. Otherwise the request
+will not work, as Prometheus expects a trailing newline at the end of the
+data.</p>
+
+<p>If we now check the web interface of the push gateway at <code class="language-plaintext highlighter-rouge">http://localhost:9091</code>
+we will already see our pushed data.</p>
+
+<p><img src="/assets/2020-06-13-grafana-stocks-gateway.png" alt="Metrics inside the Prometheus Pushgateway" /></p>
+
+<p>To make sure that we do not have any stale data in the Push Gateway, we should
+delete old data. According to my knowledge itâs only possible to delete all
+data under a grouping key, so we should delete all data and then ingest all
+new data. In order to avoid Prometheus collecting the empty data while we are
+still (slowly) scraping, we will change the structure of the script a bit:
+At first we will scrape all values, then we will ingest all values into
+Prometheus.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">import</span> <span class="nn">lxml.html</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+
+<span class="n">logging</span><span class="p">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="p">.</span><span class="n">INFO</span><span class="p">)</span>
+
+<span class="c1"># Scrape the prices
+</span><span class="n">urls</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span><span class="s">'https://stocks.example.com/Alphabet_Inc'</span><span class="p">,</span> <span class="s">'GOOGL'</span><span class="p">),</span>
+<span class="p">]</span>
+
+<span class="n">prices</span> <span class="o">=</span> <span class="p">{}</span>
+
+<span class="k">for</span> <span class="n">url</span><span class="p">,</span> <span class="n">symbol</span> <span class="ow">in</span> <span class="n">urls</span><span class="p">:</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+    <span class="n">tree</span> <span class="o">=</span> <span class="n">lxml</span><span class="p">.</span><span class="n">html</span><span class="p">.</span><span class="n">fromstring</span><span class="p">(</span><span class="n">response</span><span class="p">.</span><span class="n">text</span><span class="p">)</span>
+    <span class="n">elem</span> <span class="o">=</span> <span class="n">tree</span><span class="p">.</span><span class="n">cssselect</span><span class="p">(</span><span class="s">'#stock-price'</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">price</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">elem</span><span class="p">.</span><span class="n">text_content</span><span class="p">())</span>
+    <span class="n">logging</span><span class="p">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s">'Price of stock is </span><span class="si">{</span><span class="n">price</span><span class="si">}</span><span class="s">'</span><span class="p">)</span>
+    <span class="n">prices</span><span class="p">[</span><span class="n">symbol</span><span class="p">]</span> <span class="o">=</span> <span class="n">price</span>
+
+    <span class="n">time</span><span class="p">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># sleep a bit to not query too fast
+</span>
+<span class="c1"># Delete old data and ingest new data
+</span><span class="n">payload</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">payload</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="s">'# TYPE stock_price gauge'</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">symbol</span><span class="p">,</span> <span class="n">price</span> <span class="ow">in</span> <span class="n">prices</span><span class="p">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="n">payload</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="s">'stock_price{sym="%s"} %f'</span> <span class="o">%</span> <span class="p">(</span><span class="n">symbol</span><span class="p">,</span> <span class="n">price</span><span class="p">))</span>
+
+<span class="n">requests</span><span class="p">.</span><span class="n">delete</span><span class="p">(</span><span class="s">'http://localhost:9091/metrics/job/stocks-data'</span><span class="p">)</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">requests</span><span class="p">.</span><span class="n">post</span><span class="p">(</span>
+        <span class="s">'http://localhost:9091/metrics/job/stocks-data'</span><span class="p">,</span>
+        <span class="n">data</span><span class="o">=</span><span class="s">'</span><span class="se">\n</span><span class="s">'</span><span class="p">.</span><span class="n">join</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span> <span class="o">+</span> <span class="s">'</span><span class="se">\n</span><span class="s">'</span><span class="p">)</span>
+<span class="k">except</span> <span class="nb">IOError</span><span class="p">:</span>
+    <span class="n">logging</span><span class="p">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s">'Could not push price of </span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s"> to stock'</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>If your Prometheus is already configured to scrape the Push Gateway, you will
+see your metrics in Prometheus in the next few minutes. You can make sure
+that Prometheus scrapes the Push Gateway by checking whether the following
+section is a scrape target in your Prometheus configuration:</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="pi">-</span> <span class="na">job_name</span><span class="pi">:</span> <span class="s1">'</span><span class="s">pushgateway'</span>
+  <span class="na">static_configs</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">targets</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="s1">'</span><span class="s">localhost:9091'</span>
+</code></pre></div></div>
+
+<p>Finally, we can add a new panel in Grafana and retrieve the data from our
+label with <code class="language-plaintext highlighter-rouge">stock_price{sym="GOOGL"}</code>. For alerting you must first create a
+notification channel. I have a setup an e-mail notification channel, but you
+can also have other notification channels like Telegram messenger.</p>
+
+<p>Go back to the panel of your stock and switch to the Alert tab. There you can
+now create an alert to get informed once the stock crosses a defined threshold.
+I usually use the <code class="language-plaintext highlighter-rouge">outside range</code> option and define both an upper and a lower
+threshold. That way I can keep an eye on my stocks without having to manually
+watch them each day.</p>
+
+<p><img src="/assets/2020-06-13-grafana-stocks-alert.png" alt="Creating an alert for the stock price" /></p>
+
+<p>Finally, one more metric we might want to watch is <code class="language-plaintext highlighter-rouge">push_time_seconds</code>. This
+metric can show us when any data for our grouping key was last pushed
+successfully to the Push Gateway. This helps us to determine whether our script runs
+at all. Thatâs important, because if the script does not run at all it also
+does not delete old data and Grafana will show fine stock prices!</p>
+
+<p>So, create a new panel with the query
+<code class="language-plaintext highlighter-rouge">time() - push_time_seconds{exported_job="stocks-data"}</code>. This will give us
+the number of seconds since the last successful push. Set an alert to a bit
+higher than the interval time of your script.</p>
+
+<p><img src="/assets/2020-06-13-grafana-stocks-push-timeout.png" alt="Push Timeout Monitoring" /></p>
+
+
+    
+        
+        
+
+        
+            <aside class="other-articles">
+                <h2>Further Reading</h2>
+                <ul>
+                    
+                        <li><a href="/2019/07/03/monitoring-stock-prices-with-prometheus-and-molescrape">Monitoring Stock Prices with Prometheus and Molescrape</a></li>
+                    
+                        <li><a href="/2019/06/19/howto-different-monitoring-use-cases-prometheus">Howto perform different Monitoring Use Cases with Prometheus</a></li>
+                    
+                        <li><a href="/2019/05/12/grenzwartezeiten-kroatien">Grenzwartezeiten nach und von Kroatien</a></li>
+                    
+                        <li><a href="/2018/09/14/monitoring-border-wait-times">Monitoring Border Wait Times for Croatia</a></li>
+                    
+                        <li><a href="/2017/10/15/verantwortungsvolles-crawling">Verantwortungsvolles und hÃ¶fliches Crawling: Theorie und Praxis mit Scrapy</a></li>
+                    
+                </ul>
+            </aside>
+        
+    
+
+    <small>I do not maintain a comments section. If you have any questions
+    or comments regarding my posts, please do not hesitate to send me
+    an e-mail to <a href="mailto:blog@stefan-koch.name">blog@stefan-koch.name</a>.</small>
+  </div>
+
+</article>
+
+      </div>
+    </div>
+
+    <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">s.koch blog</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+            <li><a href="https://stefan-koch.name/">My Portfolio</a></li>
+            <li><a href="/feed.xml"><img src="/assets/site/rss.svg" alt="RSS" width="16" height="16"/> Subscribe via RSS</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col footer-col-2">
+        <ul class="social-media-list">
+          
+          <li>
+            <a href="https://github.com/aufziehvogel"><span class="icon icon--github"><svg viewBox="0 0 16 16"><path fill="#828282" d="M7.999,0.431c-4.285,0-7.76,3.474-7.76,7.761 c0,3.428,2.223,6.337,5.307,7.363c0.388,0.071,0.53-0.168,0.53-0.374c0-0.184-0.007-0.672-0.01-1.32 c-2.159,0.469-2.614-1.04-2.614-1.04c-0.353-0.896-0.862-1.135-0.862-1.135c-0.705-0.481,0.053-0.472,0.053-0.472 c0.779,0.055,1.189,0.8,1.189,0.8c0.692,1.186,1.816,0.843,2.258,0.645c0.071-0.502,0.271-0.843,0.493-1.037 C4.86,11.425,3.049,10.76,3.049,7.786c0-0.847,0.302-1.54,0.799-2.082C3.768,5.507,3.501,4.718,3.924,3.65 c0,0,0.652-0.209,2.134,0.796C6.677,4.273,7.34,4.187,8,4.184c0.659,0.003,1.323,0.089,1.943,0.261 c1.482-1.004,2.132-0.796,2.132-0.796c0.423,1.068,0.157,1.857,0.077,2.054c0.497,0.542,0.798,1.235,0.798,2.082 c0,2.981-1.814,3.637-3.543,3.829c0.279,0.24,0.527,0.713,0.527,1.437c0,1.037-0.01,1.874-0.01,2.129 c0,0.208,0.14,0.449,0.534,0.373c3.081-1.028,5.302-3.935,5.302-7.362C15.76,3.906,12.285,0.431,7.999,0.431z"/></svg>
+</span><span class="username">aufziehvogel</span></a>
+
+          </li>
+          
+
+          
+        </ul>
+      </div>
+
+      <div class="footer-col footer-col-3">
+        <p>
+          I am a Software Engineer interested in all kinds of different technology. While I still love to try out new things, I recently started to avoid hype technology and prefer mature stuff that does not change so often.
+
+        </p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+
+
+  </body>
+
+</html>

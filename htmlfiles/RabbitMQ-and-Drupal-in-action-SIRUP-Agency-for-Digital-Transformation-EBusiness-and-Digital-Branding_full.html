@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head profile="http://www.w3.org/1999/xhtml/vocab">
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="//cloud.typography.com/7147672/669328/css/fonts.css" rel="stylesheet" type="text/css" />
+<meta content="width=device-width, maximum-scale=1.0, initial-scale=1.0, user-scalable=no" name="viewport" />
+<meta property="og:image" content="https://www.sirup.com/sites/default/files/styles/og_image/public/SIRUP_Topic_System_Architectur.png?itok=fWxaZZYa" />
+<link rel="shortcut icon" href="https://www.sirup.com/sites/all/themes/sirup/img/ico/favicon.ico" type="image/vnd.microsoft.icon" />
+<meta name="description" content="Topic System Architecture: RabbitMQ and Drupal in action. In business, CMS systems such as Drupal rarely stand alone – CRM, shop systems, and other applications are just part of everyday life." />
+<meta name="keywords" content="Message Broker, Middleware, RabbitMQ, Drupal, IT-System-Integration, system architecture, Magento, Shopsystem, CRM, CMS" />
+<link rel="canonical" href="//www.sirup.com/en/rabbitmq-and-drupal-in-action" />
+<link rel="shortlink" href="//www.sirup.com/node/533" />
+<meta property="og:site_name" content="SIRUP - Agency for Digital Transformation, E-Business and Digital Branding" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="//www.sirup.com/en/rabbitmq-and-drupal-in-action" />
+<meta property="og:title" content="RabbitMQ and Drupal in action" />
+<meta property="og:description" content="Topic System Architecture: RabbitMQ and Drupal in action. In business, CMS systems such as Drupal rarely stand alone – CRM, shop systems, and other applications are just part of everyday life." />
+<meta property="og:image" content="//www.sirup.com/sites/all/themes/sirup/img/lgo/SIRUP_digital_communications.jpg" />
+  <title>RabbitMQ and Drupal in action | SIRUP - Agency for Digital Transformation, E-Business and Digital Branding</title>
+  <link type="text/css" rel="stylesheet" href="https://www.sirup.com/sites/default/files/css/css_xe8dBGwNubAPy87F2T7L81pPIozCD1wGBS0GKY1hyw4.css" media="all" />
+  <script type="text/javascript" src="https://www.sirup.com/sites/default/files/js/js_UWQINlriydSoeSiGQxToOUdv493zEa7dpsXC1OtYlZU.js"></script>
+<script type="text/javascript" src="https://www.sirup.com/sites/default/files/js/js_HASZZrfa3hmHc4pSn9eNxcm70ZrZZ4gK8UZchxHQzN8.js"></script>
+<script type="text/javascript">
+<!--//--><![CDATA[//><!--
+(function(i,s,o,g,r,a,m){i["GoogleAnalyticsObject"]=r;i[r]=i[r]||function(){(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)})(window,document,"script","//www.google-analytics.com/analytics.js","ga");ga("create", "UA-687189-1", {"cookieDomain":"auto"});ga("set", "anonymizeIp", true);ga("send", "pageview");(function($){
+
+function jQueryLoadedCheck(){
+    if (window.jQuery && window.Drupal && window.Drupal.settings){
+        runGA();
+    }else{
+        window.setTimeout(jQueryLoadedCheck, 250);
+    }
+}
+jQueryLoadedCheck();
+
+function runGA() {
+    $(document).ready(function(){
+        if (typeof ga != 'undefined') {
+            //AB-test
+             ga('create', 'UA-687189-1', 'auto');
+             ga('require', 'GTM-W85XXJZ');
+             ga('send', 'pageview');
+            // Navigation
+            $('#main-menu li a').live('click',function(e) {
+                ga("send", "event", 'Navigation', ($('.mobile-menu-toggle').hasClass('open')?'Mobile ':'')+'Main', $(this).text());
+            });
+            $('#block-locale-language li a').live('click',function(e) {
+                ga("send", "event", 'Navigation', ($('.mobile-menu-toggle').hasClass('open')?'Mobile ':'')+'Language', $(this).text());
+            });
+            $('#block-menu-block-2 li a').live('click',function(e) {
+                ga("send", "event", 'Navigation', 'Footer', $(this).text());
+            });
+            $('.services--tab-menu a').live('click',function(e) {
+                ga("send", "event", 'Navigation', 'Service', $(this).text());
+            });
+            $('.logo a').live('click',function(e) {
+                ga("send", "event", 'Navigation', 'Logo', $(this).find('img').attr('alt'));
+            });
+
+            // Buttons
+            $('.link-as-button a, .m-link a, .skipto a').live('click',function(e) {
+                ga("send", "event", 'Button',  $(this).parent().parent().find('.m-headlines h3').text()+' / '+$(this).parent().parent().find('.m-headlines h2').text(), $(this).text()+' : '+$(this).attr('href'));
+            });
+            $('.share a, .print a').live('click',function(e) {
+                ga("send", "event", 'Button',  $(this).parents('.topics').find('.page-center-inner .m-headlines h3').text()+' / '+$(this).parents('.topics').find('.page-center-inner .m-headlines h2').text(), $(this).text()+' : '+$(this).attr('href'));
+            });
+
+            // Teaser
+            $('.teaser-box--read-more a').live('click',function(e) {
+                ga("send", "event", 'Teaser', $(this).parent().parent().find('.m-headlines h3').text()+' / '+$(this).parent().parent().find('.m-headlines h2').text(), $(this).text());
+            });
+
+            // Search
+            $('.search-form .results a').live('click',function(e) {
+                ga("send", "event", 'Search', $(this).find('.result--category').text()+' / '+$(this).find('.result--title').text(), $(this).parent().parent().find('.search-form--input').val());
+            });
+        }
+    });
+}
+
+})(jQuery);
+//--><!]]>
+</script>
+<script type="text/javascript" src="https://www.sirup.com/sites/default/files/js/js_aGtaB1HooV5i7l4CJ1SizvBsutdSw29BGZXiP2--UW8.js"></script>
+<script type="text/javascript">
+<!--//--><![CDATA[//><!--
+jQuery.extend(Drupal.settings, {"basePath":"\/","pathPrefix":"en\/","ajaxPageState":{"theme":"sirup","theme_token":"ESb5EugM5tKvEjbbXz3_g7vSeTifc4ntHlzZ0j2-NHY","js":{"misc\/jquery.js":1,"misc\/jquery.once.js":1,"misc\/drupal.js":1,"sites\/all\/themes\/sirup\/dist\/js\/swiper.min.js":1,"sites\/all\/modules\/contrib\/google_analytics\/googleanalytics.js":1,"0":1,"sites\/all\/themes\/sirup\/dist\/js\/main.js":1},"css":{"sites\/all\/themes\/sirup\/dist\/css\/theme.css":1}},"googleanalytics":{"trackOutbound":1,"trackMailto":1,"trackDownload":1,"trackDownloadExtensions":"7z|aac|arc|arj|asf|asx|avi|bin|csv|doc(x|m)?|dot(x|m)?|exe|flv|gif|gz|gzip|hqx|jar|jpe?g|js|mp(2|3|4|e?g)|mov(ie)?|msi|msp|pdf|phps|png|ppt(x|m)?|pot(x|m)?|pps(x|m)?|ppam|sld(x|m)?|thmx|qtm?|ra(m|r)?|sea|sit|tar|tgz|torrent|txt|vcf|wav|wma|wmv|wpd|xls(x|m|b)?|xlt(x|m)|xlam|xml|z|zip"}});
+//--><!]]>
+</script>
+</head>
+<body class="html not-front not-logged-in no-sidebars page-node page-node- page-node-533 node-type-sirup-page-topic i18n-en">
+    <header class="site--header" role="banner">
+    <div class="site--header-wrap outer">
+        <div class="site--header-wrap inner">
+            <div itemscope itemtype="http://schema.org/Organization">
+                <div class="logo" itemprop="brand">
+                    <a href="/en" itemprop="url">
+                        <img src="https://www.sirup.com/sites/all/themes/sirup/logo.svg" height="20" width="87" alt="SIRUP" />
+                        <meta content="https://www.sirup.com/sites/all/themes/sirup/logo.svg" itemprop="logo">
+                    </a>
+                </div>
+            </div>
+            <div class="mobile-menu-toggle"></div>
+            <div class="push-right">
+                <nav class="main-menu push-left" role="navigation">
+                    <ul itemscope="" itemtype="http://schema.org/SiteNavigationElement" id="main-menu" class="links inline clearfix"><li class="menu-1398 first"><a href="/en/about-sirup">About SIRUP</a></li>
+<li class="menu-1402"><a href="/en/digital-transformation" title="">Services</a></li>
+<li class="menu-1399"><a href="/en/careers">Careers</a></li>
+<li class="menu-1405 active-trail"><a href="/en/topics" class="active-trail">Topics</a></li>
+<li class="menu-1400 last"><a href="/en/more-than-just-clients">Clients</a></li>
+</ul>                </nav>
+                <div class="search-button push-left">
+                    <div class="search-toggle js-open-search"></div>
+                </div>
+                                    <nav class="lang-menu push-left"><div class="block block-locale" id="block-locale-language">
+
+    
+  <div class="block-content">
+    <ul class="language-switcher-locale-url"><li class="de first"><a href="/rabbitmq-und-drupal-im-einsatz" class="language-link" xml:lang="de" title="RabbitMQ und Drupal im Einsatz">DE</a></li>
+<li class="en last active"><a href="/en/rabbitmq-and-drupal-in-action" class="language-link active" xml:lang="en" title="RabbitMQ and Drupal in action">EN</a></li>
+</ul>  </div>
+</div></nav>
+                            </div>
+            <div class="mobile-search-close js-open-search"></div>
+        </div>
+    </div>
+</header>
+<main class="site--main">
+    <div id="main">
+        <div id="content" class="column">
+                        <a id="main-content"></a>
+                                                                                      <div class="region-content">
+    <div class="block block-system" id="block-system-main">
+
+    
+  <div class="block-content">
+    <article id="node-533" class="topics topics--detail invert-color" style="background-color:#c05ff2;">
+    <div class="page-center">
+        <div class="page-center-inner">
+
+                            <div class="m-headlines content-headlines multiple">
+                    <h2>System Architecture</h2>
+                    <h3>RabbitMQ and Drupal in action</h3>
+                </div>
+            
+            <div class="intro"><p>In business, CMS systems such as Drupal rarely stand alone &ndash; CRM, shop systems, and other microsites and applications are just part of everyday life. But how do you get the various applications to work together smoothly?</p></div>        </div>
+        <div class="m-content">
+                            <div class="paragraphs-items paragraphs-items-field-paragraphs paragraphs-items-field-paragraphs-full paragraphs-items-full">
+    <div class="paragraphs">
+    <section class="textblock page-center">
+    <div class="page-center-inner">
+        <div class="m-description"><p dir="ltr" id="docs-internal-guid-6c3355a9-34f3-1582-bf7b-5a2fd086941a">In today&#39;s companies, work processes and the data involved are almost always spread across different applications. Practically everyone has to deal with different systems in day-to-day work: CMS, CRM, ERP, document management systems and many more are in use. Each has its own function and justified existence, but wouldn&#39;t it be nice if the individual applications knew about each other and could cooperate better? It would save a lot of work &ndash; manual synchronization of data and the processing of orders by hand in multiple, associated systems would then be a thing of the past. A message broker such as RabbitMQ can be employed very well for such application scenarios. It enables interaction between various IT systems, no matter whether it&#39;s a Java EE solution, a Ruby on Rails website or the Drupal CMS. In order to communicate with each other, messages are sent, forwarded by the message broker to neighboring systems, where they are received and processed. The distinctive feature here is the way in which the messages are delivered and distributed in a process called routing: messages are held in queues and, if necessary, delivered at a later time if an application is offline. Additionally, the sender doesn&#39;t determine the recipient &ndash; this is done by the broker based on predefined rules. This results in a reliable and flexible channel of communication for the applications. Furthermore, message brokers can be used in a targeted fashion to achieve highly scalable services or to cushion peaks in demand: messages are then distributed evenly across several consuming applications to achieve load balancing. At the same time, the queues allow the applications to define the processing speed themselves. An application can therefore continue to run stably while the message broker buffers the incoming storm of requests.</p><h2>Messages in flow</h2><p>Messages are the central element of a message broker &ndash; they consist of a header with key-value pairs and arbitrary content, usually in a technology-neutral format such as XML or JSON. The header contains metadata such as the content type, application/xml and other fields that affect routing. With RabbitMQ, or the underlying industry standard <a href="http://www.amqp.org/" target="_blank">AMQP</a>, this is both the exchange and routing key. The former can be thought of as a switchboard, while the latter is a specially formatted string of characters that can be used to filter messages. An example: An employee changes the availability of a product in a central ERP system &ndash; and all connected shop systems need to be informed of this. So an automated message with a routing key such as product.update.stockX.categoryY is sent to the ERP exchange. This exchange now forwards the message to the corresponding queues (Fig. 1) &ndash; Details can be found in the &quot;Routing in detail&quot; box.</p></div>    </div>
+</section><div class="m-image page-center">
+    <div class="page-center-inner">
+        <div class="center">
+                <div class="image" style="background-color:#ad40ed;">
+        <picture >
+<!--[if IE 9]><video style="display: none;"><![endif]-->
+<source srcset="https://www.sirup.com/sites/default/files/styles/image_bp_default/public/SIRUP_MessageBroker_Nachrichten_Warenwirtschaft.svg?itok=0U6QMOvn&amp;timestamp=1457601806" media="(min-width: 1024px)" />
+<source srcset="https://www.sirup.com/sites/default/files/styles/image_bp_medium/public/SIRUP_MessageBroker_Nachrichten_Warenwirtschaft.svg?itok=39gGsRCS&amp;timestamp=1457601806" media="(min-width: 640px)" />
+<source srcset="https://www.sirup.com/sites/default/files/styles/image_bp_narrow/public/SIRUP_MessageBroker_Nachrichten_Warenwirtschaft.svg?itok=0hh2p39J&amp;timestamp=1457601806" media="(min-width: 0)" />
+<!--[if IE 9]></video><![endif]-->
+<!--[if lt IE 9]>
+<img  src="https://www.sirup.com/sites/default/files/styles/image_bp_narrow/public/SIRUP_MessageBroker_Nachrichten_Warenwirtschaft.svg?itok=0hh2p39J&amp;timestamp=1457601806" alt="SIRUP Message Broker Rabat MQ" title="" />
+<![endif]-->
+<!--[if !lt IE 9]><!-->
+<img  srcset="https://www.sirup.com/sites/default/files/styles/image_bp_narrow/public/SIRUP_MessageBroker_Nachrichten_Warenwirtschaft.svg?itok=0hh2p39J&amp;timestamp=1457601806" alt="SIRUP Message Broker Rabat MQ" title="" />
+<!-- <![endif]-->
+</picture>    </div>
+        </div>
+            </div>
+</div><section class="textblock page-center">
+    <div class="page-center-inner">
+        <div class="m-description"><p dir="ltr" id="docs-internal-guid-6c3355a9-34f6-20b1-4f2b-2600da68c591">Thus, a separate copy of the message is sent to each shop system, where the message is received and only removed from the broker&#39;s queue once it has been processed successfully. This architecture provides some positive features: if an additional shop system is added in the future, it is sufficient just to adapt the routing &ndash; the ERP system itself remains untouched. Additionally, a shop system can be shut down at any time for maintenance. The messages simply stay with the broker and are delivered at a later time. So the message broker infrastructure guarantees that messages are delivered &ndash; although not necessarily immediately.</p><blockquote><p dir="ltr"><strong>Routing in detail:&nbsp;</strong>Messages are sent to an exchange but are received by queues. The connection between the two is constituted by rules called bindings, which bind a queue to a specific exchange. This occurs depending on the type of exchange: <strong>Fanout:</strong> Each message is forwarded to every bound queue (routing key is ignored)<strong> Direct:</strong>&nbsp;Message a filtered based on the routing key: A simple string comparison is carried out (multiple queues per routing key are possible) <strong>Topic:</strong>&nbsp;Messages are filtered as with Direct, but more complex pattern matching is possible: words are separated by periods, the pound sign stands for any word, and the asterisk for zero or more words. Example: product.*.storeX.#&nbsp;<strong>Headers:</strong> Filters the messages according to any key-value pairs from the message header. Detailed descriptions of the AMQP concepts can be found on the <a href="http://www.rabbitmq.com/tutorials/amqp-concepts.html" target="_blank">RabbitMQ website</a>.</p></blockquote><h2 dir="ltr">Designing asynchronous applications</h2><p dir="ltr">It&#39;s helpful to imagine the message exchange as a kind of event-based programming &ndash; with the addition of it crossing computer boundaries. This architecture paradigm is actually becoming more and more popular, as it automatically leads to the decoupling of individual components. One of the best examples of this is the Symfony2 Framework, which is made up of lots of small parts that communicate with each other, e.g. with events. The actual programming with a message broker differs greatly from working with classic web services. Requests are not carried out synchronously, but always asynchronously. This can have consequences all the way up to the web interface, as one cannot wait for the response from an event. Perhaps the system being contacted is currently overloaded or being serviced? In the synchronous world, this usually means that the user is faced with an error message. With an increasing number of systems communicating with each other, the probability of an error also increases, as the blackout of one system can affect all others through the coupling of synchronous calls. In an asynchronous world of messaging, you are forced to consider these cases from the outset: the application is also prepared for these unpleasant situations and can continue to operate smoothly &ndash; and most importantly, a fault with one of the applications doesn&#39;t affect all the others. It is often useful to adapt the interface for the user, so that they don&#39;t always expect an immediate response. If in doubt, notifying the user via e-mail is the more reliable path than a notification in a web browser.</p><h2 dir="ltr">Robust recipients</h2><p dir="ltr">The broker&#39;s routing and the use of queues has an impact on the processing of messages in the receiving application: messages can overtake each other or even arrive several times. Additionally, you must also expect other applications to produce invalid messages that your own system cannot process. This is especially true if the broker isn&#39;t only used internally, but also for enterprise-wide integration. Depending on the type of application, some or all of the problems described here might occur. However, the effected systems can easily deal with these difficulties if they follow a few simple rules:</p><ol><li dir="ltr"><p dir="ltr">Process the message in an idempotent manner, i.e. if an event has already been processed, do not trigger an error but accept the message silently &ndash; analogous <a href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html" target="_blank">to an HTTP PUT or DELETE call</a>.</p></li><li dir="ltr"><p dir="ltr">Ignore messages if they are outdated.</p></li><li dir="ltr"><p dir="ltr">Ignore messages if they are invalid.</p></li><li dir="ltr"><p dir="ltr">&bdquo;<a href="http://www.heise.de/developer/artikel/Let-it-Crash-Paradigma-fuer-fehlertolerante-massiv-parallele-Software-1579007.html" target="_blank">Let it crash</a>&ldquo;: cancel processing in cases of severe errors and restart processes instead of trying to continue.</p></li></ol><p dir="ltr">Rule number one solves the problem of duplicate messages, or rather, ensures that the double handling of a message has no further effects. If, for example, a dataset has already been deleted as part of a synchronization, a second request to delete it should not result in an error. Duplicate messages can partly be prevented through the use of transactions: RabbitMQ then ensures that a new message is only produced if the one currently being received has been processed completely. Unfortunately, this ignores all other systems &ndash; such as a MySQL database &ndash; as they have their own transactions that are not coordinated with those of the broker. Although holistic solutions do exist (outside the world of PHP), they are far less performant as they draw on an elaborate transaction protocol and work with timeouts. The idempotent implementation offers a simpler and more elegant solution here. The second rule&#39;s task is to ensure that outdated messages do not overwrite any new data. To do this, it is necessary to find a separate criterion at application level that can determine the order of the messages. In the simplest case, this would be a timestamp of the server time, synchronized as well as possible. The consuming application constantly stores this criterion somewhere and compares it before processing a message: if a newer version exists, the message is ignored. A typical application is the alignment of user data across several systems &ndash; here the date of the last message or change for every user could be stored. Rule number three ensures that the queues are not swamped by invalid messages that are sent over and over again because processing is failing. This is where the developer comes in &ndash; they have to check the message content carefully before it is processed, as when an error has already occurred, it is difficult to then recognize whether this is due to the message or a temporary error in the application. In the latter case, the message processing should not be confirmed to ensure that the message is automatically sent again later. The application then has another chance to process the message. Finding the source of an error &ndash; message or application &ndash; is therefore very important, as handling the respective message differs fundamentally depending on the source of the error. The final rule &ndash; &quot;let it crash&quot; &ndash; is important as messages cannot be received as part of a normal HTTP request, as a long-running process is necessary for the timely processing of messages, which requires constant contact with RabbitMQ. This is no longer a problem in PHP, thanks to the addition of a functional <a href="http://php.net/manual/en/features.gc.php" target="_blank">garbage collection</a> with PHP 5.3. Thus, memory usage does not grow immeasurably or push the <a href="http://www.php.net/manual/de/ini.core.php#ini.memory-limit" target="_blank">memory limit</a> over time. Nevertheless, you should still expect fatal errors that cannot be resolved and which knock the process out of sync. It is therefore often the best, and above all, simplest strategy to monitor the process and, if necessary, restart it automatically rather than putting too much effort into complex exception handling. A simple, yet rather unusual error situation for PHP web frameworks is the MySQL connection timing out due to extended inactivity. What seems impossible with second-long or even millisecond-long requests in Apache can now occur during the night, bringing the process to its knees.</p><h2>Using RabbitMQ with Drupal</h2><p>To make configuration and development with RabbitMQ simpler and more pleasant, SIRUP has developed the <a href="http://drupal.org/project/message_broker" target="_blank">&quot;Message Broker&quot;</a> module for Drupal: providing the programmer with a simple interface with which messages can be sent and received. This currently features an AMQP and a simulation implementation; however it would theoretically also be possible to bind other <a href="http://stomp.github.io/" target="_blank">protocols such as STOMP</a> as the API has a generic structure. Sending a message is shown as per an example in Listing 1.</p></div>    </div>
+</section><div class="m-image page-center">
+    <div class="page-center-inner">
+        <div class="center">
+                <div class="image" style="background-color:#ca80ff;">
+        <picture >
+<!--[if IE 9]><video style="display: none;"><![endif]-->
+<source srcset="https://www.sirup.com/sites/default/files/styles/image_bp_default/public/Implementierung_des_MessageBrokerInterface_holen_2.svg?itok=Z6Nu8IEw&amp;timestamp=1454449494" media="(min-width: 1024px)" />
+<source srcset="https://www.sirup.com/sites/default/files/styles/image_bp_medium/public/Implementierung_des_MessageBrokerInterface_holen_2.svg?itok=ekEfhGZ0&amp;timestamp=1454449494" media="(min-width: 640px)" />
+<source srcset="https://www.sirup.com/sites/default/files/styles/image_bp_narrow/public/Implementierung_des_MessageBrokerInterface_holen_2.svg?itok=eelEj5Ko&amp;timestamp=1454449494" media="(min-width: 0)" />
+<!--[if IE 9]></video><![endif]-->
+<!--[if lt IE 9]>
+<img  src="https://www.sirup.com/sites/default/files/styles/image_bp_narrow/public/Implementierung_des_MessageBrokerInterface_holen_2.svg?itok=eelEj5Ko&amp;timestamp=1454449494" alt="SIRUP Message Broker Interface" title="" />
+<![endif]-->
+<!--[if !lt IE 9]><!-->
+<img  srcset="https://www.sirup.com/sites/default/files/styles/image_bp_narrow/public/Implementierung_des_MessageBrokerInterface_holen_2.svg?itok=eelEj5Ko&amp;timestamp=1454449494" alt="SIRUP Message Broker Interface" title="" />
+<!-- <![endif]-->
+</picture>    </div>
+        </div>
+            </div>
+</div><section class="textblock page-center">
+    <div class="page-center-inner">
+        <div class="m-description"><p>One of the core ideas of the module is the declarative description of the routing in a central JSON file (Listing 2), which is accessible for all systems involved. This ensures that all queues, exchanges and bindings are set up in the broker in time, and that they also remain consistent. The latter is otherwise virtually impossible as systems cannot be simultaneously updated while in operation. This means that different consumers expect different routing topologies and also try to define them accordingly, which will inevitably lead to an exception.</p></div>    </div>
+</section><div class="m-image page-center">
+    <div class="page-center-inner">
+        <div class="center">
+                <div class="image" style="background-color:#ca80ff;">
+        <picture >
+<!--[if IE 9]><video style="display: none;"><![endif]-->
+<source srcset="https://www.sirup.com/sites/default/files/styles/image_bp_default/public/json_exchanges_queues_bindings_2.svg?itok=p9xcxcZP&amp;timestamp=1454449518" media="(min-width: 1024px)" />
+<source srcset="https://www.sirup.com/sites/default/files/styles/image_bp_medium/public/json_exchanges_queues_bindings_2.svg?itok=s5d1rHye&amp;timestamp=1454449518" media="(min-width: 640px)" />
+<source srcset="https://www.sirup.com/sites/default/files/styles/image_bp_narrow/public/json_exchanges_queues_bindings_2.svg?itok=LwuQIrz_&amp;timestamp=1454449518" media="(min-width: 0)" />
+<!--[if IE 9]></video><![endif]-->
+<!--[if lt IE 9]>
+<img  src="https://www.sirup.com/sites/default/files/styles/image_bp_narrow/public/json_exchanges_queues_bindings_2.svg?itok=LwuQIrz_&amp;timestamp=1454449518" alt="SIRUP Message Broker Json " title="" />
+<![endif]-->
+<!--[if !lt IE 9]><!-->
+<img  srcset="https://www.sirup.com/sites/default/files/styles/image_bp_narrow/public/json_exchanges_queues_bindings_2.svg?itok=LwuQIrz_&amp;timestamp=1454449518" alt="SIRUP Message Broker Json " title="" />
+<!-- <![endif]-->
+</picture>    </div>
+        </div>
+            </div>
+</div><section class="textblock page-center">
+    <div class="page-center-inner">
+        <div class="m-description"><p dir="ltr" id="docs-internal-guid-4c751457-21cb-351c-b13c-c91b81a6b22b">Typically for Drupal, message reception is prepared by hook and relies on previously described cues in the JSON file. As shown in Listing 3, a callback is defined for each retrieved queue, which is then called once per message. It should be noted that the content of the transferred message first needs to be decoded, e.g. using json_decode. The second parameter is a function that is called to signal the complete processing of the message.</p></div>    </div>
+</section><div class="m-image page-center">
+    <div class="page-center-inner">
+        <div class="center">
+                <div class="image" style="background-color:#ca80ff;">
+        <picture >
+<!--[if IE 9]><video style="display: none;"><![endif]-->
+<source srcset="https://www.sirup.com/sites/default/files/styles/image_bp_default/public/Implementierung_hook_message_broker_consumers_2.svg?itok=VXelP7xN&amp;timestamp=1454449541" media="(min-width: 1024px)" />
+<source srcset="https://www.sirup.com/sites/default/files/styles/image_bp_medium/public/Implementierung_hook_message_broker_consumers_2.svg?itok=tp7yoIcP&amp;timestamp=1454449541" media="(min-width: 640px)" />
+<source srcset="https://www.sirup.com/sites/default/files/styles/image_bp_narrow/public/Implementierung_hook_message_broker_consumers_2.svg?itok=z84AbzoO&amp;timestamp=1454449541" media="(min-width: 0)" />
+<!--[if IE 9]></video><![endif]-->
+<!--[if lt IE 9]>
+<img  src="https://www.sirup.com/sites/default/files/styles/image_bp_narrow/public/Implementierung_hook_message_broker_consumers_2.svg?itok=z84AbzoO&amp;timestamp=1454449541" alt="SIRUP Message Broker Hook" title="" />
+<![endif]-->
+<!--[if !lt IE 9]><!-->
+<img  srcset="https://www.sirup.com/sites/default/files/styles/image_bp_narrow/public/Implementierung_hook_message_broker_consumers_2.svg?itok=z84AbzoO&amp;timestamp=1454449541" alt="SIRUP Message Broker Hook" title="" />
+<!-- <![endif]-->
+</picture>    </div>
+        </div>
+            </div>
+</div><section class="textblock page-center">
+    <div class="page-center-inner">
+        <div class="m-description"><p dir="ltr" id="docs-internal-guid-6c3355a9-34f8-eedf-cffd-d437b69abbfc">Furthermore, the module provides as much support as possible to simplify the implementation of the rules above. For the second rule, for example, there&#39;s a separate exception type called InvalidMessageException. An exception of this kind logs the invalid values, but confirms the processing of the message to RabbitMQ and then continues with the next. Additionally, a critical error can be shown via the special CriticalErrorException. Unlike all other exceptions, this not only aborts the handling of the current message, but shuts down the entire process. Together with an external monitoring process, this allows the entire process to be restarted strategically &ndash; very useful in the case of a MySQL timeout as mentioned above.</p><h2 dir="ltr">Local testing and development</h2><p dir="ltr">The development of distributed systems is always a little more difficult than the implementation of simple local applications. This is not much different when using a message broker: RabbitMQ needs to be installed locally in order to even be able to run and test one&#39;s own software. SIRUP has therefore developed <a href="http://drupal.org/node/1803454" target="_blank">a dummy implementation</a> of the API to allow the exchange of messages to be simulated, according to AMQP standards, even without your own message broker. Here, the entire message flow is performed synchronously in the current Drupal request, so that you can develop and test with the usual convenience: in this way, the interaction between the individual parts of the application can be tested and debugged much more easily. This approach has its limitations, of course: only the messages that are sent to the same Drupal system are processed. In addition, the execution is synchronous, which can affect the order in which the messages are processed &ndash; but that doesn&#39;t trouble robust applications anyway (see above). The first limitation is practically dealt with, with simple mocks (dummies) of the external systems &ndash; which are, in any case, essential for integration texts. The integration of this dummy system is structured as follows: a separate Drupal module is developed for each external system, which are implemented into the simulation environment via hooks (Listing 3). In this way, the complete system can be developed and tested locally. This avoids the time-consuming setup of complex development and test environments, while also helping to improve the performance of the staging environment.</p><h2 dir="ltr">Long live Drupal</h2><p dir="ltr">To enable the prompt processing of messages, a long-running PHP process is required. In the context of Drupal, <a href="http://drupal.org/project/drush" target="_blank">the command line tool Drush</a> is the perfect solution as it takes care of the bootstrapping of the CMS and the integration of the console environment. The message broker module hooks in there and can be started using the drush consume-amqp-messages command. It then connects to RabbitMQ and processes messages for all eternity. It is also possible to launch single or multiple consumers (predefined by hook), specifying additional parameters that optimize the interaction with RabbitMQ. When executing the Drupal code, however, you will notice from time to time that the CMS was not necessarily designed for such a situation. For example, the watchdog function uses a one-time, initialized constant as the current time when logging. Therefore all of the Drush process&#39;s log entries later appear as if they had been made at the start time of the process. This is annoying in itself, but there&#39;s another reason why it&#39;s worthwhile to adapt Drupal&#39;s logging: the default settings are written to the database. If the MySQL connection is terminated unexpectedly, you won&#39;t hear anything about it ... Logging in a file is therefore a lot more reliable &ndash; e.g. via Drupal&#39;s syslog module. Another quirk of some methods, such as node_load, is the use of an internal cache in the form of statistical variables. It is designed to prevent the re-execution of MySQL queries &ndash; but can be dangerous when several concurrent Drush processes are being used. It can easily happen that your code continues to work with a now-obsolete node object and then writes/overwrites it in the database: It&#39;s better to call node_load and similar functions with the parameter reset=TRUE, so that the cache is deactivated.</p><h2 dir="ltr">Legacy applications</h2><p>Not every piece of software can be equipped directly with an interface to the message broker. Third party software or legacy applications need to be bound via a <a href="http://martinfowler.com/eaaCatalog/gateway.html" target="_blank">messaging gateway</a>. This translates the world of the messages into the language of the application. The processing of messages is therefore a matter of delegation, preferably to a stable interface as can be found in many products.</p></div>    </div>
+</section><div class="m-image page-center">
+    <div class="page-center-inner">
+        <div class="center">
+                <div class="image" style="background-color:#ad40ed;">
+        <picture >
+<!--[if IE 9]><video style="display: none;"><![endif]-->
+<source srcset="https://www.sirup.com/sites/default/files/styles/image_bp_default/public/SIRUP_MessageBroker_Gateway_API.svg?itok=ORowY1Cv&amp;timestamp=1454448227" media="(min-width: 1024px)" />
+<source srcset="https://www.sirup.com/sites/default/files/styles/image_bp_medium/public/SIRUP_MessageBroker_Gateway_API.svg?itok=CL6IgUDF&amp;timestamp=1454448227" media="(min-width: 640px)" />
+<source srcset="https://www.sirup.com/sites/default/files/styles/image_bp_narrow/public/SIRUP_MessageBroker_Gateway_API.svg?itok=RKDR8_B3&amp;timestamp=1454448227" media="(min-width: 0)" />
+<!--[if IE 9]></video><![endif]-->
+<!--[if lt IE 9]>
+<img  src="https://www.sirup.com/sites/default/files/styles/image_bp_narrow/public/SIRUP_MessageBroker_Gateway_API.svg?itok=RKDR8_B3&amp;timestamp=1454448227" alt="SIRUP Message Broker Gateway" title="" />
+<![endif]-->
+<!--[if !lt IE 9]><!-->
+<img  srcset="https://www.sirup.com/sites/default/files/styles/image_bp_narrow/public/SIRUP_MessageBroker_Gateway_API.svg?itok=RKDR8_B3&amp;timestamp=1454448227" alt="SIRUP Message Broker Gateway" title="" />
+<!-- <![endif]-->
+</picture>    </div>
+        </div>
+            </div>
+</div><section class="textblock page-center">
+    <div class="page-center-inner">
+        <div class="m-description"><p dir="ltr" id="docs-internal-guid-6c3355a9-34fa-612b-2b5d-ff0050f42e00">Depending on the scope and (in)completeness of the interface, the gateway can then also be more complex. It is often necessary to query the product APIs regularly to respond to new events. A suitable cronjob must then ensure that new orders are queried at intervals of, say, 10 minutes and that the appropriate messages are sent. To implement the second rule, the date of the last change for all datasets must also be saved. If the interface does not allow for this, the gateway itself needs its own database.</p><h2 dir="ltr">Summary</h2><p>The transition to asynchronous message delivery brings with it changes that require new approaches and solutions: a rethinking is required not only in terms of system design, but also in the implementation, so that the benefits of the message broker end up being reflected in the finished software. Quality requirements such reliability and scalability are now easy to realize thanks to the message broker. The underlying philosophy behind event-oriented programming also helps in the construction of a suitable architecture, as the separation of message producers and consumers forces the decoupling and splitting up of program parts into independent programs: the basis for long-term, maintainable software. In a business context, RabbitMQ provides a flexible exchange that connects all the IT systems in the company, thereby holding the value-added chain together. The centrally defined routing allows for the modification and addition of systems. Existing software does not need to be adapted for this as only the message broker controls the flow of messages. Interested readers will find further details and patterns on the subject <a href="http://martinfowler.com/books/eip.html" target="_blank">in the book &bdquo;Enterprise Integration Patterns&ldquo;</a>.</p><p>This article appeared as the cover story for PHP Magazin, issue 05/2013 (August/September).</p></div><div class="m-link link-as-button is-below clearfix">
+    <a href="http://phpmagazin.de/artikel/RabbitMQ-Drupal-im-Einsatz" target="_blank">The article in the PHP magazine</a></div>    </div>
+</section><section class="page-center">
+    <div class="page-center-inner">
+        <div class="topic--footer">
+            <div class="v-center--wrapper col col-1">
+                <div>
+                    <div class="author--image"><img src="https://www.sirup.com/sites/default/files/styles/square_thumbnail/public/SIRUP_Themen_Autor_Georg_W.jpg?itok=rxPLRH8m" width="180" height="180" alt="SIRUP Themen Autor Georg Waechter" title="SIRUP Themen Autor Georg Waechter" /></div>
+<div class="author--text">
+    Created by:<br />
+    <strong>Georg Wächter</strong>, Backend Developer at SIRUP</div>                </div>
+            </div>
+            <div class="v-center--wrapper col col-2">
+                <div class="share">
+                    <a href="https://www.sirup.com/en/en/rabbitmq-and-drupal-in-action"><span class="element-invisible">Share</span></a>
+                </div>
+                <div class="print">
+                    <a href="https://www.sirup.com/en/en/rabbitmq-and-drupal-in-action"><span class="element-invisible">Print</span></a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section><section class="teaser-wrapper page-center">
+    <div class="paragraphs-items paragraphs-items-field-paragraphs-tiles paragraphs-items-field-paragraphs-tiles-full paragraphs-items-full">
+    <section class="teaser-box teaser-box--tile-image-one-col one-col has-link">
+    <div class="teaser-box--wrap bg-cover js-set-bg-src text-hover-1" data-srcset="" style="background-color:#1a1a1a;">
+        <div class="hover-layer" style="background-color:#3f3f3f;">
+            <div class="teaser-box--content">
+
+                                    <div class="m-headlines">
+                        <h2>Working at SIRUP</h2>
+                    </div>
+                
+                            </div>
+                            <div class="teaser-box--read-more">
+                        <a href="https://www.sirup.com/en/careers"><span class="element-invisible">Careers</span></a>
+                </div>
+                    </div>
+    </div>
+</section><section class="teaser-box teaser-box--tile-image-one-col one-col has-image has-link">
+    <div class="teaser-box--wrap bg-cover js-set-bg-src text-hover-1" data-srcset="https://www.sirup.com/sites/default/files/styles/teaser_small_bp_default/public/SIRUP_Leistung_Digital_Transformation_Kachel_small_0.jpg?itok=HrRgOepL&timestamp=1454424300,https://www.sirup.com/sites/default/files/styles/teaser_small_bp_medium/public/SIRUP_Leistung_Digital_Transformation_Kachel_small_0.jpg?itok=z2ONlXrh&timestamp=1454424300,https://www.sirup.com/sites/default/files/styles/teaser_small_bp_narrow/public/SIRUP_Leistung_Digital_Transformation_Kachel_small_0.jpg?itok=h8QF2-d0&timestamp=1454424300" style="background-color:#1a1a1a;">
+        <div>
+            <div class="teaser-box--content">
+
+                                    <div class="m-headlines multiple">
+                        <h2 class="offset">Viva la</h2>                        <h3>Digital Transformation</h3>
+                    </div>
+                
+                            </div>
+                            <div class="teaser-box--read-more">
+                        <a href="https://www.sirup.com/en/digital-transformation"><span class="element-invisible">Digitale Transformation</span></a>
+                </div>
+                    </div>
+    </div>
+</section><section class="teaser-box teaser-box--tile-image-one-col one-col has-link">
+    <div class="teaser-box--wrap bg-cover js-set-bg-src text-hover-1" data-srcset="" style="background-color:#1a1a1a;">
+        <div class="hover-layer" style="background-color:#3f3f3f;">
+            <div class="teaser-box--content">
+
+                                    <div class="m-headlines">
+                        <h2>Who we are</h2>
+                    </div>
+                
+                            </div>
+                            <div class="teaser-box--read-more">
+                        <a href="https://www.sirup.com/en/about-sirup"><span class="element-invisible">About SIRUP</span></a>
+                </div>
+                    </div>
+    </div>
+</section></div>
+</section></div></div>
+                    </div>
+    </div>
+</article>
+    <div class="topics topic--next-teaser">
+        <div class="topics--wrapper">
+    <div class="topics--teaser invert-color" data-nid="534" style="background-color:#ff69b1;">
+        <div class="topics--teaser-wrap page-center">
+            <div class="page-center-inner">
+
+                                    <div class="m-headlines multiple">
+                        <h2>E-Commerce</h2>
+                        <h3>More than the digitalization of commerce</h3>
+                    </div>
+                
+                <div class="m-link">
+                    <a href="/en/more-than-the-digitalization-of-commerce" class="read-more">Read Article</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>    </div>
+  </div>
+</div>  </div>
+                        <div class="search-form">
+                <div class="search-form--wrapper-outer">
+                    <div class="search-form--wrapper-inner">
+                        <div class="search-form--field-wrapper">
+                            <input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" class="search-form--input" name="searchfield" type="text" value="" />
+                        </div>
+                        <div class="results"></div>
+                    </div>
+                </div>
+            </div>
+                            <div class="share-layer">
+                    <div class="share-layer--wrapper">
+                        <div class="share-layer--headline">Share Article</div>
+                        <div class="share-layer--options">
+                            <a class="share-layer--option is-facebook" data-share-baseurl="https://facebook.com/sharer.php?u=" target="_blank" title="Facebook"></a>
+                            <a class="share-layer--option is-twitter" data-share-baseurl="https://twitter.com/intent/tweet?url=" target="_blank" title="Twitter"></a>
+                            <a class="share-layer--option is-linkedin" data-share-baseurl="https://www.linkedin.com/shareArticle?mini=true&url=" target="_blank" title="LinkedIn"></a>
+                            <a class="share-layer--option is-google" data-share-baseurl="https://plus.google.com/share?url=" target="_blank" title="Google Plus"></a>
+                        </div>
+                        <div class="share-layer--close">Cancel</div>
+                    </div>
+                </div>
+                    </div>
+    </div>
+</main>
+<footer class="site--footer">
+        <nav class="footer-menu page-center" itemscope itemtype="http://schema.org/SiteNavigationElement">
+        <div class="logo">
+            <a href="/en">
+                <img src="https://www.sirup.com/sites/all/themes/sirup/logo.svg" height="20" width="87" alt="SIRUP" />
+            </a>
+        </div>
+        <div class="push-right">
+            <div class="social-media-links">
+                <div class="social-media-links--wrapper">
+                    <a class="ico ico-fb" href="http://www.facebook.com/sirup.live"><span class="element-invisible">Facebook</span></a>
+                </div>
+                <div class="social-media-links--wrapper">
+                    <a class="ico ico-xi" href="https://www.xing.com/companies/sirupdigitalcommunications"><span class="element-invisible">Xing</span></a>
+                </div>
+                <div class="social-media-links--wrapper">
+                    <a class="ico ico-li" href="https://www.linkedin.com/company/sirup-digital-communications"><span class="element-invisible">LinkedIn</span></a>
+                </div>
+            </div>
+              <div class="region-footer">
+    <div class="block block-menu-block" id="block-menu-block-3">
+
+    
+  <div class="block-content">
+    <div class="menu-block-wrapper menu-block-3 menu-name-menu-footer-menu-en parent-mlid-0 menu-level-1">
+  <ul class="menu"><li class="first leaf menu-mlid-1415"><a href="http://www.sirup.com/sites/default/files/SIRUP_Allgemeine_Geschaeftsbedingungen.pdf" title="" itemprop="url"><span itemprop="name">Terms</span></a></li>
+<li class="leaf menu-mlid-1413"><a href="/en/contact" itemprop="url"><span itemprop="name">Contact</span></a></li>
+<li class="leaf menu-mlid-1414"><a href="/en/imprint" itemprop="url"><span itemprop="name">Imprint</span></a></li>
+<li class="last leaf menu-mlid-1426"><a href="/en/privacy" title="Privacy Policy" itemprop="url"><span itemprop="name">Privacy Policy</span></a></li>
+</ul></div>
+  </div>
+</div>  </div>
+        </div>
+    </nav>
+</footer>
+<div class="loader"><div class="spinner"><div class="double-bounce1"></div><div class="double-bounce2"></div></div></div>  </body>
+</html>

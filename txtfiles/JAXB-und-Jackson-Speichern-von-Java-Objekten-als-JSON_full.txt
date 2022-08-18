@@ -1,0 +1,153 @@
+
+
+
+
+
+
+
+
+
+
+JAXB und Jackson: Speichern von Java Objekten als JSON
+
+
+
+
+
+
+
+
+
+Kompf.de > Java
+
+JAXB und Jackson: Speichern von Java Objekten als JSON
+Martin Kompf
+
+Der Jackson JSON Processor und die Java Architecture for XML Binding (JAXB) bieten ein einfach anzuwendendes Werkzeug zur Serialisierung und Deserialisierung von Java Objekten nach und von JSON. Die Abbildung von Java Objekten auf JSON Daten erfolgt dabei mittels der bekannten JAXB Annotationen.
+
+JSON oder XML?
+Im Artikel JAXB: Speichern von Java Objekten als XML wurden JAXB Annotation verwendet, um die Abbildung von Java Objekten auf XML Daten zu beschreiben. Die annotierten Klassen des Datenmodells konnten dann unter Zuhilfenahme der JAXB API mittels einfacher Anweisungen in einen XML Datenstrom umgewandelt werden.
+Die Verwendung von XML ist ideal, wenn der EmpfÃ¤nger der Daten optimal darauf eingestellt ist, zum Beispiel wenn ein SOAP Webservice die Daten konsumiert oder ein Transformer das XML nach HTML oder PDF konvertiert. Handelt es sich bei der Gegenstelle dagegen um eine in JavaScript oder PHP geschriebene Webanwendung, so wird man bald feststellen, das XML hier nicht die richtige Wahl fÃ¼r das Datenformat war. PHP und JavaScript haben keine eingebaute JAXB API und damit auch keine MÃ¶glichkeit, das empfangene XML direkt in Objekte umzuwandeln.
+In diesem Anwendungsbereich hat sich in den letzten Jahren vielmehr die JavaScript Object Notation - kurz JSON - als universelles Datenaustauschformat durchgesetzt. Die meisten im Webumfeld verwendeten Programmiersprachen haben mittlerweile eingebaute Methoden, die aus einem ankommenden JSON Datenstrom direkt ein Objekt erzeugen beziehungsweise umgekehrt Objekte nach JSON serialisieren. Zum Beispiel bietet PHP hierfÃ¼r die beiden Funktionen json_decode und json_encode.
+Java + JSON = ?
+Als Java Entwickler steht man daher oft vor der Aufgabe, Daten im JSON Format lesen oder schreiben zu mÃ¼ssen. Das JSON Projekt bietet dafÃ¼r eine Low-Level Java API an, die auch Bestandteil vieler bekannter Produkte, wie zum Beispiel Android ist. Diese API bildet im Prinzip alle JSON Daten auf die zwei Java Klassen JSONArray und JSONObjekt ab:
+
+// create JSON
+JSONObject o = new JSONObject();
+o.put("name", "Horst");
+o.put("code", 7);
+String json = o.toString();
+ 
+System.out.println(json);
+
+// parse JSON
+JSONObject p = new JSONObject(json);
+String name = p.getString("name");
+int code = p.getInt("code");
+System.out.printf("%s hat Code %03d%n", name, code);
+
+Dieses Vorgehen bietet zwar einen schnellen Einstieg und mag fÃ¼r kleine Projekte ausreichend sein. Aber schon bei der Aufgabe, das relativ simple Datenmodell aus JAXB: Speichern von Java Objekten als XML nach JSON zu serialisieren, zeigen sich die Nachteile dieser API: Man muss zuerst alle Objekte des domÃ¤nenspezifischen Datenmodells in ein JSONObject umbauen, damit man dieses dann serialisieren kann. Umgekehrt entstehen bei der Deserialisierung zunÃ¤chst JSONObject und JSONArray - doch wie bekommt man daraus dann Objekte des Typs MyMusicCollection, Album und Title?
+Java + JSON = Jackson!
+Eine LÃ¶sung hierfÃ¼r ist der Jackson JSON Processor. Er ermÃ¶glicht - analog zu JAXB - eine direkte Umwandlung von Java Objekten nach JSON und umgekehrt. Und das Beste daran ist, dass Jackson die gleichen Annotationen wie JAXB verwenden kann! Damit kÃ¶nnen die in JAXB: Speichern von Java Objekten als XML erarbeiteten Annotationen des Datenmodells direkt wiederverwendet werden! Mehr noch, soll das Programm sowohl XML als auch JSON erzeugen, dann muss am Datenmodell Ã¼berhaupt nichts geÃ¤ndert werden. Man ruft lediglich zur Laufzeit Jackson anstelle von JAXB auf.
+Jackson ist nicht Bestandteil der Standard Java API. Man muss daher die entsprechenden JAR Files separat herunterladen und in den CLASSPATH der Anwendung eintragen. FÃ¼r das Beispiel benÃ¶tigt man die drei Kernkomponenten Streaming, Databind und Annotations sowie das Modul JAXB Annotations.
+Ein bequemer Weg zur Installation der erforderlichen Jackson-Komponenten ist die Verwendung von Apache Ivy. Falls noch nicht geschehen, installiert man es zunÃ¤chst per
+
+sudo apt-get install ivy
+
+Dann erzeugt man eine Datei ivy.xml mit dem Inhalt:
+
+<ivy-module version="2.0">
+  <info organisation="de.kompf" module="javaxml" />
+  <configurations>
+    <conf name="default" visibility="public" />
+  </configurations>
+  <dependencies>
+    <dependency org="com.fasterxml.jackson.module" 
+      name="jackson-module-jaxb-annotations"
+      rev="2.6.3" conf="default" />
+  </dependencies>
+</ivy-module> 
+
+Der wesentliche Inhalt von ivy.xml ist die Definition der AbhÃ¤ngigkeit zu jackson-module-jaxb-annotations - im Beispiel mit der Version 2.6.3. Die zu diesem Modul gehÃ¶renden Artefakte inklusive aller AbhÃ¤ngigkeiten lÃ¤dt dann der ivy Task retrieve auf die Platte. Bei grÃ¶Ãeren Projekten integriert man den Aufruf von ivy:retrieve sinnvollerweise in sein Ant-Buildfile. FÃ¼r den Anfang tut es aber auch folgender Einzeiler fÃ¼r die Shell:
+
+java -jar /usr/share/java/ivy.jar -ivy ivy.xml -retrieve [artifact].[ext]
+
+Nach diesen Vorarbeiten kann man direkt zur Tat schreiten. ZustÃ¤ndig fÃ¼r die Abbildung von Java Objekten auf JSON ist die Klasse ObjectMapper. Die Registierung des Moduls JaxbAnnotationModule versetzt ihn in die Lage, auch mit JAXB Annotationen umgehen zu kÃ¶nnen:
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.module.jaxb.JaxbAnnotationModule;
+
+public class JsonMusicDB {
+  
+  private ObjectMapper m_mapper;
+
+  public JsonMusicDB() {
+    // Create Jackson object mapper
+    m_mapper = new ObjectMapper();
+    // make Jackson use JAXB annotations
+    JaxbAnnotationModule module = new JaxbAnnotationModule();
+    m_mapper.registerModule(module);
+  }
+
+Die Methoden zum Serialisieren und Deserialisieren eines Java Objektbaums sind an Einfachheit kaum zu Ã¼bertreffen:
+
+  private void writeMusic(MyMusicCollection music, File file) throws IOException {
+    m_mapper.writeValue(file, music);
+  }
+  
+  private MyMusicCollection readMusic(File file) throws IOException {
+    return m_mapper.readValue(file, MyMusicCollection.class);
+  }
+
+Die Klasse MyMusicCollection stammt aus dem bereits erwÃ¤hnten Artikel JAXB: Speichern von Java Objekten als XML, aus dem auch der restliche Beispielcode Ã¼bernommen werden kann.
+Fazit
+Das Beispiel zeigt, wie einfach sich die Umwandlung eines Java Datenmodells in eine JSON ReprÃ¤sentation mittels Jackson gestaltet. Als Benefit kÃ¶nnen dabei JAXB Annotationen wiederverwendet werden, um ohne Konfigurationsdateien die Art und Weise der Datenbindung zu beeinflussen. Damit ist auf elegante Art und Weise ein BrÃ¼ckenschlag zur Welt der Webanwendungen mÃ¶glich, die mit JavaScript, PHP und anderen Sprachen eine JSON API eingebaut haben. Auch die im Internet weit verbreiteten REST Services benutzen als Datenformat oftmals JSON. Hier lohnt sich dann ein zusÃ¤tzlicher Blick auf die Jackson Provider fÃ¼r JAX-RS.
+Links
+
+JSON
+Jackson Project Home @github
+
+Weitere interessante Artikel
+
+JAXB: Speichern von Java Objekten als XML
+
+
+
+
+Copyright Â© 2019 Martin Kompf. All rights reserved. Impressum DatenschutzerklÃ¤rung
+
+
+Allgemeines
+Ãberblick
+Impressum
+Tutorials
+Erste Schritte
+Java Tutorial
+API
+Regex
+Java 2D
+Preferences
+Zeitzonen
+Testing
+Testen mit JUnit
+Parametrisiert Testen
+JUnit und Proxy
+Java und XML
+XML Stream Reader
+SAX Parser
+DOM API
+XML Stream Writer
+Die XPath API
+JAXB: Schema first
+JAXB: Java first
+Java und JSON
+JAXB und Jackson
+Netzwerk
+Netzwerkclients
+UDP und Multicast
+Libraries
+JNA: Native Code
+GeoTools: Zeitzone
+
+
+

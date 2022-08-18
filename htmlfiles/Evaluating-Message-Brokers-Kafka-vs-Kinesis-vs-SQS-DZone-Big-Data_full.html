@@ -1,0 +1,948 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="">
+  <meta name="keywords" content="kafka, Data science, shard, Anomaly detection, pipeline, metric, cluster, health">
+
+  <meta property="og:description" content="">
+  <meta property="og:site_name" content="dzone.com">
+  <meta property="og:title" content="Evaluating Message Brokers: Kafka vs. Kinesis vs. SQS - DZone Big Data">
+  <meta property="og:url" content="https://dzone.com/articles/evaluating-message-brokers-kafka-vs-kinesis-vs-sqs">
+  <meta property="og:image" content="https://dz2cdn4.dzone.com/storage/article-thumb/2147535-thumb.jpg">
+  <meta property="og:type" content="article">
+
+  <meta name="twitter:site" content="@DZoneInc">
+  <meta name="twitter:image" content="https://dz2cdn4.dzone.com/storage/article-thumb/2147535-thumb.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:description" content="">
+  <meta name="twitter:title" content="Evaluating Message Brokers: Kafka vs. Kinesis vs. SQS - DZone Big Data">
+
+  <meta name="referrer" content="origin-when-cross-origin">
+  <meta name="google-site-verification" content="kndbhxcupfEqWmZclhCpB6vlgOs7QSmx2UHAGGnP2mA">
+  <meta name="df-verify" content="df0d76632b4543">
+
+  <link rel="icon" type="image/x-icon" href="https://dz2cdn1.dzone.com/themes/dz20/images/favicon.png">
+  <link rel="image_src" href="https://dz2cdn4.dzone.com/storage/article-thumb/2147535-thumb.jpg">
+  <link rel="canonical" href="https://dzone.com/articles/evaluating-message-brokers-kafka-vs-kinesis-vs-sqs">
+
+  <title>Evaluating Message Brokers: Kafka vs. Kinesis vs. SQS - DZone Big Data</title>
+
+  <link rel="preload" href="https://fonts.dzone.com/themes/dz20/font/fontello.woff?11773374" as="font" type="font/woff" crossorigin="anonymous">
+
+  <link rel="stylesheet" media="all" href="https://dz2cdn1.dzone.com/themes/dz20/ftl/icons.css">
+  <link rel="stylesheet" media="all" href="https://dz2cdn1.dzone.com/themes/dz20/lib/static/bootstrap/bootstrap.min.css">
+  <link rel="stylesheet" media="all" href="https://dz2cdn1.dzone.com/themes/dz20/ftl/article/global.css">
+  <link rel="stylesheet" media="all" href="https://dz2cdn1.dzone.com/themes/dz20/ftl/header/styles.css">
+</head>
+<body>
+<div id="ftl-header">
+  <div class="container-fluid header">
+    <div class="row">
+      <div class="col-md-12" style="padding: 0;">
+        <div class="header-top">
+          <div class="header-container">
+            <div class="pull-left logo-container">
+              <div class="logo">
+                <a class="inner" href="/">
+                  <picture>
+                    <source srcset="https://dz2cdn1.dzone.com/themes/dz20/images/dz_logo_2021_cropped.webp" type="image/webp">
+                    <source srcset="https://dz2cdn1.dzone.com/themes/dz20/images/dz_logo_2021_cropped.png" type="image/png">
+                    <img src="https://dz2cdn1.dzone.com/themes/dz20/images/dz_logo_2021_cropped.png" width="160" height="52" alt="DZone">
+                  </picture>
+                </a>
+              </div>
+
+                <div class="active-portal"><a href="/big-data-analytics-tutorials-tools-news">Big Data Zone</a></div>
+            </div>
+
+            <div class="pull-right login-and-search">
+              <div id="authenticated-block" class="logged-in">
+                <div class="welcome-back">Thanks for visiting DZone today,</div>
+                <div id="user-header" class="user-info">
+                  <button class="user-avatar">
+                    <span id="header-username" class="username"></span>
+                    <img id="header-avatar" src="" alt="user avatar">
+                  </button>
+                  <div id="user-dropdown" class="browse-user-menu">
+                    <div class="user-content">
+                      <a id="header-user-plug" href="#" class="user-description"></a>
+                      <a id="header-user-edit" href="#" class="edit-profile">Edit Profile</a>
+                    </div>
+                    <ul class="user-actions">
+                      <li id="first-user-action"><a id="header-dropdown-manage-email" href="#">Manage Email Subscriptions</a></li>
+                      <li>
+                        <a href="/articles/how-to-submit-a-post-to-dzone?utm_source=DZone&utm_medium=user_dropdown&utm_campaign=how_to_post">
+                          How to Post to DZone
+                        </a>
+                      </li>
+                      <li>
+                        <a href="/articles/dzones-article-submission-guidelines">
+                          Article Submission Guidelines
+                        </a>
+                      </li>
+                    </ul>
+                    <div class="bottom">
+                      <a href="/users/logout.html" class="sign-out">Sign Out</a>
+                      <a id="dropdown-view-profile" href="#" class="view-profile">View Profile</a>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="post-content">
+                  <button id="post-button" class="post-content--button">
+                    <span class="post-class">Post</span>
+                    <i class="icon-plus"></i>
+                  </button>
+
+                  <div id="post-menu" class="posting-links">
+                    <div class="posting-links-menu">
+                      <ul>
+                        <li>
+                          <img src="/themes/dz20/images/dz-postarticle.svg">
+                          <a href="/content/article/post.html">Post an Article</a>
+                        </li>
+                        <li>
+                          <a id="drafts-link" href="#">Manage My Drafts</a>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div id="unauthenticated-block">
+                <div class="dz-intro">Over 2 million developers have joined DZone.</div>
+                <div class="mobile-invisible sign-in-join">
+                  <a href="/users/login.html">Log In</a>
+                  <span class="dz-intro-span">/</span>
+                  <a href="/static/registration.html">Join</a>
+                </div>
+                <a class="join-icon" href="/users/login.html"><i class="icon-user"></i></a>
+              </div>
+              <div class="headerSearch">
+                <a class="icon-search dropdown-toggle" href="/search"></a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="header-bottom">
+
+
+          <ul class="portals header-container scrollable-ul">
+            <li>
+              <a href="/refcardz" id="header-refcardz">
+                <em>Refcardz</em>
+              </a>
+            </li>
+            <li>
+              <a href="/trendreports" id="header-research">
+                <em>Trend Reports</em>
+              </a>
+            </li>
+            <li>
+              <a href="/webinars" id="header-webinars">
+                <em>Webinars</em>
+              </a>
+            </li>
+            <li class="last-portal-link">
+              <a href="#" id="header-portals">
+                <em>
+                  Zones
+                  <span id="zone-arrow" class="collapsible-toggle">
+                    <i class="icon-angle-down"></i>
+                    <i class="icon-angle-up"></i>
+                  </span>
+                </em>
+              </a>
+            </li>
+
+            <li class="separator" aria-hidden="true" style="color: #d9dcdd;">|</li>
+            <li id="portal-list" class="portal-topics">
+              <ul>
+                  <li>
+                    <a href="/agile-methodology-training-tools-news" id="header-2">Agile</a>
+                  </li>
+                  <li>
+                    <a href="/artificial-intelligence-tutorials-tools-news" id="header-4001">AI</a>
+                  </li>
+                  <li>
+                    <a href="/big-data-analytics-tutorials-tools-news" id="header-3">Big Data</a>
+                  </li>
+                  <li>
+                    <a href="/cloud-computing-tutorials-tools-news" id="header-4">Cloud</a>
+                  </li>
+                  <li>
+                    <a href="/database-sql-nosql-tutorials-tools-news" id="header-5">Database</a>
+                  </li>
+                  <li>
+                    <a href="/devops-tutorials-tools-news" id="header-6">DevOps</a>
+                  </li>
+                  <li>
+                    <a href="/enterprise-integration-training-tools-news" id="header-7">Integration</a>
+                  </li>
+                  <li>
+                    <a href="/iot-developer-tutorials-tools-news-reviews" id="header-8">IoT</a>
+                  </li>
+                  <li>
+                    <a href="/java-jdk-development-tutorials-tools-news" id="header-1">Java</a>
+                  </li>
+                  <li>
+                    <a href="/microservices-news-tutorials-tools" id="header-6001">Microservices</a>
+                  </li>
+                  <li>
+                    <a href="/open-source-news-tutorials-tools" id="header-7001">Open Source</a>
+                  </li>
+                  <li>
+                    <a href="/apm-tools-performance-monitoring-optimization" id="header-10">Performance</a>
+                  </li>
+                  <li>
+                    <a href="/application-web-network-security" id="header-2001">Security</a>
+                  </li>
+                  <li>
+                    <a href="/web-development-programming-tutorials-tools-news" id="header-11">Web Dev</a>
+                  </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script async src="https://dz2cdn1.dzone.com/themes/dz20/ftl/header/bundle.js"></script><link rel="stylesheet" media="all" href="https://dz2cdn1.dzone.com/themes/dz20/ftl/article/styles.css">
+
+
+
+
+<div id="ftl-article" >
+  <div class="container-fluid body">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="articles-wrap">
+              <div class="ad-container">
+                <div id="div-gpt-ad-1435246566686-0" class="ads-billboard-article" data-gpt-slot="top"></div>
+              </div>
+
+
+          <div class="article-stream widget-top-border">
+                <div class="content-right-images">
+                  <div id="div-gpt-ad-1435246566686-2" class="sidebar-ad" data-gpt-desktop="true" data-gpt-slot="sidebar1"></div>
+                </div>
+
+                <script type="application/ld+json">
+                  {
+                    "@context": "http://schema.org",
+                    "@type": "Article",
+                    "headline": "Evaluating Message Brokers: Kafka vs. Kinesis vs. SQS",
+                    "author": {
+                      "@type": "Person",
+                      "name": "Swaroop Ramachandra"
+                    },
+                    "audience": "software developers",
+                    "keywords": "sqs,kafka,messaging",
+                    "timeRequired": "PT7M",
+                    "commentCount": 7,
+                    "wordCount": "1586",
+                    "accessMode": "textual, visual",
+                    "dateCreated": "2016-05-14T04:31:00Z",
+                    "datePublished": "2016-05-14T00:00:00Z",
+                    "dateModified": "2021-06-30T07:15:26Z",
+                    "articleSection": "big-data-analytics-tutorials-tools-news",
+                    "publisher": {
+                      "@type": "Organization",
+                      "name": "DZone",
+                      "url": "https://dzone.com",
+                      "logo": {
+                        "@type": "ImageObject",
+                        "url": "https://dzone.com/themes/dz20/images/dz_logo_2021_cropped.png"
+                      }
+                    },
+                    "articleBody": "In the last couple of years, we have observed evolution of several message brokers and queuing services which are all fast, reliable, and scalable. While the list is long, in this blog, I will limit the discussion to SQS, Kinesis, and Kafka. Simple Queuing Service (SQS) is a fully managed and scalable queuing service on AWS. Kinesis is another service offered by AWS that makes it easy to load and analyze streaming data, and also provides the ability to build custom streaming data applications for special requirements. Apache Kafka is a fast, scalable, durable, and fault-tolerant publish-subscribe messaging system, which is often used in place of traditional message brokers like JMS and AMQP because of its characteristics like higher throughput, reliability, and replication. While making decisions about which messaging system is right for you, it is important to understand not only the technical differences but also the implications of operational costs both in terms of running them at scale as well as monitoring them. In this blog, I will touch upon our experiences and learning at OpsClarity, based on our evaluation of messaging systems and our migration from SQS to Kafka. Simplicity of SQS At OpsClarity, our real-time pipeline ingests machine and metric data from thousands of agents running across our customers’ infrastructure. Since OpsClarity is a real-time monitoring solution, the collected data has to be processed in real-time so we can alert our customers about impending issues in their application and data infrastructure. Since incoming data can have spikes, we need to smoothen out the ingest rate, which is typically solved by keeping an intermediate queuing layer that holds the data until we are ready to process it. When we started out back in 2014, we wanted a solution that was simple to use, quick to build upon and scalable. We primarily wanted to achieve two goals: Keep customer A’s data separate from customer B’s data throughout the pipeline. This is crucial since our pipeline ingests custom metrics from customers that should never show up on another customer’s dashboard. Guarantee availability of our monitoring solution all the time by guarding our data pipeline resources against a big surge of data from “misbehaving” hosts from one customer. At first look, SQS seemed to get us up and running quickly. With that, we decided to create separate queues for every customer that came onboard, which would also help us control which queues we wanted to process on a priority basis, in case of a data surge. This model worked fine when we had a single producer and a single consumer computing dimensional aggregations from raw metrics. That’s straightforward and every monitoring company does that. Running Into Limitations With SQS Data Science is the cornerstone of OpsClarity. A huge value we provide to our customers at OpsClarity is the wealth of valuable insights that can be gained from metrics through anomaly detection. Our anomaly detection models are custom-tailored and context-based, resulting in a material impact on the health, stability, and performance of operations of the system. The models are applied in real-time to the set of streaming metrics. The models require the same raw metric data as well as the aggregated data to detect anomalies. So the next challenges for us was to figure out how to send the same data to the anomaly detection component. SQS destroys the message once it is processed from it’s queue. This forced us to create a separate queue, there-by duplicating our metrics as below. That seemed like a small trade-off for the ease of use and operational flexibility provided by SQS. Soon enough, there was a new, powerful feature we wanted to build – Health of every service discovered by our topology engine. Our health model uses a roll-up mechanism, where health of a sub component rolls up into host health and finally health of the service clusters itself. The health component needs the same data as our aggregation pipelines or anomaly detection models. Soon enough, we had 3 SQS queues per customer having the same data. As we added more and more customers, it became evident that we needed to have a way to debug our pipelines by pulling data off of the queues. Also, the smart folks building our anomaly detection engine figured they wanted to run some modeling off of real time data streaming through our pipeline – basically a replay mode for data that had already been read. Duplicating more queues was not an option anymore. We also realized that a few components we had developed didn’t like the out of order delivery that SQS provided. This gave rise to our new set of requirements: Produce once, consume multiple times. A centralized feed for all operational data Have fairly strong order guarantee Maintain fast, durable and scalable nature of SQS Ease of use and maintenance Evaluating Kinesis and Kafka AWS Kinesis was shining on our AWS console waiting to be picked up. We decided to do some due diligence against a 3 node Kafka cluster that we setup on m1.large instances. We evaluated them on throughput performance and both performed really well for our needs. Some specifics that we observed on the technical side were: Writes to Kinesis were a few ms slower compared to our Kafka setup. Kinesis replicates across 3 availability zones, which could explain the slight delay 1MB/sec max input rate into a Kinesis shard vs tens of megabytes on Kafka Kinesis has a limit of 5 reads per second from a shard. So, if we built 5 components that would need to read the same data and process from a shard, we would have already maxed out with Kinesis. This seemed like an unnecessary limitation on scaling out consumers. Of course, there are work arounds by increasing the number of shards, but then, you end up paying more too. Next, some cost calculations. Kinesis uses shards to scale out and every shard has set limits. For example, 1MB/sec data in and 2MB/sec data out per shard. Also, max of 5 reads per shard per second. For the sake of this calculation, let’s simply have one shard per customer – although for some larger customers with 1000+ node installations, we’d have to have more shards. Also, Kinesis by default holds data for just 24 hours. You need to pay more for retaining data over a longer period (7 days). This data retention is important since there are times when you’d have to replay data from a day or two ago to catchup. Kinesis: One-click setup since it is a managed service Component Per hr cost Per month cost One Shard $0.018 $14 Extended Data Retention / Shard $0.02 $15 PUT requests $8 Per customer cost (1 shard) $37 50 customers (@ just 1 shard per customer) $1850 Kafka: Kafka is a distributed message log that provides a publish-subscribe messaging model. It claims to be fast, durable, scalable and easy to operate. We’ve seen Kafka work well with about 8GB of RAM and a good amount of disk space to store data longer. For that reason, let’s say we pick m1.large instances that have 7.5G of RAM and 840G of disk space per instance. Let’s consider 30 broker nodes, setup with a replication factor of 3, which gives us about 25TB of disk space. Component Per hr cost Per month cost One m1.large instance $0.017 $13 Total (30 instances) $0.51 $380 As you can see, the cost difference is significant. Even if you use machines that were slightly beefier, you’d end up with cost savings. The above calculation assumes we’re just using 1 shard per customer. In reality, you’d have to have multiple shards to parallelize and handle the load gracefully, which increases the costs further with Kinesis. At the end, the choice was obvious – Kafka. Kafka at OpsClarity We deployed Kafka on AWS instances and we have been extremely satisfied with our choice. Kafka has helped accelerate development of new components at OpsClarity. Specifically, we’ve gained from the following: Ease of setup, maintenance and use: Our Kafka cluster was setup in less than a day. As soon as we deployed OpsClarity agents on our Kafka cluster, the entire topology from producers to brokers to consumers was auto discovered and auto configured. Blazing fast performance on the producer side. Our Kafka setup can ingest billions of metric points per day without any reduction in performance. Durable logs that allow us to replay messages. Controlled execution on the consumer side with ability to scale consumers if the size of log starts building up. This keeps the end to end latency low, thereby keeping the entire pipeline truly real-time. Rapid development of newer analytics components: We can simply create new consumer groups and start consuming from the same set of topics and partitions without worrying about affecting other components. Easy to scale by adding new brokers Provides ordering guarantee that keeps us from spending time on anomalies due to out of order messages. Kafka has been performing well for our use case to serve as the centralized metric stream system. It has Java and Python connectors which fit our needs well. OpsClarity provides end to end visibility of our data pipeline and we are happy with the technical decisions we’ve made to get here. In a future post, we will exclusively talk about how we monitor our Kafka cluster; including the producers, brokers and the consumers. We will also discuss how our anomaly detection models monitor consumer lag and identify potential issues before they can happen.",
+                    "mainEntityOfPage": {
+                      "@type": "WebPage",
+                      "@id": "https://dzone.com/articles/evaluating-message-brokers-kafka-vs-kinesis-vs-sqs"
+                    },
+                    "image": {
+                      "@type": "ImageObject",
+                      "url": "https://dzone.com//dz2cdn4.dzone.com/storage/article-thumb/2147535-thumb.jpg"
+                    }
+                  }
+                </script>
+
+                  <script type="application/ld+json">
+                    {
+                      "@context": "https://schema.org",
+                      "@type": "BreadcrumbList",
+                      "itemListElement": [{
+                        "@type": "ListItem",
+                        "position": 1,
+                        "name": "DZone",
+                        "item": "https://dzone.com"
+                      }, {
+                        "@type": "ListItem",
+                        "position": 2,
+                        "name": "Big Data Zone",
+                        "item": "https://dzone.com/big-data-analytics-tutorials-tools-news"
+                      }, {
+                        "@type": "ListItem",
+                        "position": 3,
+                        "name": "Evaluating Message Brokers: Kafka vs. Kinesis vs. SQS",
+                        "item": "https://dzone.com/articles/evaluating-message-brokers-kafka-vs-kinesis-vs-sqs"
+                      }]
+                    }
+                  </script>
+
+            <article>
+              <div class="content">
+                <div class="header">
+                  <div class="col-xs-12 breadcrumb-padding">
+                    <a href="/">DZone</a>
+                    >
+                      <a href="/big-data-analytics-tutorials-tools-news">Big Data Zone</a>
+                      >
+                      <a href="#">Evaluating Message Brokers: Kafka vs. Kinesis vs. SQS</a>
+                  </div>
+
+
+                  <div class="header-title">
+                    <div class="title">
+                      <h1 class="article-title">Evaluating Message Brokers: Kafka vs. Kinesis vs. SQS</h1>
+                    </div>
+
+                    <div class="subhead">
+                      <h3>A comparison of the best message brokers for big data applications between SQS, Kinesis, and Kafka.</h3>
+                    </div>
+
+                    <div class="publish-meta">
+                        <div class="article-author-meta">
+                          <img src="https://secure.gravatar.com/avatar/b28356425106f038d5557d94c84fffcc?d=identicon&r=PG" class="avatar" alt="Swaroop Ramachandra user avatar" width="40">
+                          by
+
+                          <div class="author-info">
+                            <span class="author-name">
+                              <a href="/users/2791623/swaroopramachandra.html" rel="nofollow">Swaroop Ramachandra</a>
+                            </span>
+                          </div>
+
+
+                            <div class="mvb-award">
+                              <i title="Most Valuable Blogger" class="icon-mvb-1"></i>
+                            </div>
+
+
+                          &middot;
+                        </div>
+                      <span class="author-date">
+                        May. 14, 16
+                      </span>
+                      &middot;
+                        <a href="/big-data-analytics-tutorials-tools-news" id="portal-name">
+                          <span class="portal-name">Big Data Zone</span>
+                        </a>
+                      &middot;
+                      <span>Opinion</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="author-n-useraction">
+                  <div class="like action">
+                    <div id="activity-like-icon" class="dz-like icon-thumbs-up">
+                      <span class="action-label">
+                        <span id="activity-like-text">Like</span>
+                      </span>
+                      <a href="#">
+                        <span id="activity-like-counter">(20)</span>
+                      </a>
+                    </div>
+                  </div>
+
+                  <div class="action">
+
+                    <button class="comment">
+                      <i class="icon-comment"></i>
+                      Comment
+                      <span id="activity-comment-counter" class="comment-count"></span>
+                    </button>
+                  </div>
+
+                  <div class="save action">
+                    <div id="activity-save-icon" class="save icon-star-empty">
+                      <span id="activity-save-text" class="action-label">Save</span>
+                    </div>
+                  </div>
+
+                  <div class="tweet action">
+                    <a id="tweet-link" href="" class="title" target="_blank">
+                      <span><i class="icon-twitter"></i></span>
+                      <span class="action-label">Tweet</span>
+                    </a>
+                  </div>
+
+                  <div class="pull-right">
+                    <div id="activity-view-container" class="article-views action">
+                      <i class="icon-eye"></i> 59.21K
+                      <span class="action-label">Views</span>
+                    </div>
+                  </div>
+                </div>
+
+                    <div class="signin-prompt">
+                      <p>Join the DZone community and get the full member experience.</p>
+                      <a id="article-signin-prompt" href="/static/registration.html">Join For Free</a>
+                    </div>
+                    <div class="arrow-down"></div>
+
+                  <div id="top-bumper-container"></div>
+
+                <div>
+                  <div class="content-html"><p pid="2">In the last couple of years, we have observed evolution of several message brokers and queuing services which are all fast, reliable, and scalable. While the list is long, in this blog, I will limit the discussion to SQS, Kinesis, and Kafka. Simple Queuing Service (SQS) is a fully managed and scalable queuing service on AWS. Kinesis is another service offered by AWS that makes it easy to load and analyze streaming data, and also provides the ability to build custom streaming data applications for special requirements. Apache Kafka is a fast, scalable, durable, and fault-tolerant publish-subscribe messaging system, which is often used in place of traditional message brokers like JMS and AMQP because of its characteristics like higher throughput, reliability, and replication.</p><article id="post-1215"><p>While making decisions about which messaging system is right for you, it is important to understand not only the technical differences but also the implications of operational costs both in terms of running them at scale as well as monitoring them. In this blog, I will touch upon our experiences and learning at OpsClarity, based on our evaluation of messaging systems and our migration from&nbsp; SQS to Kafka.&nbsp;</p><h3>Simplicity of SQS</h3><p>At OpsClarity, our real-time pipeline ingests machine and metric data from thousands of agents running across our customers’ infrastructure. Since OpsClarity is a real-time monitoring solution, the collected data has to be processed in real-time so we can alert our customers about impending issues in their application and data infrastructure. Since incoming data can have spikes, we need to smoothen out the ingest rate, which is typically solved by keeping an intermediate queuing layer that holds the data until we are ready to process it. When we started out back in 2014, we wanted a solution that was simple to use, quick to build upon and scalable. We primarily wanted to achieve two goals:</p><ol><li>Keep customer A’s data separate from customer B’s data throughout the pipeline. This is crucial since our pipeline ingests custom metrics from customers that should never show up on another customer’s dashboard.</li><li>Guarantee availability of our monitoring solution all the time by guarding our data pipeline resources against a big surge of data from “misbehaving” hosts from one customer.&nbsp;</li></ol><p><a href="https://www.opsclarity.com/wp-content/uploads/2016/05/SQS1.png"><img alt="SQS1" class="fr-fin fr-dib" height="370" sizes="(max-width: 640px) 100vw, 640px" src="https://www.opsclarity.com/wp-content/uploads/2016/05/SQS1-1024x592.png" srcset="https://www.opsclarity.com/wp-content/uploads/2016/05/SQS1-1024x592.png 1024w, https://www.opsclarity.com/wp-content/uploads/2016/05/SQS1-600x347.png 600w, https://www.opsclarity.com/wp-content/uploads/2016/05/SQS1-768x444.png 768w, https://www.opsclarity.com/wp-content/uploads/2016/05/SQS1-300x173.png 300w" width="640"></a></p><p>At first look, SQS seemed to get us up and running quickly. With that, we decided to create separate queues for every customer that came onboard, which would also help us control which queues we wanted to process on a priority basis, in case of a data surge. This model worked fine when we had a single producer and a single consumer computing dimensional aggregations from raw metrics. That’s straightforward and every monitoring company does that.&nbsp;</p><h3>Running Into Limitations With SQS</h3><p>Data Science is the cornerstone &nbsp;of OpsClarity. A huge value we provide to our customers at OpsClarity is the wealth of valuable insights that can be gained from metrics through anomaly detection. Our anomaly detection models are custom-tailored and context-based, resulting in a material impact on the health, stability, and performance of operations of the system. The models are applied in real-time to the set of streaming metrics. The models require the same raw metric data as well as the aggregated data to detect anomalies. So the next challenges for us was to figure out how to send the same data to the anomaly detection component. SQS destroys the message once it is processed from it’s queue. This forced us to create a separate queue, there-by duplicating our metrics as below.&nbsp;</p><p><a href="https://www.opsclarity.com/wp-content/uploads/2016/05/SQS2.png"><img alt="SQS2" class="fr-fin fr-dib" height="370" sizes="(max-width: 640px) 100vw, 640px" src="https://www.opsclarity.com/wp-content/uploads/2016/05/SQS2-1024x592.png" srcset="https://www.opsclarity.com/wp-content/uploads/2016/05/SQS2-1024x592.png 1024w, https://www.opsclarity.com/wp-content/uploads/2016/05/SQS2-600x347.png 600w, https://www.opsclarity.com/wp-content/uploads/2016/05/SQS2-768x444.png 768w, https://www.opsclarity.com/wp-content/uploads/2016/05/SQS2-300x173.png 300w" width="640"></a></p><p>That seemed like a small trade-off for the ease of use and operational flexibility provided by SQS. Soon enough, there was a new, powerful feature we wanted to build – Health of every service discovered by our topology engine. Our health model uses a roll-up mechanism, where health of a sub component rolls up into host health and finally health of the service clusters itself. The health component needs the same data as our aggregation pipelines or anomaly detection models. Soon enough, we had 3 SQS queues per customer having the same data.</p><p><a href="https://www.opsclarity.com/wp-content/uploads/2016/05/SQS3.png"><img alt="SQS3" class="fr-fin fr-dib" height="370" sizes="(max-width: 640px) 100vw, 640px" src="https://www.opsclarity.com/wp-content/uploads/2016/05/SQS3-1024x592.png" srcset="https://www.opsclarity.com/wp-content/uploads/2016/05/SQS3-1024x592.png 1024w, https://www.opsclarity.com/wp-content/uploads/2016/05/SQS3-600x347.png 600w, https://www.opsclarity.com/wp-content/uploads/2016/05/SQS3-768x444.png 768w, https://www.opsclarity.com/wp-content/uploads/2016/05/SQS3-300x173.png 300w" width="640"></a></p><p>As we added more and more customers, it became evident that we needed to have a way to debug our pipelines by pulling data off of the queues. Also, the smart folks building our anomaly detection engine figured they wanted to run some modeling off of real time data streaming through our pipeline – basically a replay mode for data that had already been read. Duplicating more queues was not an option anymore. We also realized that a few components we had developed didn’t like the out of order delivery that SQS provided. This gave rise to our new set of requirements:</p><ol><li>Produce once, consume multiple times. A centralized feed for all operational data</li><li>Have fairly strong order guarantee</li><li>Maintain fast, durable and scalable nature of SQS</li><li>Ease of use and maintenance</li></ol><h3>Evaluating Kinesis and Kafka</h3><p>AWS Kinesis was shining on our AWS console waiting to be picked up. We decided to do some due diligence against a 3 node Kafka cluster that we setup on m1.large instances. We evaluated them on throughput performance and both performed really well for our needs. Some specifics that we observed on the technical side were:</p><ol><li>Writes to Kinesis were a few ms slower&nbsp;compared to our Kafka setup. Kinesis replicates across 3 availability zones, which could explain the slight delay</li><li>1MB/sec max input rate into a Kinesis shard vs tens of megabytes on Kafka</li><li>Kinesis has a limit of 5 reads per second from a shard. So, if we built 5 components that would need to read the same data and process from a shard, we would have already maxed out with Kinesis. This seemed like an unnecessary limitation on scaling out consumers. Of course, there are work arounds by increasing the number of shards, but then, you end up paying more too.</li></ol><p>Next, some cost calculations. Kinesis uses shards to scale out and every shard has set limits. For example, 1MB/sec data in and 2MB/sec data out per shard. Also, max of 5 reads per shard per second.</p><p>For the sake of this calculation, let’s simply have one shard per customer – although for some larger customers with 1000+ node installations, we’d have to have more shards. Also, Kinesis by default holds data for just 24 hours. You need to pay more for retaining data over a longer period (7 days). This data retention is important since there are times when you’d have to replay data from a day or two ago to catchup.</p><p><strong>Kinesis</strong>: One-click setup since it is a managed service&nbsp;</p><table><tbody><tr><td width="156"><strong>Component</strong></td><td width="156"><strong>Per hr cost</strong></td><td width="156"><strong>Per month cost</strong></td></tr><tr><td width="156"><strong>One Shard</strong></td><td width="156">$0.018</td><td width="156">$14</td></tr><tr><td width="156"><strong>Extended Data Retention / Shard</strong></td><td width="156">$0.02</td><td width="156">$15</td></tr><tr><td width="156"><strong>PUT requests</strong></td><td width="156">$8</td></tr><tr><td width="156"><strong>Per customer cost (1 shard)</strong></td><td width="156"><strong>$37</strong></td></tr><tr><td width="156"><strong>50 customers (@ just 1 shard per customer)</strong></td><td width="156"><strong>$1850</strong></td></tr></tbody></table><p><strong>Kafka:&nbsp;</strong>Kafka is a distributed message log that provides a publish-subscribe messaging model. It claims to be fast, durable, scalable and easy to operate. We’ve seen Kafka work well with about 8GB of RAM and a good amount of disk space to store data longer. For that reason, let’s say we pick m1.large instances that have 7.5G of RAM and 840G of disk space per instance. Let’s consider 30 broker nodes, setup with a replication factor of 3, which gives us about 25TB of disk space.&nbsp;</p><table><tbody><tr><td width="156"><strong>Component</strong></td><td width="156"><strong>Per hr cost</strong></td><td width="156"><strong>Per month cost</strong></td></tr><tr><td width="156"><strong>One m1.large instance</strong></td><td width="156">$0.017</td><td width="156">$13</td></tr><tr><td width="156"><strong>Total (30 instances)</strong></td><td width="156">$0.51</td><td width="156"><strong>$380</strong>&nbsp;</td></tr></tbody></table><p>As you can see, the cost difference is significant. Even if you use machines that were slightly beefier, you’d end up with cost savings. The above calculation assumes we’re just using 1 shard per customer. In reality, you’d have to have multiple shards to parallelize and handle the load gracefully, which increases the costs further with Kinesis.&nbsp; At the end, the choice was obvious – Kafka.</p><h3>Kafka at OpsClarity</h3><p>We deployed Kafka on AWS instances and we have been extremely satisfied with our choice. Kafka has helped accelerate development of new components at OpsClarity. Specifically, we’ve gained from the following:</p><ol><li>Ease of setup, maintenance and use: Our Kafka cluster was setup in less than a day. As soon as we deployed OpsClarity agents on our Kafka cluster, the entire topology from producers to brokers to consumers was auto discovered and auto configured.</li><li>Blazing fast performance on the producer side. Our Kafka setup can ingest billions of metric points per day without any reduction in performance.</li><li>Durable logs that allow us to replay messages.</li><li>Controlled execution on the consumer side with ability to scale consumers if the size of log starts building up. This keeps the end to end latency low, thereby keeping the entire pipeline truly real-time.</li><li>Rapid development of newer analytics components: We can simply create new consumer groups and start consuming from the same set of topics and partitions without worrying about affecting other components.</li><li>Easy to scale by adding new brokers</li><li>Provides ordering guarantee that keeps us from spending time on anomalies due to out of order messages.</li></ol><p><a href="https://www.opsclarity.com/wp-content/uploads/2016/05/SQS4.png"><img alt="SQS4" class="fr-fin fr-dib" height="370" sizes="(max-width: 640px) 100vw, 640px" src="https://www.opsclarity.com/wp-content/uploads/2016/05/SQS4-1024x592.png" srcset="https://www.opsclarity.com/wp-content/uploads/2016/05/SQS4-1024x592.png 1024w, https://www.opsclarity.com/wp-content/uploads/2016/05/SQS4-600x347.png 600w, https://www.opsclarity.com/wp-content/uploads/2016/05/SQS4-768x444.png 768w, https://www.opsclarity.com/wp-content/uploads/2016/05/SQS4-300x173.png 300w" width="640"></a></p><p>Kafka has been performing well for our use case to serve as the centralized metric stream system. It has Java and Python connectors which fit our needs well. OpsClarity provides end to end visibility of our data pipeline and we are happy with the technical decisions we’ve made to get here. In a future post, we will exclusively talk about how we monitor our Kafka cluster; including the producers, brokers and the consumers. We will also discuss how our anomaly detection models monitor consumer lag and identify potential issues before they can happen.</p></article></div>
+                </div>
+
+                  <div id="bottom-bumper-container"></div>
+                  <div class="article-tag-pill-container">
+                      <span class="article-tag-pill">kafka</span>
+                      <span class="article-tag-pill">Data science</span>
+                      <span class="article-tag-pill">Shard (database architecture)</span>
+                      <span class="article-tag-pill">Anomaly detection</span>
+                      <span class="article-tag-pill">Pipeline (software)</span>
+                      <span class="article-tag-pill">Metric (unit)</span>
+                      <span class="article-tag-pill">cluster</span>
+                      <span class="article-tag-pill">Health (Apple)</span>
+                  </div>
+
+                  <div class="attribution">
+                      <p>Published at DZone with permission of <span>Swaroop Ramachandra<span>, DZone MVB</span></span>.
+                        <span>
+                          <a href="https://www.opsclarity.com/evaluating-message-brokers-kafka-vs-kinesis-vs-sqs/" target="_blank">See the original article here.
+                            <i class="icon-link-ext-alt"></i>
+                          </a>
+                        </span>
+                      </p>
+                    <p>Opinions expressed by DZone contributors are their own.</p>
+                  </div>
+
+                    <div class="related">
+                      <h3>Popular on DZone</h3>
+                        <ul>
+                            <li class="relateddiv">
+                              <a href="/articles/functional-vs-non-functional-requirements-the-full?fromrel=true">Functional vs. Non-Functional Requirements: The Full Guide, Definitions, and Technical Examples</a>
+                            </li>
+                            <li class="relateddiv">
+                              <a href="/articles/how-to-optimize-mysql-queries-for-speed-and-perfor?fromrel=true">How to Optimize MySQL Queries for Speed and Performance</a>
+                            </li>
+                            <li class="relateddiv">
+                              <a href="/articles/usage-of-java-streams-amp-lambdas-in-selenium-webd?fromrel=true">Usage of Java Streams and Lambdas in Selenium WebDriver</a>
+                            </li>
+                            <li class="relateddiv">
+                              <a href="/articles/a-simple-guide-to-heaps-stacks-references-and-valu?fromrel=true">A Simple Guide to Heaps, Stacks, References, and Values in JavaScript</a>
+                            </li>
+                        </ul>
+                      </div>
+<div class="comments-overlay"></div>
+<div id="comment-box">
+  <div class="comment-box-wrapper">
+    <div id="comment-input-editor"></div>
+  </div>
+  <div class="info hidden"></div>
+  <div class="comments-content">
+    <div class="comment-header">
+      <hr />
+      <span class="icon-comment">
+        <span class="numOfComments"></span> Comments
+      </span>
+    </div>
+    <div class="comments"></div>
+  </div>
+</div>
+            </article>
+          </div>
+
+            <div id="above-pr-ad" class="bottom-ad-container">
+              <div id="div-gpt-ad-1435246566686-11" data-gpt-slot="bottom"></div>
+            </div>
+            <div class="layout-card widget-top-border partner-resources-block" style="width:100%; margin-bottom: 1em;">
+              <div class="main-container">
+                <div class="featured-header">
+                  <h2>
+                      Big Data<span> Partner Resources</span>
+                  </h2>
+                </div>
+                <div class="partner-resources-container">
+                  <div id="div-gpt-ad-1435246566686-5" class="resource-block" data-gpt-slot="partner" data-gpt-position="pr1"></div>
+                  <div id="div-gpt-ad-1435246566686-6" class="resource-block" data-gpt-slot="partner" data-gpt-position="pr2"></div>
+                  <div id="div-gpt-ad-1435246566686-7" class="resource-block" data-gpt-slot="partner" data-gpt-position="pr3"></div>
+                </div>
+              </div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <div id="bsa-parent" class="bottom-sticky-ad-container hide">
+      <div class="container">
+        <div class="col-md-9">
+          <div class="fixed-bottom-div">
+            <div class="inline-block">
+              <div id="div-gpt-ad-1635294790718-12" data-gpt-desktop="true" class="bottom-sticky-ad"></div>
+            </div>
+            <div class="inline-block">
+              <span id="close" class="bottom-sticky-ad-close-button" onclick="removeBottomStickyAd()">
+                X
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  <div class="modal fade bd-example-modal-lg" id="modal-message" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header"></div>
+        <div class="modal-body"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script async>const articleTitle = 'Evaluating Message Brokers: Kafka vs. Kinesis vs. SQS'
+const articleUrl = 'https://dzone.com/articles/evaluating-message-brokers-kafka-vs-kinesis-vs-sqs'
+
+const retweetLink = document.querySelector('#tweet-link')
+
+function retweet(event) {
+    event.preventDefault()
+    event.stopPropagation()
+
+    const twitter = 'https://twitter.com/intent/tweet'
+    const params = '?text=' + encodeURIComponent(articleTitle) + '&url=' + articleUrl + '&ref=dzone.com&via=DZoneInc'
+    const win = window.open(twitter + params, '_blank')
+    win.focus()
+}
+
+retweetLink.addEventListener('click', retweet);
+
+function showStatusMessage(options) {
+  var modal = document.getElementById("modal-message");
+
+  if(modal) {
+    modal.classList.add(options.type);
+    var modalBody = modal.querySelector(".modal-content .modal-body");
+    var modalHeader = modal.querySelector(".modal-content .modal-header");
+
+    modalHeader.innerText = options.header ? options.header : "";
+    modalBody.innerText = options.body ? options.body : "" ;
+
+    $(modal).modal("show");
+
+    $(modal).on('hidden.bs.modal', function () {
+      modal.classList.remove(options.type);
+    });
+  }
+}
+
+function showConfirmMessage(options) {
+  var modal = document.getElementById("modal-message");
+
+  if(modal) {
+    modal.classList.add(options.type);
+    var modalBody = modal.querySelector(".modal-content .modal-body");
+    var modalHeader = modal.querySelector(".modal-content .modal-header");
+
+    modalHeader.innerText = options.header ? options.header : "";
+    modalBody.innerText = options.body ? options.body : "" ;
+
+    if (options.textarea) {
+      const textareaDiv = document.createElement('div')
+      const textareaLabel = document.createElement('label')
+      textareaLabel.setAttribute('for', 'modal-textarea')
+      textareaLabel.innerText = options.textarea.label
+
+      const textarea = document.createElement('textarea')
+      textarea.id = 'modal-textarea'
+      textarea.placeholder = (options.textarea.placeholder || '')
+      textarea.setAttribute('rows', (options.textarea.rows || 3))
+      textarea.classList.add('form-control', 'not-resizable')
+
+      if (options.textarea.maxlength) {
+        textarea.maxLength = options.textarea.maxlength
+      }
+
+      textareaDiv.appendChild(textareaLabel)
+      textareaDiv.appendChild(textarea)
+      modalBody.appendChild(textareaDiv)
+    }
+
+    var btnContainer = document.createElement("div");
+    btnContainer.classList.add("btn-container");
+
+    var noBtn = document.createElement("button");
+    noBtn.innerText = options.noBtnText ? options.noBtnText : "No";
+    noBtn.classList.add("no-btn");
+
+    var yesBtn = document.createElement("button");
+    yesBtn.innerText = options.yesBtnText ? options.yesBtnText : "Yes";
+    yesBtn.classList.add("yes-btn");
+
+    btnContainer.appendChild(noBtn);
+    btnContainer.appendChild(yesBtn);
+
+    modalBody.appendChild(btnContainer);
+
+    $(modal).modal("show");
+
+    $(noBtn).one("click", function() {
+      $(modal).modal("hide");
+
+      if(options.noCallback) {
+        $(modal).one('hidden.bs.modal', function () {
+          options.noCallback();
+        });
+      }
+    });
+
+    $(yesBtn).one("click", function() {
+      $(modal).modal("hide");
+
+      if(options.yesCallback) {
+        $(modal).one('hidden.bs.modal', function () {
+          options.yesCallback();
+        });
+      }
+    });
+
+    $(modal).on('hidden.bs.modal', function () {
+      modal.classList.remove(options.type);
+    });
+  }
+}
+</script><link rel="stylesheet" media="all" href="https://dz2cdn1.dzone.com/themes/dz20/ftl/footer/styles.css">
+
+<div id="ftl-footer">
+  <div class="container-fluid footerOuter">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="container">
+          <div class="row footer">
+            <div class="col-md-12 footerWidget">
+              <div class="row footerContainer footer">
+                <div class="left col-xs-12 col-sm-7">
+                  <div class="col-xs-12 social-media-icons footer-mobile">
+                    <ul class="icons-only">
+                      <li class="rss-icon" id="rss-footer-1">
+                        <a href="/pages/feeds" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-rss-1"></i>
+                        </a>
+                      </li>
+                      <li class="twitter-icon">
+                        <a href="https://twitter.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-twitter"></i>
+                        </a>
+                      </li>
+                      <li class="facebook-icon">
+                        <a href="https://www.facebook.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-facebook-1"></i>
+                        </a>
+                      </li>
+                      <li class="linkedin-icon">
+                        <a href="https://www.linkedin.com/company/dzone/" target="_blank"
+                           rel="noreferrer noopener">
+                          <i class="icon-linkedin-1"></i>
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div class="top-section col-xs-12">
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">ABOUT US</p>
+                      <ul class="link-group">
+                        <li><a href="/pages/about" rel="noreferrer noopener">About DZone</a></li>
+                        <li><a href="mailto:support@dzone.com" rel="noreferrer noopener">Send feedback</a></li>
+                        <li><a href="https://careers.dzone.com/" target="_blank" rel="noreferrer noopener">Careers</a></li>
+                          <li><a href="/sitemap" rel="noreferrer noopener">Sitemap</a></li>
+                      </ul>
+                    </div>
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">ADVERTISE</p>
+                      <ul class="link-group">
+                        <li><a href="https://advertise.dzone.com" target="_blank" rel="noreferrer noopener">Advertise with DZone</a></li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div class="bottom-section col-xs-12">
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">CONTRIBUTE ON DZONE</p>
+                      <ul class="bottom-top-list link-group">
+                        <li><a href="/articles/dzones-article-submission-guidelines">Article Submission Guidelines</a></li>
+                        <li><a href="/pages/mvb" rel="noreferrer noopener">MVB Program</a></li>
+                        <li><a href="/pages/contribute" rel="noreferrer noopener">Become a Contributor</a></li>
+                        <li><a href="/writers-zone" rel="noreferrer noopener">Visit the Writers' Zone</a></li>
+                      </ul>
+
+                      <p class="section-header">LEGAL</p>
+                      <ul class="link-group">
+                        <li><a href="/pages/tos" rel="noreferrer noopener">Terms of Service</a></li>
+                        <li><a href="/pages/privacy" rel="noreferrer noopener">Privacy Policy</a></li>
+                      </ul>
+                    </div>
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">CONTACT US</p>
+                      <ul class="link-group">
+                        <li>600 Park Offices Drive</li>
+                        <li>Suite 300</li>
+                        <li>Durham, NC 27709</li>
+                        <li><a href="mailto:support@dzone.com" rel="noreferrer noopener">support@dzone.com</a></li>
+                        <li><a href="tel:+19196780300" rel="noreferrer noopener">+1 (919) 678-0300</a></li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="right col-xs-12 col-sm-5">
+
+                  <p class="connect-text">Let's be friends:</p>
+                  <div class="col-xs-12 social-media-icons footer-wide">
+                    <ul class="icons-only">
+                      <li class="rss-icon" id="rss-footer-1">
+                        <a href="/pages/feeds" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-rss-1"></i>
+                        </a>
+                      </li>
+                      <li class="twitter-icon">
+                        <a href="https://twitter.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-twitter"></i>
+                        </a>
+                      </li>
+                      <li class="facebook-icon">
+                        <a href="https://www.facebook.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-facebook-1"></i>
+                        </a>
+                      </li>
+                      <li class="linkedin-icon">
+                        <a href="https://www.linkedin.com/company/dzone/" target="_blank"
+                           rel="noreferrer noopener">
+                          <i class="icon-linkedin-1"></i>
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div class="col-xs-12 powered-by">
+                    <p>DZone.com is powered by&nbsp;</p>
+                    <a href="https://devada.com/answerhub/" rel="noreferrer noopener">
+                      <img src=""
+                           data-src="https://dz2cdn1.dzone.com/themes/dz20/images/answerhub_logo_white_footer.png"
+                           width="150"
+                           height="56"
+                           class="lazyload"
+                           alt="AnswerHub logo">
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  <script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"></script>
+
+  <script async>
+      (function(w, d, s, l, i) {
+          w[l] = w[l] || [];
+          w[l].push({'gtm.start': new Date().getTime(), event: 'gtm.js'});
+          var f = d.getElementsByTagName(s)[0], j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : '';
+          j.async = true;
+          j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+          f.parentNode.insertBefore(j,f);
+      })(window, document, 'script', 'dataLayer', 'GTM-K25QL22');
+  </script>
+
+  <script>
+      window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+      ga('create', 'UA-410289-1', 'auto');
+      ga('require', 'linkid', 'linkid.js');
+      ga('require', 'GTM-TSD9TZP');
+      ga('set', 'siteSpeedSampleRate', 25);
+  </script>
+  <script async src="https://www.google-analytics.com/analytics.js"></script>
+  <script async>const analytics = {
+    'dimension1': 'big-data',
+    'dimension2': 'article/opinion',
+    'dimension3': '2016-05-14',
+    'dimension4': '0',
+    'dimension5': '',
+    'dimension7': 'kafka, Data science, shard, Anomaly detection, pipeline, metric, cluster, health',
+    'dimension8': 'SwaroopRamachandra',
+    'dimension9': 'undefined',
+    'dimension10': 'OpsClarity'
+}
+
+if (window.ga) {
+    Object.keys(analytics).forEach(function(key) {
+        window.ga('set', key, analytics[key])
+    })
+
+    window.ga('send', 'pageview')
+}</script>
+
+  <script>
+      !function (e, o, n, i) {
+          if (!e) {
+              e = e || {}, window.permutive = e, e.q = [];
+              var t = function () {
+                  return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, function (e) {
+                      return (e ^ (window.crypto || window.msCrypto).getRandomValues(new Uint8Array(1))[0] & 15 >> e / 4).toString(16)
+                  })
+              };
+              e.config = i || {}, e.config.apiKey = o, e.config.workspaceId = n, e.config.environment = e.config.environment || "production", (window.crypto || window.msCrypto) && (e.config.viewId = t());
+              for (var g = ["addon", "identify", "track", "trigger", "query", "segment", "segments", "ready", "on", "once", "user", "consent"], r = 0; r < g.length; r++) {
+                  var w = g[r];
+                  e[w] = function (o) {
+                      return function () {
+                          var n = Array.prototype.slice.call(arguments, 0);
+                          e.q.push({
+                              functionName: o,
+                              arguments: n
+                          })
+                      }
+                  }(w)
+              }
+          }
+      }(window.permutive, "bca90777-e088-4f2a-96c2-13ad18deeccc", "18ad0c5b-460c-4d19-a729-dc537805538f", {});
+      window.googletag = window.googletag || {}, window.googletag.cmd = window.googletag.cmd || [], window.googletag.cmd.push(function () {
+          if (0 === window.googletag.pubads().getTargeting("permutive").length) {
+              var e = window.localStorage.getItem("_pdfps");
+              window.googletag.pubads().setTargeting("permutive", e ? JSON.parse(e) : []);
+              var o = window.localStorage.getItem("permutive-id");
+              o && (window.googletag.pubads().setTargeting("puid", o), window.googletag.pubads().setTargeting("ptime", Date.now().toString())), window.permutive.config.viewId && window.googletag.pubads().setTargeting("prmtvvid", window.permutive.config.viewId), window.permutive.config.workspaceId && window.googletag.pubads().setTargeting("prmtvwid", window.permutive.config.workspaceId)
+          }
+      });
+
+
+      permutive.addon('web', {
+          'page': {
+              'category': 'Big Data',
+              'node': {
+                  'authorCompany': 'OpsClarity',
+                  'authors': [2791623, ],
+                  'publishDate': new Date(1463184000000),
+                  'sponsorAuthor': false,
+                  'tags': ['kafka', 'Data science', 'shard', 'Anomaly detection', 'pipeline', 'metric', 'cluster', 'health', ],
+                  'title': 'Evaluating Message Brokers: Kafka vs. Kinesis vs. SQS',
+                  'type': 'article',
+              },
+              'section': 'article',
+          }
+      });
+  </script>
+  <script async src="https://18ad0c5b-460c-4d19-a729-dc537805538f.edge.permutive.app/18ad0c5b-460c-4d19-a729-dc537805538f-web.js"></script>
+
+  <script>
+      const csrf = '9029469573035658549'
+      const articleId = 1251704
+      const likes = 20
+      const assetDomain = 'https://dz2cdn1.dzone.com'
+      const codemirrorVars = {
+          modeURI: 'https://dz2cdn1.dzone.com/themes/dz20/lib/codemirror/mode/',
+          requiredScripts: [
+              'https://dz2cdn1.dzone.com/themes/dz20/lib/codemirror/lib/codemirror.js',
+              'https://dz2cdn1.dzone.com/themes/dz20/lib/codemirror/mode/meta.js'
+          ]
+      }
+
+      const gptTags = {
+          'zone': 'big_data',
+          'topicTag': 'kafka,Data science,shard,Anomaly detection,pipeline,metric,cluster,health',
+          'company': '',
+          'siteSection': 'Zones',
+          'articleCategory': 'opinion',
+          'nodeID': '1251704',
+          'authorID': '2791623',
+          'publishYear': '2016',
+          'publishMonth': '05',
+          'jobRole': '',
+          'companySize': ''
+      }
+
+      const minCommentChar = 10;
+      const peer39Enabled = true;
+  </script>
+
+  <script src="https://dz2cdn1.dzone.com/themes/dz20/lib/static/jquery/jquery.min.js"></script>
+  <script async src="https://dz2cdn1.dzone.com/themes/dz20/lib/static/bootstrap/bootstrap.min.js"></script>
+  <script async src="https://dz2cdn1.dzone.com/themes/dz20/ftl/article/ads.js"></script>
+
+
+
+  <script>
+      function loadScript(src) {
+          return new Promise(function (resolve, reject) {
+              const s = document.createElement('script')
+              s.src = src
+              s.onload = resolve
+              s.onerror = reject
+              document.head.appendChild(s)
+          })
+      }
+
+      function loadStyle(href) {
+          const link = document.createElement('link')
+          link.rel = 'stylesheet'
+          link.href = href
+          document.head.appendChild(link)
+      }
+
+      function loadScriptsSync(deferred) {
+          var p = Promise.resolve()
+          for (var i = 0; i < deferred.length; i++) {
+              let script = deferred[i]
+              p = p.then(function() {
+                  return loadScript(script)
+              })
+          }
+          return p
+      }
+
+      function loadStyles() {
+          const deferred = [
+              'https://dz2cdn1.dzone.com/themes/dz20/lib/codemirror/lib/codemirror.css',
+              'https://dz2cdn1.dzone.com/themes/dz20/ftl/comments/styles.css',
+              'https://dz2cdn1.dzone.com/themes/dz20/lib/froala3/css/froala_editor.pkgd.min.css',
+              'https://dz2cdn1.dzone.com/themes/dz20/lib/froala3/css/themes/gray.min.css',
+              'https://dz2cdn1.dzone.com/themes/dz20/ftl/article/mini-profile.css'
+          ]
+
+          for (var i = 0; i < deferred.length; i++) {
+              loadStyle(deferred[i])
+          }
+      }
+
+      window.addEventListener('load', function(event) {
+          loadStyles()
+          loadScriptsSync([
+              'https://dz2cdn1.dzone.com/themes/dz20/ftl/header/auth-status.js',
+              'https://dz2cdn1.dzone.com/themes/dz20/lib/lazysizes.min.js',
+              'https://dz2cdn1.dzone.com/themes/dz20/ftl/article/codeblocks.js',
+              'https://dz2cdn1.dzone.com/themes/dz20/ftl/article/activity-bar.js',
+              'https://dz2cdn1.dzone.com/themes/dz20/lib/froala3/js/froala_editor.pkgd.min.js',
+              'https://dz2cdn1.dzone.com/themes/dz20/ftl/froala/content.js',
+              'https://dz2cdn1.dzone.com/themes/dz20/ftl/comments/content.js',
+              'https://dz2cdn1.dzone.com/themes/dz20/ftl/article/content.js'
+          ])
+      })
+  </script>
+</body>
+</html>

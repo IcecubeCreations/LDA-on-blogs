@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Managing data consistency in a microservice architecture using Sagas - part 1</title>
+    <meta name="viewport" content="width=device-width">
+    <link rel="stylesheet" href="/css/bootstrap.css">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+    <script src="//load.sumome.com/" data-sumo-site-id="5c8bb0848544063f9b5a0784a220d8aa8e5f4a2bb0d595dbc19498de8f03a797" async="async"></script>
+</head>
+<body>
+
+<!-- Navigation -->
+<nav class="navbar navbar-default navbar-custom navbar-fixed-top">
+    <div class="container-fluid">
+        <div class="navbar-header page-scroll">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/" title="Chris Richardson Consulting, Inc.">
+                <img src="/i/CRC%20logo.png">
+            </a>
+        </div>
+
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+            <ul class="nav navbar-nav navbar-right">
+                <li><a href="/">Home</a></li>
+                <li><a href="https://microservices.io/adopt/index.html">Learn</a></li>
+                <li><a href="/consulting.html">Consulting</a></li>
+                <li><a href="/training.html">Training</a></li>
+                <li><a href="/speaking.html">Speaking</a></li>
+                <li><a href="/blog.html">Blog</a></li>
+                <li><a href="/about.html">About</a></li>
+                <li id="contact_us"><a href="/contactus.html">Contact Us</a></li>
+            </ul>
+        </div>
+        <!-- /.navbar-collapse -->
+    </div>
+    <!-- /.container -->
+</nav>
+
+
+<!-- Page Header -->
+<header class="intro-header bg-micro_services">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12 col-lg-offset-0 col-md-10 col-md-offset-1">
+                <div class="site-heading">
+                    <h1>Blog</h1>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+
+
+<section>
+    <div class="container-fluid" id="main_content">
+      <div class="container-fluid">
+          <div class="row">
+            <div class="col-md-7 col-md-push-3"><h1 id="managing-data-consistency-in-a-microservice-architecture-using-sagas---part-1">Managing data consistency in a microservice architecture using Sagas - part 1</h1>
+
+<p>This is the first in a series of posts that expands on my recent MicroCPH talk on <a href="https://microservices.io/microservices/sagas/2019/07/09/microcph-sagas.html">Managing data consistency in a microservice architecture using Sagas (slides, video)</a>.</p>
+
+<p>The other posts in this series are:</p>
+
+<ul>
+  <li><a href="/post/sagas/2019/08/04/developing-sagas-part-2.html">Part 2 - Coordinating sagas</a></li>
+  <li><a href="/post/sagas/2019/08/15/developing-sagas-part-3.html">Part 3 - Choreography-based sagas</a></li>
+  <li><a href="/post/sagas/2019/12/12/developing-sagas-part-4.html">Part 4 - Orchestration-based sagas</a></li>
+</ul>
+
+<h2 id="why-sagas">Why sagas?</h2>
+
+<p>A distinctive characteristic of the microservice architecture is that in order to ensure loose coupling each serviceâs data is private.
+Unlike in a monolithic application, you no longer have a single database that any module of the application can update.
+As a result, one of the key challenges that you will face is maintaining data consistency across services.</p>
+
+<p>Consider, for example, the customers and orders example application from my presentation.
+It consists of two services:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">Order Service</code>
+    <ul>
+      <li>Manages orders</li>
+      <li>Operations include <code class="language-plaintext highlighter-rouge">createOrder()</code> and <code class="language-plaintext highlighter-rouge">cancelOrder()</code></li>
+    </ul>
+  </li>
+  <li><code class="language-plaintext highlighter-rouge">Customer Service</code>
+    <ul>
+      <li>Manages customer information including the customerâs available credit</li>
+      <li>Operations include <code class="language-plaintext highlighter-rouge">createCustomer()</code></li>
+    </ul>
+  </li>
+</ul>
+
+<p>When the <code class="language-plaintext highlighter-rouge">Order Service</code> creates an <code class="language-plaintext highlighter-rouge">Order</code> it must ensure that there is sufficient credit available.
+Specifically, the <code class="language-plaintext highlighter-rouge">createOrder()</code> command must update data in both the <code class="language-plaintext highlighter-rouge">Order Service</code> and the <code class="language-plaintext highlighter-rouge">Customer Service</code>.</p>
+
+<p>In a traditional application, you might consider using distributed transactions a.k.a. two phase commit (2PC).
+However, using 2PC is generally a bad idea a microservice architecture.
+Itâs a form of synchronous communication that results in runtime coupling that significantly impacts the availability of an application.</p>
+
+<h2 id="what-is-a-saga">What is a saga?</h2>
+
+<p><img class="img-responsive" src="/i/sagas/From_2PC_To_Saga.png" /></p>
+
+<p>The solution is to implement commands, such as <code class="language-plaintext highlighter-rouge">createOrder()</code>, using a saga.
+A saga is a sequence of local transactions in each of the participating services.
+For example, here is the definition of the <code class="language-plaintext highlighter-rouge">Create Order Saga</code>, which is initiated by the <code class="language-plaintext highlighter-rouge">createOrder()</code> command:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Step</th>
+      <th>Participant</th>
+      <th>Transaction</th>
+      <th>Compensating Transaction</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td><code class="language-plaintext highlighter-rouge">Order Service</code></td>
+      <td><code class="language-plaintext highlighter-rouge">createPendingOrder()</code></td>
+      <td><code class="language-plaintext highlighter-rouge">rejectOrder()</code></td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td><code class="language-plaintext highlighter-rouge">Customer Service</code></td>
+      <td><code class="language-plaintext highlighter-rouge">reserveCredit()</code></td>
+      <td>-</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td><code class="language-plaintext highlighter-rouge">Order Service</code></td>
+      <td><code class="language-plaintext highlighter-rouge">approveOrder()</code></td>
+      <td>-</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The purpose of each step is as follows:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">createPendingOrder()</code> - create the <code class="language-plaintext highlighter-rouge">Order</code> in a <code class="language-plaintext highlighter-rouge">PENDING</code> state</li>
+  <li><code class="language-plaintext highlighter-rouge">reserveCredit()</code> - attempt to reserve credit</li>
+  <li><code class="language-plaintext highlighter-rouge">approveOrder()</code> - change the state of the <code class="language-plaintext highlighter-rouge">Order</code> to <code class="language-plaintext highlighter-rouge">APPROVED</code></li>
+  <li><code class="language-plaintext highlighter-rouge">rejectOrder()</code> - change the state of the <code class="language-plaintext highlighter-rouge">Order</code> to <code class="language-plaintext highlighter-rouge">REJECTED</code></li>
+</ul>
+
+<p>The sequence for the happy path is as follows:</p>
+
+<ol>
+  <li><code class="language-plaintext highlighter-rouge">Order Service</code> : <code class="language-plaintext highlighter-rouge">createPendingOrder()</code></li>
+  <li><code class="language-plaintext highlighter-rouge">Customer Service</code> : <code class="language-plaintext highlighter-rouge">reserveCredit()</code></li>
+  <li><code class="language-plaintext highlighter-rouge">Order Service</code> : <code class="language-plaintext highlighter-rouge">approveOrder()</code></li>
+</ol>
+
+<p>The sequence for the path when there is insufficient credit is as follows:</p>
+
+<ol>
+  <li><code class="language-plaintext highlighter-rouge">Order Service</code> : <code class="language-plaintext highlighter-rouge">createPendingOrder()</code></li>
+  <li><code class="language-plaintext highlighter-rouge">Customer Service</code> : <code class="language-plaintext highlighter-rouge">reserveCredit()</code></li>
+  <li><code class="language-plaintext highlighter-rouge">Order Service</code> : <code class="language-plaintext highlighter-rouge">rejectOrder()</code></li>
+</ol>
+
+<h2 id="what-are-compensating-transactions">What are compensating transactions?</h2>
+
+<p>The <code class="language-plaintext highlighter-rouge">rejectOrder()</code> command is an example of a compensating transaction.
+Unlike ACID transactions, sagas cannot automatically undo changes made by previous steps since those changes are already committed.
+Instead, you must write compensating transactions that explicitly undo those changes.
+Each step of a saga that is followed by a step that can fail (for business reasons) must have a corresponding compensating transaction.</p>
+
+<p>In the <code class="language-plaintext highlighter-rouge">Create Order Saga</code>, <code class="language-plaintext highlighter-rouge">createOrder()</code> has the <code class="language-plaintext highlighter-rouge">rejectOrder()</code> compensating transaction because the <code class="language-plaintext highlighter-rouge">reserveCredit()</code> step can fail.
+The <code class="language-plaintext highlighter-rouge">reserveCredit()</code> step does not need a compensating transaction because the <code class="language-plaintext highlighter-rouge">approveOrder()</code> step  cannot fail.
+And, the <code class="language-plaintext highlighter-rouge">approveOrder()</code> step does not need a compensating transaction because itâs the last step of the saga.</p>
+
+<h2 id="what-is-the-semantic-lock-counter-measure">What is the semantic lock counter-measure?</h2>
+
+<p>You might be wondering why <code class="language-plaintext highlighter-rouge">createOrder()</code> creates the order in a <code class="language-plaintext highlighter-rouge">PENDING</code> state, which is then changed to <code class="language-plaintext highlighter-rouge">APPROVED</code> by <code class="language-plaintext highlighter-rouge">approveOrder()</code>.
+The use of a <code class="language-plaintext highlighter-rouge">PENDING</code> state is an example of what is known as a <em>semantic lock counter-measure</em>.
+It prevents another transaction/saga from updating the <code class="language-plaintext highlighter-rouge">Order</code> while it is in the process of being created.</p>
+
+<p>To see why this is necessary consider the following scenario where the <code class="language-plaintext highlighter-rouge">cancelOrder()</code> command is invoked while the <code class="language-plaintext highlighter-rouge">Order</code> is still being created:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Create Order Saga</th>
+      <th>Cancel Order Saga</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">createOrder()</code> - state=<code class="language-plaintext highlighter-rouge">CREATED</code></td>
+      <td>Â </td>
+    </tr>
+    <tr>
+      <td>Â </td>
+      <td><code class="language-plaintext highlighter-rouge">cancelOrder()</code> - state=<code class="language-plaintext highlighter-rouge">CANCELLED</code></td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">reserveCredit()</code></td>
+      <td>Â </td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">approveObject()</code> - state=<code class="language-plaintext highlighter-rouge">APPROVED</code></td>
+      <td>Â </td>
+    </tr>
+  </tbody>
+</table>
+
+<p>In this scenario, the <code class="language-plaintext highlighter-rouge">cancelOrder()</code> command changes the status of the order to <code class="language-plaintext highlighter-rouge">CANCELLED</code>, and the <code class="language-plaintext highlighter-rouge">approveOrder()</code> command overwrites that change by setting the status to <code class="language-plaintext highlighter-rouge">APPROVED</code>.
+The customer would be quite surprised when the order is delivered!</p>
+
+<p>The <code class="language-plaintext highlighter-rouge">PENDING</code> state prevents this problem.
+The <code class="language-plaintext highlighter-rouge">cancelOrder()</code> command will only cancel an <code class="language-plaintext highlighter-rouge">Order</code> if its state is <code class="language-plaintext highlighter-rouge">APPROVED</code>.
+If the state is <code class="language-plaintext highlighter-rouge">PENDING</code>, <code class="language-plaintext highlighter-rouge">cancelOrder()</code> returns an error to the client indicating that it should try again later.
+The <em>semantic lock counter-measure</em> is a kind of application-level locking.
+As I describe in the presentation, itâs a way to make sagas, which are inherently ACD, ACID again.</p>
+
+<p>In a <a href="/post/sagas/2019/08/04/developing-sagas-part-2.html">later post</a>, Iâll describe how to implement this saga.</p>
+
+<h1 id="to-learn-more">To learn more</h1>
+
+<ul>
+  <li>Read the other posts in this series:
+    <ul>
+      <li><a href="/post/sagas/2019/08/04/developing-sagas-part-2.html">Coordinating sagas</a></li>
+    </ul>
+  </li>
+  <li>Read my <a href="https://microservices.io/book">Microservices patterns book</a>, which includes a comprehensive discussion of sagas</li>
+  <li>Read or watch MicroCPH talk on <a href="https://microservices.io/microservices/sagas/2019/07/09/microcph-sagas.html">Managing data consistency in a microservice architecture using Sagas (slides, video)</a></li>
+  <li>Talk to me about my microservices <a href="/consulting.html">consulting</a> and <a href="/training.html">training</a> services.</li>
+  <li>Learn more about microservices at <a href="https://microservices.io/adopt/index.html">adopt.microservices.io</a></li>
+</ul>
+</div>
+
+            <div class="col-md-3 col-md-pull-7">
+
+              <h3>Posts <a href="/feed.xml"><img src="/i/feed-icon-28x28.png"></a></h3>
+              
+              <div><span>04 May 2022</span> &raquo; <a href="/post/architecture/2022/05/04/microservice-architecture-essentials-deployability.html">Essential characteristics of the microservice architecture&colon; independently deployable</a>
+              </div>
+              
+              <div><span>02 May 2022</span> &raquo; <a href="/post/architecture/2022/05/02/dark-energy-dark-matter-service-collaboration-patterns.html">Dark energy, dark matter and microservice architecture collaboration patterns</a>
+              </div>
+              
+              <div><span>01 May 2022</span> &raquo; <a href="/post/development/2022/05/01/my-new-windows-pc.html">My new Windows 365 Cloud PC&colon; Windows 11, Docker Desktop and WSL2</a>
+              </div>
+              
+              <div><span>12 Apr 2022</span> &raquo; <a href="/post/architecture/2022/04/12/interview-about-microservices-with-Koushik-Kothagal.html">Interview about microservices with Koushik Kothagal (@Java_Brains)</a>
+              </div>
+              
+              <div><span>06 Apr 2022</span> &raquo; <a href="/post/architecture/2022/04/06/using-scenarios-to-invigorate-your-architecture.html">Using scenarios to reinvigorate your microservice architecture</a>
+              </div>
+              
+              <div><span>16 Mar 2022</span> &raquo; <a href="/post/architecture/2022/03/16/isp-service-apis.html">Icebergs, the Interface Segregation Principle and microservices</a>
+              </div>
+              
+              <div><span>02 Mar 2022</span> &raquo; <a href="/post/development/2022/03/02/running-the-example-tram-customers-and-orders-examples-on-arm.html">The Eventuate Tram Customers and Orders example now runs on Arm/M1 MacBook!!</a>
+              </div>
+              
+              <div><span>25 Feb 2022</span> &raquo; <a href="/post/development/2022/02/25/publishing-multi-architecture-eventuate-cdc-service.html">Publishing a multi-architecture Docker image for the Eventuate CDC service</a>
+              </div>
+              
+              <div><span>23 Feb 2022</span> &raquo; <a href="/post/development/2022/02/23/publishing-multi-architecture-base-images-for-services.html">Publishing multi-architecture base images for services</a>
+              </div>
+              
+              <div><span>18 Feb 2022</span> &raquo; <a href="/post/development/2022/02/18/what-a-developer-needs-to-understand.html">The developer's essential knowledge pyramid</a>
+              </div>
+              
+              <div><span>14 Feb 2022</span> &raquo; <a href="/post/microservices/2022/02/14/building-kafka-multi-architecture-docker-image.html">Building a multi-architecture Docker image for Apache Kafka</a>
+              </div>
+              
+              <div><span>13 Feb 2022</span> &raquo; <a href="/post/architecture/2022/02/13/finding-that-special-plus-one-for-architecture.html">Finding that special plus one for your architecture</a>
+              </div>
+              
+              <div><span>11 Feb 2022</span> &raquo; <a href="/post/microservices/2022/02/11/circleci-pipeline-for-build-test-publish-eventuate-common.html">Configuring CircleCI to build, test and publish multi-architecture images for Eventuate Common</a>
+              </div>
+              
+              <div><span>28 Jan 2022</span> &raquo; <a href="/post/microservices/2022/01/28/developing-eventuate-common-m1-macbook.html">Developing the Eventuate Common library on an M1/Arm MacBook</a>
+              </div>
+              
+              <div><span>20 Jan 2022</span> &raquo; <a href="/post/microservices/2022/01/20/configuring-circleci-publish-an-image.html">Configuring CircleCI to publish a multi-architecture Docker image</a>
+              </div>
+              
+              <div><span>19 Jan 2022</span> &raquo; <a href="/post/microservices/2022/01/19/configuring-circleci-to-test-on-arm.html">Testing an Intel and Arm multi-architecture Docker image on CircleCI</a>
+              </div>
+              
+              <div><span>18 Jan 2022</span> &raquo; <a href="/post/microservices/2022/01/18/build-multi-arch-docker-images-circleci.html">Configuring a CircleCI-based pipeline to build multi-architecture Docker images</a>
+              </div>
+              
+              <div><span>16 Jan 2022</span> &raquo; <a href="/post/microservices/2022/01/16/build-multi-arch-docker-images-locally.html">Building multi-architecture Docker images for Intel and ARM</a>
+              </div>
+              
+              <div><span>10 Jan 2022</span> &raquo; <a href="/post/microservices/2022/01/10/running-a-docker-on-m1-macbook.html">My Apple M1 MacBook&colon; lots of cores, memory and crashing containers</a>
+              </div>
+              
+              <div><span>04 Jan 2022</span> &raquo; <a href="/post/microservices/2022/01/04/writing-better-problem-reports.html">Writing better problem reports&colon; 6 essential details</a>
+              </div>
+              
+              <div><span>30 Nov 2021</span> &raquo; <a href="/post/microservices/2021/11/30/dark-matter-dark-energy.html">Designing an architecture using dark matter and dark energy</a>
+              </div>
+              
+              <div><span>31 Oct 2021</span> &raquo; <a href="/post/microservices/2021/10/31/isaqb-keynote.html">iSAQB keynote - Modular monoliths and microservices&#58 architectural patterns for rapid, reliable, frequent and sustainable development</a>
+              </div>
+              
+              <div><span>15 Sep 2021</span> &raquo; <a href="/post/microservices/2021/09/15/techleadjournal-podcast.html">Techlead Journal Podcast - Principles for Adopting Microservices Successfully</a>
+              </div>
+              
+              <div><span>28 Jul 2021</span> &raquo; <a href="/post/microservices/2021/07/28/events-to-the-rescue.html">Events to the rescue: solving distributed data problems in a microservice architecture</a>
+              </div>
+              
+              <div><span>27 Jul 2021</span> &raquo; <a href="/post/microservices/2021/07/27/pattern-language-for-microservices.html">A pattern language for microservices</a>
+              </div>
+              
+              <div><span>27 Jul 2021</span> &raquo; <a href="/post/microservices/2021/07/27/circleci-confident-commit-podcast.html">The Confident Commit podcast| Episode 6: Architecture meets delivery</a>
+              </div>
+              
+              <div><span>21 May 2021</span> &raquo; <a href="/post/microservices/2021/05/21/qcon-2021-loose-design-time-coupling.html">QConPlus 2021: Takeout burritos and minimizing design-time coupling in a microservice architecture</a>
+              </div>
+              
+              <div><span>15 Apr 2021</span> &raquo; <a href="/post/microservices/2021/04/15/mucon-2021-dark-energy-dark-matter.html">Mucon 2021 - Dark energy, dark matter: imperfect metaphors for designing microservices</a>
+              </div>
+              
+              <div><span>21 Feb 2021</span> &raquo; <a href="/post/microservices/2021/02/21/events-are-the-core.html">Events on the outside, on the inside and at the core</a>
+              </div>
+              
+              <div><span>14 Feb 2021</span> &raquo; <a href="/post/microservices/2021/02/14/why-microservices-part-5-monolith.html">Why microservices - part 5 - the monolithic architecture and rapid, frequent, reliable and sustainable software delivery</a>
+              </div>
+              
+              <div><span>14 Dec 2020</span> &raquo; <a href="/post/microservices/2020/12/14/designing-loosely-coupled-services.html">Designing loosely coupled services</a>
+              </div>
+              
+              <div><span>24 Nov 2020</span> &raquo; <a href="/post/microservices/devops/2020/11/24/microservices-enables-devops.html">Microservices - an architecture that enables DevOps</a>
+              </div>
+              
+              <div><span>16 Nov 2020</span> &raquo; <a href="/post/microservices/patterns/2020/11/16/accelerate-working-in-a-high-performance-organization.html">Working in a high-performance organization</a>
+              </div>
+              
+              <div><span>18 Oct 2020</span> &raquo; <a href="/post/microservices/patterns/2020/10/18/microservices-are-a-mistake.html">Microservices and monoliths are both mistakes</a>
+              </div>
+              
+              <div><span>16 Oct 2020</span> &raquo; <a href="/post/microservices/patterns/2020/10/16/idempotent-consumer.html">Handling duplicate messages using the Idempotent consumer pattern</a>
+              </div>
+              
+              <div><span>29 Sep 2020</span> &raquo; <a href="/post/microservices/2020/09/29/dockercon-msa.html">497K views and counting&#58; My DockerCon 2016 talk - Microservices + Events + Docker = A Perfect Trio</a>
+              </div>
+              
+              <div><span>22 Sep 2020</span> &raquo; <a href="/post/microservices/2020/09/22/tdc-msa-enabling-rapid-development.html">TDC 2020 keynote&#58; The microservice architecture - enabling rapid, reliable, frequent and sustainable development</a>
+              </div>
+              
+              <div><span>21 Aug 2020</span> &raquo; <a href="/post/refactoring/2020/08/21/ten-principles-for-refactoring-to-microservices.html">Decompose your monolith - ten principles for refactoring a monolith to microservices</a>
+              </div>
+              
+              <div><span>28 Jul 2020</span> &raquo; <a href="/post/refactoring/2020/07/28/six-principles-for-refactoring-to-microservices.html">Decompose your monolith - Six principles for refactoring a monolith to microservices</a>
+              </div>
+              
+              <div><span>02 Jun 2020</span> &raquo; <a href="/post/training/2020/06/02/beta-enrollment.html">Enrollment is now open for the beta of distributed data patterns for microservices virtual bootcamp</a>
+              </div>
+              
+              <div><span>21 May 2020</span> &raquo; <a href="/post/microservices/2020/05/21/why-microservices-part-4.html">Why microservices - part 4, the last third of the success triangle - architectural requirements for rapid, frequent, reliable and sustainable development</a>
+              </div>
+              
+              <div><span>14 May 2020</span> &raquo; <a href="/post/books/2020/05/14/2020-enterprise-integration-patterns.html">A pattern language and visual notation for messaging systems - Enterprise integration patterns by @ghohpe and @bobby_woolf</a>
+              </div>
+              
+              <div><span>03 May 2020</span> &raquo; <a href="/post/training/2020/05/03/it-in-the-time-of-covid.html">IT in the time of COVID-19 - the tale of three fictitious grocery stores</a>
+              </div>
+              
+              <div><span>29 Apr 2020</span> &raquo; <a href="/post/training/2020/04/29/virtual-bootcamp-distributed-data-patterns.html">Announcing the first virtual bootcamp - distributed data patterns in a microservice architecture</a>
+              </div>
+              
+              <div><span>11 Apr 2020</span> &raquo; <a href="/post/microservices/2020/04/11/why-microservices-part-3.html">Why microservices - part 3, two thirds of the success triangle - process and organization</a>
+              </div>
+              
+              <div><span>30 Mar 2020</span> &raquo; <a href="/post/microservices/2020/03/30/why-microservices-part-2.html">Why microservices - part 2, the need for sustainable development</a>
+              </div>
+              
+              <div><span>12 Mar 2020</span> &raquo; <a href="/post/services/2020/03/12/online-and-virtual.html">Online microservices workshops and virtual bootcamps</a>
+              </div>
+              
+              <div><span>18 Feb 2020</span> &raquo; <a href="/post/microservices/2020/02/18/why-microservices-part-1.html">Why microservices - part 1, the need to deliver software rapidly, frequently, and reliably</a>
+              </div>
+              
+              <div><span>04 Feb 2020</span> &raquo; <a href="/microservices/2020/02/04/jfokus-geometry-of-microservices.html">Jfokus 2020 - Cubes, Hexagons, Triangles, and More - Understanding Microservices</a>
+              </div>
+              
+              <div><span>02 Feb 2020</span> &raquo; <a href="/microservices/2020/02/02/just-a-reminder-pick-the-right-architecture.html">Just a reminder - picking the appropriate architecture for your application is a best practice</a>
+              </div>
+              
+              <div><span>07 Jan 2020</span> &raquo; <a href="/post/microservices/2020/01/07/books-about-high-performance-software-delivery.html">Books about high-performance software delivery - DevOps Handbook + Team Topologies + Accelerate + Microservices Patterns</a>
+              </div>
+              
+              <div><span>12 Dec 2019</span> &raquo; <a href="/post/sagas/2019/12/12/developing-sagas-part-4.html">Managing data consistency in a microservice architecture using Sagas - part 4 - implementing an orchestration-based saga</a>
+              </div>
+              
+              <div><span>12 Nov 2019</span> &raquo; <a href="/microservices/2019/11/12/video-for-microservices-through-shapes.html">Video for my presentation - Cubes, Hexagons, Triangles, and More - Understanding the Microservice Architecture Through Shapes</a>
+              </div>
+              
+              <div><span>09 Oct 2019</span> &raquo; <a href="/post/refactoring/2019/10/09/refactoring-to-microservices.html">Decompose Your Monolith - Strategies for Migrating to Microservices</a>
+              </div>
+              
+              <div><span>02 Oct 2019</span> &raquo; <a href="/post/microservices/2019/10/02/gotochgo-asynchronous-microservices.html">GOTO Chicago presentation - Not Just Events - Developing Asynchronous Microservices</a>
+              </div>
+              
+              <div><span>15 Aug 2019</span> &raquo; <a href="/post/sagas/2019/08/15/developing-sagas-part-3.html">Managing data consistency in a microservice architecture using Sagas - part 3 - implementing a choreography-based saga</a>
+              </div>
+              
+              <div><span>04 Aug 2019</span> &raquo; <a href="/post/sagas/2019/08/04/developing-sagas-part-2.html">Managing data consistency in a microservice architecture using Sagas part 2 - coordinating sagas</a>
+              </div>
+              
+              <div><span>23 Jul 2019</span> &raquo; <a href="/post/architecture/2019/07/23/who-does-architecture.html">Do your architects actually work on architecture?</a>
+              </div>
+              
+              <div><span>16 Jul 2019</span> &raquo; <a href="/post/books/2019/07/16/mark-schwartz.html">A great trilogy by Mark Schwartz (@schwartz_cio) - War and Peace and IT, A Seat at the Table, and The Art of Business Value</a>
+              </div>
+              
+              <div><span>15 Jul 2019</span> &raquo; <a href="/post/microservices/patterns/data/2019/07/15/ftgo-database-per-service.html">The FTGO application and the Database per service pattern</a>
+              </div>
+              
+              <div><span>09 Jul 2019</span> &raquo; <a href="/post/conferences/2019/07/09/yow-perth-hong-kong-singapore.html">The YOW conferences in Perth, Hong Kong, and Singapore</a>
+              </div>
+              
+              <div><span>09 Jul 2019</span> &raquo; <a href="/post/microservices/2019/07/09/developing-sagas-part-1.html">Managing data consistency in a microservice architecture using Sagas - part 1</a>
+              </div>
+              
+              <div><span>22 Jun 2019</span> &raquo; <a href="/post/antipatterns/2019/06/22/containers-during-development.html">Containers, the developer workflow and the test pyramid</a>
+              </div>
+              
+              <div><span>07 Jun 2019</span> &raquo; <a href="/post/antipatterns/2019/06/07/antipattern-red-flag-law.html">Microservices adoption anti-pattern - Red flag law</a>
+              </div>
+              
+              <div><span>21 May 2019</span> &raquo; <a href="/post/antipatterns/2019/05/21/antipattern-more-the-merrier.html">Microservices adoption anti-pattern - More the merrier</a>
+              </div>
+              
+              <div><span>12 May 2019</span> &raquo; <a href="/post/antipatterns/2019/05/12/generating-a-microservice-canvas.html">Self-documenting services - generating a microservice canvas</a>
+              </div>
+              
+              <div><span>30 Apr 2019</span> &raquo; <a href="/post/antipatterns/2019/04/30/antipattern-focus-on-technology.html">Microservices adoption anti-pattern - Focussing on technology</a>
+              </div>
+              
+              <div><span>16 Apr 2019</span> &raquo; <a href="/post/books/2019/04/16/why-we-sleep.html">Books you should read - Why we sleep</a>
+              </div>
+              
+              <div><span>09 Apr 2019</span> &raquo; <a href="/post/antipatterns/2019/04/09/antipattern-flying-before-walking.html">Microservices adoption anti-pattern - Trying to fly before you can walk</a>
+              </div>
+              
+              <div><span>24 Mar 2019</span> &raquo; <a href="/post/microservices/general/2019/03/24/Netherlands-class.html">Public microservices training in the Netherlands, May 15th and 16th</a>
+              </div>
+              
+              <div><span>27 Feb 2019</span> &raquo; <a href="/post/microservices/general/2019/02/27/microservice-canvas.html">Documenting a service using the microservice canvas</a>
+              </div>
+              
+              <div><span>25 Feb 2019</span> &raquo; <a href="/post/antipatterns/2019/02/25/antipattern-scattershot-adoption.html">Microservices adoption anti-pattern - scattershot adoption</a>
+              </div>
+              
+              <div><span>16 Feb 2019</span> &raquo; <a href="/post/microservices/general/2019/02/16/whats-a-service-part-1.html">What's a (micro)service - part 1?</a>
+              </div>
+              
+              <div><span>29 Jan 2019</span> &raquo; <a href="/post/microservices/general/2019/01/29/stockholm-class.html">Public microservices training in Stockholm, May 8th and 9th</a>
+              </div>
+              
+              <div><span>28 Jan 2019</span> &raquo; <a href="/post/antipatterns/2019/01/28/melbourne-microservices.html">Microservices anti-patterns in Melbourne</a>
+              </div>
+              
+              <div><span>14 Jan 2019</span> &raquo; <a href="/post/antipatterns/2019/01/14/antipattern-microservices-are-the-goal.html">Anti-pattern - microservices as the goal</a>
+              </div>
+              
+              <div><span>12 Jan 2019</span> &raquo; <a href="/post/microservices/general/2019/01/12/yow-presentation.html">My YOW! 2018 presentation - Events and Commands, Developing Asynchronous Microservices</a>
+              </div>
+              
+              <div><span>10 Jan 2019</span> &raquo; <a href="/post/microservices/general/2019/01/10/conference-training.html">Workshops at O'Reilly Software Architecture New York and GOTO Chicago</a>
+              </div>
+              
+              <div><span>07 Jan 2019</span> &raquo; <a href="/post/antipatterns/2019/01/07/microservices-are-a-magic-pixie-dust.html">Microservices adoption anti-patterns -  microservices are a magic pixie dust</a>
+              </div>
+              
+              <div><span>31 Dec 2018</span> &raquo; <a href="/post/microservices/general/2018/12/31/microservices-assessment.html">The Microservice Architecture Assessment is now available</a>
+              </div>
+              
+
+
+            </div>
+
+            <div class="col-md-2">
+                <h2>Book</h2>
+                <a href="https://microservices.io/book" target="_blank" style="float: left; padding-right: 10px">
+                  <img style="width: 100%; margin-bottom: 20px" src="https://microservices.io/i/Microservices-Patterns-Cover.png">
+                </a>
+                <h2>Training</h2>
+                <p><a href="/training.html">Learn more</a> about workshops and bootcamps that enable you to successfully develop applications with the microservices architecture.</p>
+                <p style="font-weight:bold">Delivered in-person and remotely.</p>
+
+                <img style="float: left; width: 15%; margin-right: 1em" src="https://microservices.io/i/Chris_Speaking_Mucon_2018_a.jpg">Take a look at my self-paced, virtual bootcamp on <a href="/virtual-bootcamp-distributed-data-management.html">distributed data patterns in microservice architecture.</a>
+
+                <h2 style="float: none">Consulting</h2>
+                <a href="/consulting.html">Learn more</a> about consulting services that derisk and accelerate your microservices initiative.
+            </div>
+
+          </div>
+          <div class="row">
+            <div class="col-md-3">
+            </div>
+            <div class="col-md-7">
+                <hr/>
+            </div>
+          </div>
+          <div class="row">
+              <div class="col-md-3">
+              </div>
+              <div class="col-md-7">
+                  <div>
+                    <a href="https://twitter.com/share" class="twitter-share-button" data-via="crichardson">Tweet</a>
+                    <a href="https://twitter.com/crichardson" class="twitter-follow-button" data-show-count="false" data-lang="en">Follow @crichardson</a>
+                  </div>
+                  <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+              </div>
+              <div class="col-md-2">
+              </div>
+          </div>
+
+        </div>
+    </div>
+</section>
+
+
+<div class="hidden-print container-fluid">
+  <div class="row">
+    <div class="col-md-3"></div>
+    <div class="col-md-8">
+      <div id="disqus_thread"></div>
+    </div>
+ </div>
+</div>
+
+<!--FOOTER-->
+
+<footer>
+    <div class="inside-footer">
+        <p style="text-align: center; text-color:white">Copyright Â© 2020 Chris Richardson Consulting, Inc â¢ All rights reserved</p>
+        <p>CHRIS RICHARDSON CONSULTING INC, San Francisco Bay Area</p>
+        <p>
+            <a href="https://microservices.io/" title="Microservices"><i class="fa fa-cubes fa-2x"></i> </a>&nbsp;
+            <a href="http://www.slideshare.net/chris.e.richardson" title="Slideshare"><i
+                    class="fa fa-slideshare fa-2x"></i> </a>&nbsp;
+            <a href="http://www.linkedin.com/in/pojos/" title="LinkedIn"><i class="fa fa-linkedin fa-2x"></i> </a>&nbsp;
+            <a href="https://github.com/cer" title="Github"><i class="fa fa-github fa-2x"></i> </a>&nbsp;
+            <a href="https://twitter.com/crichardson" title="Twitter"><i class="fa fa-twitter fa-2x"></i> </a>&nbsp;
+        </p>
+    </div>
+</footer>
+</body>
+
+<script src="/js/jquery.js"></script>
+<script src="/js/bootstrap.min.js"></script>
+
+<script>
+  /*
+    (function (i, s, o, g, r, a, m) {
+        i['GoogleAnalyticsObject'] = r;
+        i[r] = i[r] || function () {
+                    (i[r].q = i[r].q || []).push(arguments)
+                }, i[r].l = 1 * new Date();
+        a = s.createElement(o),
+                m = s.getElementsByTagName(o)[0];
+        a.async = 1;
+        a.src = g;
+        m.parentNode.insertBefore(a, m)
+    })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+    */
+
+    window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+    ga('create', 'UA-51332631-1', 'chrisrichardson.net');
+    ga('require', 'outboundLinkTracker');
+    ga('send', 'pageview');
+
+    </script>
+    <script async src='https://www.google-analytics.com/analytics.js'></script>
+    <script async src='/js/autotrack.js'></script>
+
+</html>
+
+
+
+<script>
+
+
+(function() { // DON'T EDIT BELOW THIS LINE
+var d = document, s = d.createElement('script');
+s.src = 'https://chrisrichardsoninc.disqus.com/embed.js';
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>

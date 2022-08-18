@@ -1,0 +1,344 @@
+PHP-Style JSON Parsing in Java with Jsoniter - SitePoint🤩 Access a heap of free courses with a SitePoint accountGet StartedSitePointBlogJavaScript Computing Design & UX HTML & CSS Entrepreneur Web PHP WordPress Mobile DiscordForumLibraryLoginJoin PremiumJoin PremiumJavaScriptComputingDesign & UXHTML & CSSEntrepreneurWebPHPWordPressMobileJavaPHP-Style JSON Parsing in Java with JsoniterTao WenFebruary 27, 2017Share
+
+
+ Table of Contents
+
+
+Why JSON is hard to process in Java
+
+
+Reason 1: Type Mismatch
+
+
+Reason 2: Heterogeneous Data
+
+
+Reason 3: Performance and Flexibility Balance
+
+
+How Jsoniter Solves the JSON Impedance Mismatch
+
+
+Data Binding
+
+
+Any Data Type
+
+
+Iterator API
+
+
+Fun with Any
+
+
+Any Container
+
+
+Missing value
+
+
+Type conversion
+
+
+Schema-less partial JSON Processing
+
+
+Summary
+
+
+Comments
+
+
+
+JSON originated from a weakly-typed and dynamic language, Javascript. There is an impedance mismatch between JSON’s dynamic nature and Java’s rigid typing. I found existing solutions too focused on the concept of data binding, which is too heavy-weight in some circumstance. Contrast that with PHP, where PHP we have the all-in-one data type Array, and by just one line of json_decode we can parse a complex JSON document. Jsoniter is a new library written in Java, determined to make JSON parsing in Java as easy as in PHP through a similar data type: Any. The most remarkable feature is the underlying lazy-parsing technique, which makes the parsing not only easy, but very fast.
+
+
+
+
+Why JSON Is Hard to Process in Java
+There are three reasons why JSON documents can be hard to process using existing parsers. I call this the “JSON impedance mismatch”.
+Reason 1: Type Mismatch
+When JSON is used as a data exchange format between Java and dynamic languages like PHP, the object field types might become a problem. For example, have a look at this JSON:
+{
+"order_id": 100098,
+"order_details": {"pay_type": "cash"}
+}
+
+99% of the times, the PHP code might return the exact structure we expect. But it might also return slightly different JSON for different input conditions, due to the fact most PHP developers do not care if a variable is string or int.
+{
+"order_id": "100098",
+"order_details": []
+}
+
+Why is order_details an empty array instead of an empty object? It is a common problem when working with PHP, where everything is an array. An array used as a non-empty map will be encoded like {"key":"value"} but an empty map is just an empty array, which will be encoded as [] instead of {}.
+It is not a big problem, definitely fixable, but for historical data like logs, we have to deal with it anyway.
+Reason 2: Heterogeneous Data
+In Jave, we are used to homogeneous data. For example, [1, 2, 3] is an int array, ["1", "2", "3"] a String array. But how do you represent [1, 2, "3"] in Java? An object array Object[] is awkward to work with. How about [1, ["2", 3]]? Java does not have a convenient container to hold this kind of data.
+Moreover, it is very common in JSON to have slightly different structures representing the same thing. For example, a success response:
+{
+"code": 0,
+"data": "Success"
+}
+
+But for an error response:
+{
+"code": -1,
+"error": {"msg": "Wrong Parameter", "stacktrace": "…"}
+}
+
+If we want to get the data or error message, we have make a number of null checks. Assuming the response is represented as Map<String, Object>, the code to extract the error message will look as follows:
+Object errorObj = response.get("error");
+if (errorObj == null)
+    return "N/A";
+
+Map<String, Object> error = (Map<String, Object>)errorObj;
+Object msgObj = errorObj.get("msg");
+if (msgObj == null)
+    return "N/A";
+
+return (String)msgObj;
+
+The type casting and null checking is not fun at all. Unfortunately, it is common to extract value from a JSON five levels deep!
+Reason 3: Performance and Flexibility Balance
+By going with JSON, we have already chosen flexibility instead of raw performance. However, it still feels bad to parse a JSON document as Map<String, Object>, knowing that it will be very costly. I am not arguing we should choose the performance over expressiveness. But the guilt of deliberately compromising performance constantly troubles me. It is a dilemma I find myself in frequently:
+Parse the JSON as Map<String, Object> and read values from it. Saves the trouble of defining a schema class but we have to unmarshall all the bytes, regardless if we need them or not.
+Define a class and use data binding. It can skip unneeded parsing work, and accessing an object is faster than a hash map. But is it worth the trouble every time?
+Some JSON parser come with a streaming API, but it is considered too low level.
+There is a long way between totally type-less parsing and rigid data binding. It would be better if we have more options to choose between performance and flexibility, or both.
+
+
+
+How Jsoniter Solves the JSON Impedance Mismatch
+Jsoniter is a new JSON library for Java, designed with the above problems in mind. (Disclaimer: I am its author.) Jsoniter responds to the JSON impedance mismatch with the following techniques:
+Data binding supports “fuzzy” typing by pre-defined decoders like MaybeStringLongDecoder.
+The Any data type represents the JSON object, similar to the way a PHP array does.
+Lazy parsing only processes the requested fields and leaves other bytes untouched.
+To demonstrate how to use Jsoniter, let’s install it first. Add the following dependency into your pom.xml (assuming you are using Maven):
+<dependency>
+    <groupId>com.jsoniter</groupId>
+    <artifactId>jsoniter</artifactId>
+    <version>0.9.8</version>
+</dependency>
+
+Or you can download the jar directly.
+Jsoniter is a flexible parser, with 3 APIs you can choose from
+Data binding to Java classes, where the underlying implementation can be based on reflection, static code generation, or dynamic code generation.
+A lazy parsing API with Any as data type, which parses the same JSON with a fraction of the code.
+Iterator API to iterate through JSON like a for loop, which is best for processing large batches.
+And you will not be forced to stick with one API all the time. Use the right API for the right job, and combine them for complex cases. Now I am going to show you how to easily deal with JSON using these three APIs.
+Data Binding
+Jsoniter does not force you to use the Any type. For many cases, data binding is still the most comfortable API.
+Simple Classes
+Let’s bind this simple example:
+{
+"order_id": 100098,
+"order_details": {"pay_type": "cash"}
+}
+
+For that, we will design a class like this:
+public class Order {
+    public long order_id;
+    public OrderDetails order_details;
+}
+
+public class OrderDetails {
+    public String pay_type;
+}
+
+To deserialize the JSON input, we will use JsonIterator:
+Order order = JsonIterator.deserialize(input, Order.class);
+
+The input can be String or byte[]. If you need to use an InputStream as input, it will be a little bit more verbose:
+JsonIterator iter = JsonIterator.parse(input);
+Order order = Iter.read(Order.class);
+// you can close the underlying InputStream via Iter
+// or directly (it does not have its own resource to dispose)
+Iter.close();
+
+A Case for Annotations
+Everybody knows how simple binding works. But what about messy input?
+{
+"order_id": "100098",
+"order_details": []
+}
+
+We will need annotation support in this case. First, we enable this optional feature through:
+JsoniterAnnotationSupport.enable();
+
+This only needs to be done once, you can put it in the main function or static initializer. Now add annotations to the Order class
+public class Order {
+  @JsonProperty(decoder = MaybeStringLongDecoder.class)
+  public long order_id;
+  @JsonProperty(decoder = MaybeEmptyArrayDecoder.class)
+  public OrderDetails order_details;
+}
+
+By using the Maybe decoder, we can make the binding fuzzy about data types in some cases. If the structure itself is “dynamic”, we’d better use Any instead.
+Any Data Type
+Instead of defining a class describing the data schema, we can use the Any data type. It is pretty much a replacement for Map<String, Object> or List<Object>. Let’s read the same JSON as before:
+{
+"order_id": 100098,
+"order_details": {"pay_type": "cash"}
+}
+
+This is the code to do that:
+Any order = JsonIterator.read(input);
+String payType = order.toString("order_details", "pay_type");
+
+The toString method might look weird, so let me explain:
+Get "order_details"
+Then get "pay_type" from the "order_details"
+Then convert the value of "pay_type" from whatever type to a string
+Even in the following case the code still works, because it converts 5 to "5":
+{
+"order_details": {"pay_type": 5}
+}
+
+What if the input is not what we expect, for example:
+{
+"order_details": []
+}
+
+The code toString("order_tails", "pay_type") will not throw a NullPointerException, instead it will return the empty string. Most of the time, the empty string is what we expect.
+It is worth mentioning that the parsing is done lazily. For those parts you do not read from, they will be kept in byte array form, saving the cost of full deserialization. Any is very powerful, we will cover it in details after looking at the third way to access JSON.
+Iterator API
+The iterator API expose the JSON data stream as an iterator. You can use the following methods to drive the iteration process:
+whatIsNext: Look ahead at the type of the next value. It returns an instance of the ValueType enum, which I’ll come back to later. Using this method is optional – if you know the next value must be, for example, a string, you can directly call readString without checking whatIsNext first.
+readObject: Read the next object field, returning the field name.
+readArray: Read the next array element, return false if the end of the array was reached.
+readString: Read an individual value as a string.
+Let’s use this example input:
+{"numbers": ["1", "2", ["3", "4"]]}
+
+I have written a JUnit test to demonstrate the iterator API:
+JsonIterator iter = JsonIterator.parse(
+        "{'numbers': ['1', '2', ['3', '4']]}"
+            .replace('\'', '"'));
+// start reading the first object ("number")
+assertEquals("numbers", iter.readObject());
+// start reading the array
+assertTrue(iter.readArray());
+assertEquals("1", iter.readString());
+assertTrue(iter.readArray());
+assertEquals("2", iter.readString());
+// start reading the inner array
+assertTrue(iter.readArray());
+// you can know the type of next value before reading it
+assertEquals(ValueType.ARRAY, iter.whatIsNext());
+assertTrue(iter.readArray());
+assertEquals(ValueType.STRING, iter.whatIsNext());
+assertEquals("3", iter.readString());
+assertTrue(iter.readArray());
+assertEquals("4", iter.readString());
+// end inner array
+assertFalse(iter.readArray());
+// end outer array
+assertFalse(iter.readArray());
+// end object "number"
+assertNull(iter.readObject());
+
+It is actually just what its name suggests, an iterator: You call a method and it moves forward.
+
+Fun with Any
+Any is fun, let’s have more.
+Any Container
+Any is a container, that can hold all kinds of values:
+lazy object
+lazy array
+lazy string
+lazy double
+lazy long
+non lazy value (array, object, string, float, double, long, int, true, false, null)
+If the contained value is an object or an array, we can extract elements without converting to List or Map.
+For example_
+[{"score":100}, {"score":102}]
+
+We can extract value using just the path:
+// will be 100
+JsonIterator.deserialize(input).toInt(0, "score")
+
+The first argument 0 get the first element out of the array. The second argument "score" get the score out of the object.
+Or we can iterate the value like a collection:
+Any records = JsonIterator.deserialize(input);
+for (Any record : records) {
+    Any.EntryIterator entryIterator = record.entries();
+    while (entryIterator.next()) {
+        System.out.println(
+                entryIterator.key() + " / " + entryIterator.value());
+    }
+}
+// output is:
+// score / 100
+// score / 102
+
+The iterator is doing the parsing along the way. If you stop the loop in the middle, parsing will be partially done. This avoids unnecessary parsing once we have extracted the value we need.
+We can even use wildcards in the extraction path:
+Any records = JsonIterator.deserialize(input);
+// [100, 102]
+records.get('*', "score")
+
+This will extract an Any with a list value, containing the score of each record.
+Missing Value
+Let’s re-visit a previous example
+{
+"order_details": []
+}
+
+As I explained before, toString("order_tails", "pay_type") will return the empty string. This is how toString handles the missing value. If we change to get("order_details", "pay_type"), it can tell us the value is actually missing:
+Any payType = order.get("order_details", "pay_type");
+if (payType.valueType() == ValueType.INVALID) {
+    // not found
+}
+
+If you try to use the invalid Any instance, an exception will be thrown. In this case, Any is very similar to Java 8’s Optional. Possible value types are:
+INVALID
+STRING
+NUMBER
+NULL
+BOOLEAN
+ARRAY
+OBJECT
+We can see, even the “null” JSON is not actually null in Java’s sense. It will be represented as an Any instance with valueType() == ValueType.NULL. Removing null from possible return values makes extracting values from deeply nested structure much more convenient as checking null all the way through is no longer needed.
+Wildcard path extraction supports missing value as well:
+// input is [{"score":100}, {"value":102}]
+Any records = JsonIterator.deserialize(input);
+// [100]
+records.get('*', "score")
+
+Because “score” is not found in the second record, it will be excluded from the result.
+Type Conversion
+The toString method is just one of the conversion supported, others are:
+toInt
+toLong
+toDouble
+toFloat
+toBoolean
+Every conversion will make its best effort to convert original value to the type you want.
+Besides simple types, you can convert the value into complex type by data binding. For example we can extract the value using Any, then bind into a object.
+// {"numbers": ["1", "2", ["3", "4"]]}
+String[] numbers = JsonIterator
+        .deserialize(input)
+        .get("numbers", 2)
+        .as(String[].class);
+
+The as API uses data binding as explained earlier to bind ["3", "4"] to a String[] object.
+Schema-less Partial JSON Processing
+Any is also mutable, and can be serialized back to JSON. If you only want to change a little bit of original input and then write it back, Any will be really handy. It will capture the input as raw bytes, and write back into JSON as it is, saving not only the cost of deserialization but also the cost of serialization. The underlying optimization happens automatically without your involvement – you write the code just as if you were working with Map<String, Object> or List<Object>:
+List numbers = JsonIterator.deserialize("[1,[2, 3],4]").asList();
+numbers.add(5);
+// will be [1,[2,  3],4,5]
+JsonStream.serialize(numbers);
+
+This is partial processing – hard to notice where the magic is.
+When asList is called, the list will contain 3 Any elements representing 1, [2, 3], and 4 in the original byte array, not parsed.
+When 5 is added, the first 3 list elements remain of type Any but the 4th one is of type java.lang.Integer.
+When we serialize the list back into JSON form, the first 3 elements will not have serialization cost, as it is still in byte array form and will be byte copied directly. Only the 4th element will be converted from integer to string.
+This technique enables a whole new way to process JSON. Traditionally, we write our logic in this form:
+JSON => Object Graph => Modified Object Graph => JSON
+With Any, we can save a lot of objects:
+JSON => Lazy Object Graph => Partially Parsed & Modified Object Graph => JSON
+
+
+Summary
+JSON is a flexible format and the output produced by code written in languages like PHP is often hard to process in Java. Unlike most existing parsers, Jsoniter chooses to embrace the dynamic nature instead of burying it. The innovative Any data type makes parsing JSON with uncertain types and uncertain structure easy in Java. With lazy parsing, this schema-less style parsing is even more attractive. While being extremely flexible, the performance is not compromised.
+Share This ArticleTao WenTao Wen has over 10 years experience working with all sorts of platform ranging from Delphi 4 to PHP 7. He is interested in marrying different technologies to solve real world problem. Currently, he is working for Didichuxing as platform architect.backendjsonLazinessnicolaipUp NextEasy URL Parsing With Isomorphic JavaScriptCraig BucklerHTML vs XHTML: Comparing Two Parsing ModesAdam RobertsParsing with the Parslet GemRobert QuallsParsing XML With SimpleXMLSandeep PandaParsing an ISO datestampJames EdwardsParsing XML files with Objective-CTyler HermanStuff we doPremiumNewslettersForumsAboutOur storyTerms of usePrivacy policyCorporate membershipsContactContact usFAQPublish your book with usWrite an article for usAdvertiseConnect© 2000 – 2022 SitePoint Pty. Ltd.This site is protected by reCAPTCHA and the Google Privacy Policy and Terms of Service apply.

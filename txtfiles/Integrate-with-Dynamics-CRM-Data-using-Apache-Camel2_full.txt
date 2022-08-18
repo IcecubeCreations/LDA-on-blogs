@@ -1,0 +1,593 @@
+
+
+
+Integrate with Dynamics CRM Data using Apache Camel2
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Platform
+
+
+
+
+
+
+
+
+
+Solutions
+
+
+
+
+
+
+
+
+
+Connectors
+
+
+
+
+
+
+
+
+
+Support
+
+
+
+
+
+
+
+
+
+Company
+
+
+
+
+
+
+
+
+
+Resources
+
+
+
+
+
+
+
+
+Platform
+Solutions
+Connectors
+Support
+Resources
+Company
+
+
+
+
+Search
+Chat
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+Integrate with Dynamics CRM Data using Apache Camel2
+
+
+
+
+
+
+Ready to get started?
+Download for a free trial:
+
+
+Download Now
+
+
+Learn more:
+
+
+Dynamics CRM JDBC Driver
+
+Rapidly create and deploy powerful Java applications that integrate with Microsoft Dynamics CRM account data including Leads, Contacts, Opportunities, Accounts, and more!
+
+
+
+
+
+
+        In this article
+
+    
+
+
+
+
+
+
+
+        Related articles
+
+    
+
+Replicate Dynamics CRM  from PowerShell
+Publish Crystal Reports on Dynamics CRM 
+Working with Dynamics CRM  in LINQPad
+Connect to Dynamics CRM  as a Federated Tables in MySQL
+Visualize Dynamics CRM  in Sisense
+
+
+
+
+
+
+
+Create a simple Java app that uses Apache Camel routing and the CData JDBC Driver to copy Dynamics CRM data to a JSON file on disk.
+
+
+
+Apache Camel is an open source integration framework that allows you to integrate various systems consuming or producing data. When paired with the CData JDBC Driver for Dynamics CRM, you can write Java apps that use Camel routes that integrate with live Dynamics CRM data. This article walks through creating an app in NetBeans that connects, queries, and routes Dynamics CRM data to a JSON file. 
+
+
+
+
+With built-in optimized data processing, the CData JDBC Driver offers unmatched performance for interacting with live Dynamics CRM data. When you issue complex SQL queries to Dynamics CRM, the driver pushes supported SQL operations, like filters and aggregations, directly to Dynamics CRM and utilizes the embedded SQL engine to process unsupported operations client-side (often SQL functions and JOIN operations). Its built-in dynamic metadata querying allows you to work with and analyze Dynamics CRM data using native data types.
+
+
+Creating A New Maven/Java Project
+
+
+Follow the steps below to create a new Java project and add the appropriate dependencies:
+
+
+
+Open NetBeans and create a new project.
+
+	Select Maven from the categories list and Java Application from the projects list, then click Next.
+
+	Name the project (and adjust any other properties) and click Finish.
+
+	In the source package, create a new Java class (we used App.java for this article) and add the main method to the class.
+
+
+Adding Project Dependencies
+
+
+With the project created, we can start adding the dependencies needed to work with live Dynamics CRM data from our App. If you have not already done so, install Maven in your environment, as it is required to add the JAR file for the CData JDBC Driver to your project.
+
+
+Installing the CData JDBC Driver for Dynamics CRM with Maven
+
+Download the CData JDBC Driver for Dynamics CRM installer, unzip the package, and run the JAR file to install the driver.
+
+Use Maven to install the JDBC Driver as a connector.
+
+
+
+mvn install:install-file 
+
+	-Dfile="C:\Program Files\CData\CData JDBC Driver for Dynamics CRM 2019\lib\cdata.jdbc.dynamicscrm.jar" 
+
+	-DgroupId="org.cdata.connectors" 
+
+	-DartifactId="cdata-dynamicscrm-connector" 
+
+	-Dversion="19" 
+
+	-Dpackaging=jar
+
+
+
+Once the JDBC Driver is installed, we can add dependencies to our project. To add a dependency, you can either edit the pom.xml file or right-click the dependencies folder and click Add Dependency. The properties for each dependency follow, but you can search through the available libraries by typing the name of the dependency in the Query box in the Add Dependency wizard.
+
+Required Dependencies
+
+
+
+
+DependencyGroup IDArtifact IDVersion
+
+
+camel-coreorg.apache.camelcamel-core3.0.0
+
+
+camel-jacksonorg.apache.camelcamel-jackson3.0.0
+
+
+camel-jdbcorg.apache.camelcamel-jdbc3.0.0
+
+
+camel-jsonpathorg.apache.camelcamel-jsonpath3.0.0
+
+
+cdata-dynamicscrm-connectororg.cdata.connectorscdata-salesforce-connector19
+
+
+commons-dbcp2org.apache.commonscommons-dbcp22.7.0
+
+
+slf4j-log4j12org.slf4jslf4j-log4j121.7.30
+
+
+log4jorg.apache.logging.log4jlog4j2.12.1
+
+
+
+
+Accessing Dynamics CRM Data in Java Apps with Camel
+After adding the required dependencies, we can use the Java DSL (Domain Specific Language) to create routes with access to live Dynamics CRM data. Code snippets follow. Download the sample project (zip file) to follow along (make note of the TODO comments).
+Start by importing the necessary classes into our main class.
+
+
+import org.apache.camel.CamelContext;
+
+import org.apache.camel.builder.RouteBuilder;
+
+import org.apache.camel.impl.DefaultCamelContext;
+
+import org.apache.camel.support.SimpleRegistry;
+
+import org.apache.commons.dbcp2.BasicDataSource;
+
+import org.apache.log4j.BasicConfigurator;
+
+
+
+
+Then in the main method, we configure logging, create a new BasicDataSource and add it to the registry, create a new CamelContext, and finally add a route to the context. In this sample, we route Dynamics CRM data to a JSON file.
+Configure Logging
+
+
+BasicConfigurator.configure();
+
+
+Create a BasicDataSource
+Create a BasicDataSource and set the driver class name (cdata.jdbc.salesforce.SalesforceDriver) and URL (using the required connection properties).
+
+
+  The connection string options meet the authentication and connection requirements of different Dynamics CRM instances.
+
+  To connect to your instance, set the User and Password properties, under the Authentication section, to valid Dynamics CRM user 
+
+  credentials and set the Url to a valid Dynamics CRM server organization root. Additionally, set the CRMVersion property to 'CRM2011+' or 'CRMOnline'. IFD configurations are supported as well; set InternetFacingDeployment to true.
+
+
+Additionally, you can provide the security token service (STS) or AD FS endpoint in the STSURL property. This value can be retrieved with the GetSTSUrl stored procedure. Office 365 users can connect to the default STS URL by simply setting CRMVersion.
+
+
+
+
+BasicDataSource basic = new BasicDataSource();
+
+basic.setDriverClassName("cdata.jdbc.dynamicscrm.DynamicsCRMDriver");
+
+basic.setUrl("jdbc:dynamicscrm:User=myuseraccount;Password=mypassword;URL=https://myOrg.crm.dynamics.com/;CRM Version=CRM Online;");
+
+
+The CData JDBC Driver includes a built-in connection string designer to help you configure the connection URL.
+Built-in Connection String Designer
+For assistance in constructing the JDBC URL, use the connection string designer built into the Dynamics CRM JDBC Driver. Either double-click the JAR file or execute the jar file from the command line.
+
+
+java -jar cdata.jdbc.dynamicscrm.jar
+
+
+
+
+Fill in the connection properties and copy the connection string to the clipboard.
+
+
+
+Add the BasicDataSource to the Registry and Create a CamelContext
+
+
+SimpleRegistry reg = new SimpleRegistry();
+
+reg.bind("myDataSource", basic);
+
+
+
+CamelContext context = new DefaultCamelContext(reg);
+
+
+Add Routing to the CamelContext
+The routing below uses a timer component to run one time and passes a SQL query to the JDBC Driver. The results are marshaled as JSON (and formatted for pretty print) and passed to a file component to write to disk as a JSON file.
+
+
+context.addRoutes(new RouteBuilder() {
+
+	@Override
+
+	public void configure() {
+
+		from("timer://foo?repeatCount=1")
+
+			.setBody(constant("SELECT * FROM Account LIMIT 10"))
+
+			.to("jdbc:myDataSource")
+
+			.marshal().json(true)
+
+			.to("file:C:\\Users\\USER\\Documents?fileName=account.json");
+
+	}
+
+});
+
+
+Managing the CamelContext Lifecycle
+With the route defined, start the CamelContext to begin the lifecycle. In this example, we wait 10 seconds and then shut down the context.
+
+
+context.start();
+
+Thread.sleep(10000);
+
+context.stop();
+
+
+Free Trial, Sample Project & Technical Support
+Now, you have a working Java application that uses Camel to route data from Dynamics CRM to a JSON file. Download a free, 30-day trial of the CData JDBC Driver for Dynamics CRM and the sample project (make note of the TODO comments) and start working with your live Dynamics CRM data in Apache Camel. Reach out to our Support Team if you have any questions.
+
+
+
+
+
+
+
+
+
+
+
+CData Software is a leading provider of data access and connectivity solutions. Our standards-based connectors streamline data access and insulate customers from the complexities of integrating with on-premise or cloud databases, SaaS, APIs, NoSQL, and Big Data.
+
+Connect With Us
+
+
+
+
+
+
+Get Started
+
+
+
+Data Connectors
+
+ODBC Drivers
+Java (JDBC)
+ADO.NET
+Python
+Delphi
+
+
+
+ETL/ ELT Solutions
+
+CData Sync
+SQL SSIS Tools
+DBAmp
+PowerShell
+
+
+
+Enterprise Adapters
+
+BizTalk Adapters
+Mule Connectors
+Embedded DV
+
+
+
+Cloud & API Connectivity
+
+Connect
+Connect Cloud
+API Server
+REST Connectors
+
+
+
+
+
+
+Connect With Us
+
+
+
+
+
+
+Get Started
+
+
+
+OEM & Custom Drivers
+
+Embedded Connectivity
+Driver Development (SDK)
+
+
+
+Data Visualization
+
+Excel Add-Ins
+Power BI Connectors
+Tableau Connectors
+
+
+
+Company
+
+About
+Partners
+Careers
+Contact Us
+
+
+
+News & Insights
+
+Case Studies
+News & Events
+Press
+Resources
+Testimonials
+
+
+
+
+
+
+
+© 2022 CData Software, Inc. All rights reserved. Various trademarks held by their respective owners.
+
+
+Terms & Conditons
+Privacy Policy
+
+
+Chat
+800.235.7250
+
+
+
+
+
+
+
+
+
+
+
+
+
+	This website stores cookies on your computer. These cookies are used to collect information about how you interact with our website and allow us to remember you. We use this information in order to improve and customize your browsing experience and for analytics and metrics about our visitors both on this website and other media. To find out more about the cookies we use, see our Privacy Policy.
+
+	
+
+Accept
+Decline
+
+
+
+
+
+
+
+
+

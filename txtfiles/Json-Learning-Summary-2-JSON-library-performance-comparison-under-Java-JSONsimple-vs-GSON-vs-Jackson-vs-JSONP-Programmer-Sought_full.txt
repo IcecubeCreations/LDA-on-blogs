@@ -1,0 +1,385 @@
+
+
+
+
+
+
+
+
+
+
+Json Learning Summary (2) - JSON library performance comparison under Java: JSON.simple vs. GSON vs. Jackson vs. JSONP... - Programmer Sought
+
+
+
+
+
+
+
+
+
+
+
+ProgrammerSought
+
+
+Home
+Contact Us
+Privacy Policy
+
+
+☰ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Json Learning Summary (2) - JSON library performance comparison under Java: JSON.simple vs. GSON vs. Jackson vs. JSONP...
+
+
+
+
+
+
+
+
+
+
+JSON has become the accepted standard for data transfer between servers and web applications, but as with what we are used to, you will feel that this is a matter of course and no longer think deeply. We rarely think about the difference between these JSON libraries, but in fact they are not the same. Therefore, we ran a benchmark to test several commonly used JSON libraries to see which library was the fastest when parsing files of different sizes. I will share the results with you below.
+
+JSON is commonly used to transfer and parse large files. This is a very common scenario for data handlers running on Hadoop or Spark clusters. At a given file size, you can see a significant difference in the speed of parsing between different libraries.
+In the case of high throughput, small files are frequently transmitted and parsed, so the performance gap may not be obvious at first. But if you need to parse a large number of small files frequently under very high load, the gap starts to increase. Microservices and distributed architectures often use JSON to transfer such files, as this is already the de facto standard for the WEB API.
+Not all JSON libraries are called "Telunsu". How to choose the right library according to the usage scenario is very important. I hope this benchmark will help you.
+ JSON.simple vs GSON vs Jackson vs JSONP 
+We selected four mainstream JSON libraries for benchmarking: JSON.simple, GSON, Jackson, and JSONP. These libraries are usually used for JSON parsing in Java. The reason for choosing them is that they are highly popular in the Github project.
+Here is the JSON library we tested:
+
+ Yidong Fang's JSON.simple(https://github.com/fangyidong/json-simple). JSON.simple is a Java tool library for JSON codecs. It is designed to create a lightweight, simple and high-performance tool library. 
+ Google's GSON (https://github.com/google/gson). The GSON Java library converts between Java objects and JSON. It also provides full support for Java generics, and you don't need to add annotations to your classes. It's more convenient to use without annotations, and it's a necessary prerequisite if you can't modify the source code. 
+ FasterXML's Jackson project (https://github.com/FasterXML/jackson). Jackson is a suite of data processing tools, and its highlights are streaming JSON parsers and generators. It is designed for Java and can handle other non-JSON encodings. From our statistics in Github, it should be the most popular JSON parser. 
+ Oracle's JSONP (https://jsonp.java.net/). JSONP (JSON Processing) is a set of Java APIs for JSON processing. It is used to generate and parse JSON strings by name. This is an open source implementation of the JSR 353 specification. 
+
+ Benchmarks 
+We benchmarked these libraries using both large and small files. As the file size is different, the system resources required to process the text will increase.
+This benchmark focuses on two key scenarios: the resolution speed of large files (190MB) and the resolution speed of small files (1KB). Large files are taken from here:https://github.com/zeMirco/sf-city-lots-json. Small files are randomly generated from here:http://www.json-generator.com/。
+Whether it is a large file or a small file, we will run the same library 10 times. For each large file, we will use the same library to run 10 times. For small files, it is repeated 10,000 times in a single run of a single library. In each iteration of the small file test, the file content does not reside in memory, and the machine running the test is an AWS c3.large instance.
+The complete test results for the large files are as follows. I have averaged the results of the small files. Want to see the full result, please moveHere. If you want to see the source code of the small file test, pleaseHeredownload.
+Large file result
+
+The results are very different! Jackson and JSON.simple led the test, and overall Jackson was slightly better than JSON.simple. From the average results of the test run, Jackson and JSON.simple performed better on large files, while JSONP ranked third behind, GSON is far behind.
+We then convert the results into percentages. On average, Jackson is going to win. Below is the percentage data for the results, which can be compared from two dimensions:
+
+The performance difference between different libraries is not small.
+Conclusion: Jackson won with a slight advantage. JSON.simple is close behind, and the remaining two libraries are far behind.
+Small file result
+
+The above table records the average time for parsing each file 10 times. The total average time is shown below. The number of times each library wins in a small file test is as follows:
+
+GSON - 14
+JSONP - 5
+Jackson -1
+JSON.simple - 0
+
+This result seems to be very convincing. However, from the average results of all the documents, the GSON champion is well deserved, and the two or three battles between JSON.simple and JSONP should be no suspense. Jackson is the bottom of this round. Although JSON.simple didn't win first on any file, overall its resolution rate is second. Although JSONP won the championship on many documents, on average it only got the third place.
+It's also worth noting that although Jackson is the slowest library in this round, it performs very well in all files. The other three libraries are occasionally much faster than Jackson, but they are parsed on other files. The speed is quite or even worse.
+Let's turn these numbers into percentages and see the same two dimensions:
+
+Compared with the big file test, the gap is relatively small, but it can't be ignored.
+Conclusion: Unfortunately, JSON.simple has lost the championship with a weak disadvantage. This round of GSON wins. JSONP is still the third year of the millennium and this time Jackson has caught a late episode.
+ to sum up 
+Parsing speed is not the only indicator of a JSON library, but it is really important. By running this benchmark, we found that no library can beat opponents on all files. The outstanding performance in large files has been rooted in small files, and vice versa.
+If you want to choose which library to choose from the speed of analysis, it depends on your use of the scene.
+
+If your application often handles large JSON files, then Jackson should be your dish. GSON is quite struggling on large files.
+If you are primarily dealing with small file requests, such as the initialization of a microservice or distributed architecture, then GSON is preferred. Jackson's performance on small files is not satisfactory.
+If you're going to deal with both of these files, then JSON.simple, which is second in both rounds of performance, is more suitable for such scenarios. Jackson and GSON don't perform well on different file sizes.
+
+Unless you don't consider the resolution speed, JSONP has nothing to praise. Its performance on large and small files is very bad compared to other libraries. Fortunately, Java 9 will soon have a native JSON implementation, and I believe JSONP's future performance is still worth looking forward to.
+I finally finished it. If you are sensitive to the parsing speed of the JSON library, choose Jackson for large files, GSON for small files, and JSON.simple for both. If you have any questions about this benchmark, please leave a comment below.
+
+Copyright Complaint      
+Spam Report
+
+
+
+
+
+
+
+
+
+
+Intelligent Recommendation
+
+
+
+
+
+
+
+
+
+
+InfluxDB vs TimeScaleDB function/performance comparison (2)
+
+
+
+In the previous article"InfluxDB vs TimeScaleDB function/performance comparison (1)"In the main comparison of the two databases in terms of functional differences, and without any optimizati...
+
+
+
+
+
+
+
+
+
+
+
+JSON vs. XML
+
+
+
+JSON (Javascript Object Notation) is a lightweight data exchange format. Easy for people to read and write. It is also easy to machine parse and generate. It is based on a subset of the Javascript Pro...
+
+
+
+
+
+
+
+
+
+
+
+JSON vs XML
+
+
+
+JSON vs XML JSON and XML definition The similarities and differences between JSON and XML the same Different JSON and XML parsing Advantages and disadvantages of JSON and XML Expand knowledge What is ...
+
+
+
+
+
+
+
+
+
+
+
+MessagePack vs JSON
+
+
+
+...
+
+
+
+
+
+
+
+
+
+
+
+.XML vs. .JSON
+
+
+
+1. Definition introduction (1).XML definition Extensible Markup Language (XML), which is used to mark electronic files to have a structured markup language that can be used to mark data and define dat...
+
+
+
+
+
+
+
+
+
+
+
+More Recommendation
+
+
+
+
+
+
+JS vs JSON
+
+
+
+1.JSON does not copy functionh and undefined 2. JSON string ending must be " JS is a language that Douglas copied the father of JS (Brandon) Reprinted at: https://juejin.im/post/5c4433eef265da616...
+
+
+
+
+
+
+
+
+
+
+
+JSON vs XML——04
+
+
+
+JSON vs XML JSON and XML are used to receive data from the web server. JSON and XML are different in writing, as shown below: JSON instance XML instance JSON is the same as XML: JSON and XML data are ...
+
+
+
+
+
+
+
+
+
+
+
+json vs obj
+
+
+
+In the JavaScript language, everything is an object. Therefore, any JavaScript support can be represented by JSON, such as strings, numbers, objects, arrays, etc. Look at his requirements and grammar ...
+
+
+
+
+
+
+
+
+
+
+
+Vs-commissioning access JSON
+
+
+
+Reprinted on: https://blog.csdn.net/weixin_33735077/Article/details/93803128...
+
+
+
+
+
+
+
+
+
+
+
+JSON vs XML
+
+
+
+JSON vs XML JSON : XML: JSON is the same as XML: JSON and XML data are "self-description" and is easy to understand. JSON and XML data are hierarchical structures JSON and XML data can be us...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Related Posts
+Open source JSON library parsing performance comparison (Jackson / Json.simple / Gson)
+MVCAPI VS MinAPi Performance Comparison (JSON)
+Jackson vs Gson
+Json parsing performance comparison (gson and jackson)
+Gson and Jackson parsing json performance comparison
+Comparison of JSON performance (JACKSON, GSON, FASTJSON)
+Jackson-performance comparison JSON library
+xml vs json vs csv
+JSON vs. XML vs. HTML
+Performance comparison of mainstream JSON engines (GSON, FASTJSON, JACKSON, JSONSMART)
+
+
+
+
+
+
+Popular Posts
+Several ways of eS6 export
+Introduction to Spring's three basic components
+form an encrypted form the background foreground js java
+Spring framework learning three (type data injection)
+spring-datesource.xml configuration, spring integration mybatis
+Leetcode 592. Score Adjusting C ++
+LeetCode2 Add Two Numbers
+Introduction to database integrity [Chapter] mind mapping database system
+ResNet101V2 network structure
+[Minimum path coverage]hdoj 3335: Divisibility
+
+
+
+
+
+
+Recommended Posts
+Solve Selenium.common.Exceptions.webdriveRexception: Message: Unknown Error: Cannot Find Chrome Binary
+JS references text information in the outermost JS
+The realization of Window, WindowManager and floating frame video playback in Android
+Design Mode - Component mode
+Java foundation (20) (thread pool, waiting wake-up mechanism, Voliate keyword, single case design pattern "lazy mode" "Hungry Mode")
+Apache common interview
+leetcode209. The smallest length sub-array/double pointer, prefix sum, dichotomy
+[0CTF 2016]piapiapia
+Java string interview questions and answers
+Mina develops an example of the udp protocol
+
+
+
+
+
+Related Tags
+UniversalFrame.CoreWebc#jsonGsonJacksonspringjavacsvxml
+
+
+
+
+
+
+
+
+ Copyright  DMCA © 2018-2022 - All Rights Reserved - www.programmersought.com  User Notice 
+
+
+Top
+
+
+
+
+
+
+
+
+
+
+
+

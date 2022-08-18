@@ -1,0 +1,2569 @@
+<!DOCTYPE html>
+<html dir='ltr' xmlns='http://www.w3.org/1999/xhtml' xmlns:b='http://www.google.com/2005/gml/b' xmlns:data='http://www.google.com/2005/gml/data' xmlns:expr='http://www.google.com/2005/gml/expr'>
+<head>
+<link href='https://www.blogger.com/static/v1/widgets/55013136-widget_css_bundle.css' rel='stylesheet' type='text/css'/>
+<meta content='text/html; charset=UTF-8' http-equiv='Content-Type'/>
+<meta content='blogger' name='generator'/>
+<link href='http://www.ofbizian.com/favicon.ico' rel='icon' type='image/x-icon'/>
+<link href='http://www.ofbizian.com/2016/01/performance-tuning-ideas-for-apache.html' rel='canonical'/>
+<link rel="alternate" type="application/atom+xml" title="OFBizian - Atom" href="http://www.ofbizian.com/feeds/posts/default" />
+<link rel="alternate" type="application/rss+xml" title="OFBizian - RSS" href="http://www.ofbizian.com/feeds/posts/default?alt=rss" />
+<link rel="service.post" type="application/atom+xml" title="OFBizian - Atom" href="https://www.blogger.com/feeds/3109111393630873407/posts/default" />
+
+<link rel="alternate" type="application/atom+xml" title="OFBizian - Atom" href="http://www.ofbizian.com/feeds/1877219538778768545/comments/default" />
+<!--Can't find substitution for tag [blog.ieCssRetrofitLinks]-->
+<link href='https://3.bp.blogspot.com/-K0WT1DP8WJ8/VqTbioVHKeI/AAAAAAAAD5w/6coe-eRAiuk/s400/BoI5lo8IgAAOFHd.jpg' rel='image_src'/>
+<meta content='http://www.ofbizian.com/2016/01/performance-tuning-ideas-for-apache.html' property='og:url'/>
+<meta content='Performance Tuning Ideas for Apache Camel' property='og:title'/>
+<meta content='Every now and then, I get questions around optimising Camel applications with the argument that Camel is slow. Camel is just the glue connec...' property='og:description'/>
+<meta content='https://3.bp.blogspot.com/-K0WT1DP8WJ8/VqTbioVHKeI/AAAAAAAAD5w/6coe-eRAiuk/w1200-h630-p-k-no-nu/BoI5lo8IgAAOFHd.jpg' property='og:image'/>
+<!--[if IE]> <script> (function() { var html5 = ("abbr,article,aside,audio,canvas,datalist,details," + "figure,footer,header,hgroup,mark,menu,meter,nav,output," + "progress,section,time,video").split(','); for (var i = 0; i < html5.length; i++) { document.createElement(html5[i]); } try { document.execCommand('BackgroundImageCache', false, true); } catch(e) {} })(); </script> <![endif]-->
+<meta content='OFBizian: Performance Tuning Ideas for Apache Camel' name='description'/>
+<meta content='Performance Tuning Ideas for Apache Camel, Ofbizian, Bilgin Ibryam, Open Source, Apache Ofbiz, Apache Camel, Integration, Blockchain, Kubernetes, Kubernetes Patterns, Software Architecture, Product Management ' name='keywords'/>
+<meta content='Bilgin Ibryam alias bibryam' name='author'/>
+<!-- Start www.bloggertipandtrick.net: Changing the Blogger Title Tag -->
+<title>Performance Tuning Ideas for Apache Camel ~ Bilgin Ibryam (@bibryam)</title>
+<!-- End www.bloggertipandtrick.net: Changing the Blogger Title Tag -->
+<link href='YOUR-FAVICON-URL' rel='shortcut icon' type='image/vnd.microsoft.icon'/>
+<style id='page-skin-1' type='text/css'><!--
+/*
+-----------------------------------------------
+Blogger Template Style
+Name:   Charming
+Author: Lasantha Bandara
+URL 1:  http://www.premiumbloggertemplates.com/
+URL 2:  http://www.bloggertipandtrick.net/
+Date:   January 2011
+License:  This free Blogger template is licensed under the Creative Commons Attribution 3.0 License, which permits both personal and commercial use.
+However, to satisfy the 'attribution' clause of the license, you are required to keep the footer links intact which provides due credit to its authors. For more specific details about the license, you may visit the URL below:
+http://creativecommons.org/licenses/by/3.0/
+----------------------------------------------- */
+/* Variable definitions
+====================
+<Variable name="bgcolor" description="Page Background Color"
+type="color" default="#fff">
+<Variable name="textcolor" description="Text Color"
+type="color" default="#333">
+<Variable name="linkcolor" description="Link Color"
+type="color" default="#58a">
+<Variable name="pagetitlecolor" description="Blog Title Color"
+type="color" default="#666">
+<Variable name="descriptioncolor" description="Blog Description Color"
+type="color" default="#999">
+<Variable name="titlecolor" description="Post Title Color"
+type="color" default="#c60">
+<Variable name="bordercolor" description="Border Color"
+type="color" default="#ccc">
+<Variable name="sidebarcolor" description="Sidebar Title Color"
+type="color" default="#999">
+<Variable name="sidebartextcolor" description="Sidebar Text Color"
+type="color" default="#666">
+<Variable name="visitedlinkcolor" description="Visited Link Color"
+type="color" default="#999">
+<Variable name="bodyfont" description="Text Font"
+type="font" default="normal normal 100% Georgia, Serif">
+<Variable name="headerfont" description="Sidebar Title Font"
+type="font"
+default="normal normal 78% 'Trebuchet MS',Trebuchet,Arial,Verdana,Sans-serif">
+<Variable name="pagetitlefont" description="Blog Title Font"
+type="font"
+default="normal normal 200% Georgia, Serif">
+<Variable name="descriptionfont" description="Blog Description Font"
+type="font"
+default="normal normal 78% 'Trebuchet MS', Trebuchet, Arial, Verdana, Sans-serif">
+<Variable name="postfooterfont" description="Post Footer Font"
+type="font"
+default="normal normal 78% 'Trebuchet MS', Trebuchet, Arial, Verdana, Sans-serif">
+<Variable name="startSide" description="Side where text starts in blog language"
+type="automatic" default="left">
+<Variable name="endSide" description="Side where text ends in blog language"
+type="automatic" default="right">
+*/
+/* Use this with templates/template-twocol.html */
+
+--></style>
+<script src='http://ajax.googleapis.com/ajax/libs/jquery/1.4.4/jquery.min.js' type='text/javascript'></script>
+<script data-dojo-config='usePlainJson: true, isDebug: false' src='//downloads.mailchimp.com/js/signup-forms/popup/unique-methods/embed.js' type='text/javascript'></script><script type='text/javascript'>window.dojoRequire(["mojo/signup-forms/Loader"], function(L) { L.start({"baseUrl":"mc.us20.list-manage.com","uuid":"2983c868fe7174f3b7e340f69","lid":"048137bbf7","uniqueMethods":true}) })</script>
+<script type='text/javascript'>
+//<![CDATA[
+
+(function($){
+	/* hoverIntent by Brian Cherne */
+	$.fn.hoverIntent = function(f,g) {
+		// default configuration options
+		var cfg = {
+			sensitivity: 7,
+			interval: 100,
+			timeout: 0
+		};
+		// override configuration options with user supplied object
+		cfg = $.extend(cfg, g ? { over: f, out: g } : f );
+
+		// instantiate variables
+		// cX, cY = current X and Y position of mouse, updated by mousemove event
+		// pX, pY = previous X and Y position of mouse, set by mouseover and polling interval
+		var cX, cY, pX, pY;
+
+		// A private function for getting mouse position
+		var track = function(ev) {
+			cX = ev.pageX;
+			cY = ev.pageY;
+		};
+
+		// A private function for comparing current and previous mouse position
+		var compare = function(ev,ob) {
+			ob.hoverIntent_t = clearTimeout(ob.hoverIntent_t);
+			// compare mouse positions to see if they've crossed the threshold
+			if ( ( Math.abs(pX-cX) + Math.abs(pY-cY) ) < cfg.sensitivity ) {
+				$(ob).unbind("mousemove",track);
+				// set hoverIntent state to true (so mouseOut can be called)
+				ob.hoverIntent_s = 1;
+				return cfg.over.apply(ob,[ev]);
+			} else {
+				// set previous coordinates for next time
+				pX = cX; pY = cY;
+				// use self-calling timeout, guarantees intervals are spaced out properly (avoids JavaScript timer bugs)
+				ob.hoverIntent_t = setTimeout( function(){compare(ev, ob);} , cfg.interval );
+			}
+		};
+
+		// A private function for delaying the mouseOut function
+		var delay = function(ev,ob) {
+			ob.hoverIntent_t = clearTimeout(ob.hoverIntent_t);
+			ob.hoverIntent_s = 0;
+			return cfg.out.apply(ob,[ev]);
+		};
+
+		// A private function for handling mouse 'hovering'
+		var handleHover = function(e) {
+			// next three lines copied from jQuery.hover, ignore children onMouseOver/onMouseOut
+			var p = (e.type == "mouseover" ? e.fromElement : e.toElement) || e.relatedTarget;
+			while ( p && p != this ) { try { p = p.parentNode; } catch(e) { p = this; } }
+			if ( p == this ) { return false; }
+
+			// copy objects to be passed into t (required for event object to be passed in IE)
+			var ev = jQuery.extend({},e);
+			var ob = this;
+
+			// cancel hoverIntent timer if it exists
+			if (ob.hoverIntent_t) { ob.hoverIntent_t = clearTimeout(ob.hoverIntent_t); }
+
+			// else e.type == "onmouseover"
+			if (e.type == "mouseover") {
+				// set "previous" X and Y position based on initial entry point
+				pX = ev.pageX; pY = ev.pageY;
+				// update "current" X and Y position based on mousemove
+				$(ob).bind("mousemove",track);
+				// start polling interval (self-calling timeout) to compare mouse coordinates over time
+				if (ob.hoverIntent_s != 1) { ob.hoverIntent_t = setTimeout( function(){compare(ev,ob);} , cfg.interval );}
+
+			// else e.type == "onmouseout"
+			} else {
+				// unbind expensive mousemove event
+				$(ob).unbind("mousemove",track);
+				// if hoverIntent state is true, then call the mouseOut function after the specified delay
+				if (ob.hoverIntent_s == 1) { ob.hoverIntent_t = setTimeout( function(){delay(ev,ob);} , cfg.timeout );}
+			}
+		};
+
+		// bind the function to the two event listeners
+		return this.mouseover(handleHover).mouseout(handleHover);
+	};
+
+})(jQuery);
+
+//]]>
+</script>
+<script type='text/javascript'>
+//<![CDATA[
+
+/*
+ * Superfish v1.4.8 - jQuery menu widget
+ * Copyright (c) 2008 Joel Birch
+ *
+ * Dual licensed under the MIT and GPL licenses:
+ * 	http://www.opensource.org/licenses/mit-license.php
+ * 	http://www.gnu.org/licenses/gpl.html
+ *
+ * CHANGELOG: http://users.tpg.com.au/j_birch/plugins/superfish/changelog.txt
+ */
+
+;(function($){
+	$.fn.superfish = function(op){
+
+		var sf = $.fn.superfish,
+			c = sf.c,
+			$arrow = $(['<span class="',c.arrowClass,'"> &#187;</span>'].join('')),
+			over = function(){
+				var $$ = $(this), menu = getMenu($$);
+				clearTimeout(menu.sfTimer);
+				$$.showSuperfishUl().siblings().hideSuperfishUl();
+			},
+			out = function(){
+				var $$ = $(this), menu = getMenu($$), o = sf.op;
+				clearTimeout(menu.sfTimer);
+				menu.sfTimer=setTimeout(function(){
+					o.retainPath=($.inArray($$[0],o.$path)>-1);
+					$$.hideSuperfishUl();
+					if (o.$path.length && $$.parents(['li.',o.hoverClass].join('')).length<1){over.call(o.$path);}
+				},o.delay);
+			},
+			getMenu = function($menu){
+				var menu = $menu.parents(['ul.',c.menuClass,':first'].join(''))[0];
+				sf.op = sf.o[menu.serial];
+				return menu;
+			},
+			addArrow = function($a){ $a.addClass(c.anchorClass).append($arrow.clone()); };
+
+		return this.each(function() {
+			var s = this.serial = sf.o.length;
+			var o = $.extend({},sf.defaults,op);
+			o.$path = $('li.'+o.pathClass,this).slice(0,o.pathLevels).each(function(){
+				$(this).addClass([o.hoverClass,c.bcClass].join(' '))
+					.filter('li:has(ul)').removeClass(o.pathClass);
+			});
+			sf.o[s] = sf.op = o;
+
+			$('li:has(ul)',this)[($.fn.hoverIntent && !o.disableHI) ? 'hoverIntent' : 'hover'](over,out).each(function() {
+				if (o.autoArrows) addArrow( $('>a:first-child',this) );
+			})
+			.not('.'+c.bcClass)
+				.hideSuperfishUl();
+
+			var $a = $('a',this);
+			$a.each(function(i){
+				var $li = $a.eq(i).parents('li');
+				$a.eq(i).focus(function(){over.call($li);}).blur(function(){out.call($li);});
+			});
+			o.onInit.call(this);
+
+		}).each(function() {
+			var menuClasses = [c.menuClass];
+			if (sf.op.dropShadows  && !($.browser.msie && $.browser.version < 7)) menuClasses.push(c.shadowClass);
+			$(this).addClass(menuClasses.join(' '));
+		});
+	};
+
+	var sf = $.fn.superfish;
+	sf.o = [];
+	sf.op = {};
+	sf.IE7fix = function(){
+		var o = sf.op;
+		if ($.browser.msie && $.browser.version > 6 && o.dropShadows && o.animation.opacity!=undefined)
+			this.toggleClass(sf.c.shadowClass+'-off');
+		};
+	sf.c = {
+		bcClass     : 'sf-breadcrumb',
+		menuClass   : 'sf-js-enabled',
+		anchorClass : 'sf-with-ul',
+		arrowClass  : 'sf-sub-indicator',
+		shadowClass : 'sf-shadow'
+	};
+	sf.defaults = {
+		hoverClass	: 'sfHover',
+		pathClass	: 'overideThisToUse',
+		pathLevels	: 1,
+		delay		: 800,
+		animation	: {opacity:'show'},
+		speed		: 'normal',
+		autoArrows	: true,
+		dropShadows : true,
+		disableHI	: false,		// true disables hoverIntent detection
+		onInit		: function(){}, // callback functions
+		onBeforeShow: function(){},
+		onShow		: function(){},
+		onHide		: function(){}
+	};
+	$.fn.extend({
+		hideSuperfishUl : function(){
+			var o = sf.op,
+				not = (o.retainPath===true) ? o.$path : '';
+			o.retainPath = false;
+			var $ul = $(['li.',o.hoverClass].join(''),this).add(this).not(not).removeClass(o.hoverClass)
+					.find('>ul').hide().css('visibility','hidden');
+			o.onHide.call($ul);
+			return this;
+		},
+		showSuperfishUl : function(){
+			var o = sf.op,
+				sh = sf.c.shadowClass+'-off',
+				$ul = this.addClass(o.hoverClass)
+					.find('>ul:hidden').css('visibility','visible');
+			sf.IE7fix.call($ul);
+			o.onBeforeShow.call($ul);
+			$ul.animate(o.animation,o.speed,function(){ sf.IE7fix.call($ul); o.onShow.call($ul); });
+			return this;
+		}
+	});
+
+})(jQuery);
+
+
+
+//]]>
+</script>
+<script type='text/javascript'>
+//<![CDATA[
+
+/*
+ * jQuery Cycle Plugin (with Transition Definitions)
+ * Examples and documentation at: http://jquery.malsup.com/cycle/
+ * Copyright (c) 2007-2010 M. Alsup
+ * Version: 2.88 (08-JUN-2010)
+ * Dual licensed under the MIT and GPL licenses.
+ * http://jquery.malsup.com/license.html
+ * Requires: jQuery v1.2.6 or later
+ */
+(function($){var ver="2.88";if($.support==undefined){$.support={opacity:!($.browser.msie)};}function debug(s){if($.fn.cycle.debug){log(s);}}function log(){if(window.console&&window.console.log){window.console.log("[cycle] "+Array.prototype.join.call(arguments," "));}}$.fn.cycle=function(options,arg2){var o={s:this.selector,c:this.context};if(this.length===0&&options!="stop"){if(!$.isReady&&o.s){log("DOM not ready, queuing slideshow");$(function(){$(o.s,o.c).cycle(options,arg2);});return this;}log("terminating; zero elements found by selector"+($.isReady?"":" (DOM not ready)"));return this;}return this.each(function(){var opts=handleArguments(this,options,arg2);if(opts===false){return;}opts.updateActivePagerLink=opts.updateActivePagerLink||$.fn.cycle.updateActivePagerLink;if(this.cycleTimeout){clearTimeout(this.cycleTimeout);}this.cycleTimeout=this.cyclePause=0;var $cont=$(this);var $slides=opts.slideExpr?$(opts.slideExpr,this):$cont.children();var els=$slides.get();if(els.length<2){log("terminating; too few slides: "+els.length);return;}var opts2=buildOptions($cont,$slides,els,opts,o);if(opts2===false){return;}var startTime=opts2.continuous?10:getTimeout(els[opts2.currSlide],els[opts2.nextSlide],opts2,!opts2.rev);if(startTime){startTime+=(opts2.delay||0);if(startTime<10){startTime=10;}debug("first timeout: "+startTime);this.cycleTimeout=setTimeout(function(){go(els,opts2,0,(!opts2.rev&&!opts.backwards));},startTime);}});};function handleArguments(cont,options,arg2){if(cont.cycleStop==undefined){cont.cycleStop=0;}if(options===undefined||options===null){options={};}if(options.constructor==String){switch(options){case"destroy":case"stop":var opts=$(cont).data("cycle.opts");if(!opts){return false;}cont.cycleStop++;if(cont.cycleTimeout){clearTimeout(cont.cycleTimeout);}cont.cycleTimeout=0;$(cont).removeData("cycle.opts");if(options=="destroy"){destroy(opts);}return false;case"toggle":cont.cyclePause=(cont.cyclePause===1)?0:1;checkInstantResume(cont.cyclePause,arg2,cont);return false;case"pause":cont.cyclePause=1;return false;case"resume":cont.cyclePause=0;checkInstantResume(false,arg2,cont);return false;case"prev":case"next":var opts=$(cont).data("cycle.opts");if(!opts){log('options not found, "prev/next" ignored');return false;}$.fn.cycle[options](opts);return false;default:options={fx:options};}return options;}else{if(options.constructor==Number){var num=options;options=$(cont).data("cycle.opts");if(!options){log("options not found, can not advance slide");return false;}if(num<0||num>=options.elements.length){log("invalid slide index: "+num);return false;}options.nextSlide=num;if(cont.cycleTimeout){clearTimeout(cont.cycleTimeout);cont.cycleTimeout=0;}if(typeof arg2=="string"){options.oneTimeFx=arg2;}go(options.elements,options,1,num>=options.currSlide);return false;}}return options;function checkInstantResume(isPaused,arg2,cont){if(!isPaused&&arg2===true){var options=$(cont).data("cycle.opts");if(!options){log("options not found, can not resume");return false;}if(cont.cycleTimeout){clearTimeout(cont.cycleTimeout);cont.cycleTimeout=0;}go(options.elements,options,1,(!opts.rev&&!opts.backwards));}}}function removeFilter(el,opts){if(!$.support.opacity&&opts.cleartype&&el.style.filter){try{el.style.removeAttribute("filter");}catch(smother){}}}function destroy(opts){if(opts.next){$(opts.next).unbind(opts.prevNextEvent);}if(opts.prev){$(opts.prev).unbind(opts.prevNextEvent);}if(opts.pager||opts.pagerAnchorBuilder){$.each(opts.pagerAnchors||[],function(){this.unbind().remove();});}opts.pagerAnchors=null;if(opts.destroy){opts.destroy(opts);}}function buildOptions($cont,$slides,els,options,o){var opts=$.extend({},$.fn.cycle.defaults,options||{},$.metadata?$cont.metadata():$.meta?$cont.data():{});if(opts.autostop){opts.countdown=opts.autostopCount||els.length;}var cont=$cont[0];$cont.data("cycle.opts",opts);opts.$cont=$cont;opts.stopCount=cont.cycleStop;opts.elements=els;opts.before=opts.before?[opts.before]:[];opts.after=opts.after?[opts.after]:[];opts.after.unshift(function(){opts.busy=0;});if(!$.support.opacity&&opts.cleartype){opts.after.push(function(){removeFilter(this,opts);});}if(opts.continuous){opts.after.push(function(){go(els,opts,0,(!opts.rev&&!opts.backwards));});}saveOriginalOpts(opts);if(!$.support.opacity&&opts.cleartype&&!opts.cleartypeNoBg){clearTypeFix($slides);}if($cont.css("position")=="static"){$cont.css("position","relative");}if(opts.width){$cont.width(opts.width);}if(opts.height&&opts.height!="auto"){$cont.height(opts.height);}if(opts.startingSlide){opts.startingSlide=parseInt(opts.startingSlide);}else{if(opts.backwards){opts.startingSlide=els.length-1;}}if(opts.random){opts.randomMap=[];for(var i=0;i<els.length;i++){opts.randomMap.push(i);}opts.randomMap.sort(function(a,b){return Math.random()-0.5;});opts.randomIndex=1;opts.startingSlide=opts.randomMap[1];}else{if(opts.startingSlide>=els.length){opts.startingSlide=0;}}opts.currSlide=opts.startingSlide||0;var first=opts.startingSlide;$slides.css({position:"absolute",top:0,left:0}).hide().each(function(i){var z;if(opts.backwards){z=first?i<=first?els.length+(i-first):first-i:els.length-i;}else{z=first?i>=first?els.length-(i-first):first-i:els.length-i;}$(this).css("z-index",z);});$(els[first]).css("opacity",1).show();removeFilter(els[first],opts);if(opts.fit&&opts.width){$slides.width(opts.width);}if(opts.fit&&opts.height&&opts.height!="auto"){$slides.height(opts.height);}var reshape=opts.containerResize&&!$cont.innerHeight();if(reshape){var maxw=0,maxh=0;for(var j=0;j<els.length;j++){var $e=$(els[j]),e=$e[0],w=$e.outerWidth(),h=$e.outerHeight();if(!w){w=e.offsetWidth||e.width||$e.attr("width");}if(!h){h=e.offsetHeight||e.height||$e.attr("height");}maxw=w>maxw?w:maxw;maxh=h>maxh?h:maxh;}if(maxw>0&&maxh>0){$cont.css({width:maxw+"px",height:maxh+"px"});}}if(opts.pause){$cont.hover(function(){this.cyclePause++;},function(){this.cyclePause--;});}if(supportMultiTransitions(opts)===false){return false;}var requeue=false;options.requeueAttempts=options.requeueAttempts||0;$slides.each(function(){var $el=$(this);this.cycleH=(opts.fit&&opts.height)?opts.height:($el.height()||this.offsetHeight||this.height||$el.attr("height")||0);this.cycleW=(opts.fit&&opts.width)?opts.width:($el.width()||this.offsetWidth||this.width||$el.attr("width")||0);if($el.is("img")){var loadingIE=($.browser.msie&&this.cycleW==28&&this.cycleH==30&&!this.complete);var loadingFF=($.browser.mozilla&&this.cycleW==34&&this.cycleH==19&&!this.complete);var loadingOp=($.browser.opera&&((this.cycleW==42&&this.cycleH==19)||(this.cycleW==37&&this.cycleH==17))&&!this.complete);var loadingOther=(this.cycleH==0&&this.cycleW==0&&!this.complete);if(loadingIE||loadingFF||loadingOp||loadingOther){if(o.s&&opts.requeueOnImageNotLoaded&&++options.requeueAttempts<100){log(options.requeueAttempts," - img slide not loaded, requeuing slideshow: ",this.src,this.cycleW,this.cycleH);setTimeout(function(){$(o.s,o.c).cycle(options);},opts.requeueTimeout);requeue=true;return false;}else{log("could not determine size of image: "+this.src,this.cycleW,this.cycleH);}}}return true;});if(requeue){return false;}opts.cssBefore=opts.cssBefore||{};opts.animIn=opts.animIn||{};opts.animOut=opts.animOut||{};$slides.not(":eq("+first+")").css(opts.cssBefore);if(opts.cssFirst){$($slides[first]).css(opts.cssFirst);}if(opts.timeout){opts.timeout=parseInt(opts.timeout);if(opts.speed.constructor==String){opts.speed=$.fx.speeds[opts.speed]||parseInt(opts.speed);}if(!opts.sync){opts.speed=opts.speed/2;}var buffer=opts.fx=="shuffle"?500:250;while((opts.timeout-opts.speed)<buffer){opts.timeout+=opts.speed;}}if(opts.easing){opts.easeIn=opts.easeOut=opts.easing;}if(!opts.speedIn){opts.speedIn=opts.speed;}if(!opts.speedOut){opts.speedOut=opts.speed;}opts.slideCount=els.length;opts.currSlide=opts.lastSlide=first;if(opts.random){if(++opts.randomIndex==els.length){opts.randomIndex=0;}opts.nextSlide=opts.randomMap[opts.randomIndex];}else{if(opts.backwards){opts.nextSlide=opts.startingSlide==0?(els.length-1):opts.startingSlide-1;}else{opts.nextSlide=opts.startingSlide>=(els.length-1)?0:opts.startingSlide+1;}}if(!opts.multiFx){var init=$.fn.cycle.transitions[opts.fx];if($.isFunction(init)){init($cont,$slides,opts);}else{if(opts.fx!="custom"&&!opts.multiFx){log("unknown transition: "+opts.fx,"; slideshow terminating");return false;}}}var e0=$slides[first];if(opts.before.length){opts.before[0].apply(e0,[e0,e0,opts,true]);}if(opts.after.length>1){opts.after[1].apply(e0,[e0,e0,opts,true]);}if(opts.next){$(opts.next).bind(opts.prevNextEvent,function(){return advance(opts,opts.rev?-1:1);});}if(opts.prev){$(opts.prev).bind(opts.prevNextEvent,function(){return advance(opts,opts.rev?1:-1);});}if(opts.pager||opts.pagerAnchorBuilder){buildPager(els,opts);}exposeAddSlide(opts,els);return opts;}function saveOriginalOpts(opts){opts.original={before:[],after:[]};opts.original.cssBefore=$.extend({},opts.cssBefore);opts.original.cssAfter=$.extend({},opts.cssAfter);opts.original.animIn=$.extend({},opts.animIn);opts.original.animOut=$.extend({},opts.animOut);$.each(opts.before,function(){opts.original.before.push(this);});$.each(opts.after,function(){opts.original.after.push(this);});}function supportMultiTransitions(opts){var i,tx,txs=$.fn.cycle.transitions;if(opts.fx.indexOf(",")>0){opts.multiFx=true;opts.fxs=opts.fx.replace(/\s*/g,"").split(",");for(i=0;i<opts.fxs.length;i++){var fx=opts.fxs[i];tx=txs[fx];if(!tx||!txs.hasOwnProperty(fx)||!$.isFunction(tx)){log("discarding unknown transition: ",fx);opts.fxs.splice(i,1);i--;}}if(!opts.fxs.length){log("No valid transitions named; slideshow terminating.");return false;}}else{if(opts.fx=="all"){opts.multiFx=true;opts.fxs=[];for(p in txs){tx=txs[p];if(txs.hasOwnProperty(p)&&$.isFunction(tx)){opts.fxs.push(p);}}}}if(opts.multiFx&&opts.randomizeEffects){var r1=Math.floor(Math.random()*20)+30;for(i=0;i<r1;i++){var r2=Math.floor(Math.random()*opts.fxs.length);opts.fxs.push(opts.fxs.splice(r2,1)[0]);}debug("randomized fx sequence: ",opts.fxs);}return true;}function exposeAddSlide(opts,els){opts.addSlide=function(newSlide,prepend){var $s=$(newSlide),s=$s[0];if(!opts.autostopCount){opts.countdown++;}els[prepend?"unshift":"push"](s);if(opts.els){opts.els[prepend?"unshift":"push"](s);}opts.slideCount=els.length;$s.css("position","absolute");$s[prepend?"prependTo":"appendTo"](opts.$cont);if(prepend){opts.currSlide++;opts.nextSlide++;}if(!$.support.opacity&&opts.cleartype&&!opts.cleartypeNoBg){clearTypeFix($s);}if(opts.fit&&opts.width){$s.width(opts.width);}if(opts.fit&&opts.height&&opts.height!="auto"){$slides.height(opts.height);}s.cycleH=(opts.fit&&opts.height)?opts.height:$s.height();s.cycleW=(opts.fit&&opts.width)?opts.width:$s.width();$s.css(opts.cssBefore);if(opts.pager||opts.pagerAnchorBuilder){$.fn.cycle.createPagerAnchor(els.length-1,s,$(opts.pager),els,opts);}if($.isFunction(opts.onAddSlide)){opts.onAddSlide($s);}else{$s.hide();}};}$.fn.cycle.resetState=function(opts,fx){fx=fx||opts.fx;opts.before=[];opts.after=[];opts.cssBefore=$.extend({},opts.original.cssBefore);opts.cssAfter=$.extend({},opts.original.cssAfter);opts.animIn=$.extend({},opts.original.animIn);opts.animOut=$.extend({},opts.original.animOut);opts.fxFn=null;$.each(opts.original.before,function(){opts.before.push(this);});$.each(opts.original.after,function(){opts.after.push(this);});var init=$.fn.cycle.transitions[fx];if($.isFunction(init)){init(opts.$cont,$(opts.elements),opts);}};function go(els,opts,manual,fwd){if(manual&&opts.busy&&opts.manualTrump){debug("manualTrump in go(), stopping active transition");$(els).stop(true,true);opts.busy=false;}if(opts.busy){debug("transition active, ignoring new tx request");return;}var p=opts.$cont[0],curr=els[opts.currSlide],next=els[opts.nextSlide];if(p.cycleStop!=opts.stopCount||p.cycleTimeout===0&&!manual){return;}if(!manual&&!p.cyclePause&&!opts.bounce&&((opts.autostop&&(--opts.countdown<=0))||(opts.nowrap&&!opts.random&&opts.nextSlide<opts.currSlide))){if(opts.end){opts.end(opts);}return;}var changed=false;if((manual||!p.cyclePause)&&(opts.nextSlide!=opts.currSlide)){changed=true;var fx=opts.fx;curr.cycleH=curr.cycleH||$(curr).height();curr.cycleW=curr.cycleW||$(curr).width();next.cycleH=next.cycleH||$(next).height();next.cycleW=next.cycleW||$(next).width();if(opts.multiFx){if(opts.lastFx==undefined||++opts.lastFx>=opts.fxs.length){opts.lastFx=0;}fx=opts.fxs[opts.lastFx];opts.currFx=fx;}if(opts.oneTimeFx){fx=opts.oneTimeFx;opts.oneTimeFx=null;}$.fn.cycle.resetState(opts,fx);if(opts.before.length){$.each(opts.before,function(i,o){if(p.cycleStop!=opts.stopCount){return;}o.apply(next,[curr,next,opts,fwd]);});}var after=function(){$.each(opts.after,function(i,o){if(p.cycleStop!=opts.stopCount){return;}o.apply(next,[curr,next,opts,fwd]);});};debug("tx firing; currSlide: "+opts.currSlide+"; nextSlide: "+opts.nextSlide);opts.busy=1;if(opts.fxFn){opts.fxFn(curr,next,opts,after,fwd,manual&&opts.fastOnEvent);}else{if($.isFunction($.fn.cycle[opts.fx])){$.fn.cycle[opts.fx](curr,next,opts,after,fwd,manual&&opts.fastOnEvent);}else{$.fn.cycle.custom(curr,next,opts,after,fwd,manual&&opts.fastOnEvent);}}}if(changed||opts.nextSlide==opts.currSlide){opts.lastSlide=opts.currSlide;if(opts.random){opts.currSlide=opts.nextSlide;if(++opts.randomIndex==els.length){opts.randomIndex=0;}opts.nextSlide=opts.randomMap[opts.randomIndex];if(opts.nextSlide==opts.currSlide){opts.nextSlide=(opts.currSlide==opts.slideCount-1)?0:opts.currSlide+1;}}else{if(opts.backwards){var roll=(opts.nextSlide-1)<0;if(roll&&opts.bounce){opts.backwards=!opts.backwards;opts.nextSlide=1;opts.currSlide=0;}else{opts.nextSlide=roll?(els.length-1):opts.nextSlide-1;opts.currSlide=roll?0:opts.nextSlide+1;}}else{var roll=(opts.nextSlide+1)==els.length;if(roll&&opts.bounce){opts.backwards=!opts.backwards;opts.nextSlide=els.length-2;opts.currSlide=els.length-1;}else{opts.nextSlide=roll?0:opts.nextSlide+1;opts.currSlide=roll?els.length-1:opts.nextSlide-1;}}}}if(changed&&opts.pager){opts.updateActivePagerLink(opts.pager,opts.currSlide,opts.activePagerClass);}var ms=0;if(opts.timeout&&!opts.continuous){ms=getTimeout(els[opts.currSlide],els[opts.nextSlide],opts,fwd);}else{if(opts.continuous&&p.cyclePause){ms=10;}}if(ms>0){p.cycleTimeout=setTimeout(function(){go(els,opts,0,(!opts.rev&&!opts.backwards));},ms);}}$.fn.cycle.updateActivePagerLink=function(pager,currSlide,clsName){$(pager).each(function(){$(this).children().removeClass(clsName).eq(currSlide).addClass(clsName);});};function getTimeout(curr,next,opts,fwd){if(opts.timeoutFn){var t=opts.timeoutFn.call(curr,curr,next,opts,fwd);while((t-opts.speed)<250){t+=opts.speed;}debug("calculated timeout: "+t+"; speed: "+opts.speed);if(t!==false){return t;}}return opts.timeout;}$.fn.cycle.next=function(opts){advance(opts,opts.rev?-1:1);};$.fn.cycle.prev=function(opts){advance(opts,opts.rev?1:-1);};function advance(opts,val){var els=opts.elements;var p=opts.$cont[0],timeout=p.cycleTimeout;if(timeout){clearTimeout(timeout);p.cycleTimeout=0;}if(opts.random&&val<0){opts.randomIndex--;if(--opts.randomIndex==-2){opts.randomIndex=els.length-2;}else{if(opts.randomIndex==-1){opts.randomIndex=els.length-1;}}opts.nextSlide=opts.randomMap[opts.randomIndex];}else{if(opts.random){opts.nextSlide=opts.randomMap[opts.randomIndex];}else{opts.nextSlide=opts.currSlide+val;if(opts.nextSlide<0){if(opts.nowrap){return false;}opts.nextSlide=els.length-1;}else{if(opts.nextSlide>=els.length){if(opts.nowrap){return false;}opts.nextSlide=0;}}}}var cb=opts.onPrevNextEvent||opts.prevNextClick;if($.isFunction(cb)){cb(val>0,opts.nextSlide,els[opts.nextSlide]);}go(els,opts,1,val>=0);return false;}function buildPager(els,opts){var $p=$(opts.pager);$.each(els,function(i,o){$.fn.cycle.createPagerAnchor(i,o,$p,els,opts);});opts.updateActivePagerLink(opts.pager,opts.startingSlide,opts.activePagerClass);}$.fn.cycle.createPagerAnchor=function(i,el,$p,els,opts){var a;if($.isFunction(opts.pagerAnchorBuilder)){a=opts.pagerAnchorBuilder(i,el);debug("pagerAnchorBuilder("+i+", el) returned: "+a);}else{a='<a href="#">'+(i+1)+"</a>";}if(!a){return;}var $a=$(a);if($a.parents("body").length===0){var arr=[];if($p.length>1){$p.each(function(){var $clone=$a.clone(true);$(this).append($clone);arr.push($clone[0]);});$a=$(arr);}else{$a.appendTo($p);}}opts.pagerAnchors=opts.pagerAnchors||[];opts.pagerAnchors.push($a);$a.bind(opts.pagerEvent,function(e){e.preventDefault();opts.nextSlide=i;var p=opts.$cont[0],timeout=p.cycleTimeout;if(timeout){clearTimeout(timeout);p.cycleTimeout=0;}var cb=opts.onPagerEvent||opts.pagerClick;if($.isFunction(cb)){cb(opts.nextSlide,els[opts.nextSlide]);}go(els,opts,1,opts.currSlide<i);});if(!/^click/.test(opts.pagerEvent)&&!opts.allowPagerClickBubble){$a.bind("click.cycle",function(){return false;});}if(opts.pauseOnPagerHover){$a.hover(function(){opts.$cont[0].cyclePause++;},function(){opts.$cont[0].cyclePause--;});}};$.fn.cycle.hopsFromLast=function(opts,fwd){var hops,l=opts.lastSlide,c=opts.currSlide;if(fwd){hops=c>l?c-l:opts.slideCount-l;}else{hops=c<l?l-c:l+opts.slideCount-c;}return hops;};function clearTypeFix($slides){debug("applying clearType background-color hack");function hex(s){s=parseInt(s).toString(16);return s.length<2?"0"+s:s;}function getBg(e){for(;e&&e.nodeName.toLowerCase()!="html";e=e.parentNode){var v=$.css(e,"background-color");if(v.indexOf("rgb")>=0){var rgb=v.match(/\d+/g);return"#"+hex(rgb[0])+hex(rgb[1])+hex(rgb[2]);}if(v&&v!="transparent"){return v;}}return"#ffffff";}$slides.each(function(){$(this).css("background-color",getBg(this));});}$.fn.cycle.commonReset=function(curr,next,opts,w,h,rev){$(opts.elements).not(curr).hide();opts.cssBefore.opacity=1;opts.cssBefore.display="block";if(w!==false&&next.cycleW>0){opts.cssBefore.width=next.cycleW;}if(h!==false&&next.cycleH>0){opts.cssBefore.height=next.cycleH;}opts.cssAfter=opts.cssAfter||{};opts.cssAfter.display="none";$(curr).css("zIndex",opts.slideCount+(rev===true?1:0));$(next).css("zIndex",opts.slideCount+(rev===true?0:1));};$.fn.cycle.custom=function(curr,next,opts,cb,fwd,speedOverride){var $l=$(curr),$n=$(next);var speedIn=opts.speedIn,speedOut=opts.speedOut,easeIn=opts.easeIn,easeOut=opts.easeOut;$n.css(opts.cssBefore);if(speedOverride){if(typeof speedOverride=="number"){speedIn=speedOut=speedOverride;}else{speedIn=speedOut=1;}easeIn=easeOut=null;}var fn=function(){$n.animate(opts.animIn,speedIn,easeIn,cb);};$l.animate(opts.animOut,speedOut,easeOut,function(){if(opts.cssAfter){$l.css(opts.cssAfter);}if(!opts.sync){fn();}});if(opts.sync){fn();}};$.fn.cycle.transitions={fade:function($cont,$slides,opts){$slides.not(":eq("+opts.currSlide+")").css("opacity",0);opts.before.push(function(curr,next,opts){$.fn.cycle.commonReset(curr,next,opts);opts.cssBefore.opacity=0;});opts.animIn={opacity:1};opts.animOut={opacity:0};opts.cssBefore={top:0,left:0};}};$.fn.cycle.ver=function(){return ver;};$.fn.cycle.defaults={fx:"fade",timeout:4000,timeoutFn:null,continuous:0,speed:1000,speedIn:null,speedOut:null,next:null,prev:null,onPrevNextEvent:null,prevNextEvent:"click.cycle",pager:null,onPagerEvent:null,pagerEvent:"click.cycle",allowPagerClickBubble:false,pagerAnchorBuilder:null,before:null,after:null,end:null,easing:null,easeIn:null,easeOut:null,shuffle:null,animIn:null,animOut:null,cssBefore:null,cssAfter:null,fxFn:null,height:"auto",startingSlide:0,sync:1,random:0,fit:0,containerResize:1,pause:0,pauseOnPagerHover:0,autostop:0,autostopCount:0,delay:0,slideExpr:null,cleartype:!$.support.opacity,cleartypeNoBg:false,nowrap:0,fastOnEvent:0,randomizeEffects:1,rev:0,manualTrump:true,requeueOnImageNotLoaded:true,requeueTimeout:250,activePagerClass:"activeSlide",updateActivePagerLink:null,backwards:false};})(jQuery);
+/*
+ * jQuery Cycle Plugin Transition Definitions
+ * This script is a plugin for the jQuery Cycle Plugin
+ * Examples and documentation at: http://malsup.com/jquery/cycle/
+ * Copyright (c) 2007-2010 M. Alsup
+ * Version:	 2.72
+ * Dual licensed under the MIT and GPL licenses:
+ * http://www.opensource.org/licenses/mit-license.php
+ * http://www.gnu.org/licenses/gpl.html
+ */
+(function($){$.fn.cycle.transitions.none=function($cont,$slides,opts){opts.fxFn=function(curr,next,opts,after){$(next).show();$(curr).hide();after();};};$.fn.cycle.transitions.scrollUp=function($cont,$slides,opts){$cont.css("overflow","hidden");opts.before.push($.fn.cycle.commonReset);var h=$cont.height();opts.cssBefore={top:h,left:0};opts.cssFirst={top:0};opts.animIn={top:0};opts.animOut={top:-h};};$.fn.cycle.transitions.scrollDown=function($cont,$slides,opts){$cont.css("overflow","hidden");opts.before.push($.fn.cycle.commonReset);var h=$cont.height();opts.cssFirst={top:0};opts.cssBefore={top:-h,left:0};opts.animIn={top:0};opts.animOut={top:h};};$.fn.cycle.transitions.scrollLeft=function($cont,$slides,opts){$cont.css("overflow","hidden");opts.before.push($.fn.cycle.commonReset);var w=$cont.width();opts.cssFirst={left:0};opts.cssBefore={left:w,top:0};opts.animIn={left:0};opts.animOut={left:0-w};};$.fn.cycle.transitions.scrollRight=function($cont,$slides,opts){$cont.css("overflow","hidden");opts.before.push($.fn.cycle.commonReset);var w=$cont.width();opts.cssFirst={left:0};opts.cssBefore={left:-w,top:0};opts.animIn={left:0};opts.animOut={left:w};};$.fn.cycle.transitions.scrollHorz=function($cont,$slides,opts){$cont.css("overflow","hidden").width();opts.before.push(function(curr,next,opts,fwd){$.fn.cycle.commonReset(curr,next,opts);opts.cssBefore.left=fwd?(next.cycleW-1):(1-next.cycleW);opts.animOut.left=fwd?-curr.cycleW:curr.cycleW;});opts.cssFirst={left:0};opts.cssBefore={top:0};opts.animIn={left:0};opts.animOut={top:0};};$.fn.cycle.transitions.scrollVert=function($cont,$slides,opts){$cont.css("overflow","hidden");opts.before.push(function(curr,next,opts,fwd){$.fn.cycle.commonReset(curr,next,opts);opts.cssBefore.top=fwd?(1-next.cycleH):(next.cycleH-1);opts.animOut.top=fwd?curr.cycleH:-curr.cycleH;});opts.cssFirst={top:0};opts.cssBefore={left:0};opts.animIn={top:0};opts.animOut={left:0};};$.fn.cycle.transitions.slideX=function($cont,$slides,opts){opts.before.push(function(curr,next,opts){$(opts.elements).not(curr).hide();$.fn.cycle.commonReset(curr,next,opts,false,true);opts.animIn.width=next.cycleW;});opts.cssBefore={left:0,top:0,width:0};opts.animIn={width:"show"};opts.animOut={width:0};};$.fn.cycle.transitions.slideY=function($cont,$slides,opts){opts.before.push(function(curr,next,opts){$(opts.elements).not(curr).hide();$.fn.cycle.commonReset(curr,next,opts,true,false);opts.animIn.height=next.cycleH;});opts.cssBefore={left:0,top:0,height:0};opts.animIn={height:"show"};opts.animOut={height:0};};$.fn.cycle.transitions.shuffle=function($cont,$slides,opts){var i,w=$cont.css("overflow","visible").width();$slides.css({left:0,top:0});opts.before.push(function(curr,next,opts){$.fn.cycle.commonReset(curr,next,opts,true,true,true);});if(!opts.speedAdjusted){opts.speed=opts.speed/2;opts.speedAdjusted=true;}opts.random=0;opts.shuffle=opts.shuffle||{left:-w,top:15};opts.els=[];for(i=0;i<$slides.length;i++){opts.els.push($slides[i]);}for(i=0;i<opts.currSlide;i++){opts.els.push(opts.els.shift());}opts.fxFn=function(curr,next,opts,cb,fwd){var $el=fwd?$(curr):$(next);$(next).css(opts.cssBefore);var count=opts.slideCount;$el.animate(opts.shuffle,opts.speedIn,opts.easeIn,function(){var hops=$.fn.cycle.hopsFromLast(opts,fwd);for(var k=0;k<hops;k++){fwd?opts.els.push(opts.els.shift()):opts.els.unshift(opts.els.pop());}if(fwd){for(var i=0,len=opts.els.length;i<len;i++){$(opts.els[i]).css("z-index",len-i+count);}}else{var z=$(curr).css("z-index");$el.css("z-index",parseInt(z)+1+count);}$el.animate({left:0,top:0},opts.speedOut,opts.easeOut,function(){$(fwd?this:curr).hide();if(cb){cb();}});});};opts.cssBefore={display:"block",opacity:1,top:0,left:0};};$.fn.cycle.transitions.turnUp=function($cont,$slides,opts){opts.before.push(function(curr,next,opts){$.fn.cycle.commonReset(curr,next,opts,true,false);opts.cssBefore.top=next.cycleH;opts.animIn.height=next.cycleH;});opts.cssFirst={top:0};opts.cssBefore={left:0,height:0};opts.animIn={top:0};opts.animOut={height:0};};$.fn.cycle.transitions.turnDown=function($cont,$slides,opts){opts.before.push(function(curr,next,opts){$.fn.cycle.commonReset(curr,next,opts,true,false);opts.animIn.height=next.cycleH;opts.animOut.top=curr.cycleH;});opts.cssFirst={top:0};opts.cssBefore={left:0,top:0,height:0};opts.animOut={height:0};};$.fn.cycle.transitions.turnLeft=function($cont,$slides,opts){opts.before.push(function(curr,next,opts){$.fn.cycle.commonReset(curr,next,opts,false,true);opts.cssBefore.left=next.cycleW;opts.animIn.width=next.cycleW;});opts.cssBefore={top:0,width:0};opts.animIn={left:0};opts.animOut={width:0};};$.fn.cycle.transitions.turnRight=function($cont,$slides,opts){opts.before.push(function(curr,next,opts){$.fn.cycle.commonReset(curr,next,opts,false,true);opts.animIn.width=next.cycleW;opts.animOut.left=curr.cycleW;});opts.cssBefore={top:0,left:0,width:0};opts.animIn={left:0};opts.animOut={width:0};};$.fn.cycle.transitions.zoom=function($cont,$slides,opts){opts.before.push(function(curr,next,opts){$.fn.cycle.commonReset(curr,next,opts,false,false,true);opts.cssBefore.top=next.cycleH/2;opts.cssBefore.left=next.cycleW/2;opts.animIn={top:0,left:0,width:next.cycleW,height:next.cycleH};opts.animOut={width:0,height:0,top:curr.cycleH/2,left:curr.cycleW/2};});opts.cssFirst={top:0,left:0};opts.cssBefore={width:0,height:0};};$.fn.cycle.transitions.fadeZoom=function($cont,$slides,opts){opts.before.push(function(curr,next,opts){$.fn.cycle.commonReset(curr,next,opts,false,false);opts.cssBefore.left=next.cycleW/2;opts.cssBefore.top=next.cycleH/2;opts.animIn={top:0,left:0,width:next.cycleW,height:next.cycleH};});opts.cssBefore={width:0,height:0};opts.animOut={opacity:0};};$.fn.cycle.transitions.blindX=function($cont,$slides,opts){var w=$cont.css("overflow","hidden").width();opts.before.push(function(curr,next,opts){$.fn.cycle.commonReset(curr,next,opts);opts.animIn.width=next.cycleW;opts.animOut.left=curr.cycleW;});opts.cssBefore={left:w,top:0};opts.animIn={left:0};opts.animOut={left:w};};$.fn.cycle.transitions.blindY=function($cont,$slides,opts){var h=$cont.css("overflow","hidden").height();opts.before.push(function(curr,next,opts){$.fn.cycle.commonReset(curr,next,opts);opts.animIn.height=next.cycleH;opts.animOut.top=curr.cycleH;});opts.cssBefore={top:h,left:0};opts.animIn={top:0};opts.animOut={top:h};};$.fn.cycle.transitions.blindZ=function($cont,$slides,opts){var h=$cont.css("overflow","hidden").height();var w=$cont.width();opts.before.push(function(curr,next,opts){$.fn.cycle.commonReset(curr,next,opts);opts.animIn.height=next.cycleH;opts.animOut.top=curr.cycleH;});opts.cssBefore={top:h,left:w};opts.animIn={top:0,left:0};opts.animOut={top:h,left:w};};$.fn.cycle.transitions.growX=function($cont,$slides,opts){opts.before.push(function(curr,next,opts){$.fn.cycle.commonReset(curr,next,opts,false,true);opts.cssBefore.left=this.cycleW/2;opts.animIn={left:0,width:this.cycleW};opts.animOut={left:0};});opts.cssBefore={width:0,top:0};};$.fn.cycle.transitions.growY=function($cont,$slides,opts){opts.before.push(function(curr,next,opts){$.fn.cycle.commonReset(curr,next,opts,true,false);opts.cssBefore.top=this.cycleH/2;opts.animIn={top:0,height:this.cycleH};opts.animOut={top:0};});opts.cssBefore={height:0,left:0};};$.fn.cycle.transitions.curtainX=function($cont,$slides,opts){opts.before.push(function(curr,next,opts){$.fn.cycle.commonReset(curr,next,opts,false,true,true);opts.cssBefore.left=next.cycleW/2;opts.animIn={left:0,width:this.cycleW};opts.animOut={left:curr.cycleW/2,width:0};});opts.cssBefore={top:0,width:0};};$.fn.cycle.transitions.curtainY=function($cont,$slides,opts){opts.before.push(function(curr,next,opts){$.fn.cycle.commonReset(curr,next,opts,true,false,true);opts.cssBefore.top=next.cycleH/2;opts.animIn={top:0,height:next.cycleH};opts.animOut={top:curr.cycleH/2,height:0};});opts.cssBefore={left:0,height:0};};$.fn.cycle.transitions.cover=function($cont,$slides,opts){var d=opts.direction||"left";var w=$cont.css("overflow","hidden").width();var h=$cont.height();opts.before.push(function(curr,next,opts){$.fn.cycle.commonReset(curr,next,opts);if(d=="right"){opts.cssBefore.left=-w;}else{if(d=="up"){opts.cssBefore.top=h;}else{if(d=="down"){opts.cssBefore.top=-h;}else{opts.cssBefore.left=w;}}}});opts.animIn={left:0,top:0};opts.animOut={opacity:1};opts.cssBefore={top:0,left:0};};$.fn.cycle.transitions.uncover=function($cont,$slides,opts){var d=opts.direction||"left";var w=$cont.css("overflow","hidden").width();var h=$cont.height();opts.before.push(function(curr,next,opts){$.fn.cycle.commonReset(curr,next,opts,true,true,true);if(d=="right"){opts.animOut.left=w;}else{if(d=="up"){opts.animOut.top=-h;}else{if(d=="down"){opts.animOut.top=h;}else{opts.animOut.left=-w;}}}});opts.animIn={left:0,top:0};opts.animOut={opacity:1};opts.cssBefore={top:0,left:0};};$.fn.cycle.transitions.toss=function($cont,$slides,opts){var w=$cont.css("overflow","visible").width();var h=$cont.height();opts.before.push(function(curr,next,opts){$.fn.cycle.commonReset(curr,next,opts,true,true,true);if(!opts.animOut.left&&!opts.animOut.top){opts.animOut={left:w*2,top:-h/2,opacity:0};}else{opts.animOut.opacity=0;}});opts.cssBefore={left:0,top:0};opts.animIn={left:0};};$.fn.cycle.transitions.wipe=function($cont,$slides,opts){var w=$cont.css("overflow","hidden").width();var h=$cont.height();opts.cssBefore=opts.cssBefore||{};var clip;if(opts.clip){if(/l2r/.test(opts.clip)){clip="rect(0px 0px "+h+"px 0px)";}else{if(/r2l/.test(opts.clip)){clip="rect(0px "+w+"px "+h+"px "+w+"px)";}else{if(/t2b/.test(opts.clip)){clip="rect(0px "+w+"px 0px 0px)";}else{if(/b2t/.test(opts.clip)){clip="rect("+h+"px "+w+"px "+h+"px 0px)";}else{if(/zoom/.test(opts.clip)){var top=parseInt(h/2);var left=parseInt(w/2);clip="rect("+top+"px "+left+"px "+top+"px "+left+"px)";}}}}}}opts.cssBefore.clip=opts.cssBefore.clip||clip||"rect(0px 0px 0px 0px)";var d=opts.cssBefore.clip.match(/(\d+)/g);var t=parseInt(d[0]),r=parseInt(d[1]),b=parseInt(d[2]),l=parseInt(d[3]);opts.before.push(function(curr,next,opts){if(curr==next){return;}var $curr=$(curr),$next=$(next);$.fn.cycle.commonReset(curr,next,opts,true,true,false);opts.cssAfter.display="block";var step=1,count=parseInt((opts.speedIn/13))-1;(function f(){var tt=t?t-parseInt(step*(t/count)):0;var ll=l?l-parseInt(step*(l/count)):0;var bb=b<h?b+parseInt(step*((h-b)/count||1)):h;var rr=r<w?r+parseInt(step*((w-r)/count||1)):w;$next.css({clip:"rect("+tt+"px "+rr+"px "+bb+"px "+ll+"px)"});(step++<=count)?setTimeout(f,13):$curr.css("display","none");})();});opts.cssBefore={display:"block",opacity:1,top:0,left:0};opts.animIn={left:0};opts.animOut={left:0};};})(jQuery);
+
+//]]>
+</script>
+<script type='text/javascript'>
+/* <![CDATA[ */
+jQuery.noConflict();
+jQuery(function(){
+	jQuery('ul.menu-primary').superfish({
+	animation: {opacity:'show'},
+autoArrows:  true,
+                dropShadows: false,
+                speed: 200,
+                delay: 800
+                });
+            });
+
+jQuery(function(){
+	jQuery('ul.menu-secondary').superfish({
+	animation: {opacity:'show'},
+autoArrows:  true,
+                dropShadows: false,
+                speed: 200,
+                delay: 800
+                });
+            });
+
+jQuery(document).ready(function() {
+	jQuery('.fp-slides').cycle({
+		fx: 'fade',
+		timeout: 4000,
+		delay: 0,
+		speed: 1000,
+		next: '.fp-next',
+		prev: '.fp-prev',
+		pager: '.fp-pager',
+		continuous: 0,
+		sync: 1,
+		pause: 1,
+		pauseOnPagerHover: 1,
+		cleartype: true,
+		cleartypeNoBg: true
+	});
+ });
+
+/* ]]> */
+
+</script>
+<script type='text/javascript'>
+summary_noimg = 800;
+summary_img = 650;
+img_thumb_height = 150;
+img_thumb_width = 200;
+</script>
+<script type='text/javascript'>
+//<![CDATA[
+
+function removeHtmlTag(strx,chop){
+	if(strx.indexOf("<")!=-1)
+	{
+		var s = strx.split("<");
+		for(var i=0;i<s.length;i++){
+			if(s[i].indexOf(">")!=-1){
+				s[i] = s[i].substring(s[i].indexOf(">")+1,s[i].length);
+			}
+		}
+		strx =  s.join("");
+	}
+	chop = (chop < strx.length-1) ? chop : strx.length-2;
+	while(strx.charAt(chop-1)!=' ' && strx.indexOf(' ',chop)!=-1) chop++;
+	strx = strx.substring(0,chop-1);
+	return strx+'...';
+}
+
+function createSummaryAndThumb(pID){
+	var div = document.getElementById(pID);
+	var imgtag = "";
+	var img = div.getElementsByTagName("img");
+	var summ = summary_noimg;
+	if(img.length>=1) {
+		imgtag = '<span style="float:left; padding:0px 10px 5px 0px;"><img src="'+img[0].src+'" width="'+img_thumb_width+'px" height="'+img_thumb_height+'px"/></span>';
+		summ = summary_img;
+	}
+
+	var summary = imgtag + '<div>' + removeHtmlTag(div.innerHTML,summ) + '</div>';
+	div.innerHTML = summary;
+}
+
+//]]>
+</script>
+<style type='text/css'>
+body{background: #292727;color:#333;font-family: Arial, Verdana;font-size: 12px;margin:0px;padding:20px 0px 0px 0px;}
+a:link,a:visited{color:#B4221B;text-decoration:underline;outline:none;}
+a:hover{color:#F30B00;text-decoration:none;outline:none;}
+a img{border-width:0}
+#body-wrapper{margin:0px;padding:0px;}
+blockquote{overflow:hidden;padding-left:9px;font-style:italic;color:#666;border-left:3px solid #CADAE7;}
+/* Header-----------------------------------------------*/
+#header-wrapper{width:950px;margin:0 auto 0;height:60px;padding:30px 0;overflow:hidden;background: url(http://2.bp.blogspot.com/_8aZXeWtZzQY/TT4WUeRyOEI/AAAAAAAAAWs/JWEMPfbSXrQ/s000/header-bg.png) center top no-repeat;}
+#header-inner{background-position:center;margin-left:auto;margin-right:auto}
+#header{margin:0;border:0 solid $bordercolor;color:$pagetitlecolor;float:left;width:47%;overflow:hidden;}
+#header h1{margin:0 5px 0;padding:0px 0 0 10px;font-family:Arial, Helvetica, Sans-serif;font-weight:bold;font-size:40px;line-height:40px;color:#4E4D4D;}
+#header .description{padding-left:17px;color:#666;line-height:14px;font-size:14px;padding-top:0px;margin-top:5px;}
+#header h1 a,#header h1 a:visited{color:#4E4D4D;text-decoration:none}
+#header h2{padding-left:15px;color:#736f74;font:14px Arial,Helvetica,Sans-serif}
+#header2{float:right;width:51%;margin-right:0px;padding-right:0px;overflow:hidden;}
+#header2 .widget{padding:0px 15px 0 10px;float:right}
+/* Outer-Wrapper----------------------------------------------- */
+#outer-wrapper{width:950px;margin:0px auto;padding:0;text-align:$startSide;font:$bodyfont;background:#fff url(http://4.bp.blogspot.com/_8aZXeWtZzQY/TT4WUvQzdZI/AAAAAAAAAWw/PNIjsUtWxjU/s000/container-bg.png) center 120px no-repeat;}
+#content-wrapper{background: #fff url(http://1.bp.blogspot.com/_8aZXeWtZzQY/TT4WU32yVnI/AAAAAAAAAW0/DfUw2da5H48/s000/main-bg.png) 640px top repeat-y;}
+#main-wrapper{width:610px;padding-left:15px;padding-right:0px;float:left;word-wrap:break-word;/* fix for long text breaking sidebar float in IE */
+overflow:hidden;/* fix for long non-text content breaking IE sidebar float */
+}
+#rsidebar-wrapper{width:285px;float:right;margin-left:15px;margin-right:15px;padding-top:15px;padding-bottom:15px;word-wrap:break-word;/* fix for long text breaking sidebar float in IE */
+overflow:hidden;/* fix for long non-text content breaking IE sidebar float */
+}
+/* Headings----------------------------------------------- */
+h2{}
+/* Posts-----------------------------------------------*/
+h2.date-header{margin:1.5em 0 .5em}
+.wrapfullpost{}
+.post{border:1px solid #CACACA;padding:10px 10px 0 10px;margin-bottom:15px;background:#F4F4F4;}
+.post-title{color:#292727;margin:0 0 10px 0;padding:0;font-family:Arial,Helvetica,Sans-serif;font-size:22px;line-height:22px;font-weight:bold;}
+.post-title a,.post-title a:visited,.post-title strong{display:block;text-decoration:none;color:#292727;text-decoration:none;}
+.post-title strong,.post-title a:hover{color:#B0221B;text-decoration:none;}
+.post-body{margin:0px;padding:0px 10px 5px 10px;font-family: Arial, Verdana;font-size: 12px;line-height: 20px;}
+.post-footer{margin:5px 0;}
+.comment-link{margin-$startSide:.6em}
+.post-body img{padding:6px 6px 6px 6px;background:#ffffff;border: 1px solid #e8e8e8;margin:0 4px 4px 0}
+/* Comments----------------------------------------------- */
+#comments h4{margin:1em 0;font-weight:bold;line-height:1.4em;text-transform:uppercase;letter-spacing:.2em;color:$sidebarcolor}
+#comments-block3{padding:0;margin:0;float:left;overflow:hidden;position:relative;}
+#comment-name-url{width:465px;float:left}
+#comment-date{width:465px;float:left;margin-top:5px;font-size:10px;}
+#comment-header{float:left;border:1px solid #cccccc;padding:5px 0 40px 10px;margin:5px 0px;background-color:#fff;position:relative;-moz-border-radius:8px;-khtml-border-radius:8px;-webkit-border-radius:8px;border-radius:8px;}
+.avatar-image-container{background:url(http://3.bp.blogspot.com/_8aZXeWtZzQY/TT4WVHCAzwI/AAAAAAAAAW4/2QZgUB1Bxig/s000/comment-avatar.jpg);width:32px;height:32px;float:right;margin:5px 10px 5px 5px;border:1px solid #ddd;}
+.avatar-image-container img{width:32px;height:32px;}
+a.comments-autor-name{color:#000;font:normal bold 12px Arial,Tahoma,Verdana}
+a.says{color:#000;font:normal 11px Arial,Tahoma,Verdana}
+.says a:hover{text-decoration:none}
+.deleted-comment{font-style:italic;color:gray}
+#blog-pager-newer-link{float:$startSide}
+#blog-pager-older-link{float:$endSide}
+#blog-pager{text-align:center}
+.feed-links{clear:both;line-height:2.5em}
+/* Sidebar Content----------------------------------------------- */
+.sidebar{margin:0 0 10px 0;color:#585858;}
+.sidebar a{text-decoration:none;color:#585858;}
+.sidebar a:hover{text-decoration:none;color:#C9231C;}
+.sidebar h2{color:#fff;background:url(http://4.bp.blogspot.com/_8aZXeWtZzQY/TT4WVLrsjSI/AAAAAAAAAW8/YOJdBhyYvtk/s000/widget-title-bg.png) left center repeat-x;font-size:15px;line-height:15px;font-family:Arial,Helvetica,Sans-serif;font-weight:bold;margin:0 0 10px 0;padding:8px 0 8px 8px;text-transform:uppercase;border-left:4px solid #A9211B;text-shadow:0 1px 0 #000;}
+.sidebar ul{list-style-type:none;margin:0px;padding:0px;}
+.sidebar ul li{padding: 6px 0 6px 14px;margin:0;background: url(http://3.bp.blogspot.com/_8aZXeWtZzQY/TT4WVXfgDFI/AAAAAAAAAXA/D43zQfG80BU/s000/widget-list.png) left 12px no-repeat;border-bottom: 1px dotted #B2B2B2;}
+.sidebar .widget{margin: 0 0 15px 0;padding:0px;}
+.sidebar #HTML7 h2 {display:none;}
+.main .widget{margin:0 0 1.5em;padding:0 0 1.5em}
+.main .Blog{border-bottom-width:0}
+/* Profile ----------------------------------------------- */
+.profile-img{float:$startSide;margin-top:0;margin-$endSide:5px;margin-bottom:5px;margin-$startSide:0;padding:4px;border:1px solid $bordercolor}
+.profile-data{margin:0;text-transform:uppercase;letter-spacing:.1em;font:$postfooterfont;color:$sidebarcolor;font-weight:bold;line-height:1.6em}
+.profile-datablock{margin:.5em 0 .5em}
+.profile-textblock{margin:0.5em 0;line-height:1.6em}
+.avatar-image-container{background:url(http://3.bp.blogspot.com/_8aZXeWtZzQY/TT4WVHCAzwI/AAAAAAAAAW4/2QZgUB1Bxig/s000/comment-avatar.jpg);width:32px;height:32px;float:right;margin:5px 10px 5px 5px;border:1px solid #ddd;}
+.avatar-image-container img{width:32px;height:32px;}
+.profile-link{font:$postfooterfont;text-transform:uppercase;letter-spacing:.1em}
+#navbar-iframe{height:0;visibility:hidden;display:none;}
+.menus,.menus *{margin:0;padding:0;list-style:none;list-style-type:none;line-height:1.0}
+.menus ul{position:absolute;top:-999em;width:100%}
+.menus ul li{width:100%}
+.menus li:hover{visibility:inherit}
+.menus li{float:left;position:relative}
+.menus a{display:block;position:relative}
+.menus li:hover ul,.menus li.sfHover ul{left:0;top:100%;z-index:99}
+.menus li:hover li ul,.menus li.sfHover li ul{top:-999em}
+.menus li li:hover ul,.menus li li.sfHover ul{left:100%;top:0}
+.menus li li:hover li ul,.menus li li.sfHover li ul{top:-999em}
+.menus li li li:hover ul,.menus li li li.sfHover ul{left:100%;top:0}
+.sf-shadow ul{padding:0 8px 9px 0;-moz-border-radius-bottomleft:17px;-moz-border-radius-topright:17px;-webkit-border-top-right-radius:17px;-webkit-border-bottom-left-radius:17px}
+.menus .sf-shadow ul.sf-shadow-off{background:transparent}
+.menu-primary-wrap{padding:0;position:relative;height:40px;background:url(http://4.bp.blogspot.com/_8aZXeWtZzQY/TT4WVmXT3eI/AAAAAAAAAXE/cfJLKxcLbew/s000/menu-primary-bg.png) left top repeat-x;margin-left:15px;overflow:hidden;}
+.menu-primary{}
+.menu-primary ul{min-width:160px}
+.menu-primary li a{color:#E5E5E5;padding:14px 16px;text-decoration:none;text-transform:uppercase;font:bold 12px Arial,Helvetica,Sans-serif}
+.menu-primary > li{background:url(http://2.bp.blogspot.com/_8aZXeWtZzQY/TT4WV651W1I/AAAAAAAAAXI/6uyn0hIT_Wc/s000/menu-primary-separator.png) right center no-repeat;padding-right:2px}
+.menu-primary li a:hover,.menu-primary li a:active,.menu-primary li a:focus,.menu-primary li:hover > a,.menu-primary li.current-cat > a,.menu-primary li.current_page_item > a,.menu-primary li.current-menu-item > a{color:#fff;background:url(http://4.bp.blogspot.com/_8aZXeWtZzQY/TT4WVmXT3eI/AAAAAAAAAXE/cfJLKxcLbew/s000/menu-primary-bg.png) left -140px repeat-x;outline:0}
+.menu-primary li li a{color:#fff;text-transform:none;background:#262626;padding:14px 15px;margin:0;font-weight:normal}
+.menu-primary li li a:hover,.menu-primary li li a:active,.menu-primary li li a:focus,.menu-primary li li:hover > a,.menu-primary li li.current-cat > a,.menu-primary li li.current_page_item > a,.menu-primary li li.current-menu-item > a{color:#fff;background:#303030;outline:0}
+.menu-primary a.sf-with-ul{padding-right:28px;min-width:1px}
+.menu-primary .sf-sub-indicator{position:absolute;display:block;overflow:hidden;right:0;top:0;padding:10px 14px 0 0}
+.menu-primary-wrap .sf-shadow ul{background:url('http://4.bp.blogspot.com/_8aZXeWtZzQY/TT4WWIWG5cI/AAAAAAAAAXM/5Z96zEQQLUc/s000/menu-primary-shadow.png') no-repeat bottom right}
+.menu-secondary-wrap{padding:0;position:relative;height:34px;z-index:300;margin:0}
+.menu-secondary{}
+.menu-secondary ul{min-width:160px}
+.menu-secondary li a{color:#939393;padding:11px 15px;text-decoration:none;text-transform:uppercase;font:bold 12px Arial,Helvetica,Sans-serif}
+.menu-secondary li a:hover,.menu-secondary li a:active,.menu-secondary li a:focus,.menu-secondary li:hover > a,.menu-secondary li.current-cat > a,.menu-secondary li.current_page_item > a,.menu-secondary li.current-menu-item > a{color:#000;outline:0}
+.menu-secondary li li a{color:#6F6F6F;background:#E9E9E9;padding:10px 15px;text-transform:none;margin:0;font-weight:normal}
+.menu-secondary li li a:hover,.menu-secondary li li a:active,.menu-secondary li li a:focus,.menu-secondary li li:hover > a,.menu-secondary li li.current-cat > a,.menu-secondary li li.current_page_item > a,.menu-secondary li li.current-menu-item > a{color:#fff;background:#8F8F8F;outline:0}
+.menu-secondary a.sf-with-ul{padding-right:26px;min-width:1px}
+.menu-secondary .sf-sub-indicator{position:absolute;display:block;overflow:hidden;right:0;top:0;padding:8px 13px 0 0}
+.menu-secondary-wrap .sf-shadow ul{background:url('http://4.bp.blogspot.com/_8aZXeWtZzQY/TT4WW4S6kSI/AAAAAAAAAXQ/npNsNOh1IGg/s000/menu-secondary-shadow.png') no-repeat bottom right}
+.postmeta-primary{color:#777;font-size:11px;text-transform:uppercase;padding:0 0 10px 0}
+.postmeta-secondary{color:#777;font-size:11px;padding:0 0 15px 0}
+.meta_date,.meta_author,.meta_comments,.meta_edit,.meta_categories,.meta_tags{padding:3px 0 3px 20px;background-position:left center;background-repeat:no-repeat}
+.meta_date{background-image:url(http://1.bp.blogspot.com/_8aZXeWtZzQY/TT4WXBfRrGI/AAAAAAAAAXU/FpVniNph-No/s000/time.png)}
+.meta_author{background-image:url(http://1.bp.blogspot.com/_8aZXeWtZzQY/TT4WXT4iw2I/AAAAAAAAAXY/Ihg1DKa6LXI/s000/author.png)}
+.meta_comments{background-image:url(http://4.bp.blogspot.com/_8aZXeWtZzQY/TT4WXj58mkI/AAAAAAAAAXc/JRmYWsc8_dg/s000/comments.png)}
+.meta_edit{background-image:url(images/edit.png)}
+.meta_categories{background-image:url(http://2.bp.blogspot.com/_8aZXeWtZzQY/TT4WYCvNxaI/AAAAAAAAAXg/FaWulBMnvuM/s000/cat.png)}
+.meta_tags{background-image:url(http://3.bp.blogspot.com/_8aZXeWtZzQY/TT4WYf2HMpI/AAAAAAAAAXk/p0IeVgzHWVQ/s000/tags.png)}
+.readmore-wrap{margin-bottom:15px;float:right}
+a.readmore{color:#6D6D6D;background:#E5E5E5;padding:6px 14px;font-size:12px;line-height:12px;display:block;text-decoration:none;-moz-border-radius:5px;-khtml-border-radius:5px;-webkit-border-radius:5px;border-radius:5px}
+a.readmore:hover{color:#fff;background:#5F5F5F;text-decoration:none}
+/* FOOTER */
+#footer-wrap{}
+#footer{border-top:10px solid #292727}
+#copyrights{color:#fff;text-align:center;padding:20px 0px;background:#383737}
+#copyrights a{color:#fff}
+#copyrights a:hover{color:#fff;text-decoration:none}
+#credits{color:#7D7D7D;text-align:center;font-size:12px;padding:10px 0px 10px 0px;background:#292727;margin-bottom:10px !important;}
+#credits a{color:#7D7D7D;text-decoration:none;font-style:italic;}
+#credits a:hover{text-decoration:none;color:#7D7D7D}
+/* -- NUMBER PAGE NAVIGATION -- */
+.showpageNum a{font:15px Arial,Verdana;padding:4px 8px;margin:0 4px;text-decoration:none;border:0 solid #333;background:#dfdfdf;color:#686868;border:1px solid #989898}
+.showpageOf{margin:0 8px 0 0;color:#222;font:15px Arial,Verdana}
+.showpageNum a:hover{color:#494949;background:#dfdfdf;border:1px solid #626262}
+.showpageArea{margin:10px 0;font:15px Arial,Verdana;color:#111}
+.showpagePoint{color:#434343;font:bold 15px Arial,Verdana;padding:4px 8px;margin:2px;border:1px solid #b6b5b5;background:#fff;text-decoration:none}
+.addthis_toolbox{padding:5px 0 5px 0;text-align:center}
+.addthis_toolbox .custom_images a{width:32px;height:32px;margin:0 2px 0 2px;padding:0}
+.addthis_toolbox .custom_images a:hover img{opacity:1}
+.addthis_toolbox .custom_images a img{opacity:0.85}
+#comment-form iframe{padding:5px;width:500px}
+#search{border:1px solid #353434;background:#e8e8e8;height:26px;padding:0;text-align:left;overflow:hidden}
+#search #s{background:none;color:#515151;border:0;padding:4px;margin:1px 0 0 2px;float:left}
+#search .search-image{border:0;vertical-align:top;float:right;margin:4px 4px 0 2px}
+#search-wrap{width:300px;padding:15px 0}
+.topsearch #search{margin:6px 22px 0 0}
+.featuredposts{margin:15px 0 15px 0px;border:1px solid #C0C0C0;width:608px;height:426px;overflow:hidden;background:#ffffff;}
+.fp-slides{}
+.fp-post{padding:13px;background: url(http://3.bp.blogspot.com/_8aZXeWtZzQY/TT4WYfrITjI/AAAAAAAAAXo/bbadr00cMKg/s000/featured-content-bg.png) left top repeat-x;}
+.fp-thumbnail{width:572px;height:300px;border: 4px solid #fff;margin-bottom:10px;overflow:hidden}
+.fp-title{color:#2C2A2D;font:bold 16px Arial,Helvetica,Sans-serif;padding:0 0 4px 0;margin:0;text-transform:uppercase;}
+.fp-title a{color:#2C2A2D;text-decoration:none}
+.fp-title a:hover{color:#BA221B;text-decoration:none}
+.fp-label{color:#2C2A2D;margin:15px 15px 0 15px;padding:0;text-transform:uppercase;font:bold 16px/16px Arial,Helvetica,Sans-serif}
+.fp-post p{color:#535353;padding:0;margin:0;font:12px/16px Arial,Helvetica,Sans-serif;height:32px;overflow:hidden;}
+.fp-more,.fp-more:hover{color:#BA221B;font-weight:bold}
+.fp-nav{width:590px;padding:0px 10px 8px 10px;border-top:0px solid #ccc;height:17px;}
+.fp-pager a{background-image:url(http://4.bp.blogspot.com/_8aZXeWtZzQY/TT4WY5DxPJI/AAAAAAAAAXs/xONVBMyfysE/s000/featured-pager.png);cursor:pointer;margin:3px 6px 0 0;padding:0;height:10px;width:10px;display:block;float:left;overflow:hidden;text-indent:-999px;background-position:0 0}
+.fp-pager a:hover,.fp-pager a.activeSlide{text-decoration:none;background-position:0 -110px}
+.fp-prev{float:right;margin-right:4px;width:15px;height:17px;opacity:0.7;background:url(http://3.bp.blogspot.com/_8aZXeWtZzQY/TT4WZIv61wI/AAAAAAAAAXw/bI_QeuLc4fY/s000/featured-prev.png) top left no-repeat}
+.fp-prev:hover{opacity:1}
+.fp-prev:active{opacity:0.7}
+.fp-next{float:right;width:15px;height:17px;margin-left:4px;opacity:0.7;background:url(http://1.bp.blogspot.com/_8aZXeWtZzQY/TT4WZUelFvI/AAAAAAAAAX0/L9weVbfGL_8/s000/featured-next.png) top left no-repeat}
+.fp-next:hover{opacity:1}
+.fp-next:active{opacity:0.7}
+.tabs-widget{list-style:none;list-style-type:none;margin:0 0 10px 0;padding:0;height:26px}
+.tabs-widget li{list-style:none;list-style-type:none;margin:0 0 0 4px;padding:0;float:left}
+.tabs-widget li:first-child{margin:0}
+.tabs-widget li a{color:#4F4E42;background: url(http://3.bp.blogspot.com/_8aZXeWtZzQY/TT4WZrITnhI/AAAAAAAAAX4/ta7pkrZi8JM/s000/tabs-bg.png) left top repeat-x;padding:5px 10px;display:block;text-decoration:none;font:bold 12px Arial,Helvetica,Sans-serif;text-decoration: none;}
+.tabs-widget li a:hover,.tabs-widget li a.tabs-widget-current{background: url(http://3.bp.blogspot.com/_8aZXeWtZzQY/TT4WZrITnhI/AAAAAAAAAX4/ta7pkrZi8JM/s000/tabs-bg.png) left -126px repeat-x;color:#fff;text-decoration:none}
+.tabs-widget-content{background:#fff;}
+.tabviewsection{margin-top:10px;margin-bottom:10px;}
+#crosscol-wrapper{display:none;}
+.social-connect-widget{background:#F4F4F4;padding:10px}
+.social-connect-widget:hover{background: #E7E7E7;}
+.social-connect-widget a{color:#666666;text-decoration:none;font-weight:bold;font-family:Arial,Helvetica,Sans-serif}
+.social-connect-widget a:hover{color:#3c88b2;text-decoration:underline}
+.social-connect-widget img{vertical-align:middle;margin-right:5px}
+div.span-1,div.span-2,div.span-3,div.span-4,div.span-5,div.span-6,div.span-7,div.span-8,div.span-9,div.span-10,div.span-11,div.span-12,div.span-13,div.span-14,div.span-15,div.span-16,div.span-17,div.span-18,div.span-19,div.span-20,div.span-21,div.span-22,div.span-23,div.span-24{float:left;margin-right:10px}
+.span-1{width:30px}.span-2{width:70px}.span-3{width:110px}.span-4{width:150px}.span-5{width:190px}.span-6{width:230px}.span-7{width:270px}.span-8{width:310px}.span-9{width:350px}.span-10{width:390px}.span-11{width:430px}.span-12{width:470px}.span-13{width:510px}.span-14{width:550px}.span-15{width:590px}.span-16{width:630px}.span-17{width:670px}.span-18{width:710px}.span-19{width:750px}.span-20{width:790px}.span-21{width:830px}.span-22{width:870px}.span-23{width:910px}.span-24,div.span-24{width:950px;margin:0}input.span-1,textarea.span-1,input.span-2,textarea.span-2,input.span-3,textarea.span-3,input.span-4,textarea.span-4,input.span-5,textarea.span-5,input.span-6,textarea.span-6,input.span-7,textarea.span-7,input.span-8,textarea.span-8,input.span-9,textarea.span-9,input.span-10,textarea.span-10,input.span-11,textarea.span-11,input.span-12,textarea.span-12,input.span-13,textarea.span-13,input.span-14,textarea.span-14,input.span-15,textarea.span-15,input.span-16,textarea.span-16,input.span-17,textarea.span-17,input.span-18,textarea.span-18,input.span-19,textarea.span-19,input.span-20,textarea.span-20,input.span-21,textarea.span-21,input.span-22,textarea.span-22,input.span-23,textarea.span-23,input.span-24,textarea.span-24{border-left-width:1px!important;border-right-width:1px!important;padding-left:5px!important;padding-right:5px!important}input.span-1,textarea.span-1{width:18px!important}input.span-2,textarea.span-2{width:58px!important}input.span-3,textarea.span-3{width:98px!important}input.span-4,textarea.span-4{width:138px!important}input.span-5,textarea.span-5{width:178px!important}input.span-6,textarea.span-6{width:218px!important}input.span-7,textarea.span-7{width:258px!important}input.span-8,textarea.span-8{width:298px!important}input.span-9,textarea.span-9{width:338px!important}input.span-10,textarea.span-10{width:378px!important}input.span-11,textarea.span-11{width:418px!important}input.span-12,textarea.span-12{width:458px!important}input.span-13,textarea.span-13{width:498px!important}input.span-14,textarea.span-14{width:538px!important}input.span-15,textarea.span-15{width:578px!important}input.span-16,textarea.span-16{width:618px!important}input.span-17,textarea.span-17{width:658px!important}input.span-18,textarea.span-18{width:698px!important}input.span-19,textarea.span-19{width:738px!important}input.span-20,textarea.span-20{width:778px!important}input.span-21,textarea.span-21{width:818px!important}input.span-22,textarea.span-22{width:858px!important}input.span-23,textarea.span-23{width:898px!important}input.span-24,textarea.span-24{width:938px!important}.last{margin-right:0;padding-right:0}
+.last,div.last{margin-right:0}
+.widget-wrap{list-style-type:none;list-style:none;margin:0 0 15px 0;padding:0}
+h3.widgettitle{color:#fff;background:url(http://4.bp.blogspot.com/_8aZXeWtZzQY/TT4WVLrsjSI/AAAAAAAAAW8/YOJdBhyYvtk/s000/widget-title-bg.png) left center repeat-x;font:bold 15px/15px Arial,Helvetica,Sans-serif;margin:0 0 10px 0;padding:8px 0 8px 8px;text-transform:uppercase;border-left:4px solid #A9211B;text-shadow:0 1px 0 #000}
+</style>
+<!--BBB always have this padding<b:if cond='data:blog.pageType == &quot;static_page&quot;'>-->
+<style type='text/css'>
+#main-wrapper{padding-top:15px;}
+</style>
+<!--</b:if>-->
+<!--<b:if cond='data:blog.pageType == &quot;item&quot;'>-->
+<!--<style type='text/css'>-->
+<!--#main-wrapper{padding-top:15px;}-->
+<!--</style>-->
+<!--</b:if>-->
+<script type='text/javascript'>
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-31080081-1']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+<!-- carbon stle-->
+<style>
+  #carbonads {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+  Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", Helvetica, Arial,
+  sans-serif;
+}
+
+#carbonads {
+  display: block;
+  overflow: hidden;
+  max-width: 728px;
+  position: relative;
+  background-color: hsl(0, 0%, 99%);
+  border: solid 1px #eee;
+  font-size: 22px;
+  box-sizing: content-box;
+}
+
+#carbonads > span {
+  display: block;
+}
+
+#carbonads a {
+  color: inherit;
+  text-decoration: none;
+}
+
+#carbonads a:hover {
+  color: inherit;
+}
+
+.carbon-wrap {
+  display: flex;
+  align-items: center;
+}
+
+.carbon-img {
+  display: block;
+  margin: 0;
+  line-height: 1;
+}
+
+.carbon-img img {
+  display: block;
+  height: 90px;
+  width: auto;
+}
+
+.carbon-text {
+  display: block;
+  padding: 0 1em;
+  line-height: 1.35;
+  text-align: left;
+}
+
+.carbon-poweredby {
+  display: block;
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  padding: 6px 10px;
+  background: repeating-linear-gradient(
+                  -45deg,
+                  transparent,
+                  transparent 5px,
+                  hsla(0, 0%, 0%, 0.025) 5px,
+                  hsla(0, 0%, 0%, 0.025) 10px
+  )
+  hsla(203, 11%, 95%, 0.8);
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  font-size: 8px;
+  border-top-left-radius: 4px;
+  line-height: 1;
+}
+
+@media only screen and (min-width: 320px) and (max-width: 759px) {
+  .carbon-text {
+    font-size: 14px;
+  }
+}
+</style>
+<link href='https://www.blogger.com/dyn-css/authorization.css?targetBlogID=3109111393630873407&amp;zx=84bda0f2-7605-45e3-b4bd-a4d280d2b255' media='none' onload='if(media!=&#39;all&#39;)media=&#39;all&#39;' rel='stylesheet'/><noscript><link href='https://www.blogger.com/dyn-css/authorization.css?targetBlogID=3109111393630873407&amp;zx=84bda0f2-7605-45e3-b4bd-a4d280d2b255' rel='stylesheet'/></noscript>
+<meta name='google-adsense-platform-account' content='ca-host-pub-1556223355139109'/>
+<meta name='google-adsense-platform-domain' content='blogspot.com'/>
+
+<!-- data-ad-client=ca-pub-9384317158481085 -->
+
+<script type="text/javascript" language="javascript">
+  // Supply ads personalization default for EEA readers
+  // See https://www.blogger.com/go/adspersonalization
+  adsbygoogle = window.adsbygoogle || [];
+  if (typeof adsbygoogle.requestNonPersonalizedAds === 'undefined') {
+    adsbygoogle.requestNonPersonalizedAds = 1;
+  }
+</script>
+
+
+</head>
+<body>
+<div class='navbar section' id='navbar'><div class='widget Navbar' data-version='1' id='Navbar1'><script type="text/javascript">
+    function setAttributeOnload(object, attribute, val) {
+      if(window.addEventListener) {
+        window.addEventListener('load',
+          function(){ object[attribute] = val; }, false);
+      } else {
+        window.attachEvent('onload', function(){ object[attribute] = val; });
+      }
+    }
+  </script>
+<div id="navbar-iframe-container"></div>
+<script type="text/javascript" src="https://apis.google.com/js/plusone.js"></script>
+<script type="text/javascript">
+      gapi.load("gapi.iframes:gapi.iframes.style.bubble", function() {
+        if (gapi.iframes && gapi.iframes.getContext) {
+          gapi.iframes.getContext().openChild({
+              url: 'https://www.blogger.com/navbar.g?targetBlogID\x3d3109111393630873407\x26blogName\x3dOFBizian\x26publishMode\x3dPUBLISH_MODE_HOSTED\x26navbarType\x3dDARK\x26layoutType\x3dLAYOUTS\x26searchRoot\x3dhttps://www.ofbizian.com/search\x26blogLocale\x3den_GB\x26v\x3d2\x26homepageUrl\x3dhttp://www.ofbizian.com/\x26targetPostID\x3d1877219538778768545\x26blogPostOrPageUrl\x3dhttp://www.ofbizian.com/2016/01/performance-tuning-ideas-for-apache.html\x26vt\x3d5529989308547018777',
+              where: document.getElementById("navbar-iframe-container"),
+              id: "navbar-iframe"
+          });
+        }
+      });
+    </script><script type="text/javascript">
+(function() {
+var script = document.createElement('script');
+script.type = 'text/javascript';
+script.src = '//pagead2.googlesyndication.com/pagead/js/google_top_exp.js';
+var head = document.getElementsByTagName('head')[0];
+if (head) {
+head.appendChild(script);
+}})();
+</script>
+</div></div>
+<div id='body-wrapper'><div id='outer-wrapper'><div id='wrap2'>
+<!-- skip links for text browsers -->
+<span id='skiplinks' style='display:none;'>
+<a href='#main'>skip to main </a> |
+      <a href='#sidebar'>skip to sidebar</a>
+</span>
+<div id='header-wrapper'>
+<div class='header section' id='header'><div class='widget Header' data-version='1' id='Header1'>
+<div id='header-inner'>
+<div class='titlewrapper'>
+<h1 class='title'>
+<a href='http://www.ofbizian.com/'>OFBizian</a>
+</h1>
+</div>
+<div class='descriptionwrapper'>
+<p class='description'><span>Bilgin's open source software architecture journeys</span></p>
+</div>
+</div>
+</div></div>
+<!-- custom right panel BII -->
+<div class='header section' id='header2'>
+<script async='async' id='_carbonads_js' src='//cdn.carbonads.com/carbon.js?serve=CE7DKKQL&placement=wwwofbiziancom' type='text/javascript'></script>
+<!-- <div id='codefund'></div> <script async='async' src='https://codefund.app/properties/131/funder.js'/> -->
+<!-- google add <script async='async' src='//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js'/> -->
+<!-- 468 - 60 <ins class='adsbygoogle' data-ad-client='ca-pub-9384317158481085' data-ad-slot='6414610054' style='display:inline-block;width:468px;height:60px'/> <script> (adsbygoogle = window.adsbygoogle || []).push({}); </script> -->
+</div>
+<div class='header no-items section' id='header2BII'>
+</div>
+<div style='clear:both;'></div>
+</div>
+<div style='clear:both;'></div>
+<div class='span-24'>
+<div class='span-18'>
+<div class='menu-primary-wrap'>
+<div class='pagelistmenusblog section' id='pagelistmenusblog'><div class='widget PageList' data-version='1' id='PageList14'>
+<div class='widget-content'>
+<ul class='menus menu-primary'>
+<li><a href='http://www.ofbizian.com/'>Home</a></li>
+<li><a href='http://www.ofbizian.com/p/blockchain.html'>Blockchain</a></li>
+<li><a href='http://www.ofbizian.com/p/ossfund.html'>Random</a></li>
+<li><a href='http://www.ofbizian.com/p/about.html'>About Me</a></li>
+</ul>
+<div class='clear'></div>
+</div>
+</div></div>
+</div>
+</div>
+<div class='span-6 last'>
+<div class='topsearch'>
+<div class='clerfix' id='search'>
+<form action='/search' id='searchform' method='get'>
+<input id='s' name='q' onblur='if (this.value == "") {this.value = "Search";}' onfocus='if (this.value == "Search") {this.value = "";}' type='text' value='Search'/>
+<input class='search-image' src='https://3.bp.blogspot.com/_8aZXeWtZzQY/TT4WZ5IY5QI/AAAAAAAAAX8/ZLdu_NDmyUo/s000/search.png' title='Search' type='image'/>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div style='clear:both;'></div>
+<div id='content-wrapper'>
+<div id='crosscol-wrapper' style='text-align:center'>
+<div class='crosscol section' id='crosscol'><div class='widget HTML' data-version='1' id='HTML1'>
+<h2 class='title'>Blogroll</h2>
+<div class='widget-content'>
+</div>
+</div></div>
+</div>
+<div id='main-wrapper'>
+<!-- Featured Content Slider Started <b:if cond='data:blog.pageType != &quot;static_page&quot;'> <b:if cond='data:blog.pageType != &quot;item&quot;'> <div class='featuredposts clearfix'> <div class='fp-slides'> <div class='fp-post'> <div class='fp-thumbnail'><a href='featured-post-1-url-here'><img src='http://1.bp.blogspot.com/_8aZXeWtZzQY/TT4WaLFhUkI/AAAAAAAAAYA/Q-KFu1vy5AE/s000/1.jpg'/></a></div> <h3 class='fp-title'><a href='featured-post-1-url-here'>This is default featured post 1 title</a></h3> <p>Go to Blogger edit html and find these sentences.Now replace these sentences with your own descriptions.</p> </div> <div class='fp-post'> <div class='fp-thumbnail'><a href='featured-post-2-url-here'><img src='http://2.bp.blogspot.com/_8aZXeWtZzQY/TT4WaVzvQJI/AAAAAAAAAYE/yyBeLtJhorY/s000/2.jpg'/></a></div> <h3 class='fp-title'><a href='featured-post-2-url-here'>This is default featured post 2 title</a></h3> <p>Go to Blogger edit html and find these sentences.Now replace these sentences with your own descriptions.</p> </div> <div class='fp-post'> <div class='fp-thumbnail'><a href='featured-post-3-url-here'><img src='http://1.bp.blogspot.com/_8aZXeWtZzQY/TT4Wa0C7ojI/AAAAAAAAAYI/knfsNJlVVsg/s000/3.jpg'/></a></div> <h3 class='fp-title'><a href='featured-post-3-url-here'>This is default featured post 3 title</a></h3> <p>Go to Blogger edit html and find these sentences.Now replace these sentences with your own descriptions.</p> </div> <div class='fp-post'> <div class='fp-thumbnail'><a href='featured-post-4-url-here'><img src='http://4.bp.blogspot.com/_8aZXeWtZzQY/TT4WbD_jxdI/AAAAAAAAAYM/zVhFZmb8Yss/s000/4.jpg'/></a></div> <h3 class='fp-title'><a href='featured-post-4-url-here'>This is default featured post 4 title</a></h3> <p>Go to Blogger edit html and find these sentences.Now replace these sentences with your own descriptions.</p> </div> <div class='fp-post'> <div class='fp-thumbnail'><a href='featured-post-5-url-here'><img src='http://4.bp.blogspot.com/_8aZXeWtZzQY/TT4WbX4JjuI/AAAAAAAAAYQ/IBCtUcVvNew/s000/5.jpg'/></a></div> <h3 class='fp-title'><a href='featured-post-5-url-here'>This is default featured post 5 title</a></h3> <p>Go to Blogger edit html and find these sentences.Now replace these sentences with your own descriptions.</p> </div> </div> <div class='fp-nav clearfix'> <span class='fp-pager'/> <a class='fp-next' href='#fp-next'/> <a class='fp-prev' href='#fp-prev'/> </div> </div> </b:if></b:if> -->
+<!-- Featured Content Slider End -->
+<div class='main section' id='main'><div class='widget Blog' data-version='1' id='Blog1'>
+<div class='blog-posts hfeed'>
+<!--Can't find substitution for tag [defaultAdStart]-->
+<div class='wrapfullpost'>
+<div class='post hentry'>
+<a name='1877219538778768545'></a>
+<h3 class='post-title entry-title'>
+<a href='http://www.ofbizian.com/2016/01/performance-tuning-ideas-for-apache.html'>Performance Tuning Ideas for Apache Camel</a>
+</h3>
+<div class='post-header-line-1'></div>
+<div class='postmeta-primary'>
+<span class='meta_date'>Monday, January 25, 2016</span>
+
+    &nbsp;<span class='meta_comments'><a href='http://www.ofbizian.com/2016/01/performance-tuning-ideas-for-apache.html#comment-form' onclick=''>3 comments</a></span>
+</div>
+<div class='post-body entry-content'>
+<p>
+Every now and then, I get questions around optimising Camel applications with the argument that Camel is slow. Camel is just the glue connecting disparate systems, the routing engine is all in-memory, and it doesn&#8217;t require any persistent state. <b>So 99% of the cases, performance issues are due to bottlenecks in other systems</b>, or having the application design done without performance considerations. If that is the case, there isn&#8217;t much you can achieve by tuning Camel further, and you have to go back to the drawing board.<br />
+<br />
+<div class="separator" style="clear: both; text-align: center;">
+<a href="http://3.bp.blogspot.com/-K0WT1DP8WJ8/VqTbioVHKeI/AAAAAAAAD5w/6coe-eRAiuk/s1600/BoI5lo8IgAAOFHd.jpg" imageanchor="1" style="clear: left; float: left; margin-bottom: 1em; margin-right: 1em;"><img border="0" height="323" src="https://3.bp.blogspot.com/-K0WT1DP8WJ8/VqTbioVHKeI/AAAAAAAAD5w/6coe-eRAiuk/s400/BoI5lo8IgAAOFHd.jpg" width="440" /></a></div>
+But sometimes, it might be worth squeezing few more milliseconds from your Camel routes. Tuning every application is very specific and dependent on the technology and the use case. Here are some ideas for tuning Camel based systems, which may apply for you (or not).<br />
+<br />
+<h3 style="text-align: center;">
+Endpoint Tuning</h3>
+<br />
+Endpoints in Camel are the integration points with other systems and the way they are configured will have a huge impact on the performance of the system. Understanding how different endpoints work and tuning those should be the one of the first places to start with. Here are few examples:<br />
+<ul>
+<li><b>&#8232;Messaging</b> - If your Camel application is using messaging, the overall performance will be heavily dependent on the performance of the messaging system. There are too many factors to consider here, but main ones are:</li>
+</ul>
+<ul style="margin-left: 40px;">
+<li><b>Message broker</b> - the network and disk speed, combined with the broker topology will shape the broker performance. To give you an idea, with ActiveMQ, a relational database based persistent store will perform around 50% of a file based store, and using network of brokers to scale horizontally will cost another 30% of performance. It is amazing how one configuration change in ActiveMQ can have huge impact on the messaging system and then the Camel application . There is a must read ActiveMQ <a href="https://access.redhat.com/documentation/en-US/Red_Hat_JBoss_A-MQ/6.2/html-single/Tuning_Guide/index.html#GenTuning-Consumer-Prefetch" target="_blank">tuning guide</a> by Red Hat with lot's of details to consider and evaluate. Also a real life example from <a href="https://twitter.com/christianposta" target="_blank">Chrisitan Posta</a> showing how to speed up the <a href="http://blog.christianposta.com/activemq/speeding-up-activemq-persistent-messaging-performance-by-25x/" target="_blank">broker 25x times</a> in certain cases. Another recent article by Simon Green shows how to approach an <a href="http://sigreen.github.io/2016/02/10/amq-tuning.html" rel="nofollow" target="_blank">ActiveMQ Tunning Adventure</a> step by step.</li>
+</ul>
+<ul style="margin-left: 40px;">
+<li><b>Message client</b> - if performance is a priority, there are also some hacks you can do on the ActiveMQ client side, such as: increasing TCP socketBufferSize and ioBufferSize, tuning the OpenWire protocol parameters, using message compression, batch acknowledgements<b> </b>with optimizeAcknowledge, asynchronous send with useAsyncSend, adjusting pre-fetch limit, etc. There are some nice slides again from Christina <a href="http://www.slideshare.net/ceposta/activemq-performance-tuning" target="_blank">here</a> and old but still very relevant <a href="http://download.progress.com/5331/open/adobe/prc/psc/perf_tuning_activemq/index.htm" target="_blank">video</a> from <a href="https://twitter.com/rajdavies" target="_blank">Rob Davies</a> about tuning ActiveMQ. All of these resources should give you enough ideas to experiment and improve the performance from messaging point of view.</li>
+</ul>
+<ul>
+<li><b>&#8232;Database writes</b> - use batching whenever possible. You can use an aggregator to collect a number of entries before performing a batch operation to interact with the database (for example with the SQL component.<br />
+<script src="https://gist.github.com/bibryam/fc3ae1aebbad99f21e0f.js"></script> </li>
+<li><b>Working with templates</b>&#8232; - if you have to use a template component as part of the routing, try out the existing templating engines (FreeMarker, Velocity, SpringTeplate, Mustache, Chunk )&nbsp; with a small test as the <a href="https://github.com/muellerc/apachecon-na-2013/tree/master/template" target="_blank">following one</a> and measure which one performs better. There is a great presentation titled <a href="https://www.google.co.uk/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=1&amp;cad=rja&amp;uact=8&amp;ved=0ahUKEwjDq4KRgrjKAhWlLHIKHZ6RAJUQFggiMAA&amp;url=http%3A%2F%2Farchive.apachecon.com%2Fna2013%2Fpresentations%2F28-Thursday%2FCaravan%2F11%3A15-Performance%2520optimizations%2520for%2520Apache%2520Camel-Christian_Mueller.pdf&amp;usg=AFQjCNEVTIiKPW_kBtMjtqdtLi7dVaeYJw&amp;sig2=vs13dQaga2nKclBQp6h8_g" target="_blank">Performance optimisation for Camel</a> by &#65279;Christian Mueller with the <a href="https://github.com/muellerc/apachecon-na-2013" target="_blank">source code</a> supporting the findings (<b>UPDATE</b>: after this blog post was published, Christian created new <a href="https://www.blogger.com/%5B1%5D%20http://www.slideshare.net/muellerc/apache-con-na2013updated2016-57756702" target="_blank">slides</a> with latest version of <span class="text">Camel 2.16.2 and Java 7/8, check out those too)</span>. From those measurements we can <a href="http://archive.apachecon.com/na2013/presentations/28-Thursday/Caravan/11:15-Performance%20optimizations%20for%20Apache%20Camel-Christian_Mueller.pdf#25" target="_blank">see</a> that FreeMarker performs better than Velocity and SprintTemplates in general.</li>
+<li><b>Using Web Services </b>- whenever you have to use a web endpoint, the web container itself (has to be tuned separately. From Camel endpoint point of view, you can further optimise a little bit by skipping the unmarshalling if you don't need Java objects, and using asynchronous processing.</li>
+<li><b>concurrentConsumers</b> - there are a number of components (Seda, VM, JMS, RabbitMQ, Disruptor, AWS-SQS, etc) that support parallel consumption. Before using an endpoint, check the component documentation for thread pool or batch processing capabilities. To give you an idea, see how Amzon SQS processing <a href="http://blog.christianposta.com/camel/very-fast-camels-and-cloud-messaging/" target="_blank">can be improved</a> through these options.</li>
+</ul>
+<br />
+<h3 style="text-align: center;">
+Data Type Choice</h3>
+The type and the format of the data the is passing through Camel routes will also have performance implications. To demonstrate that let's see few examples. <b><br />
+</b><br />
+<ul>
+<li><b>Content based router, splitter, filter</b> are examples of EIPs that perform some work based on the message content. And the type of the message affects the processing speed of these elements. Below is a chart from &#65279;Christian Mueller's presentation, visualising how Content Based Router is performing with different kinds of messages:<table align="center" cellpadding="0" cellspacing="0" class="tr-caption-container" style="margin-left: auto; margin-right: auto; text-align: center;"><tbody>
+<tr><td style="text-align: center;"><a href="http://4.bp.blogspot.com/-Y6RfzMVbWew/VqTQH6iKfzI/AAAAAAAAD5g/dtLxBuYdgiY/s1600/CBR_TIMES.png" imageanchor="1" style="margin-left: auto; margin-right: auto;"><img alt="Content Based Routing for different data types" border="0" height="250" src="https://4.bp.blogspot.com/-Y6RfzMVbWew/VqTQH6iKfzI/AAAAAAAAD5g/dtLxBuYdgiY/s400/CBR_TIMES.png" title="Content Based Routing for different data types" width="500" /></a></td></tr>
+<tr><td class="tr-caption" style="text-align: center;">Content Based Routing based on different data types</td></tr>
+</tbody></table>
+</li>
+</ul>
+<div class="separator" style="clear: both; text-align: center;">
+</div>
+For example, if you have a large XML document in the Exchange, and based on it you perform content based routing, filtering, etc., that will affect the speed of the route. Instead you can extract some key information from the document and populate the Exchange headers for faster access and routing later.<br />
+<ul>
+<li><b>Marshaling/Unmarshaling</b> - similarly to the templating engines, different &#8232;data format covenrtors perform differently. To see some metrics check again &#65279;Christian's presentation, but also keep in mind that performance of the <a href="http://camel.apache.org/data-format.html" target="_blank">supported data formats</a> may vary between different versions and platforms so measure it for your use case.</li>
+<li><b>Streaming</b>&nbsp; - Camel streaming and <a href="http://camel.apache.org/stream-caching.html" target="_blank">stream caching</a> are one of the underrated features that can be useful for dealing with large messages.</li>
+<li><b>Claim check EIP</b> - if the application logic allows it, consider using <a href="http://camel.apache.org/claim-check.html" target="_blank">claim check</a> pattern to improve performance and reduce resource consumption.</li>
+</ul>
+<br />
+<h3 style="text-align: center;">
+Multithreading</h3>
+Camel offers multithreading support in a number of places. Using those can improve the application performance too. <b><br />
+</b><br />
+<ul>
+<li><b>Paralel processing EIPs</b> - the following Camel EIP implementations support parallel processing - multicast, recipient list, splitter, delayer, wiretap, throttler, error handler. If you are going to enable parallel processing for those, it would be even better if you also provide a custom thread pool specifically tuned for your use case rather than relying on Camel's default thread pool profile.</li>
+<li><b>Threads DSL&#8232; construct</b> - some Camel endpoints (such as the File consumer) are single threaded by design and cannot be parallelized at endpoint level. In case of File consumer, a single thread picks a file at a time and processes it through the route until it reaches the end of the route and then the consumer thread picks the next file. This is when Camel Threads construct can be useful. As visualised below, File consumer thread can pick a file and pass it to a thread from the Threads construct for further processing. Then the File consumer can pick another file without waiting for the previous Exchange to complete processing fully.<table align="center" cellpadding="0" cellspacing="0" class="tr-caption-container" style="margin-left: auto; margin-right: auto; text-align: center;"><tbody>
+<tr><td style="text-align: center;"><a href="http://1.bp.blogspot.com/-_4LO_gPyP40/VqYJmZx1XPI/AAAAAAAAD6E/FVwZWw-q8hQ/s1600/file_consume_parallel.png" imageanchor="1" style="margin-left: auto; margin-right: auto;"><img alt="Parallel File Consuming" border="0" height="90" src="https://1.bp.blogspot.com/-_4LO_gPyP40/VqYJmZx1XPI/AAAAAAAAD6E/FVwZWw-q8hQ/s400/file_consume_parallel.png" title="Parallel File Consuming" width="500" /></a></td></tr>
+<tr><td class="tr-caption" style="text-align: center;">Parallel File Consuming</td></tr>
+</tbody></table>
+</li>
+<li><b>Seda component</b> - Seda is another way to achieve parallelism in Camel. The Seda component has in-memory list to accumulate incoming messages from the producer and concurrentConsumers to process those incoming request in parallel by multiple threads.<b><br />
+</b></li>
+<li><b>Asynchronous Redelivery/Retry - </b>if you are using an error handler with a redelivery policy as part of the routing process, you can configure it to be asynchronous and do the redeliveries in a separate thread. That will use a separate thread pool for the redelivery not block the main request processing thread while waiting.<b> </b>If you need long delayed redeliveries, it might be a better approach to use ActiveMQ broker redelivery (that is different from consumer redelivery BTW) where the redeliveries will be persisted on the message broker and not kept in Camel application memory. Another benefit of this mechanism is that the redeliveries will survive application restart and also play nicely when the application is clustered.<b> </b>I have described different retry patterns in <a href="https://leanpub.com/camel-design-patterns" target="_blank">Camel Design Patterns</a> book.<b><br />
+</b></li>
+</ul>
+<h3 style="text-align: center;">
+Other Optimisations</h3>
+There are few other tricks you can do to micro-tune Camel further.&nbsp; <br />
+<ul>
+<li><b>Logging</b> <b>configurations</b> - hopefully you don't have to log every message and its content on the production environment. But if you have to, consider using some asynchronous logger. On a high throughput system, ane option would be to log statistics and aggregated metrics through Camel Throughput logger. Throughput logger allows logging aggregated statistics on fixed intervals or based on the number of processed messages rather than&nbsp; per message bases. Another option would be to use the not so popular Camel <a href="http://camel.apache.org/sampling.html" target="_blank">Sampler EIP</a> and log only sample messages every now and then.</li>
+<li><b>Disable JMX</b> - by default, Camel JMX instrumentation is  enabled which creates a lot of MBeans. This allows monitoring and  management of Camel runtime, but also has some performance hit and  requires more resources. I still remember the time when I had to fully  turn off JMX in Camel in order to run it with 512MB heap on a free AWS  account. As a minimum, consider whether you need any JMX enabled at all,  and if so whether to use RoutesOnly, Default or Extended JMX profiles.&nbsp; <code><br />
+</code></li>
+<li><b>Message Histroy </b>- Camel implements the Message History EIP and runs it by default. While on development environmnet, it might be useful to see every endpoint a message has been too, but on the produciton environment you might consider to disable this feature.</li>
+<b> </b>
+<li><b>Original message</b> - Every Camel route will make a copy of the original incoming message before any modifications to it. This <span data-dobid="hdw">pristine copy of the message is kept in case it is needed to be redelivered during error handling or with onCompletion construct. If you are not using these features, you can disable creating and storing the original state of every incoming message.</span></li>
+<li><b>Other customisations</b> -&nbsp; Almost every feature in CamelContext can be customized. For example you can use lazyLoadTypeConverters for a faster application startup, or configure the shutdownStrategy for a quicker shutdown when there are inflight messages, or a use a custom UuidGenerator that performs faster, etc.  </li>
+</ul>
+<br />
+<h3 style="text-align: center;">
+Application Design</h3>
+All of the previous tunings are micro optimizations compared to the application design and architecture. If your application is not designed for horizontal scalability and performance, sooner or later the small tuning hacks will hit their limit. The chances are, what you are doing has been done previously, and instead of reinventing the wheel or coming up with some clever designs, learn from the experience of others and use well known patterns, principles and practises. Use principles from SOA, Microservices architectures, resiliency principles, messaging best practises, etc. Some of those patterns such as Parallel Pipelines, CQRS, Load Leveling, Circuit Breaker are covered in <a href="https://leanpub.com/camel-design-patterns" target="_blank">Camel Design Patterns</a> book and do help to improve the overall application design.<br />
+<br />
+<h3 style="text-align: center;">
+JVM</h3>
+There are many articles about tuning the JVM. Here I only want to mention the <a href="https://access.redhat.com/labsinfo/jvmconfig" target="_blank">JVM configuration generation</a> application by Red Hat which can generate for you JVM configurations based on the latest industry best practices. You can use it as long as you have a Red Hat account (which is free for developers anyway). Using the latest JVM and latest version of Camel (with its updated dependencies) is another way to improve application performance for free.<b><br />
+</b><br />
+<br />
+<h3 style="text-align: center;">
+OS</h3>
+You can squeeze the application only so much. In order to do proper high load processing, tuning the host system is a must too. To get an idea for the various OS level options, have a look at the <a href="http://www.eclipse.org/jetty/documentation/current/high-load.html" target="_blank">following check list</a> from the Jetty project.<b><br />
+</b><br />
+<br />
+<h3 style="text-align: center;">
+In Conclusion</h3>
+This article is here just to give you some ideas and show you the extend of the possible areas to consider when you have to improve the performance of a Camel application. Instead of looking for a magical recipe or go through a checklist, do small incremental changes supported by measurements until you get to a desired state. And rather than focusing on micro optimisations and hacks, have an holistic view of the system, get the design right, and start tuning from the host system, to JVM, CamelContext, routing elements, endpoints and the data itself. <br />
+<br />
+Using well known patterns, principles and practises with focus on simple and scalable design is always a good start. Good luck.
+</p>
+<div class='postmeta-secondary'>
+<span class='meta_categories'>Posted in:  <a href='http://www.ofbizian.com/search/label/Camel' rel='tag'>Camel</a>,<a href='http://www.ofbizian.com/search/label/FUSE' rel='tag'>FUSE</a>,<a href='http://www.ofbizian.com/search/label/Performance' rel='tag'>Performance</a>,<a href='http://www.ofbizian.com/search/label/Tuning' rel='tag'>Tuning</a></span>
+</div>
+<div style='clear: both;'></div>
+</div>
+<div class='post-footer'>
+<div class='post-footer-line post-footer-line-1'></div>
+<div class='post-footer-line post-footer-line-2'></div>
+<div class='post-footer-line post-footer-line-3'></div></div>
+</div>
+</div>
+<div class='comments' id='comments'>
+<a name='comments'></a>
+<h4>
+3
+comments:
+        
+</h4>
+<div id='comments-block3'>
+<div id='comment-header'>
+<div class='comment-author blogger-comment-icon' id='c9145401757552193839'>
+<div id='comment-profile-image'>
+</div>
+<div id='comment-name-url'>
+<a name='c9145401757552193839'></a>
+<a class='comments-autor-name' href='https://www.blogger.com/profile/09874916872711515383' rel='nofollow'>Unknown</a>
+<a class='says'>says:</a>
+</div>
+<div id='comment-date'>
+<span class='comment-timestamp'>
+<a class='comment-permalink'>May 30, 2017 7:28 am</a>
+<span class='item-control blog-admin pid-2106508027'>
+<a href='https://www.blogger.com/delete-comment.g?blogID=3109111393630873407&postID=9145401757552193839' title='Delete Comment'>
+<img src='http://www.blogger.com/img/icon_delete13.gif'/>
+</a>
+</span>
+</span>
+<a href='http://www.ofbizian.com/2016/01/performance-tuning-ideas-for-apache.html#comment-post-message' style='background-color:#eeeeee;border:1px solid #cccccc;color:#000000;text-decoration:none;border-radius:5px;-moz-border-radius:5px;-webkit-border-radius:5px;padding:3px 10px;position:absolute;bottom:10px;left:12px;'>Reply</a>
+</div>
+<div id='comment-body'>
+<div style='clear:both;'></div>
+<p class='comment-body' style='padding-right:10px;'>Very helpful information. Thanks for this blog.</p>
+</div>
+</div>
+</div>
+<div id='comment-header'>
+<div class='comment-author blogger-comment-icon' id='c3447970492936156372'>
+<div id='comment-profile-image'>
+</div>
+<div id='comment-name-url'>
+<a name='c3447970492936156372'></a>
+<a class='comments-autor-name' href='https://www.blogger.com/profile/07094124073146630392' rel='nofollow'>Tomasz</a>
+<a class='says'>says:</a>
+</div>
+<div id='comment-date'>
+<span class='comment-timestamp'>
+<a class='comment-permalink'>August 27, 2017 1:29 pm</a>
+<span class='item-control blog-admin pid-1375845725'>
+<a href='https://www.blogger.com/delete-comment.g?blogID=3109111393630873407&postID=3447970492936156372' title='Delete Comment'>
+<img src='http://www.blogger.com/img/icon_delete13.gif'/>
+</a>
+</span>
+</span>
+<a href='http://www.ofbizian.com/2016/01/performance-tuning-ideas-for-apache.html#comment-post-message' style='background-color:#eeeeee;border:1px solid #cccccc;color:#000000;text-decoration:none;border-radius:5px;-moz-border-radius:5px;-webkit-border-radius:5px;padding:3px 10px;position:absolute;bottom:10px;left:12px;'>Reply</a>
+</div>
+<div id='comment-body'>
+<div style='clear:both;'></div>
+<p class='comment-body' style='padding-right:10px;'>Nice stuff, thanks for sharing.</p>
+</div>
+</div>
+</div>
+<div id='comment-header'>
+<div class='comment-author blogger-comment-icon' id='c8954287667188535761'>
+<div id='comment-profile-image'>
+</div>
+<div id='comment-name-url'>
+<a name='c8954287667188535761'></a>
+<a class='comments-autor-name' href='https://www.blogger.com/profile/05178089826030619908' rel='nofollow'>Juan Macias</a>
+<a class='says'>says:</a>
+</div>
+<div id='comment-date'>
+<span class='comment-timestamp'>
+<a class='comment-permalink'>March 19, 2020 3:43 am</a>
+<span class='item-control blog-admin pid-584345690'>
+<a href='https://www.blogger.com/delete-comment.g?blogID=3109111393630873407&postID=8954287667188535761' title='Delete Comment'>
+<img src='http://www.blogger.com/img/icon_delete13.gif'/>
+</a>
+</span>
+</span>
+<a href='http://www.ofbizian.com/2016/01/performance-tuning-ideas-for-apache.html#comment-post-message' style='background-color:#eeeeee;border:1px solid #cccccc;color:#000000;text-decoration:none;border-radius:5px;-moz-border-radius:5px;-webkit-border-radius:5px;padding:3px 10px;position:absolute;bottom:10px;left:12px;'>Reply</a>
+</div>
+<div id='comment-body'>
+<div style='clear:both;'></div>
+<p class='comment-body' style='padding-right:10px;'>https://stackoverflow.com/questions/56413670/why-is-camel-kafka-producer-very-slow I hope you can share some light on this issue :) Thanks in advance </p>
+</div>
+</div>
+</div>
+</div>
+<p class='comment-footer'>
+<div id='comment-form'>
+<a name='comment-form'></a>
+<h4 id='comment-post-message'>Post a Comment</h4>
+<p>
+</p>
+<a href='https://www.blogger.com/comment/frame/3109111393630873407?po=1877219538778768545&hl=en-GB' id='comment-editor-src'></a>
+<iframe allowtransparency='true' class='blogger-iframe-colorize blogger-comment-from-post' frameborder='0' height='410' id='comment-editor' name='comment-editor' src='' width='500'></iframe>
+<!--Can't find substitution for tag [post.friendConnectJs]-->
+<script src='https://www.blogger.com/static/v1/jsbin/157798655-comment_from_post_iframe.js' type='text/javascript'></script>
+<script type='text/javascript'>
+      BLOG_CMT_createIframe('https://www.blogger.com/rpc_relay.html', '0');
+    </script>
+</div>
+</p>
+<div id='backlinks-container'>
+<div id='Blog1_backlinks-container'>
+</div>
+</div>
+</div>
+<!--Can't find substitution for tag [defaultAdEnd]-->
+<div class='inline-ad'>
+</div>
+<!--Can't find substitution for tag [adStart]-->
+<!--Can't find substitution for tag [adEnd]-->
+</div>
+</div></div>
+</div>
+<div id='rsidebar-wrapper'>
+<!-- <div class='tabs-widget-content tabs-widget-content-widget-themater_tabs-1432447472-id' id='widget-themater_tabs-1432447472-id1'> <b:section class='sidebar' id='sidebartab1' preferred='yes'> <b:widget id='HTML35' locked='false' title='' type='HTML'> <b:includable id='main'> <b:if cond='data:title != &quot;&quot;'> <h2 class='title'><data:title/></h2> </b:if> <div class='widget-content'> <data:content/> </div> <b:include name='quickedit'/> </b:includable> </b:widget> <b:widget id='HTML7' locked='false' title='Twitter' type='HTML'> <b:includable id='main'> <b:if cond='data:title != &quot;&quot;'> <h2 class='title'><data:title/></h2> </b:if> <div class='widget-content'> <data:content/> </div> <b:include name='quickedit'/> </b:includable> </b:widget> </b:section> </div>-->
+<!--<div class='widget-wrap'>-->
+<!--<h3 class='widgettitle'>Share</h3>-->
+<!--</div>-->
+<div class='tabs-widget-content tabs-widget-content-widget-themater_tabs-1432447472-id' id='widget-themater_tabs-1432447472-id3'>
+<div class='sidebar section' id='sidebartab3'><div class='widget Label' data-version='1' id='Label3'>
+<h2>Labels</h2>
+<div class='widget-content cloud-label-widget-content'>
+<span class='label-size label-size-2'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/ActiveMQ'>ActiveMQ</a>
+<span class='label-count' dir='ltr'>(3)</span>
+</span>
+<span class='label-size label-size-1'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Agile'>Agile</a>
+<span class='label-count' dir='ltr'>(1)</span>
+</span>
+<span class='label-size label-size-2'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Antifragile'>Antifragile</a>
+<span class='label-count' dir='ltr'>(2)</span>
+</span>
+<span class='label-size label-size-2'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Apache%20Isis'>Apache Isis</a>
+<span class='label-count' dir='ltr'>(2)</span>
+</span>
+<span class='label-size label-size-1'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Artemis'>Artemis</a>
+<span class='label-count' dir='ltr'>(1)</span>
+</span>
+<span class='label-size label-size-3'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/AWS'>AWS</a>
+<span class='label-count' dir='ltr'>(5)</span>
+</span>
+<span class='label-size label-size-2'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Bitcoin'>Bitcoin</a>
+<span class='label-count' dir='ltr'>(2)</span>
+</span>
+<span class='label-size label-size-4'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Blockchain'>Blockchain</a>
+<span class='label-count' dir='ltr'>(13)</span>
+</span>
+<span class='label-size label-size-5'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Camel'>Camel</a>
+<span class='label-count' dir='ltr'>(37)</span>
+</span>
+<span class='label-size label-size-3'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Circuit%20Breaker'>Circuit Breaker</a>
+<span class='label-count' dir='ltr'>(5)</span>
+</span>
+<span class='label-size label-size-4'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Cloud%20Native'>Cloud Native</a>
+<span class='label-count' dir='ltr'>(13)</span>
+</span>
+<span class='label-size label-size-1'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/CloudWatch'>CloudWatch</a>
+<span class='label-count' dir='ltr'>(1)</span>
+</span>
+<span class='label-size label-size-1'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/CMIS'>CMIS</a>
+<span class='label-count' dir='ltr'>(1)</span>
+</span>
+<span class='label-size label-size-1'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/CMS'>CMS</a>
+<span class='label-count' dir='ltr'>(1)</span>
+</span>
+<span class='label-size label-size-2'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/CNCF'>CNCF</a>
+<span class='label-count' dir='ltr'>(2)</span>
+</span>
+<span class='label-size label-size-2'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Community'>Community</a>
+<span class='label-count' dir='ltr'>(2)</span>
+</span>
+<span class='label-size label-size-2'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Containers'>Containers</a>
+<span class='label-count' dir='ltr'>(2)</span>
+</span>
+<span class='label-size label-size-1'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Corda'>Corda</a>
+<span class='label-count' dir='ltr'>(1)</span>
+</span>
+<span class='label-size label-size-1'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Cryptocurrencies'>Cryptocurrencies</a>
+<span class='label-count' dir='ltr'>(1)</span>
+</span>
+<span class='label-size label-size-1'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Data'>Data</a>
+<span class='label-count' dir='ltr'>(1)</span>
+</span>
+<span class='label-size label-size-1'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/DDD'>DDD</a>
+<span class='label-count' dir='ltr'>(1)</span>
+</span>
+<span class='label-size label-size-2'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Debezium'>Debezium</a>
+<span class='label-count' dir='ltr'>(3)</span>
+</span>
+<span class='label-size label-size-2'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Deployment'>Deployment</a>
+<span class='label-count' dir='ltr'>(2)</span>
+</span>
+<span class='label-size label-size-3'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Design'>Design</a>
+<span class='label-count' dir='ltr'>(4)</span>
+</span>
+<span class='label-size label-size-1'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Docker'>Docker</a>
+<span class='label-count' dir='ltr'>(1)</span>
+</span>
+<span class='label-size label-size-1'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Domain%20Driven%20Design'>Domain Driven Design</a>
+<span class='label-count' dir='ltr'>(1)</span>
+</span>
+<span class='label-size label-size-3'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/EIP'>EIP</a>
+<span class='label-count' dir='ltr'>(8)</span>
+</span>
+<span class='label-size label-size-1'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/EIPs'>EIPs</a>
+<span class='label-count' dir='ltr'>(1)</span>
+</span>
+<span class='label-size label-size-1'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/employee%20rostering'>employee rostering</a>
+<span class='label-count' dir='ltr'>(1)</span>
+</span>
+<span class='label-size label-size-2'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Ethereum'>Ethereum</a>
+<span class='label-count' dir='ltr'>(3)</span>
+</span>
+<span class='label-size label-size-4'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/FUSE'>FUSE</a>
+<span class='label-count' dir='ltr'>(21)</span>
+</span>
+<span class='label-size label-size-1'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/geek'>geek</a>
+<span class='label-count' dir='ltr'>(1)</span>
+</span>
+<span class='label-size label-size-1'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Hexagonal'>Hexagonal</a>
+<span class='label-count' dir='ltr'>(1)</span>
+</span>
+<span class='label-size label-size-2'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Hystrix'>Hystrix</a>
+<span class='label-count' dir='ltr'>(3)</span>
+</span>
+<span class='label-size label-size-1'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Infinispan'>Infinispan</a>
+<span class='label-count' dir='ltr'>(1)</span>
+</span>
+<span class='label-size label-size-3'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Integration'>Integration</a>
+<span class='label-count' dir='ltr'>(7)</span>
+</span>
+<span class='label-size label-size-2'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Java'>Java</a>
+<span class='label-count' dir='ltr'>(2)</span>
+</span>
+<span class='label-size label-size-2'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/JBPM'>JBPM</a>
+<span class='label-count' dir='ltr'>(2)</span>
+</span>
+<span class='label-size label-size-1'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/JCR'>JCR</a>
+<span class='label-count' dir='ltr'>(1)</span>
+</span>
+<span class='label-size label-size-1'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/JMX'>JMX</a>
+<span class='label-count' dir='ltr'>(1)</span>
+</span>
+<span class='label-size label-size-3'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Kafka'>Kafka</a>
+<span class='label-count' dir='ltr'>(4)</span>
+</span>
+<span class='label-size label-size-2'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Knative'>Knative</a>
+<span class='label-count' dir='ltr'>(2)</span>
+</span>
+<span class='label-size label-size-4'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Kubernetes'>Kubernetes</a>
+<span class='label-count' dir='ltr'>(16)</span>
+</span>
+<span class='label-size label-size-1'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/MainframeForFreedom'>MainframeForFreedom</a>
+<span class='label-count' dir='ltr'>(1)</span>
+</span>
+<span class='label-size label-size-2'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Master%2FSlave'>Master/Slave</a>
+<span class='label-count' dir='ltr'>(2)</span>
+</span>
+<span class='label-size label-size-1'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Maven'>Maven</a>
+<span class='label-count' dir='ltr'>(1)</span>
+</span>
+<span class='label-size label-size-1'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Mecha'>Mecha</a>
+<span class='label-count' dir='ltr'>(1)</span>
+</span>
+<span class='label-size label-size-2'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Messaging'>Messaging</a>
+<span class='label-count' dir='ltr'>(3)</span>
+</span>
+<span class='label-size label-size-4'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Microservices'>Microservices</a>
+<span class='label-count' dir='ltr'>(21)</span>
+</span>
+<span class='label-size label-size-1'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Modernization'>Modernization</a>
+<span class='label-count' dir='ltr'>(1)</span>
+</span>
+<span class='label-size label-size-2'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/monetization'>monetization</a>
+<span class='label-count' dir='ltr'>(2)</span>
+</span>
+<span class='label-size label-size-1'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Monitoring'>Monitoring</a>
+<span class='label-count' dir='ltr'>(1)</span>
+</span>
+<span class='label-size label-size-1'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Observability'>Observability</a>
+<span class='label-count' dir='ltr'>(1)</span>
+</span>
+<span class='label-size label-size-2'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/OFBiz'>OFBiz</a>
+<span class='label-count' dir='ltr'>(2)</span>
+</span>
+<span class='label-size label-size-1'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Olympics'>Olympics</a>
+<span class='label-count' dir='ltr'>(1)</span>
+</span>
+<span class='label-size label-size-4'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Open%20Source'>Open Source</a>
+<span class='label-count' dir='ltr'>(10)</span>
+</span>
+<span class='label-size label-size-1'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/opensource'>opensource</a>
+<span class='label-count' dir='ltr'>(1)</span>
+</span>
+<span class='label-size label-size-1'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/OptaPlanner'>OptaPlanner</a>
+<span class='label-count' dir='ltr'>(1)</span>
+</span>
+<span class='label-size label-size-1'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Other'>Other</a>
+<span class='label-count' dir='ltr'>(1)</span>
+</span>
+<span class='label-size label-size-1'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Performance'>Performance</a>
+<span class='label-count' dir='ltr'>(1)</span>
+</span>
+<span class='label-size label-size-1'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Ports%20and%20Adapters'>Ports and Adapters</a>
+<span class='label-count' dir='ltr'>(1)</span>
+</span>
+<span class='label-size label-size-3'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Pub%2FSub'>Pub/Sub</a>
+<span class='label-count' dir='ltr'>(4)</span>
+</span>
+<span class='label-size label-size-1'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/red%20hat'>red hat</a>
+<span class='label-count' dir='ltr'>(1)</span>
+</span>
+<span class='label-size label-size-1'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Redis'>Redis</a>
+<span class='label-count' dir='ltr'>(1)</span>
+</span>
+<span class='label-size label-size-1'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/SEMAT'>SEMAT</a>
+<span class='label-count' dir='ltr'>(1)</span>
+</span>
+<span class='label-size label-size-1'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Serverless'>Serverless</a>
+<span class='label-count' dir='ltr'>(1)</span>
+</span>
+<span class='label-size label-size-1'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Smart%20Contracts'>Smart Contracts</a>
+<span class='label-count' dir='ltr'>(1)</span>
+</span>
+<span class='label-size label-size-2'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Solr'>Solr</a>
+<span class='label-count' dir='ltr'>(2)</span>
+</span>
+<span class='label-size label-size-1'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Spring%20Cloud'>Spring Cloud</a>
+<span class='label-count' dir='ltr'>(1)</span>
+</span>
+<span class='label-size label-size-2'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Spring%20Integration'>Spring Integration</a>
+<span class='label-count' dir='ltr'>(2)</span>
+</span>
+<span class='label-size label-size-2'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/sustainability'>sustainability</a>
+<span class='label-count' dir='ltr'>(2)</span>
+</span>
+<span class='label-size label-size-1'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Tokenomics'>Tokenomics</a>
+<span class='label-count' dir='ltr'>(1)</span>
+</span>
+<span class='label-size label-size-1'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Transactions'>Transactions</a>
+<span class='label-count' dir='ltr'>(1)</span>
+</span>
+<span class='label-size label-size-1'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Tuning'>Tuning</a>
+<span class='label-count' dir='ltr'>(1)</span>
+</span>
+<span class='label-size label-size-1'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Twisdom'>Twisdom</a>
+<span class='label-count' dir='ltr'>(1)</span>
+</span>
+<span class='label-size label-size-2'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Twitter'>Twitter</a>
+<span class='label-count' dir='ltr'>(3)</span>
+</span>
+<span class='label-size label-size-2'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Websocket'>Websocket</a>
+<span class='label-count' dir='ltr'>(2)</span>
+</span>
+<span class='label-size label-size-1'>
+<a dir='ltr' href='http://www.ofbizian.com/search/label/Wisdom'>Wisdom</a>
+<span class='label-count' dir='ltr'>(1)</span>
+</span>
+<div class='clear'></div>
+</div>
+</div></div>
+</div>
+<div class='widget-wrap'>
+<h3 class='widgettitle'>About Me</h3>
+</div>
+<div style='clear:both;'></div>
+<div class='social-connect-widget' style='margin-bottom:10px;'>
+<a href='http://twitter.com/bibryam'><img alt='Follow me on Twitter!' src='http://3.bp.blogspot.com/_8aZXeWtZzQY/TT4WfPs42dI/AAAAAAAAAY0/lZeNe0sHZpc/s000/social-connect-twitter.png' title='Follow me on Twitter!'/></a><a href='http://twitter.com/bibryam'>Follow me on Twitter</a>
+</div>
+<div class='social-connect-widget' style='margin-bottom:10px;'>
+<a href='http://www.linkedin.com/in/bibryam'><img alt='Connect with me' src='http://1.bp.blogspot.com/-aGke-EmPHZQ/TsL2LSZntjI/AAAAAAAAAB4/lIZLgbdqXaQ/s320/linkedin.gif' title='Connect with me'/></a><a href='http://www.linkedin.com/in/bibryam'>Connect with me</a>
+</div>
+<div class='social-connect-widget' style='margin-bottom:10px;'>
+<a href='http://www.slideshare.net/bibryam/presentations'><img alt='View my Slides' src='http://1.bp.blogspot.com/-aGke-EmPHZQ/TsL2LSZntjI/AAAAAAAAAB4/lIZLgbdqXaQ/s320/linkedin.gif' title='View my Slides'/></a><a href='http://www.slideshare.net/bibryam/presentations'>View my Slides</a>
+</div>
+<div class='social-connect-widget' style='margin-bottom:10px;'>
+<a href='https://github.com/bibryam'><img alt='Fork me on GitHub' src='http://2.bp.blogspot.com/-cujsn7_U3Zs/TsL31KZp1JI/AAAAAAAAACE/e704iRlyq5c/s320/github-button.png' title='Fork me on GitHub'/></a><a href='https://github.com/bibryam'>Fork me on GitHub</a>
+</div>
+<div class='social-connect-widget' style='margin-top:10px;margin-bottom:10px;'>
+<a href='http://www.ofbizian.com/feeds/posts/default'><img alt='RSS Feed' src='http://3.bp.blogspot.com/_8aZXeWtZzQY/TT4We5ysf4I/AAAAAAAAAYw/jtGzMVhQWlo/s000/social-connect-rss.png' title='RSS Feed'/></a><a href='http://www.ofbizian.com/feeds/posts/default'>Subscribe to RSS Feed</a>
+</div>
+<!--BBB START -->
+<div class='social-connect-widget' style='margin-bottom:10px;'>
+<a href='http://amazon.com/author/bibryam' target='_blank'><img alt='Check my Books' src='https://2.bp.blogspot.com/-UUvJvyZI1rg/Vw95TPdf8eI/AAAAAAAAETo/AhmuLv0oYkgG21WETeinQ2sdDKesbjITgCLcB/s1600/logo-black-on-white-60-42-2x-beea2c5e5fd2039a1aabe5e6a0b16014.png' title='Check my Books'/></a><a href='http://amazon.com/author/bibryam' target='_blank'>Check my Books</a>
+</div>
+<!--BBB END -->
+<!-- BBB START book section <div class='social-connect-widget' style='margin-bottom:10px;'> <a href='http://www.ofbizian.com/'><img alt='View my Camel Books' src='http://4.bp.blogspot.com/-SntVyQdNP3Q/UjLlQ8zTibI/AAAAAAAAARQ/s0nwGyORW2M/s320/amazon-2-icon.png' title='View my Camel Books'/></a> <a href='https://www.amazon.com/author/bibryam'>Buy my Camel Books</a> </div> -->
+<div class='separator' style='clear: both; text-align: center;'><a href='https://amzn.to/2WX4SrA' target='_blank'>
+<img alt='Kubernetes Patterns' src='https://4.bp.blogspot.com/-6iuqssxGb38/XK0KquHK8LI/AAAAAAAAMig/5G7bZsC9myoJTxok7OddP8KBwCwMg5JHACK4BGAYYCw/s400/kubernetes_patterns.png' title='Kubernetes Patterns'/></a>
+</div>
+<div class='separator' style='clear: both; text-align: center;'><a href='https://amzn.to/2VAhLHE' target='_blank'>
+<img alt='Camel Design Patterns Book' src='https://1.bp.blogspot.com/-JpqclUY7-_k/V1h-6PVBQxI/AAAAAAAAE20/S-hqVASJ0i0LUftRnVJBodLyumKraObuwCLcB/s1600/camel_design_patterns.png' title='Camel Design Patterns'/></a>
+</div>
+<div class='separator' style='clear: both; text-align: center;'><a href='https://amzn.to/2WX4A3Y' target='_blank'>
+<img alt='Instant Apache Camel Message Routing Book' src='http://4.bp.blogspot.com/-U9XqKQjiPcM/UiMV9eLchRI/AAAAAAAAAQI/kyEDqTaJLpk/s320/3477OS.jpg' title='Instant Apache Camel Message Routing'/></a>
+</div>
+<!-- BBB END book section -->
+<div style='clear:both;'></div>
+<div class='tabviewsection'>
+<!-- <script type='text/javascript'> jQuery(document).ready(function($){ $(&quot;.tabs-widget-content-widget-themater_tabs-1432447472-id&quot;).hide(); $(&quot;ul.tabs-widget-widget-themater_tabs-1432447472-id li:first a&quot;).addClass(&quot;tabs-widget-current&quot;).show(); $(&quot;.tabs-widget-content-widget-themater_tabs-1432447472-id:first&quot;).show(); $(&quot;ul.tabs-widget-widget-themater_tabs-1432447472-id li a&quot;).click(function() { $(&quot;ul.tabs-widget-widget-themater_tabs-1432447472-id li a&quot;).removeClass(&quot;tabs-widget-current a&quot;); $(this).addClass(&quot;tabs-widget-current&quot;); $(&quot;.tabs-widget-content-widget-themater_tabs-1432447472-id&quot;).hide(); var activeTab = $(this).attr(&quot;href&quot;); $(activeTab).fadeIn(); return false; }); }); </script> <ul class='tabs-widget tabs-widget-widget-themater_tabs-1432447472-id'> <li><a href='#widget-themater_tabs-1432447472-id1'>Twitter</a></li> <li><a href='#widget-themater_tabs-1432447472-id2'>Tags</a></li> <li><a href='#widget-themater_tabs-1432447472-id3'>Blog Archives</a></li> </ul> -->
+<div class='tabs-widget-content tabs-widget-content-widget-themater_tabs-1432447472-id' id='widget-themater_tabs-1432447472-id2'>
+<div class='sidebar section' id='sidebartab2'><div class='widget BlogArchive' data-version='1' id='BlogArchive2'>
+<h2>Archive</h2>
+<div class='widget-content'>
+<div id='ArchiveList'>
+<div id='BlogArchive2_ArchiveList'>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2022/'>
+2022
+</a>
+<span class='post-count' dir='ltr'>(4)</span>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2022/05/'>
+May
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2022/04/'>
+April
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2022/03/'>
+March
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2021/'>
+2021
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2021/05/'>
+May
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2021/02/'>
+February
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2020/'>
+2020
+</a>
+<span class='post-count' dir='ltr'>(9)</span>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2020/11/'>
+November
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2020/09/'>
+September
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2020/08/'>
+August
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2020/07/'>
+July
+</a>
+<span class='post-count' dir='ltr'>(4)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2020/05/'>
+May
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2019/'>
+2019
+</a>
+<span class='post-count' dir='ltr'>(4)</span>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2019/05/'>
+May
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2019/04/'>
+April
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2019/02/'>
+February
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2018/'>
+2018
+</a>
+<span class='post-count' dir='ltr'>(13)</span>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2018/12/'>
+December
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2018/11/'>
+November
+</a>
+<span class='post-count' dir='ltr'>(3)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2018/10/'>
+October
+</a>
+<span class='post-count' dir='ltr'>(3)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2018/08/'>
+August
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2018/07/'>
+July
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2018/04/'>
+April
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2018/03/'>
+March
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2018/01/'>
+January
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2017/'>
+2017
+</a>
+<span class='post-count' dir='ltr'>(12)</span>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2017/12/'>
+December
+</a>
+<span class='post-count' dir='ltr'>(3)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2017/06/'>
+June
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2017/05/'>
+May
+</a>
+<span class='post-count' dir='ltr'>(4)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2017/04/'>
+April
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2017/02/'>
+February
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2017/01/'>
+January
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate expanded'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy toggle-open'>
+
+        &#9660;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2016/'>
+2016
+</a>
+<span class='post-count' dir='ltr'>(10)</span>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2016/12/'>
+December
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2016/11/'>
+November
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2016/07/'>
+July
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2016/06/'>
+June
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2016/05/'>
+May
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate expanded'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy toggle-open'>
+
+        &#9660;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2016/01/'>
+January
+</a>
+<span class='post-count' dir='ltr'>(3)</span>
+<ul class='posts'>
+<li><a href='http://www.ofbizian.com/2016/01/performance-tuning-ideas-for-apache.html'>Performance Tuning Ideas for Apache Camel</a></li>
+<li><a href='http://www.ofbizian.com/2016/01/idempotent-consumer-eip-icon.html'>Idempotent Consumer EIP Icon</a></li>
+<li><a href='http://www.ofbizian.com/2016/01/camel-design-patterns-ebook-is-out.html'>Camel Design Patterns eBook is Out</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2015/'>
+2015
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2015/10/'>
+October
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2015/07/'>
+July
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2014/'>
+2014
+</a>
+<span class='post-count' dir='ltr'>(9)</span>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2014/09/'>
+September
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2014/08/'>
+August
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2014/07/'>
+July
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2014/04/'>
+April
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2014/02/'>
+February
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2014/01/'>
+January
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2013/'>
+2013
+</a>
+<span class='post-count' dir='ltr'>(9)</span>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2013/12/'>
+December
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2013/09/'>
+September
+</a>
+<span class='post-count' dir='ltr'>(3)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2013/07/'>
+July
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2013/05/'>
+May
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2013/03/'>
+March
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2013/02/'>
+February
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2012/'>
+2012
+</a>
+<span class='post-count' dir='ltr'>(10)</span>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2012/12/'>
+December
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2012/11/'>
+November
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2012/10/'>
+October
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2012/08/'>
+August
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2012/07/'>
+July
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2012/06/'>
+June
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2012/05/'>
+May
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2012/04/'>
+April
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2012/03/'>
+March
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2012/02/'>
+February
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2011/'>
+2011
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='http://www.ofbizian.com/2011/11/'>
+November
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class='clear'></div>
+</div>
+</div></div>
+</div>
+<!-- google side disable for carbon <script async='async' src='//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js'/> -->
+<!-- 160 x 600 <ins class='adsbygoogle' data-ad-client='ca-pub-9384317158481085' data-ad-slot='3461143655' style='display:inline-block;width:160px;height:600px'/> <script> (adsbygoogle = window.adsbygoogle || []).push({}); </script>-->
+</div>
+<div style='height:5px;clear:both;'></div>
+<p></p></div>
+<!-- spacer for skins that want sidebar and main to be the same height-->
+<div class='clear'>&#160;</div>
+</div>
+<!-- end content-wrapper -->
+<div class='span-24' id='footer-wrap'>
+<div id='footer'>
+<div id='copyrights'>
+Copyright &#169; 2011 <a href='http://www.ofbizian.com/'>OFBizian</a>
+</div>
+<div id='credits'>
+<span style='float:left;display:inline;'> Design by <a href='http://fthemes.com/' target='_blank'><strong>Free WordPress Themes</strong></a> | Bloggerized by <a href='http://www.bloggertipandtrick.net/' target='_blank'><strong>Lasantha</strong></a> - <a href='http://www.premiumbloggertemplates.com/' target='_blank'><strong>Premium Blogger Themes</strong></a></span>
+<span style='float:right;display:inline;'>Powered by <a href='http://www.blogger.com/'><i>Blogger</i></a> | <a href='http://theprintablecoupon.com/category/dsw/' target='_blank'><i>DSW printable coupons</i></a></span>
+</div>
+</div>
+</div>
+</div></div></div>
+<!-- end outer-wrapper -->
+<!-- PAGE NAVIGATION START-->
+<script type='text/javascript'>
+var pageCount=4;
+var displayPageNum=3;
+var upPageWord ='&#171; ';
+var downPageWord =' &#187;';
+</script>
+<script type='text/javascript'>
+//<![CDATA[
+function showpageCount(json){var thisUrl=home_page_url;var htmlMap=new Array();var thisNum=1;var postNum=1;var itemCount=0;var fFlag=0;var eFlag=0;var html='';var upPageHtml='';var downPageHtml='';for(var i=0,post;post=json.feed.entry[i];i++){var timestamp1=post.published.$t.substring(0,19)+post.published.$t.substring(23,29);timestamp=encodeURIComponent(timestamp1);var title=post.title.$t;if(title!=''){if(itemCount==0||(itemCount%pageCount==(pageCount-1))){if(thisUrl.indexOf(timestamp)!=-1){thisNum=postNum}if(title!='')postNum++;htmlMap[htmlMap.length]='/search?updated-max='+timestamp+'&max-results='+pageCount}}itemCount++}for(var p=0;p<htmlMap.length;p++){if(p>=(thisNum-displayPageNum-1)&&p<(thisNum+displayPageNum)){if(fFlag==0&&p==thisNum-2){if(thisNum==2){upPageHtml='<span class="showpage" style="padding: 4px 8px;margin:0 4px;text-decoration:none;background:#dfdfdf;color:#686868; border:1px solid #989898;font-family: Arial, Verdana;font-size: 15px;"><a href="/">'+upPageWord+'</a></span>'}else{upPageHtml='<span class="showpage" style="padding: 4px 8px;margin:0 4px;text-decoration:none;background:#dfdfdf;color:#686868; border:1px solid #989898;font-family: Arial, Verdana;font-size: 15px;"><a href="'+htmlMap[p]+'">'+upPageWord+'</a></span>'}fFlag++}if(p==(thisNum-1)){html+='<span class="showpagePoint">'+thisNum+'</span>'}else{if(p==0){html+='<span class="showpageNum"><a href="/">1</a></span>'}else{html+='<span class="showpageNum"><a href="'+htmlMap[p]+'">'+(p+1)+'</a></span>'}}if(eFlag==0&&p==thisNum){downPageHtml='<span class="showpage" style="padding: 4px 8px;margin:0 4px;text-decoration:none;background:#dfdfdf;color:#686868; border:1px solid #989898;font-family: Arial, Verdana;font-size: 15px;"> <a href="'+htmlMap[p]+'">'+downPageWord+'</a></span>';eFlag++}}}if(thisNum>1){html=''+upPageHtml+' '+html+' '}html='<div class="showpageArea"><span style="COLOR: #676767;background:#fff;border: 1px solid #b6b5b5;font-size: 15px;padding:4px 8px;margin:0 4px;" class="showpageOf"> Pages '+(postNum-1)+'</span>'+html;if(thisNum<(postNum-1)){html+=downPageHtml}if(postNum==1)postNum++;html+='</div>';var pageArea=document.getElementsByName("pageArea");var blogPager=document.getElementById("blog-pager");if(postNum<=2){html=''}for(var p=0;p<pageArea.length;p++){pageArea[p].innerHTML=html}if(pageArea&&pageArea.length>0){html=''}if(blogPager){blogPager.innerHTML=html}}function showpageCount2(json){var thisUrl=home_page_url;var htmlMap=new Array();var isLablePage=thisUrl.indexOf("/search/label/")!=-1;var thisLable=isLablePage?thisUrl.substr(thisUrl.indexOf("/search/label/")+14,thisUrl.length):"";thisLable=thisLable.indexOf("?")!=-1?thisLable.substr(0,thisLable.indexOf("?")):thisLable;var thisNum=1;var postNum=1;var itemCount=0;var fFlag=0;var eFlag=0;var html='';var upPageHtml='';var downPageHtml='';var labelHtml='<span class="showpageNum"><a href="/search/label/'+thisLable+'?&max-results='+pageCount+'">';var thisUrl=home_page_url;for(var i=0,post;post=json.feed.entry[i];i++){var timestamp1=post.published.$t.substring(0,19)+post.published.$t.substring(23,29);timestamp=encodeURIComponent(timestamp1);var title=post.title.$t;if(title!=''){if(itemCount==0||(itemCount%pageCount==(pageCount-1))){if(thisUrl.indexOf(timestamp)!=-1){thisNum=postNum}if(title!='')postNum++;htmlMap[htmlMap.length]='/search/label/'+thisLable+'?updated-max='+timestamp+'&max-results='+pageCount}}itemCount++}for(var p=0;p<htmlMap.length;p++){if(p>=(thisNum-displayPageNum-1)&&p<(thisNum+displayPageNum)){if(fFlag==0&&p==thisNum-2){if(thisNum==2){upPageHtml=labelHtml+upPageWord+'</a></span>'}else{upPageHtml='<span class="showpage" style="padding: 4px 8px;margin:0 4px;text-decoration:none;background:#dfdfdf;color:#686868; border:1px solid #989898;font-family: Arial, Verdana;font-size: 15px;"><a href="'+htmlMap[p]+'">'+upPageWord+'</a></span>'}fFlag++}if(p==(thisNum-1)){html+='<span class="showpagePoint">'+thisNum+'</span>'}else{if(p==0){html=labelHtml+'1</a></span>'}else{html+='<span class="showpageNum"><a href="'+htmlMap[p]+'">'+(p+1)+'</a></span>'}}if(eFlag==0&&p==thisNum){downPageHtml='<span class="showpage" style="padding: 4px 8px;margin:0 4px;text-decoration:none;background:#dfdfdf;color:#686868; border:1px solid #989898;font-family: Arial, Verdana;font-size: 15px;"> <a href="'+htmlMap[p]+'">'+downPageWord+'</a></span>';eFlag++}}}if(thisNum>1){if(!isLablePage){html=''+upPageHtml+' '+html+' '}else{html=''+upPageHtml+' '+html+' '}}html='<div class="showpageArea"><span style="COLOR: #999;" class="showpageOf"> Pages ('+(postNum-1)+')</span>'+html;if(thisNum<(postNum-1)){html+=downPageHtml}if(postNum==1)postNum++;html+='</div>';var pageArea=document.getElementsByName("pageArea");var blogPager=document.getElementById("blog-pager");if(postNum<=2){html=''}for(var p=0;p<pageArea.length;p++){pageArea[p].innerHTML=html}if(pageArea&&pageArea.length>0){html=''}if(blogPager){blogPager.innerHTML=html}}var home_page_url=location.href;var thisUrl=home_page_url;if(thisUrl.indexOf("/search/label/")!=-1){if(thisUrl.indexOf("?updated-max")!=-1){var lblname1=thisUrl.substring(thisUrl.indexOf("/search/label/")+14,thisUrl.indexOf("?updated-max"))}else{var lblname1=thisUrl.substring(thisUrl.indexOf("/search/label/")+14,thisUrl.indexOf("?&max"))}}var home_page="/";if(thisUrl.indexOf("?q=")==-1){if(thisUrl.indexOf("/search/label/")==-1){document.write('<script src="'+home_page+'feeds/posts/summary?alt=json-in-script&callback=showpageCount&max-results=99999" ><\/script>')}else{document.write('<script src="'+home_page+'feeds/posts/full/-/'+lblname1+'?alt=json-in-script&callback=showpageCount2&max-results=99999" ><\/script>')}}
+//]]>
+</script>
+<!-- PAGE NAVIGATION STOP-->
+<script>
+    function delete_cookie( name ) {
+        document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT;path=/;' ;
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+        delete_cookie('MCPopupClosed');
+    }, false);
+
+</script>
+<!--Het is jouw verantwoordelijkheid om je bezoekers te laten weten dat je er op je blog cookies worden gebruikt en gegevens worden verzameld. Blogger stelt een standaardmelding beschikbaar die je op je blog kunt gebruiken. Je kunt de melding naar wens aanpassen of zelf een eigen melding opstellen. Zie http://www.blogger.com/go/cookiechoices voor meer informatie.-->
+<script defer='' src='/js/cookienotice.js'></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function(event) {
+      window.cookieChoices && cookieChoices.showCookieConsentBar && cookieChoices.showCookieConsentBar(
+          (window.cookieOptions && cookieOptions.msg) || 'Deze site gebruikt cookies van Google om services te leveren en verkeer te analyseren. Je IP-adres en user-agent worden met Google gedeeld, samen met prestatie- en beveiligingsstatistieken om servicekwaliteit te garanderen, gebruiksstatistieken te genereren, misbruik te detecteren en maatregelen te treffen.',
+          (window.cookieOptions && cookieOptions.close) || 'OK',
+          (window.cookieOptions && cookieOptions.learn) || 'Meer informatie',
+          (window.cookieOptions && cookieOptions.link) || 'https://www.blogger.com/go/blogspot-cookies');
+    });
+  </script>
+
+<script type="text/javascript" src="https://www.blogger.com/static/v1/widgets/1517801070-widgets.js"></script>
+<script type='text/javascript'>
+window['__wavt'] = 'AOuZoY7I5W5qgEs1Q7vVkHJiRBsuT7WPDA:1653575271951';_WidgetManager._Init('//www.blogger.com/rearrange?blogID\x3d3109111393630873407','//www.ofbizian.com/2016/01/performance-tuning-ideas-for-apache.html','3109111393630873407');
+_WidgetManager._SetDataContext([{'name': 'blog', 'data': {'blogId': '3109111393630873407', 'title': 'OFBizian', 'url': 'http://www.ofbizian.com/2016/01/performance-tuning-ideas-for-apache.html', 'canonicalUrl': 'http://www.ofbizian.com/2016/01/performance-tuning-ideas-for-apache.html', 'homepageUrl': 'http://www.ofbizian.com/', 'searchUrl': 'http://www.ofbizian.com/search', 'canonicalHomepageUrl': 'http://www.ofbizian.com/', 'blogspotFaviconUrl': 'http://www.ofbizian.com/favicon.ico', 'bloggerUrl': 'https://www.blogger.com', 'hasCustomDomain': true, 'httpsEnabled': true, 'enabledCommentProfileImages': false, 'gPlusViewType': 'FILTERED_POSTMOD', 'adultContent': false, 'analyticsAccountNumber': '', 'encoding': 'UTF-8', 'locale': 'en-GB', 'localeUnderscoreDelimited': 'en_gb', 'languageDirection': 'ltr', 'isPrivate': false, 'isMobile': false, 'isMobileRequest': false, 'mobileClass': '', 'isPrivateBlog': false, 'isDynamicViewsAvailable': true, 'feedLinks': '\x3clink rel\x3d\x22alternate\x22 type\x3d\x22application/atom+xml\x22 title\x3d\x22OFBizian - Atom\x22 href\x3d\x22http://www.ofbizian.com/feeds/posts/default\x22 /\x3e\n\x3clink rel\x3d\x22alternate\x22 type\x3d\x22application/rss+xml\x22 title\x3d\x22OFBizian - RSS\x22 href\x3d\x22http://www.ofbizian.com/feeds/posts/default?alt\x3drss\x22 /\x3e\n\x3clink rel\x3d\x22service.post\x22 type\x3d\x22application/atom+xml\x22 title\x3d\x22OFBizian - Atom\x22 href\x3d\x22https://www.blogger.com/feeds/3109111393630873407/posts/default\x22 /\x3e\n\n\x3clink rel\x3d\x22alternate\x22 type\x3d\x22application/atom+xml\x22 title\x3d\x22OFBizian - Atom\x22 href\x3d\x22http://www.ofbizian.com/feeds/1877219538778768545/comments/default\x22 /\x3e\n', 'meTag': '', 'adsenseClientId': 'ca-pub-9384317158481085', 'adsenseHostId': 'ca-host-pub-1556223355139109', 'adsenseHasAds': true, 'adsenseAutoAds': false, 'boqCommentIframeForm': true, 'loginRedirectParam': '', 'view': '', 'dynamicViewsCommentsSrc': '//www.blogblog.com/dynamicviews/4224c15c4e7c9321/js/comments.js', 'dynamicViewsScriptSrc': '//www.blogblog.com/dynamicviews/66de7dc97784acda', 'plusOneApiSrc': 'https://apis.google.com/js/plusone.js', 'disableGComments': true, 'sharing': {'platforms': [{'name': 'Get link', 'key': 'link', 'shareMessage': 'Get link', 'target': ''}, {'name': 'Facebook', 'key': 'facebook', 'shareMessage': 'Share to Facebook', 'target': 'facebook'}, {'name': 'BlogThis!', 'key': 'blogThis', 'shareMessage': 'BlogThis!', 'target': 'blog'}, {'name': 'Twitter', 'key': 'twitter', 'shareMessage': 'Share to Twitter', 'target': 'twitter'}, {'name': 'Pinterest', 'key': 'pinterest', 'shareMessage': 'Share to Pinterest', 'target': 'pinterest'}, {'name': 'Email', 'key': 'email', 'shareMessage': 'Email', 'target': 'email'}], 'disableGooglePlus': true, 'googlePlusShareButtonWidth': 0, 'googlePlusBootstrap': '\x3cscript type\x3d\x22text/javascript\x22\x3ewindow.___gcfg \x3d {\x27lang\x27: \x27en_GB\x27};\x3c/script\x3e'}, 'hasCustomJumpLinkMessage': false, 'jumpLinkMessage': 'Read more', 'pageType': 'item', 'postId': '1877219538778768545', 'postImageThumbnailUrl': 'https://3.bp.blogspot.com/-K0WT1DP8WJ8/VqTbioVHKeI/AAAAAAAAD5w/6coe-eRAiuk/s72-c/BoI5lo8IgAAOFHd.jpg', 'postImageUrl': 'https://3.bp.blogspot.com/-K0WT1DP8WJ8/VqTbioVHKeI/AAAAAAAAD5w/6coe-eRAiuk/s400/BoI5lo8IgAAOFHd.jpg', 'pageName': 'Performance Tuning Ideas for Apache Camel', 'pageTitle': 'OFBizian: Performance Tuning Ideas for Apache Camel'}}, {'name': 'features', 'data': {'sharing_get_link_dialog': 'true', 'sharing_native': 'false'}}, {'name': 'messages', 'data': {'edit': 'Edit', 'linkCopiedToClipboard': 'Link copied to clipboard', 'ok': 'Ok', 'postLink': 'Post link'}}, {'name': 'template', 'data': {'name': 'custom', 'localizedName': 'Custom', 'isResponsive': false, 'isAlternateRendering': false, 'isCustom': true}}, {'name': 'view', 'data': {'classic': {'name': 'classic', 'url': '?view\x3dclassic'}, 'flipcard': {'name': 'flipcard', 'url': '?view\x3dflipcard'}, 'magazine': {'name': 'magazine', 'url': '?view\x3dmagazine'}, 'mosaic': {'name': 'mosaic', 'url': '?view\x3dmosaic'}, 'sidebar': {'name': 'sidebar', 'url': '?view\x3dsidebar'}, 'snapshot': {'name': 'snapshot', 'url': '?view\x3dsnapshot'}, 'timeslide': {'name': 'timeslide', 'url': '?view\x3dtimeslide'}, 'isMobile': false, 'title': 'Performance Tuning Ideas for Apache Camel', 'description': 'Every now and then, I get questions around optimising Camel applications with the argument that Camel is slow. Camel is just the glue connec...', 'featuredImage': 'https://3.bp.blogspot.com/-K0WT1DP8WJ8/VqTbioVHKeI/AAAAAAAAD5w/6coe-eRAiuk/s400/BoI5lo8IgAAOFHd.jpg', 'url': 'http://www.ofbizian.com/2016/01/performance-tuning-ideas-for-apache.html', 'type': 'item', 'isSingleItem': true, 'isMultipleItems': false, 'isError': false, 'isPage': false, 'isPost': true, 'isHomepage': false, 'isArchive': false, 'isLabelSearch': false, 'postId': 1877219538778768545}}]);
+_WidgetManager._RegisterWidget('_NavbarView', new _WidgetInfo('Navbar1', 'navbar', document.getElementById('Navbar1'), {}, 'displayModeFull'));
+_WidgetManager._RegisterWidget('_HeaderView', new _WidgetInfo('Header1', 'header', document.getElementById('Header1'), {}, 'displayModeFull'));
+_WidgetManager._RegisterWidget('_PageListView', new _WidgetInfo('PageList14', 'pagelistmenusblog', document.getElementById('PageList14'), {'title': 'Pages', 'links': [{'isCurrentPage': false, 'href': 'http://www.ofbizian.com/', 'title': 'Home'}, {'isCurrentPage': false, 'href': 'http://www.ofbizian.com/p/blockchain.html', 'id': '3469482724587991621', 'title': 'Blockchain'}, {'isCurrentPage': false, 'href': 'http://www.ofbizian.com/p/ossfund.html', 'id': '4611046456467293485', 'title': 'Random'}, {'isCurrentPage': false, 'href': 'http://www.ofbizian.com/p/about.html', 'id': '3574558970143108963', 'title': 'About Me'}], 'mobile': false}, 'displayModeFull'));
+_WidgetManager._RegisterWidget('_HTMLView', new _WidgetInfo('HTML1', 'crosscol', document.getElementById('HTML1'), {}, 'displayModeFull'));
+_WidgetManager._RegisterWidget('_BlogView', new _WidgetInfo('Blog1', 'main', document.getElementById('Blog1'), {'cmtInteractionsEnabled': false, 'lightboxEnabled': true, 'lightboxModuleUrl': 'https://www.blogger.com/static/v1/jsbin/101366155-lbx__en_gb.js', 'lightboxCssUrl': 'https://www.blogger.com/static/v1/v-css/3523451998-lightbox_bundle.css'}, 'displayModeFull'));
+_WidgetManager._RegisterWidget('_LabelView', new _WidgetInfo('Label3', 'sidebartab3', document.getElementById('Label3'), {}, 'displayModeFull'));
+_WidgetManager._RegisterWidget('_BlogArchiveView', new _WidgetInfo('BlogArchive2', 'sidebartab2', document.getElementById('BlogArchive2'), {'languageDirection': 'ltr', 'loadingMessage': 'Loading\x26hellip;'}, 'displayModeFull'));
+</script>
+</body>
+</html>

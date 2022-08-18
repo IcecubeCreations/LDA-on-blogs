@@ -1,0 +1,1001 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A discussion of the various microservices architectures, such as the brokerless and messaging bus designs, and how they are used to make microservices talk.">
+  <meta name="keywords" content="microservice, Cloud computing, Design, Architecture, Service discovery">
+
+  <meta property="og:description" content="A discussion of the various microservices architectures, such as the brokerless and messaging bus designs, and how they are used to make microservices talk.">
+  <meta property="og:site_name" content="dzone.com">
+  <meta property="og:title" content="How to Make Microservices Communicate - DZone Microservices">
+  <meta property="og:url" content="https://dzone.com/articles/how-to-make-microservices-communicate">
+  <meta property="og:image" content="https://dz2cdn4.dzone.com/storage/article-thumb/10998935-thumb.jpg">
+  <meta property="og:type" content="article">
+
+  <meta name="twitter:site" content="@DZoneInc">
+  <meta name="twitter:image" content="https://dz2cdn4.dzone.com/storage/article-thumb/10998935-thumb.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:description" content="A discussion of the various microservices architectures, such as the brokerless and messaging bus designs, and how they are used to make microservices talk.">
+  <meta name="twitter:title" content="How to Make Microservices Communicate - DZone Microservices">
+
+  <meta name="referrer" content="origin-when-cross-origin">
+  <meta name="google-site-verification" content="kndbhxcupfEqWmZclhCpB6vlgOs7QSmx2UHAGGnP2mA">
+  <meta name="df-verify" content="df0d76632b4543">
+
+  <link rel="icon" type="image/x-icon" href="https://dz2cdn2.dzone.com/themes/dz20/images/favicon.png">
+  <link rel="image_src" href="https://dz2cdn4.dzone.com/storage/article-thumb/10998935-thumb.jpg">
+  <link rel="canonical" href="https://dzone.com/articles/how-to-make-microservices-communicate">
+
+  <title>How to Make Microservices Communicate - DZone Microservices</title>
+
+  <link rel="preload" href="https://fonts.dzone.com/themes/dz20/font/fontello.woff?11773374" as="font" type="font/woff" crossorigin="anonymous">
+
+  <link rel="stylesheet" media="all" href="https://dz2cdn2.dzone.com/themes/dz20/ftl/icons.css">
+  <link rel="stylesheet" media="all" href="https://dz2cdn2.dzone.com/themes/dz20/lib/static/bootstrap/bootstrap.min.css">
+  <link rel="stylesheet" media="all" href="https://dz2cdn2.dzone.com/themes/dz20/ftl/article/global.css">
+  <link rel="stylesheet" media="all" href="https://dz2cdn2.dzone.com/themes/dz20/ftl/header/styles.css">
+</head>
+<body>
+<div id="ftl-header">
+  <div class="container-fluid header">
+    <div class="row">
+      <div class="col-md-12" style="padding: 0;">
+        <div class="header-top">
+          <div class="header-container">
+            <div class="pull-left logo-container">
+              <div class="logo">
+                <a class="inner" href="/">
+                  <picture>
+                    <source srcset="https://dz2cdn2.dzone.com/themes/dz20/images/dz_logo_2021_cropped.webp" type="image/webp">
+                    <source srcset="https://dz2cdn2.dzone.com/themes/dz20/images/dz_logo_2021_cropped.png" type="image/png">
+                    <img src="https://dz2cdn2.dzone.com/themes/dz20/images/dz_logo_2021_cropped.png" width="160" height="52" alt="DZone">
+                  </picture>
+                </a>
+              </div>
+
+                <div class="active-portal"><a href="/microservices-news-tutorials-tools">Microservices Zone</a></div>
+            </div>
+
+            <div class="pull-right login-and-search">
+              <div id="authenticated-block" class="logged-in">
+                <div class="welcome-back">Thanks for visiting DZone today,</div>
+                <div id="user-header" class="user-info">
+                  <button class="user-avatar">
+                    <span id="header-username" class="username"></span>
+                    <img id="header-avatar" src="" alt="user avatar">
+                  </button>
+                  <div id="user-dropdown" class="browse-user-menu">
+                    <div class="user-content">
+                      <a id="header-user-plug" href="#" class="user-description"></a>
+                      <a id="header-user-edit" href="#" class="edit-profile">Edit Profile</a>
+                    </div>
+                    <ul class="user-actions">
+                      <li id="first-user-action"><a id="header-dropdown-manage-email" href="#">Manage Email Subscriptions</a></li>
+                      <li>
+                        <a href="/articles/how-to-submit-a-post-to-dzone?utm_source=DZone&utm_medium=user_dropdown&utm_campaign=how_to_post">
+                          How to Post to DZone
+                        </a>
+                      </li>
+                      <li>
+                        <a href="/articles/dzones-article-submission-guidelines">
+                          Article Submission Guidelines
+                        </a>
+                      </li>
+                    </ul>
+                    <div class="bottom">
+                      <a href="/users/logout.html" class="sign-out">Sign Out</a>
+                      <a id="dropdown-view-profile" href="#" class="view-profile">View Profile</a>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="post-content">
+                  <button id="post-button" class="post-content--button">
+                    <span class="post-class">Post</span>
+                    <i class="icon-plus"></i>
+                  </button>
+
+                  <div id="post-menu" class="posting-links">
+                    <div class="posting-links-menu">
+                      <ul>
+                        <li>
+                          <img src="/themes/dz20/images/dz-postarticle.svg">
+                          <a href="/content/article/post.html">Post an Article</a>
+                        </li>
+                        <li>
+                          <a id="drafts-link" href="#">Manage My Drafts</a>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div id="unauthenticated-block">
+                <div class="dz-intro">Over 2 million developers have joined DZone.</div>
+                <div class="mobile-invisible sign-in-join">
+                  <a href="/users/login.html">Log In</a>
+                  <span class="dz-intro-span">/</span>
+                  <a href="/static/registration.html">Join</a>
+                </div>
+                <a class="join-icon" href="/users/login.html"><i class="icon-user"></i></a>
+              </div>
+              <div class="headerSearch">
+                <a class="icon-search dropdown-toggle" href="/search"></a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="header-bottom">
+
+
+          <ul class="portals header-container scrollable-ul">
+            <li>
+              <a href="/refcardz" id="header-refcardz">
+                <em>Refcardz</em>
+              </a>
+            </li>
+            <li>
+              <a href="/trendreports" id="header-research">
+                <em>Trend Reports</em>
+              </a>
+            </li>
+            <li>
+              <a href="/webinars" id="header-webinars">
+                <em>Webinars</em>
+              </a>
+            </li>
+            <li class="last-portal-link">
+              <a href="#" id="header-portals">
+                <em>
+                  Zones
+                  <span id="zone-arrow" class="collapsible-toggle">
+                    <i class="icon-angle-down"></i>
+                    <i class="icon-angle-up"></i>
+                  </span>
+                </em>
+              </a>
+            </li>
+
+            <li class="separator" aria-hidden="true" style="color: #d9dcdd;">|</li>
+            <li id="portal-list" class="portal-topics">
+              <ul>
+                  <li>
+                    <a href="/agile-methodology-training-tools-news" id="header-2">Agile</a>
+                  </li>
+                  <li>
+                    <a href="/artificial-intelligence-tutorials-tools-news" id="header-4001">AI</a>
+                  </li>
+                  <li>
+                    <a href="/big-data-analytics-tutorials-tools-news" id="header-3">Big Data</a>
+                  </li>
+                  <li>
+                    <a href="/cloud-computing-tutorials-tools-news" id="header-4">Cloud</a>
+                  </li>
+                  <li>
+                    <a href="/database-sql-nosql-tutorials-tools-news" id="header-5">Database</a>
+                  </li>
+                  <li>
+                    <a href="/devops-tutorials-tools-news" id="header-6">DevOps</a>
+                  </li>
+                  <li>
+                    <a href="/enterprise-integration-training-tools-news" id="header-7">Integration</a>
+                  </li>
+                  <li>
+                    <a href="/iot-developer-tutorials-tools-news-reviews" id="header-8">IoT</a>
+                  </li>
+                  <li>
+                    <a href="/java-jdk-development-tutorials-tools-news" id="header-1">Java</a>
+                  </li>
+                  <li>
+                    <a href="/microservices-news-tutorials-tools" id="header-6001">Microservices</a>
+                  </li>
+                  <li>
+                    <a href="/open-source-news-tutorials-tools" id="header-7001">Open Source</a>
+                  </li>
+                  <li>
+                    <a href="/apm-tools-performance-monitoring-optimization" id="header-10">Performance</a>
+                  </li>
+                  <li>
+                    <a href="/application-web-network-security" id="header-2001">Security</a>
+                  </li>
+                  <li>
+                    <a href="/web-development-programming-tutorials-tools-news" id="header-11">Web Dev</a>
+                  </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script async src="https://dz2cdn2.dzone.com/themes/dz20/ftl/header/bundle.js"></script><link rel="stylesheet" media="all" href="https://dz2cdn2.dzone.com/themes/dz20/ftl/article/styles.css">
+
+
+
+
+<div id="ftl-article" >
+  <div class="container-fluid body">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="articles-wrap">
+              <div class="ad-container">
+                <div id="div-gpt-ad-1435246566686-0" class="ads-billboard-article" data-gpt-slot="top"></div>
+              </div>
+
+
+          <div class="article-stream widget-top-border">
+                <div class="content-right-images">
+                  <div id="div-gpt-ad-1435246566686-2" class="sidebar-ad" data-gpt-desktop="true" data-gpt-slot="sidebar1"></div>
+                </div>
+
+                <script type="application/ld+json">
+                  {
+                    "@context": "http://schema.org",
+                    "@type": "Article",
+                    "headline": "How to Make Microservices Communicate",
+                    "author": {
+                      "@type": "Person",
+                      "name": "Noorain Panjwani"
+                    },
+                    "audience": "software developers",
+                    "keywords": "microservice communication,microservice design,cloud native,microservices,microservices architecture",
+                    "timeRequired": "PT6M",
+                    "commentCount": 2,
+                    "wordCount": "1313",
+                    "accessMode": "textual, visual",
+                    "dateCreated": "2021-01-14T15:05:46Z",
+                    "datePublished": "2021-01-14T00:00:00Z",
+                    "dateModified": "2021-01-14T15:05:46Z",
+                    "articleSection": "microservices-news-tutorials-tools",
+                    "publisher": {
+                      "@type": "Organization",
+                      "name": "DZone",
+                      "url": "https://dzone.com",
+                      "logo": {
+                        "@type": "ImageObject",
+                        "url": "https://dzone.com/themes/dz20/images/dz_logo_2021_cropped.png"
+                      }
+                    },
+                    "articleBody": "I’m sure you want to build scalable apps, right? Who doesn’t? If so, you must have come across the words “Cloud Native.” This approach is like an angel which can resolve most of your scaling challenges. So, what exactly is cloud native? Cloud native is an approach used to build apps which can harness all the capabilities of the cloud. Yup, you got that right. It’s an approach. Not a framework. Not a bunch of steps to follow. And due to this, there are a million different approaches to go cloud native and achieve cloud computing “Moksha.” One key principle of cloud native is microservices. Microservices are tiny (sometimes not so tiny) modules which can work independently of each other. They could have dependencies on other microservices or even a data persistence layer like a database. But the key is to use loose-coupling. Microservices coordinate by means of “communication.” This means each microservice sits in a different repository and is being deployed independently. For the DevOps folks out there, you have an independent continuous delivery pipeline dedicated to each microservice. But that brings me to the most important question. How can we make microservices talk? Keeping aside the difficulties in deciding on a “forward compatible” API for microservices, just making them talk isn’t as simple as it looks. There are multiple parameters you need to consider. These are throughput, latency, and scalability. Now there are many ways to classify the different modes of communication. Synchronous (blocking) and asynchronous (non-blocking) are used quite often, but I feel these are mostly the characteristics of a programing language. I’m also going to disregard half vs. full duplex modes since these days it’s very easy to use either (or even both) in most cloud architectures. So let’s dive in. The Brokerless Design What it is: In here we make our microservices talk to each other directly. You could use HTTP for traditional request-response or use websockets (or HTTP2) for streaming. There is absolutely no intermediary nodes (except routers and load balancers) between two or more microservices. You can connect to any service directly, provided you know their service address and the API used by them. Sounds pretty basic right? It pretty much is. There are wonderful protocols like GRPC to make life much easier. The Pros: Low Latency: This method has the lowest latency possible. There is no middle man here. It’s fast. The limitations are imposed mostly due to poor API implementations. But again, tools like GRPC make sure you get maximum performance at the API layer. Easy to Implement: A brokerless design is easy to visualise and implement. This makes life much easier and the world a happier place to live in. Easy Debugging: This method is fairly easy to debug, especially from the next one I’m going to talk about. Debugging or tracing where the errors are is a super important topic in distributed systems. This becomes even more important when you are releasing new updates multiple times a day. High Throughput: In this mechanism more CPU cycles are actually spent on doing work rather than routing. It may not be that apparent now, but a broker design would make this a bit more clear. It’s not a surprise that most of the database APIs actually use a brokerless design. The Cons: Service Discovery: In such a design, service discovery has utmost importance. The service discovery mechanism needs to be responsive and scalable enough to reflect the latest state of the cluster. Connection Nightmare: Imagine if all the microservices need to connect to each other. That would be a lot of connections. Most of these connections are fairly idle. As a result, a lot of resources are wasted due to this. Tightly Coupled: By nature, brokerless designs are tightly coupled. Imagine you have a microservice to process online payments. Now you want another microservice to give you a real-time update of number of payments happening per minute. This will require you to make modifications in multiple microservices which is undesirable. In many cases a brokerless design just doesn’t work. You often have requirements to simply publish the message once and have multiple subscribers consume it. This is where a broker design comes into the picture. The Messaging Bus (Broker) Design What it is: In this architecture, all communication is routed via a group of brokers. Brokers are server programs running some advanced routing algorithms. Each microservice connects to a broker. The microservice can send and receive messages via the same connection. The service sending messages is called a publisher and receiver is called a subscriber. Messages are published to a particular “topic.” A subscriber receives those messages for topics to which it has subscribed. The Pros: Load Balancing: Most messaging brokers support load balancing out of the box. This makes the overall architecture much simpler and highly scalable. Some brokers (like RabbitMQ) have built-in retries and more for making the communication channel more reliable. Service Discovery: Service discovery is not required when using a messaging backend. All microservices act as clients. The only service which needs to be discoverable is the message broker. Fan In and Fan Out: A messaging backend makes it easier to distribute workload and aggregate the results. The best part is that adding worker microservices can be done transparently without having to update the other microservices. Stream Based Design: Such an approach also gives birth to a concept of streams. Each topic is essentially a stream of messages. Any subscriber can tap into these streams as and when required. The possibilities of modeling a system design using streams is endless. The Cons: Scaling the brokers: While the advantages are amazing, scaling the brokers themselves becomes a challenge for highly distributed systems. It’s just another piece to maintain alongside your microservices. Higher Latency: The number of hops in a message bus increases the overall latency. This is especially true for a RPC-like use case. In mission critical apps, this might not be a feasible solution. Higher Resource Utilization: The brokers need CPU, memory, and storage resources to run. These resources could otherwise be utilized for running other microservices. The overheads associated with a broker design could be too much for a small cluster. Just knowing the advantage and disadvantage of various architectures isn’t enough. It is important to know when to use what. You must always default to a brokerless design. Make the switch if you need the flexibility of streams or need to leverage the pub-sub semantics of a message bus. If you’re starting off fresh, it would make sense to start with a brokerless design and then switch once the need rises. It’s not necessary to choose just one. You can use both. For our tool, we are using a broker design to implement the RPC calls. The communication with our database layer is brokerless to provide lower latencies. If you are opting for a microservices based architecture, I always recommend going event driven. Event driven architectures can be seen as having an advanced broker at its core which has a a ton of capabilities (like task scheduling) built in. Wrapping Up Using the right approach for the job is important. Choosing the mode of communication is a fundamental decision which needs to be taken with great care. There are multiple options for both. Sticking to a well established framework almost always makes more sense than making something from scratch. There are so many options out there. For message brokers you’ve got RabbitMQ, Nats, Kafka, etc., and each one is built for particular messaging semantics. Another awesome way is to use a Backend as a Service like Space Cloud. Space Cloud will automate the entire backend so you can focus on the business logic rather than the the cloud architecture. Did this article help you? How do you make sure your apps are cloud native? Share your experiences below.",
+                    "mainEntityOfPage": {
+                      "@type": "WebPage",
+                      "@id": "https://dzone.com/articles/how-to-make-microservices-communicate"
+                    },
+                    "image": {
+                      "@type": "ImageObject",
+                      "url": "https://dzone.com//dz2cdn4.dzone.com/storage/article-thumb/10998935-thumb.jpg"
+                    }
+                  }
+                </script>
+
+                  <script type="application/ld+json">
+                    {
+                      "@context": "https://schema.org",
+                      "@type": "BreadcrumbList",
+                      "itemListElement": [{
+                        "@type": "ListItem",
+                        "position": 1,
+                        "name": "DZone",
+                        "item": "https://dzone.com"
+                      }, {
+                        "@type": "ListItem",
+                        "position": 2,
+                        "name": "Microservices Zone",
+                        "item": "https://dzone.com/microservices-news-tutorials-tools"
+                      }, {
+                        "@type": "ListItem",
+                        "position": 3,
+                        "name": "How to Make Microservices Communicate",
+                        "item": "https://dzone.com/articles/how-to-make-microservices-communicate"
+                      }]
+                    }
+                  </script>
+
+            <article>
+              <div class="content">
+                <div class="header">
+                  <div class="col-xs-12 breadcrumb-padding">
+                    <a href="/">DZone</a>
+                    >
+                      <a href="/microservices-news-tutorials-tools">Microservices Zone</a>
+                      >
+                      <a href="#">How to Make Microservices Communicate</a>
+                  </div>
+
+
+                  <div class="header-title">
+                    <div class="title">
+                      <h1 class="article-title">How to Make Microservices Communicate</h1>
+                    </div>
+
+                    <div class="subhead">
+                      <h3>Microservices are pretty awesome, but if they can't communicate they won't do you much good. Read on for an overview of the necessary architectures.</h3>
+                    </div>
+
+                    <div class="publish-meta">
+                        <div class="article-author-meta">
+                          <img src="https://dz2cdn4.dzone.com/thumbnail?fid=10585602&w=80" class="avatar" alt="Noorain Panjwani user avatar" width="40">
+                          by
+
+                          <div class="author-info">
+                            <span class="author-name">
+                              <a href="/users/3223648/noorainp.html" rel="nofollow">Noorain Panjwani</a>
+                            </span>
+                          </div>
+
+
+                            <div class="mvb-award">
+                              <i title="Most Valuable Blogger" class="icon-mvb-1"></i>
+                            </div>
+
+
+                          &middot;
+                        </div>
+                      <span class="author-date">
+                        Jan. 14, 21
+                      </span>
+                      &middot;
+                        <a href="/microservices-news-tutorials-tools" id="portal-name">
+                          <span class="portal-name">Microservices Zone</span>
+                        </a>
+                      &middot;
+                      <span>Analysis</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="author-n-useraction">
+                  <div class="like action">
+                    <div id="activity-like-icon" class="dz-like icon-thumbs-up">
+                      <span class="action-label">
+                        <span id="activity-like-text">Like</span>
+                      </span>
+                      <a href="#">
+                        <span id="activity-like-counter">(22)</span>
+                      </a>
+                    </div>
+                  </div>
+
+                  <div class="action">
+
+                    <button class="comment">
+                      <i class="icon-comment"></i>
+                      Comment
+                      <span id="activity-comment-counter" class="comment-count"></span>
+                    </button>
+                  </div>
+
+                  <div class="save action">
+                    <div id="activity-save-icon" class="save icon-star-empty">
+                      <span id="activity-save-text" class="action-label">Save</span>
+                    </div>
+                  </div>
+
+                  <div class="tweet action">
+                    <a id="tweet-link" href="" class="title" target="_blank">
+                      <span><i class="icon-twitter"></i></span>
+                      <span class="action-label">Tweet</span>
+                    </a>
+                  </div>
+
+                  <div class="pull-right">
+                    <div id="activity-view-container" class="article-views action">
+                      <i class="icon-eye"></i> 99.46K
+                      <span class="action-label">Views</span>
+                    </div>
+                  </div>
+                </div>
+
+                    <div class="signin-prompt">
+                      <p>Join the DZone community and get the full member experience.</p>
+                      <a id="article-signin-prompt" href="/static/registration.html">Join For Free</a>
+                    </div>
+                    <div class="arrow-down"></div>
+
+                  <div id="top-bumper-container"></div>
+
+                <div>
+                  <div class="content-html"><p><img style="width: 808px;" class="fr-fic fr-dib lazyload" data-image="true" data-new="false" data-sizeformatted="88.1 kB" data-mimetype="image/jpeg" data-creationdate="1590222124787" data-creationdateformatted="05/23/2020 08:22 AM" data-type="temp" data-url="/storage/temp/13508363-1590222123912.jpeg" data-modificationdate="null" data-size="88078" data-name="1590222123912.jpeg" data-id="13508363" data-src="https://dz2cdn1.dzone.com/storage/temp/13508363-1590222123912.jpeg"></p> 
+<p>I’m sure you want to <a href="https://spaceuptech.com/blog/how-to-build-scalable-apps" style="background-color: rgb(255, 255, 255);" target="_blank">build scalable apps</a>, right? Who doesn’t? If so, you must have come across the words “Cloud Native.” This approach is like an angel which can resolve most of your scaling challenges. So, what exactly is cloud native?</p> 
+<p dir="ltr">Cloud native is an approach used to build apps which can harness all the capabilities of the cloud.</p> 
+<p dir="ltr">Yup, you got that right. It’s an approach. Not a framework. Not a bunch of steps to follow. And due to this, there are a million different approaches to go cloud native and achieve cloud computing “Moksha.”</p> 
+<p dir="ltr">One key principle of cloud native is microservices. Microservices are tiny (sometimes not so tiny) modules which can work independently of each other. They could have dependencies on other microservices or even a data persistence layer like a database. But the key is to use <a href="https://en.wikipedia.org/wiki/Loose_coupling" target="_blank">loose-coupling</a>. Microservices coordinate by means of “communication.”</p> 
+<p dir="ltr">This means each microservice sits in a different repository and is being deployed independently. For the DevOps folks out there, you have an independent continuous delivery pipeline dedicated to each microservice.</p> 
+<p dir="ltr">But that brings me to the most important question.</p> 
+<h4 dir="ltr">How can we make microservices talk?</h4> 
+<p><span class="fr-video fr-deletable fr-fvc fr-dvb fr-draggable" contenteditable="false" draggable="true"><span class="fr-responsive-iframe" contenteditable="false"><iframe src="https://www.youtube.com/embed/9QsDN6-M3ec?&amp;wmode=opaque" frameborder="0" allowfullscreen class="fr-draggable" style="width: 841px; height: 426px;" loading="lazy"></iframe></span></span><br></p> 
+<p dir="ltr">Keeping aside the difficulties in deciding on a “<a href="https://en.wikipedia.org/wiki/Forward_compatibility" target="_blank">forward compatible</a>” API for microservices, just making them talk isn’t as simple as it looks. There are multiple parameters you need to consider. These are throughput, latency, and scalability.</p> 
+<p dir="ltr">Now there are many ways to classify the different modes of communication. Synchronous (blocking) and asynchronous (non-blocking) are used quite often, but I feel these are mostly the characteristics of a programing language. I’m also going to disregard half vs. full duplex modes since these days it’s very easy to use either (or even both) in most cloud architectures.</p> 
+<p dir="ltr">So let’s dive in.</p> 
+<h2 dir="ltr">The Brokerless Design</h2> 
+<p><img alt="Brokerless Design" class="fr-fin fr-dib lazyload" title="Brokerless Design" width="709" data-image="true" data-new="false" data-sizeformatted="92.9 kB" data-mimetype="image/jpeg" data-creationdate="1590222161540" data-creationdateformatted="05/23/2020 08:22 AM" data-type="temp" data-url="/storage/temp/13508364-1590222160693.jpeg" data-modificationdate="null" data-size="92854" data-name="1590222160693.jpeg" data-id="13508364" data-src="https://dz2cdn1.dzone.com/storage/temp/13508364-1590222160693.jpeg"></p> 
+<p dir="ltr">What it is: In here we make our microservices talk to each other directly. You could use HTTP for traditional request-response or use websockets (or HTTP2) for streaming.</p> 
+<p dir="ltr">There is absolutely no intermediary nodes (except routers and load balancers) between two or more microservices. You can connect to any service directly, provided you know their service address and the API used by them.</p> 
+<p dir="ltr">Sounds pretty basic right? It pretty much is. There are wonderful protocols like <a href="https://grpc.io/" target="_blank">GRPC</a> to make life much easier.</p> 
+<p dir="ltr">The Pros:</p> 
+<ul> 
+ <li><p dir="ltr">Low Latency:&nbsp;This method has the lowest latency possible. There is no middle man here. It’s fast. The limitations are imposed mostly due to poor API implementations. But again, tools like GRPC make sure you get maximum performance at the API layer.</p></li> 
+ <li><p dir="ltr">Easy to Implement:&nbsp;A brokerless design is easy to visualise and implement. This makes life much easier and the world a happier place to live in.</p></li> 
+ <li><p dir="ltr">Easy Debugging:&nbsp;This method is fairly easy to debug, especially from the next one I’m going to talk about. Debugging or tracing where the errors are is a super important topic in distributed systems. This becomes even more important when you are releasing new updates multiple times a day.</p></li> 
+ <li><p dir="ltr">High Throughput:&nbsp;In this mechanism more CPU cycles are actually spent on doing work rather than routing. It may not be that apparent now, but a broker design would make this a bit more clear. It’s not a surprise that most of the database APIs actually use a brokerless design.</p></li> 
+</ul> 
+<p dir="ltr">The Cons:</p> 
+<ul> 
+ <li><p dir="ltr">Service Discovery: In such a design, service discovery has utmost importance. The service discovery mechanism needs to be responsive and scalable enough to reflect the latest state of the cluster.</p></li> 
+ <li><p dir="ltr">Connection Nightmare: Imagine if all the microservices need to connect to each other. That would be a lot of connections. Most of these connections are fairly idle. As a result, a lot of resources are wasted due to this.</p></li> 
+ <li><p dir="ltr">Tightly Coupled: By nature, brokerless designs are tightly coupled. Imagine you have a microservice to process online payments. Now you want another microservice to give you a real-time update of number of payments happening per minute. This will require you to make modifications in multiple microservices which is undesirable.</p></li> 
+</ul> 
+<p dir="ltr">In many cases a brokerless design just doesn’t work. You often have requirements to simply publish the message once and have multiple subscribers consume it. This is where a broker design comes into the picture.</p> 
+<h2 dir="ltr">The Messaging Bus (Broker) Design</h2> 
+<p><img alt="Broker Design" class="fr-fin fr-dib lazyload" title="Broker Design" width="781" data-image="true" data-new="false" data-sizeformatted="85.0 kB" data-mimetype="image/jpeg" data-creationdate="1590222206541" data-creationdateformatted="05/23/2020 08:23 AM" data-type="temp" data-url="/storage/temp/13508365-1590222205705.jpeg" data-modificationdate="null" data-size="85044" data-name="1590222205705.jpeg" data-id="13508365" data-src="https://dz2cdn1.dzone.com/storage/temp/13508365-1590222205705.jpeg"></p> 
+<p dir="ltr">What it is: In this architecture, all communication is routed via a group of brokers. Brokers are server programs running some advanced routing algorithms.</p> 
+<p dir="ltr">Each microservice connects to a broker. The microservice can send and receive messages via the same connection. The service sending messages is called a publisher and receiver is called a subscriber. Messages are published to a particular “topic.” A subscriber receives those messages for topics to which it has subscribed.</p> 
+<p dir="ltr">The Pros:</p> 
+<ul> 
+ <li><p dir="ltr">Load Balancing: Most messaging brokers support load balancing out of the box. This makes the overall architecture much simpler and highly scalable. Some brokers (like <a href="https://www.rabbitmq.com/" target="_blank">RabbitMQ</a>) have built-in retries and more for making the communication channel more reliable.</p></li> 
+ <li><p dir="ltr">Service Discovery: Service discovery is not required when using a messaging backend. All microservices act as clients. The only service which needs to be discoverable is the message broker.</p></li> 
+ <li><p dir="ltr">Fan In and&nbsp;Fan Out: A messaging backend makes it easier to distribute workload and aggregate the results. The best part is that adding worker microservices can be done transparently without having to update the other microservices.</p></li> 
+ <li><p dir="ltr">Stream Based Design: Such an approach also gives birth to a concept of streams. Each topic is essentially a stream of messages. Any subscriber can tap into these streams as and when required. The possibilities of modeling a system design using streams is endless.</p></li> 
+</ul> 
+<p dir="ltr">The Cons:</p> 
+<ul> 
+ <li><p dir="ltr">Scaling the brokers: While the advantages are amazing, scaling the brokers themselves becomes a challenge for highly distributed systems. It’s just another piece to maintain alongside your microservices.</p></li> 
+ <li><p dir="ltr">Higher Latency: The number of hops in a message bus increases the overall latency. This is especially true for a RPC-like use case. In mission critical apps, this might not be a feasible solution.</p></li> 
+ <li><p dir="ltr">Higher Resource Utilization: The brokers need CPU, memory, and storage resources to run. These resources could otherwise be utilized for running other microservices. The overheads associated with a broker design could be too much for a small cluster.</p></li> 
+</ul> 
+<p dir="ltr">Just knowing the advantage and disadvantage of various architectures isn’t enough. It is important to know when to use what.</p> 
+<p dir="ltr">You must always default to a brokerless design. Make the switch if you need the flexibility of streams or need to leverage the pub-sub semantics of a message bus. If you’re starting off fresh, it would make sense to start with a brokerless design and then switch once the need rises.</p> 
+<p dir="ltr">It’s not necessary to choose just one. You can use both. For our tool, we are using a broker design to implement the RPC calls. The communication with our database layer is brokerless to provide lower latencies.</p> 
+<p dir="ltr"><strong>If you are opting for a microservices based architecture, I always recommend going event driven</strong><strong>.&nbsp;</strong><a href="https://blog.spaceuptech.com/posts/building-event-driven-microservices-that-scale/" rel="noopener nofollow" target="_blank"><strong>Event driven architectures</strong></a><strong>&nbsp;can be seen as having an advanced broker at its core</strong><strong>&nbsp;which has a a ton of capabilities (like task scheduling) built in.</strong></p> 
+<h2 dir="ltr">Wrapping Up</h2> 
+<p dir="ltr">Using the right approach for the job is important. Choosing the mode of communication is a fundamental decision which needs to be taken with great care.</p> 
+<p dir="ltr">There are multiple options for both. Sticking to a well established framework almost always makes more sense than making something from scratch. There are so many options out there. For message brokers you’ve got RabbitMQ, <a href="https://nats.io" target="_blank">Nats</a>, <a href="https://kafka.apache.org/" target="_blank">Kafka</a>, etc., and each one is built for particular messaging semantics.</p> 
+<p dir="ltr">Another awesome way is to use a Backend as a Service like <a href="https://spaceuptech.com/space-cloud" target="_blank">Space Cloud</a>. Space Cloud will automate the entire backend so you can focus on the business logic rather than the the cloud architecture.</p> 
+<p dir="ltr"><em>Did this article help you? How do you make sure your apps are cloud native? Share your experiences below.&nbsp;</em></p></div>
+                </div>
+
+                  <div id="bottom-bumper-container"></div>
+                  <div class="article-tag-pill-container">
+                      <span class="article-tag-pill">microservice</span>
+                      <span class="article-tag-pill">Cloud computing</span>
+                      <span class="article-tag-pill">Design</span>
+                      <span class="article-tag-pill">Architecture</span>
+                      <span class="article-tag-pill">Service discovery</span>
+                  </div>
+
+                  <div class="attribution">
+                      <p>Published at DZone with permission of <span>Noorain Panjwani<span>, DZone MVB</span></span>.
+                        <span>
+                          <a href="https://blog.spaceuptech.com/posts/how-to-make-microservices-communicate/" target="_blank">See the original article here.
+                            <i class="icon-link-ext-alt"></i>
+                          </a>
+                        </span>
+                      </p>
+                    <p>Opinions expressed by DZone contributors are their own.</p>
+                  </div>
+
+                    <div class="related">
+                      <h3>Popular on DZone</h3>
+                        <ul>
+                            <li class="relateddiv">
+                              <a href="/articles/autowiring-in-spring?fromrel=true">Autowiring in Spring</a>
+                            </li>
+                            <li class="relateddiv">
+                              <a href="/articles/how-to-generate-fake-test-data?fromrel=true">How to Generate Fake Test Data</a>
+                            </li>
+                            <li class="relateddiv">
+                              <a href="/articles/five-steps-to-strengthen-api-security?fromrel=true">5 Steps to Strengthen API Security</a>
+                            </li>
+                            <li class="relateddiv">
+                              <a href="/articles/modernize-legacy-code-in-production-rebuild-your-a?fromrel=true">Modernize Legacy Code in Production: Rebuild Your Airplane Midflight Without Crashing</a>
+                            </li>
+                        </ul>
+                      </div>
+<div class="comments-overlay"></div>
+<div id="comment-box">
+  <div class="comment-box-wrapper">
+    <div id="comment-input-editor"></div>
+  </div>
+  <div class="info hidden"></div>
+  <div class="comments-content">
+    <div class="comment-header">
+      <hr />
+      <span class="icon-comment">
+        <span class="numOfComments"></span> Comments
+      </span>
+    </div>
+    <div class="comments"></div>
+  </div>
+</div>
+            </article>
+          </div>
+
+            <div id="above-pr-ad" class="bottom-ad-container">
+              <div id="div-gpt-ad-1435246566686-11" data-gpt-slot="bottom"></div>
+            </div>
+            <div class="layout-card widget-top-border partner-resources-block" style="width:100%; margin-bottom: 1em;">
+              <div class="main-container">
+                <div class="featured-header">
+                  <h2>
+                      Microservices<span> Partner Resources</span>
+                  </h2>
+                </div>
+                <div class="partner-resources-container">
+                  <div id="div-gpt-ad-1435246566686-5" class="resource-block" data-gpt-slot="partner" data-gpt-position="pr1"></div>
+                  <div id="div-gpt-ad-1435246566686-6" class="resource-block" data-gpt-slot="partner" data-gpt-position="pr2"></div>
+                  <div id="div-gpt-ad-1435246566686-7" class="resource-block" data-gpt-slot="partner" data-gpt-position="pr3"></div>
+                </div>
+              </div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <div id="bsa-parent" class="bottom-sticky-ad-container hide">
+      <div class="container">
+        <div class="col-md-9">
+          <div class="fixed-bottom-div">
+            <div class="inline-block">
+              <div id="div-gpt-ad-1635294790718-12" data-gpt-desktop="true" class="bottom-sticky-ad"></div>
+            </div>
+            <div class="inline-block">
+              <span id="close" class="bottom-sticky-ad-close-button" onclick="removeBottomStickyAd()">
+                X
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  <div class="modal fade bd-example-modal-lg" id="modal-message" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header"></div>
+        <div class="modal-body"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script async>const articleTitle = 'How to Make Microservices Communicate'
+const articleUrl = 'https://dzone.com/articles/how-to-make-microservices-communicate'
+
+const retweetLink = document.querySelector('#tweet-link')
+
+function retweet(event) {
+    event.preventDefault()
+    event.stopPropagation()
+
+    const twitter = 'https://twitter.com/intent/tweet'
+    const params = '?text=' + encodeURIComponent(articleTitle) + '&url=' + articleUrl + '&ref=dzone.com&via=DZoneInc'
+    const win = window.open(twitter + params, '_blank')
+    win.focus()
+}
+
+retweetLink.addEventListener('click', retweet);
+
+function showStatusMessage(options) {
+  var modal = document.getElementById("modal-message");
+
+  if(modal) {
+    modal.classList.add(options.type);
+    var modalBody = modal.querySelector(".modal-content .modal-body");
+    var modalHeader = modal.querySelector(".modal-content .modal-header");
+
+    modalHeader.innerText = options.header ? options.header : "";
+    modalBody.innerText = options.body ? options.body : "" ;
+
+    $(modal).modal("show");
+
+    $(modal).on('hidden.bs.modal', function () {
+      modal.classList.remove(options.type);
+    });
+  }
+}
+
+function showConfirmMessage(options) {
+  var modal = document.getElementById("modal-message");
+
+  if(modal) {
+    modal.classList.add(options.type);
+    var modalBody = modal.querySelector(".modal-content .modal-body");
+    var modalHeader = modal.querySelector(".modal-content .modal-header");
+
+    modalHeader.innerText = options.header ? options.header : "";
+    modalBody.innerText = options.body ? options.body : "" ;
+
+    if (options.textarea) {
+      const textareaDiv = document.createElement('div')
+      const textareaLabel = document.createElement('label')
+      textareaLabel.setAttribute('for', 'modal-textarea')
+      textareaLabel.innerText = options.textarea.label
+
+      const textarea = document.createElement('textarea')
+      textarea.id = 'modal-textarea'
+      textarea.placeholder = (options.textarea.placeholder || '')
+      textarea.setAttribute('rows', (options.textarea.rows || 3))
+      textarea.classList.add('form-control', 'not-resizable')
+
+      if (options.textarea.maxlength) {
+        textarea.maxLength = options.textarea.maxlength
+      }
+
+      textareaDiv.appendChild(textareaLabel)
+      textareaDiv.appendChild(textarea)
+      modalBody.appendChild(textareaDiv)
+    }
+
+    var btnContainer = document.createElement("div");
+    btnContainer.classList.add("btn-container");
+
+    var noBtn = document.createElement("button");
+    noBtn.innerText = options.noBtnText ? options.noBtnText : "No";
+    noBtn.classList.add("no-btn");
+
+    var yesBtn = document.createElement("button");
+    yesBtn.innerText = options.yesBtnText ? options.yesBtnText : "Yes";
+    yesBtn.classList.add("yes-btn");
+
+    btnContainer.appendChild(noBtn);
+    btnContainer.appendChild(yesBtn);
+
+    modalBody.appendChild(btnContainer);
+
+    $(modal).modal("show");
+
+    $(noBtn).one("click", function() {
+      $(modal).modal("hide");
+
+      if(options.noCallback) {
+        $(modal).one('hidden.bs.modal', function () {
+          options.noCallback();
+        });
+      }
+    });
+
+    $(yesBtn).one("click", function() {
+      $(modal).modal("hide");
+
+      if(options.yesCallback) {
+        $(modal).one('hidden.bs.modal', function () {
+          options.yesCallback();
+        });
+      }
+    });
+
+    $(modal).on('hidden.bs.modal', function () {
+      modal.classList.remove(options.type);
+    });
+  }
+}
+</script><link rel="stylesheet" media="all" href="https://dz2cdn2.dzone.com/themes/dz20/ftl/footer/styles.css">
+
+<div id="ftl-footer">
+  <div class="container-fluid footerOuter">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="container">
+          <div class="row footer">
+            <div class="col-md-12 footerWidget">
+              <div class="row footerContainer footer">
+                <div class="left col-xs-12 col-sm-7">
+                  <div class="col-xs-12 social-media-icons footer-mobile">
+                    <ul class="icons-only">
+                      <li class="rss-icon" id="rss-footer-1">
+                        <a href="/pages/feeds" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-rss-1"></i>
+                        </a>
+                      </li>
+                      <li class="twitter-icon">
+                        <a href="https://twitter.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-twitter"></i>
+                        </a>
+                      </li>
+                      <li class="facebook-icon">
+                        <a href="https://www.facebook.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-facebook-1"></i>
+                        </a>
+                      </li>
+                      <li class="linkedin-icon">
+                        <a href="https://www.linkedin.com/company/dzone/" target="_blank"
+                           rel="noreferrer noopener">
+                          <i class="icon-linkedin-1"></i>
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div class="top-section col-xs-12">
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">ABOUT US</p>
+                      <ul class="link-group">
+                        <li><a href="/pages/about" rel="noreferrer noopener">About DZone</a></li>
+                        <li><a href="mailto:support@dzone.com" rel="noreferrer noopener">Send feedback</a></li>
+                        <li><a href="https://careers.dzone.com/" target="_blank" rel="noreferrer noopener">Careers</a></li>
+                          <li><a href="/sitemap" rel="noreferrer noopener">Sitemap</a></li>
+                      </ul>
+                    </div>
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">ADVERTISE</p>
+                      <ul class="link-group">
+                        <li><a href="https://advertise.dzone.com" target="_blank" rel="noreferrer noopener">Advertise with DZone</a></li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div class="bottom-section col-xs-12">
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">CONTRIBUTE ON DZONE</p>
+                      <ul class="bottom-top-list link-group">
+                        <li><a href="/articles/dzones-article-submission-guidelines">Article Submission Guidelines</a></li>
+                        <li><a href="/pages/mvb" rel="noreferrer noopener">MVB Program</a></li>
+                        <li><a href="/pages/contribute" rel="noreferrer noopener">Become a Contributor</a></li>
+                        <li><a href="/writers-zone" rel="noreferrer noopener">Visit the Writers' Zone</a></li>
+                      </ul>
+
+                      <p class="section-header">LEGAL</p>
+                      <ul class="link-group">
+                        <li><a href="/pages/tos" rel="noreferrer noopener">Terms of Service</a></li>
+                        <li><a href="/pages/privacy" rel="noreferrer noopener">Privacy Policy</a></li>
+                      </ul>
+                    </div>
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">CONTACT US</p>
+                      <ul class="link-group">
+                        <li>600 Park Offices Drive</li>
+                        <li>Suite 300</li>
+                        <li>Durham, NC 27709</li>
+                        <li><a href="mailto:support@dzone.com" rel="noreferrer noopener">support@dzone.com</a></li>
+                        <li><a href="tel:+19196780300" rel="noreferrer noopener">+1 (919) 678-0300</a></li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="right col-xs-12 col-sm-5">
+
+                  <p class="connect-text">Let's be friends:</p>
+                  <div class="col-xs-12 social-media-icons footer-wide">
+                    <ul class="icons-only">
+                      <li class="rss-icon" id="rss-footer-1">
+                        <a href="/pages/feeds" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-rss-1"></i>
+                        </a>
+                      </li>
+                      <li class="twitter-icon">
+                        <a href="https://twitter.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-twitter"></i>
+                        </a>
+                      </li>
+                      <li class="facebook-icon">
+                        <a href="https://www.facebook.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-facebook-1"></i>
+                        </a>
+                      </li>
+                      <li class="linkedin-icon">
+                        <a href="https://www.linkedin.com/company/dzone/" target="_blank"
+                           rel="noreferrer noopener">
+                          <i class="icon-linkedin-1"></i>
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div class="col-xs-12 powered-by">
+                    <p>DZone.com is powered by&nbsp;</p>
+                    <a href="https://devada.com/answerhub/" rel="noreferrer noopener">
+                      <img src=""
+                           data-src="https://dz2cdn2.dzone.com/themes/dz20/images/answerhub_logo_white_footer.png"
+                           width="150"
+                           height="56"
+                           class="lazyload"
+                           alt="AnswerHub logo">
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  <script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"></script>
+
+  <script async>
+      (function(w, d, s, l, i) {
+          w[l] = w[l] || [];
+          w[l].push({'gtm.start': new Date().getTime(), event: 'gtm.js'});
+          var f = d.getElementsByTagName(s)[0], j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : '';
+          j.async = true;
+          j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+          f.parentNode.insertBefore(j,f);
+      })(window, document, 'script', 'dataLayer', 'GTM-K25QL22');
+  </script>
+
+  <script>
+      window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+      ga('create', 'UA-410289-1', 'auto');
+      ga('require', 'linkid', 'linkid.js');
+      ga('require', 'GTM-TSD9TZP');
+      ga('set', 'siteSpeedSampleRate', 25);
+  </script>
+  <script async src="https://www.google-analytics.com/analytics.js"></script>
+  <script async>const analytics = {
+    'dimension1': 'microservices',
+    'dimension2': 'article/analysis',
+    'dimension3': '2021-01-14',
+    'dimension4': '0',
+    'dimension5': '',
+    'dimension7': 'microservice, Cloud computing, Design, Architecture, Service discovery',
+    'dimension8': 'noorainp',
+    'dimension9': 'undefined',
+    'dimension10': 'Xebia'
+}
+
+if (window.ga) {
+    Object.keys(analytics).forEach(function(key) {
+        window.ga('set', key, analytics[key])
+    })
+
+    window.ga('send', 'pageview')
+}</script>
+
+  <script>
+      !function (e, o, n, i) {
+          if (!e) {
+              e = e || {}, window.permutive = e, e.q = [];
+              var t = function () {
+                  return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, function (e) {
+                      return (e ^ (window.crypto || window.msCrypto).getRandomValues(new Uint8Array(1))[0] & 15 >> e / 4).toString(16)
+                  })
+              };
+              e.config = i || {}, e.config.apiKey = o, e.config.workspaceId = n, e.config.environment = e.config.environment || "production", (window.crypto || window.msCrypto) && (e.config.viewId = t());
+              for (var g = ["addon", "identify", "track", "trigger", "query", "segment", "segments", "ready", "on", "once", "user", "consent"], r = 0; r < g.length; r++) {
+                  var w = g[r];
+                  e[w] = function (o) {
+                      return function () {
+                          var n = Array.prototype.slice.call(arguments, 0);
+                          e.q.push({
+                              functionName: o,
+                              arguments: n
+                          })
+                      }
+                  }(w)
+              }
+          }
+      }(window.permutive, "bca90777-e088-4f2a-96c2-13ad18deeccc", "18ad0c5b-460c-4d19-a729-dc537805538f", {});
+      window.googletag = window.googletag || {}, window.googletag.cmd = window.googletag.cmd || [], window.googletag.cmd.push(function () {
+          if (0 === window.googletag.pubads().getTargeting("permutive").length) {
+              var e = window.localStorage.getItem("_pdfps");
+              window.googletag.pubads().setTargeting("permutive", e ? JSON.parse(e) : []);
+              var o = window.localStorage.getItem("permutive-id");
+              o && (window.googletag.pubads().setTargeting("puid", o), window.googletag.pubads().setTargeting("ptime", Date.now().toString())), window.permutive.config.viewId && window.googletag.pubads().setTargeting("prmtvvid", window.permutive.config.viewId), window.permutive.config.workspaceId && window.googletag.pubads().setTargeting("prmtvwid", window.permutive.config.workspaceId)
+          }
+      });
+
+
+      permutive.addon('web', {
+          'page': {
+              'category': 'Microservices',
+              'node': {
+                  'authorCompany': 'Xebia',
+                  'authors': [3223648, ],
+                  'publishDate': new Date(1610582400000),
+                  'sponsorAuthor': false,
+                  'tags': ['microservice', 'Cloud computing', 'Design', 'Architecture', 'Service discovery', ],
+                  'title': 'How to Make Microservices Communicate',
+                  'type': 'article',
+              },
+              'section': 'article',
+          }
+      });
+  </script>
+  <script async src="https://18ad0c5b-460c-4d19-a729-dc537805538f.edge.permutive.app/18ad0c5b-460c-4d19-a729-dc537805538f-web.js"></script>
+
+  <script>
+      const csrf = '-280402828972655037'
+      const articleId = 2664318
+      const likes = 22
+      const assetDomain = 'https://dz2cdn2.dzone.com'
+      const codemirrorVars = {
+          modeURI: 'https://dz2cdn2.dzone.com/themes/dz20/lib/codemirror/mode/',
+          requiredScripts: [
+              'https://dz2cdn2.dzone.com/themes/dz20/lib/codemirror/lib/codemirror.js',
+              'https://dz2cdn2.dzone.com/themes/dz20/lib/codemirror/mode/meta.js'
+          ]
+      }
+
+      const gptTags = {
+          'zone': 'microservices',
+          'topicTag': 'microservice,Cloud computing,Design,Architecture,Service discovery',
+          'company': '',
+          'siteSection': 'Zones',
+          'articleCategory': 'analysis',
+          'nodeID': '2664318',
+          'authorID': '3223648',
+          'publishYear': '2021',
+          'publishMonth': '01',
+          'jobRole': '',
+          'companySize': ''
+      }
+
+      const minCommentChar = 10;
+      const peer39Enabled = true;
+  </script>
+
+  <script src="https://dz2cdn2.dzone.com/themes/dz20/lib/static/jquery/jquery.min.js"></script>
+  <script async src="https://dz2cdn2.dzone.com/themes/dz20/lib/static/bootstrap/bootstrap.min.js"></script>
+  <script async src="https://dz2cdn2.dzone.com/themes/dz20/ftl/article/ads.js"></script>
+
+
+
+  <script>
+      function loadScript(src) {
+          return new Promise(function (resolve, reject) {
+              const s = document.createElement('script')
+              s.src = src
+              s.onload = resolve
+              s.onerror = reject
+              document.head.appendChild(s)
+          })
+      }
+
+      function loadStyle(href) {
+          const link = document.createElement('link')
+          link.rel = 'stylesheet'
+          link.href = href
+          document.head.appendChild(link)
+      }
+
+      function loadScriptsSync(deferred) {
+          var p = Promise.resolve()
+          for (var i = 0; i < deferred.length; i++) {
+              let script = deferred[i]
+              p = p.then(function() {
+                  return loadScript(script)
+              })
+          }
+          return p
+      }
+
+      function loadStyles() {
+          const deferred = [
+              'https://dz2cdn2.dzone.com/themes/dz20/lib/codemirror/lib/codemirror.css',
+              'https://dz2cdn2.dzone.com/themes/dz20/ftl/comments/styles.css',
+              'https://dz2cdn2.dzone.com/themes/dz20/lib/froala3/css/froala_editor.pkgd.min.css',
+              'https://dz2cdn2.dzone.com/themes/dz20/lib/froala3/css/themes/gray.min.css',
+              'https://dz2cdn2.dzone.com/themes/dz20/ftl/article/mini-profile.css'
+          ]
+
+          for (var i = 0; i < deferred.length; i++) {
+              loadStyle(deferred[i])
+          }
+      }
+
+      window.addEventListener('load', function(event) {
+          loadStyles()
+          loadScriptsSync([
+              'https://dz2cdn2.dzone.com/themes/dz20/ftl/header/auth-status.js',
+              'https://dz2cdn2.dzone.com/themes/dz20/lib/lazysizes.min.js',
+              'https://dz2cdn2.dzone.com/themes/dz20/ftl/article/codeblocks.js',
+              'https://dz2cdn2.dzone.com/themes/dz20/ftl/article/activity-bar.js',
+              'https://dz2cdn2.dzone.com/themes/dz20/lib/froala3/js/froala_editor.pkgd.min.js',
+              'https://dz2cdn2.dzone.com/themes/dz20/ftl/froala/content.js',
+              'https://dz2cdn2.dzone.com/themes/dz20/ftl/comments/content.js',
+              'https://dz2cdn2.dzone.com/themes/dz20/ftl/article/content.js'
+          ])
+      })
+  </script>
+</body>
+</html>

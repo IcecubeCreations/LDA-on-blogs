@@ -1,0 +1,157 @@
+JAXB Convert Object to JSON Example - HowToDoInJava        Skip to content  HowToDoInJava   Menu      Menu JavaJava TutorialJava 8ArraysCollectionsConcurrencyOOPStreamsRegexBest PracticesSpringSpring CoreSpring 5Spring AOPSpring BootSpring HATEOASSpring WebFluxGuidesREST APIsHibernateLoggingJUnit 5Design PatternsPythonTypeScriptInterviewPreparation GuideCore JavaSpring CoreSpring BootSpring WebMVCPuzzlesDark ModeJAXB Convert Object to JSON ExampleLast Updated: July 21, 2019By: Lokesh GuptaJAXBJSON Files, MOXyJava example to convert Java objects to JSON string or write JSON to file. This example uses MOXy along with JAXB to marshal Java object to JSON. MOXy implements JAXB allowing developers to provide their mapping information through annotations as well as provide many rich features which JAXB doesn’t provide by default.1. MOXy DependencyInclude MOXy to project runtime.
+<dependency>
+	<groupId>org.eclipse.persistence</groupId>
+	<artifactId>org.eclipse.persistence.moxy</artifactId>
+	<version>2.5.2</version>
+</dependency>
+2. Java Object to JSON String2.1. Add JAXB Annotations
+@XmlRootElement(name = "employee")
+@XmlAccessorType(XmlAccessType.PROPERTY)
+public class Employee implements Serializable {
+
+	private static final long serialVersionUID = 1L;
+	
+	private Integer id;
+	private String firstName;
+	private String lastName;
+	private Department department;
+	
+	public Employee() {
+		super();
+	}
+
+	//Setters and Getters
+}
+
+@XmlRootElement(name = "department")
+@XmlAccessorType(XmlAccessType.PROPERTY)
+public class Department implements Serializable {
+	
+	private static final long serialVersionUID = 1L;
+	
+	Integer id;
+	String name;
+	
+	public Department() {
+		super();
+	}
+
+	//Setters and Getters
+}
+2.2. Add jaxb.propertiesWhen you get instance of JAXBContext, JAXB checks for jaxb.properties file and construct context. Here, you inject the JAXBContextFactory from MOXy library.Place jaxb.properties file in same package where JAXB annotated classes are placed.
+javax.xml.bind.context.factory=org.eclipse.persistence.jaxb.JAXBContextFactory
+2.3. Convert Object to JSONNow use javax.xml.bind.Marshaller class to convert object to json.
+package com.howtodoinjava.demo;
+
+import java.io.StringWriter;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
+import org.eclipse.persistence.jaxb.MarshallerProperties;
+import com.howtodoinjava.demo.model.Department;
+import com.howtodoinjava.demo.model.Employee;
+
+public class JaxbExample 
+{
+	public static void main(String[] args) 
+	{
+		Employee employee = new Employee(1, "Lokesh", "Gupta", new Department(101, "IT"));
+		
+		jaxbObjectToJSON(employee);
+	}
+	
+	private static void jaxbObjectToJSON(Employee employee) 
+	{
+	    try 
+	    {
+	        JAXBContext jaxbContext = JAXBContext.newInstance(Employee.class);
+	        Marshaller jaxbMarshaller = jaxbContext.createMarshaller();
+
+	        // To format JSON
+	        jaxbMarshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE); 
+	        
+	        //Set JSON type
+	        jaxbMarshaller.setProperty(MarshallerProperties.MEDIA_TYPE, "application/json");
+	        jaxbMarshaller.setProperty(MarshallerProperties.JSON_INCLUDE_ROOT, true);
+
+	        //Print JSON String to Console
+	        StringWriter sw = new StringWriter();
+	        jaxbMarshaller.marshal(employee, sw);
+	        System.out.println(sw.toString());
+	    } 
+	    catch (JAXBException e) 
+	    {
+	        e.printStackTrace();
+	    }
+	}
+}
+Program output:
+{
+   "employee" : {
+      "department" : {
+         "id" : 101,
+         "name" : "IT"
+      },
+      "firstName" : "Lokesh",
+      "id" : 1,
+      "lastName" : "Gupta"
+   }
+}
+Read More : Convert Java Object to XML3. Java Object to JSON FileUse above code with now output to json file.
+package com.howtodoinjava.demo;
+
+import java.io.File;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
+import org.eclipse.persistence.jaxb.MarshallerProperties;
+import com.howtodoinjava.demo.model.Department;
+import com.howtodoinjava.demo.model.Employee;
+
+public class JaxbExample 
+{
+	public static void main(String[] args) 
+	{
+		Employee employee = new Employee(1, "Lokesh", "Gupta", new Department(101, "IT"));
+		
+		jaxbObjectToJSON(employee);
+	}
+	
+	private static void jaxbObjectToJSON(Employee employee) 
+	{
+	    try 
+	    {
+	        JAXBContext jaxbContext = JAXBContext.newInstance(Employee.class);
+	        Marshaller jaxbMarshaller = jaxbContext.createMarshaller();
+
+	        // To format JSON
+	        jaxbMarshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE); 
+	        
+	        //Set JSON type
+	        jaxbMarshaller.setProperty(MarshallerProperties.MEDIA_TYPE, "application/json");
+	        jaxbMarshaller.setProperty(MarshallerProperties.JSON_INCLUDE_ROOT, true);
+
+	         //Store JSON to File
+	        File file = new File("employee.json");
+	        jaxbMarshaller.marshal(employee, file);
+	    } 
+	    catch (JAXBException e) 
+	    {
+	        e.printStackTrace();
+	    }
+	}
+}
+Program output:
+{
+   "employee" : {
+      "department" : {
+         "id" : 101,
+         "name" : "IT"
+      },
+      "firstName" : "Lokesh",
+      "id" : 1,
+      "lastName" : "Gupta"
+   }
+}
+Drop me your questions in comments section related to this convert java object to json example.Happy Learning !!Was this post helpful? Let us know if you liked the post. That’s the only way we can improve.  Yes   No Recommended Reading:Convert json to java object example with moxy and jaxb JAXB Read XML to Java Object Example JAXB Write Java Object to XML Example Jackson – Convert JSON to Map and Map to JSON JSON.simple – Read and Write JSON Python JSON – Read a JSON file Python JSON – Read a JSON String Python JSON – Append JSON to a File JAXB marshal without @XmlRootElement – Missing @XmlRootElement Error Unmarshal without jaxb annotations Join 7000+ Awesome DevelopersGet the latest updates from industry, awesome resources, blog updates and much more. Email Address Subscribe Leave this field empty if you're not a robot:  * We do not spam !!Leave a Comment Cancel replyCommentName Email WebsiteAdd me to your newsletter and keep me updated whenever you publish new blog posts  Δ  Search for:   HowToDoInJavaA blog about Java and related technologies, the best practices, algorithms, and interview questions.Meta LinksAbout MeContact UsPrivacy policyAdvertiseGuest PostsBlogsREST API Tutorial    Copyright © 2022 · Hosted on Cloudways · Sitemap                     
+

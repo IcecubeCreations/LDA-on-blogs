@@ -1,0 +1,391 @@
+
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+<head>
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-30459901-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'UA-30459901-1');
+    </script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="format-detection" content="telephone=no">
+    <title>Real time metrics using Prometheus &amp; Grafana | redByte blog</title>
+    <link rel="stylesheet" type="text/css" href="/css/main.min.css?v=1">
+    <link rel="stylesheet" type="text/css" href="/css/pygments/default.css">
+    <link rel="stylesheet" type="text/css" href="/css/override.css">
+    <link rel="icon" type="image/png" href="/images/favicon.png">
+    <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700,700i&amp;subset=latin-ext" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet">
+</head>
+<body>
+    <section class="s s-header s-light-menu">
+    <div class="c">
+        <nav class="navbar navbar-expand-lg">
+            <a href="/en" class="logo"><span>redByte</span></a>
+            <span class="navbar-toggler menu-icon" data-toggle="modal" data-target="#modalNavigation" aria-expanded="false" aria-controls="navbar">
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </span>
+
+            <div class="collapse navbar-collapse" id="navbarTogglerDemo02">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/en/solutions-and-services">Solutions &amp; services</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/en/references">References</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/en/about-us">About us</a>
+                    </li>
+                    <li class="nav-item active">
+                        <a class="nav-link" href="/en/blog">Blog</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/en/contact">Contact</a>
+                    </li>
+                </ul>
+                <div class="special-items">
+                    <span class="language">
+                        <a href="/blog">SK</a>
+                        <span>/</span>
+                        <a href="#" class="active">EN</a>
+                    </span>
+                </div>
+            </div>
+        </nav>
+    </div>
+</section>
+
+    <section class="s s-article">
+        <div class="c">
+            <div class="row">
+                <div class="col-md-12 col-lg-3 col-xl-2">
+                    <div class="meta">
+                        <span class="author-photo" style="background-image: url(/images/kovacik.png);"></span>
+                        <ul>
+                            <li>Martin KovÃ¡Äik</li>
+                            <li>Software engineer</li>
+                            
+                            <li><a href="https://twitter.com/martinkovacik" rel="author">@martinkovacik</a></li>
+                            
+                            <li>27. Jul 2017</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-12 col-lg-9 col-xl-8">
+                    <h1 class="left-text">Real time metrics using Prometheus &amp; Grafana</h1>
+
+                     
+
+<p>If you&rsquo;ve ever done a serious web app, you&rsquo;ve certainly met with a requirement for its monitoring, or tracking various application and runtime metrics. Exploring recorded metrics lets you discover different patterns of app usage (e.g., low traffic during weekends and holidays), or, for example, visualize CPU, disk space and RAM usage, etc. As an example, if the RAM usage graph shows that the usage is constantly rising and returns to normal only after the application restart, there may be a memory leak. Certainly, there are many reasons for implementing application and runtime metrics for your applications.</p>
+
+<p>There are several tools for application monitoring, e.g. <a href="https://www.zabbix.com/">Zabbix</a> and others. Tools of this type focus mainly on runtime monitoring, i.e., CPU usage, available RAM, etc., but they are not very well suited for application monitoring and answering questions like how many users are currently logged in, what&rsquo;s the distribution of server response times, etc.</p>
+
+<p>In this post, I&rsquo;ll show you, how to do real time runtime and application monitoring using <a href="https://prometheus.io/">Prometheus</a> and <a href="https://grafana.com/">Grafana</a>. As an example, let&rsquo;s consider <a href="https://opendata.itms2014.sk/">Opendata API</a> of <a href="https://www.itms2014.sk/">ITMS2014+</a>.</p>
+
+<h3 id="prometheus">Prometheus</h3>
+
+<p>Our monitoring solution consists of two parts. The core of the solution is Prometheus, which is a (multi-dimensional) time series database. You can imagine it as a list of timestamped, named metrics each consisting of a set of key=value pairs representing the monitored variables. Prometheus features relatively extensive alerting options, it has its own query language and also basic means for visualising the data. For more advanced visualisation I recommend Grafana.</p>
+
+<p>Prometheus, unlike most other monitoring solutions works using PULL approach. This means that each of the monitored applications exposes an HTTP endpoint exposing monitored metrics. Prometheus then periodically downloads the metrics.</p>
+
+<h3 id="grafana">Grafana</h3>
+
+<p>Grafana is a platform for visualizing and analyzing data. Grafana does not have its own timeseries database, it&rsquo;s basically a frontend to popular data sources like Prometheus, InfluxDB, Graphite, ElasticSearch and others. Grafana allows you to create charts and dashboards and share it with others. I&rsquo;ll show you that in a moment.</p>
+
+<h3 id="publishing-metrics-from-an-application">Publishing metrics from an application</h3>
+
+<p>In order for Prometheus to be able to download metrics, it is necessary to expose an HTTP endpoint from your application. When called, this HTTP endpoint should return current application metrics - we need to instrument the application. Prometheus supports two metrics encoding formats - plain text and protocol buffers. Fortunately, Prometheus provides client libraries for all major programming languages including Java, Go, Python, Ruby, Scala, C++, Erlang, Elixir, Node.js, PHP, Rust, Lisp Haskell and others.</p>
+
+<p>As I wrote earlier, let&rsquo;s consider ITMS2014+ Opendata API, which is an application written in Go. There is an official Prometheus <a href="https://github.com/prometheus/client_golang">Go Client Library</a>. Embedding it is very easy and consists of only three steps.</p>
+
+<p>The first step is to add Prometheus client library to imports:</p>
+
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="ln"> 1</span><span class="kn">package</span> <span class="nx">main</span>
+<span class="ln"> 2</span>
+<span class="ln"> 3</span><span class="kn">import</span> <span class="p">(</span>
+<span class="ln"> 4</span>
+<span class="ln"> 5</span>    <span class="c1">// ...
+</span><span class="ln"> 6</span><span class="c1"></span>    <span class="s">&#34;github.com/prometheus/client_golang/prometheus&#34;</span>
+<span class="ln"> 7</span>    <span class="s">&#34;github.com/prometheus/client_golang/prometheus/promhttp&#34;</span>
+<span class="ln"> 8</span>    <span class="c1">// ...
+</span><span class="ln"> 9</span><span class="c1"></span><span class="p">)</span>
+<span class="ln">10</span>
+<span class="ln">11</span><span class="o">//</span> <span class="o">...</span></code></pre></div>
+
+<p>The second step is to create an HTTP endpoint for exposing the application metrics. In this case I use <a href="https://github.com/gorilla/mux">Gorilla mux</a> and <a href="https://github.com/urfave/negroni">Negroni</a> HTTP middleware:</p>
+
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="ln">1</span><span class="nx">r</span> <span class="o">:=</span> <span class="nx">mux</span><span class="p">.</span><span class="nx">NewRouter</span><span class="p">()</span>
+<span class="ln">2</span><span class="nx">r</span><span class="p">.</span><span class="nx">Path</span><span class="p">(</span><span class="s">&#34;/metrics&#34;</span><span class="p">).</span><span class="nx">Handler</span><span class="p">(</span><span class="nx">promhttp</span><span class="p">.</span><span class="nx">Handler</span><span class="p">())</span>
+<span class="ln">3</span><span class="nx">n</span> <span class="o">:=</span> <span class="nx">negroni</span><span class="p">.</span><span class="nx">New</span><span class="p">(</span><span class="nx">negroni</span><span class="p">.</span><span class="nx">NewRecovery</span><span class="p">())</span>
+<span class="ln">4</span><span class="nx">n</span><span class="p">.</span><span class="nx">UseHandler</span><span class="p">(</span><span class="nx">r</span><span class="p">)</span></code></pre></div>
+
+<p>We are only interested in line 2, where we say that the <code>/metrics</code> endpoint will be processed by Prometheus handler, which will expose application metrics in Prometheus format. Something very similar to the following output:</p>
+
+<div class="highlight"><pre class="chroma"><code class="language-text" data-lang="text">go_goroutines 11
+go_memstats_alloc_bytes 7.949552e+06
+go_memstats_buck_hash_sys_bytes 2.542265e+06
+go_memstats_frees_total 7.49226407e+08
+go_memstats_gc_sys_bytes 1.568768e+06
+go_memstats_heap_alloc_bytes 7.949552e+06
+go_memstats_last_gc_time_seconds 1.5020497859690137e+09
+go_memstats_lookups_total 810225
+go_memstats_mallocs_total 7.49277644e+08
+go_memstats_mcache_inuse_bytes 4800
+go_memstats_stack_sys_bytes 819200
+go_memstats_sys_bytes 4.0659192e+07
+process_open_fds 23
+process_resident_memory_bytes 4.3012096e+07
+process_start_time_seconds 1.50171016757e+09
+process_virtual_memory_bytes 4.42384384e+08</code></pre></div>
+
+<p>In production, you would usually want some kind of access control, for example HTTP basic authentication and https:</p>
+
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="nx">r</span><span class="p">.</span><span class="nx">Path</span><span class="p">(</span><span class="s">&#34;/metrics&#34;</span><span class="p">).</span><span class="nx">Handler</span><span class="p">(</span><span class="nx">httpauth</span><span class="p">.</span><span class="nx">SimpleBasicAuth</span><span class="p">(</span><span class="s">&#34;USERNAME_NOT_SHOWN&#34;</span><span class="p">,</span> <span class="s">&#34;PASSWORD_NOT_SHOWN&#34;</span><span class="p">)(</span><span class="nx">promhttp</span><span class="p">.</span><span class="nx">Handler</span><span class="p">()))</span></code></pre></div>
+
+<p>Although we have only added three lines of code, we can now collect the application&rsquo;s runtime metrics, e.g., number of active goroutines, RAM allocation, CPU usage, etc. However, we did not expose any application (domain specific) metrics.</p>
+
+<p>In the third step, I&rsquo;ll show you how to add custom application metrics. Let&rsquo;s add some metrics that we can answer these questions:</p>
+
+<ul>
+<li>which REST endpoints are most used by consumers?</li>
+<li>how often?</li>
+<li>what are the response times?</li>
+</ul>
+
+<p>Whenever we want to expose a metric, we need to select its type. Prometheus provides <a href="https://prometheus.io/docs/concepts/metric_types/">4 types of metrics</a>:</p>
+
+<ul>
+<li><strong>Counter</strong> - is a cumulative metric that represents a single numerical value that only ever goes up. A counter is typically used to count requests served, tasks completed, errors occurred, etc.</li>
+<li><strong>Gauge</strong> - is a metric that represents a single numerical value that can arbitrarily go up and down. Gauges are typically used for measured values like temperatures or current memory usage, but also &ldquo;counts&rdquo; that can go up and down, like the number of running goroutines.</li>
+<li><strong>Histogram</strong> - samples observations (usually things like request durations or response sizes) and counts them in configurable buckets. It also provides a sum of all observed values.</li>
+<li><strong>Summary</strong> - is similar to a histogram, a summary samples observations (usually things like request durations and response sizes). While it also provides a total count of observations and a sum of all observed values, it calculates configurable quantiles over a sliding time window.</li>
+</ul>
+
+<p>In our case, we want to expose the processing time of requests for each endpoint (and their percentiles) and the number of requests per time unit. As the basis for these metrics, we&rsquo;ve chosen the <strong>Histogram</strong> type. Let&rsquo;s look at the code:</p>
+
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="ln">1</span><span class="nx">httpDurationsHistogram</span> <span class="o">:=</span> <span class="nx">prometheus</span><span class="p">.</span><span class="nx">NewHistogramVec</span><span class="p">(</span><span class="nx">prometheus</span><span class="p">.</span><span class="nx">HistogramOpts</span><span class="p">{</span>
+<span class="ln">2</span>	<span class="nx">Name</span><span class="p">:</span>    <span class="s">&#34;http_durations_histogram_seconds&#34;</span><span class="p">,</span>
+<span class="ln">3</span>	<span class="nx">Help</span><span class="p">:</span>    <span class="s">&#34;HTTP request latency distributions.&#34;</span><span class="p">,</span>
+<span class="ln">4</span>	<span class="nx">Buckets</span><span class="p">:</span> <span class="nx">prometheus</span><span class="p">.</span><span class="nx">ExponentialBuckets</span><span class="p">(</span><span class="mf">0.0001</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">,</span> <span class="mi">36</span><span class="p">),</span>
+<span class="ln">5</span><span class="p">},</span> <span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="s">&#34;code&#34;</span><span class="p">,</span> <span class="s">&#34;version&#34;</span><span class="p">,</span> <span class="s">&#34;controller&#34;</span><span class="p">,</span> <span class="s">&#34;action&#34;</span><span class="p">})</span>
+<span class="ln">6</span><span class="nx">prometheus</span><span class="p">.</span><span class="nx">MustRegister</span><span class="p">(</span><span class="nx">httpDurationsHistogram</span><span class="p">)</span></code></pre></div>
+
+<p>We&rsquo;ve added a metric named <code>http_durations_histogram_seconds</code> and said that we wanted to expose four dimensions:</p>
+
+<ul>
+<li><code>code</code> - HTTP status code</li>
+<li><code>version</code> - Opendata API version</li>
+<li><code>controller</code> - The controller that handled the request</li>
+<li><code>action</code> - The name of the action within the controller</li>
+</ul>
+
+<p>For the histogram type metric, you must first specify the intervals for the exposed values. In our case, the value is response duration. On line 3, we have created 36 exponentially increasing buckets, ranging from 0.0001 to 145 seconds. In case of ITMS2014+ Opendata API we can empirically say that most of the requests only last 30ms or less. The maximum value of 145 seconds is therefore large enough for our use case.</p>
+
+<p>Finally, for each request, we need to record four dimensions we have defined earlier and the request duration.
+Here, we have two options - modify each handler to record the metrics mentioned above, or create a middleware that wraps the handler and records the metrics. Obviously, we&rsquo;ve chosen the latter:</p>
+
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="ln"> 1</span><span class="kd">func</span> <span class="nx">main</span><span class="p">()</span> <span class="p">{</span>
+<span class="ln"> 2</span>	<span class="c1">// ...
+</span><span class="ln"> 3</span><span class="c1"></span>
+<span class="ln"> 4</span>	<span class="nx">api2</span> <span class="o">:=</span> <span class="nx">goa</span><span class="p">.</span><span class="nx">New</span><span class="p">(</span><span class="s">&#34;API v2&#34;</span><span class="p">)</span>
+<span class="ln"> 5</span>	<span class="c1">// Setup middleware
+</span><span class="ln"> 6</span><span class="c1"></span>	<span class="nx">api2</span><span class="p">.</span><span class="nx">Use</span><span class="p">(</span><span class="nx">middleware</span><span class="p">.</span><span class="nx">RequestID</span><span class="p">())</span>
+<span class="ln"> 7</span>	<span class="nx">api2</span><span class="p">.</span><span class="nx">Use</span><span class="p">(</span><span class="nx">middleware</span><span class="p">.</span><span class="nx">LogRequest</span><span class="p">(</span><span class="kc">false</span><span class="p">))</span>
+<span class="ln"> 8</span>	<span class="nx">api2</span><span class="p">.</span><span class="nx">Use</span><span class="p">(</span><span class="nx">prometheusHandler</span><span class="p">(</span><span class="nx">httpDurationsHistogram</span><span class="p">))</span>
+<span class="ln"> 9</span>	<span class="nx">api2</span><span class="p">.</span><span class="nx">Use</span><span class="p">(</span><span class="nx">middleware</span><span class="p">.</span><span class="nx">Recover</span><span class="p">())</span>
+<span class="ln">10</span>
+<span class="ln">11</span>	<span class="c1">// ...
+</span><span class="ln">12</span><span class="c1"></span><span class="p">}</span>
+<span class="ln">13</span>
+<span class="ln">14</span><span class="c1">// ..
+</span><span class="ln">15</span><span class="c1"></span>
+<span class="ln">16</span><span class="kd">func</span> <span class="nx">prometheusHandler</span><span class="p">(</span><span class="nx">hist</span> <span class="o">*</span><span class="nx">prometheus</span><span class="p">.</span><span class="nx">HistogramVec</span><span class="p">)</span> <span class="nx">goa</span><span class="p">.</span><span class="nx">Middleware</span> <span class="p">{</span>
+<span class="ln">17</span>	<span class="k">return</span> <span class="kd">func</span><span class="p">(</span><span class="nx">h</span> <span class="nx">goa</span><span class="p">.</span><span class="nx">Handler</span><span class="p">)</span> <span class="nx">goa</span><span class="p">.</span><span class="nx">Handler</span> <span class="p">{</span>
+<span class="ln">18</span>		<span class="k">return</span> <span class="kd">func</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">rw</span> <span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span> <span class="nx">req</span> <span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+<span class="ln">19</span>			<span class="nx">startedAt</span> <span class="o">:=</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Now</span><span class="p">()</span>
+<span class="ln">20</span>			<span class="nx">err</span> <span class="o">:=</span> <span class="nx">h</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span> <span class="nx">rw</span><span class="p">,</span> <span class="nx">req</span><span class="p">)</span>
+<span class="ln">21</span>			<span class="nx">version</span> <span class="o">:=</span> <span class="s">&#34;N/A&#34;</span>
+<span class="ln">22</span>			<span class="nx">split</span> <span class="o">:=</span> <span class="nx">strings</span><span class="p">.</span><span class="nx">Split</span><span class="p">(</span><span class="nx">req</span><span class="p">.</span><span class="nx">URL</span><span class="p">.</span><span class="nx">Path</span><span class="p">,</span> <span class="s">&#34;/&#34;</span><span class="p">)</span>
+<span class="ln">23</span>			<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">split</span><span class="p">)</span> <span class="p">&gt;</span> <span class="mi">1</span> <span class="p">{</span>
+<span class="ln">24</span>				<span class="nx">version</span> <span class="p">=</span> <span class="nx">split</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="ln">25</span>			<span class="p">}</span>
+<span class="ln">26</span>			<span class="nx">resp</span> <span class="o">:=</span> <span class="nx">goa</span><span class="p">.</span><span class="nx">ContextResponse</span><span class="p">(</span><span class="nx">ctx</span><span class="p">)</span>
+<span class="ln">27</span>			<span class="nx">hist</span><span class="p">.</span><span class="nx">WithLabelValues</span><span class="p">(</span>
+<span class="ln">28</span>				<span class="nx">strconv</span><span class="p">.</span><span class="nx">Itoa</span><span class="p">(</span><span class="nx">resp</span><span class="p">.</span><span class="nx">Status</span><span class="p">),</span> <span class="c1">// code
+</span><span class="ln">29</span><span class="c1"></span>				<span class="nx">version</span><span class="p">,</span> <span class="c1">// version
+</span><span class="ln">30</span><span class="c1"></span>				<span class="nx">goa</span><span class="p">.</span><span class="nx">ContextController</span><span class="p">(</span><span class="nx">ctx</span><span class="p">),</span> <span class="c1">// controller
+</span><span class="ln">31</span><span class="c1"></span>				<span class="nx">goa</span><span class="p">.</span><span class="nx">ContextAction</span><span class="p">(</span><span class="nx">ctx</span><span class="p">)).</span> <span class="c1">// action
+</span><span class="ln">32</span><span class="c1"></span>				<span class="nx">Observe</span><span class="p">(</span><span class="nb">float64</span><span class="p">(</span><span class="nx">time</span><span class="p">.</span><span class="nx">Since</span><span class="p">(</span><span class="nx">startedAt</span><span class="p">))</span> <span class="o">/</span> <span class="nb">float64</span><span class="p">(</span><span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="p">))</span> <span class="c1">// request duration seconds
+</span><span class="ln">33</span><span class="c1"></span>			<span class="k">return</span> <span class="nx">err</span>
+<span class="ln">34</span>		<span class="p">}</span>
+<span class="ln">35</span>	<span class="p">}</span>
+<span class="ln">36</span><span class="p">}</span></code></pre></div>
+
+<p>As you can see, the middleware is plugged in on line 8 and the entire middleware is roughly 20 lines long. On line 27 to 31, we fill the four dimensions and on line 32 we record the request duration in seconds.</p>
+
+<h3 id="configuration">Configuration</h3>
+
+<p>Since we have everything ready from the app side point of view, we just have to configure Prometheus and Grafana.</p>
+
+<p>A minimum configuration for Prometheus is shown below. We are mainly interested in two settings, how often are the metrics downloaded (<code>5s</code>) and the metrics URL (<code>https://opendata.itms2014.sk/metrics</code>).</p>
+
+<div class="highlight"><pre class="chroma"><code class="language-yaml" data-lang="yaml">global<span class="p">:</span><span class="w">
+</span><span class="w">  </span>scrape_interval<span class="p">:</span><span class="w">     </span>5s<span class="w">
+</span><span class="w">  </span>evaluation_interval<span class="p">:</span><span class="w"> </span>5s<span class="w">
+</span><span class="w">
+</span><span class="w"></span>scrape_configs<span class="p">:</span><span class="w">
+</span><span class="w">  </span>-<span class="w"> </span>job_name<span class="p">:</span><span class="w"> </span><span class="s1">&#39;opendata&#39;</span><span class="w">
+</span><span class="w">    </span>metrics_path<span class="p">:</span><span class="w"> </span>/metrics<span class="w">
+</span><span class="w">    </span>scheme<span class="p">:</span><span class="w"> </span>https<span class="w">
+</span><span class="w">    </span>static_configs<span class="p">:</span><span class="w">
+</span><span class="w">      </span>-<span class="w"> </span>targets<span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s1">&#39;opendata.itms2014.sk&#39;</span><span class="p">]</span><span class="w">
+</span><span class="w">    </span>basic_auth<span class="p">:</span><span class="w">
+</span><span class="w">      </span>username<span class="p">:</span><span class="w"> </span><span class="s1">&#39;USERNAME_NOT_SHOWN&#39;</span><span class="w">
+</span><span class="w">      </span>password<span class="p">:</span><span class="w"> </span><span class="s1">&#39;PASSWORD_NOT_SHOWN&#39;</span></code></pre></div>
+
+<p>A minimal Grafana configuration:</p>
+
+<div class="highlight"><pre class="chroma"><code class="language-ini" data-lang="ini"><span class="c1">#################################### Paths ####################################</span>
+<span class="k">[paths]</span>
+<span class="na">data</span> <span class="o">=</span> <span class="s">/var/db/grafana/</span>
+<span class="na">logs</span> <span class="o">=</span> <span class="s">/var/log/grafana/</span>
+<span class="na">plugins</span> <span class="o">=</span> <span class="s">/var/db/grafana/plugins</span>
+
+<span class="c1">#################################### Server ####################################</span>
+<span class="k">[server]</span>
+<span class="na">protocol</span> <span class="o">=</span> <span class="s">http</span>
+
+<span class="c1"># The http port  to use</span>
+<span class="na">http_port</span> <span class="o">=</span> <span class="s">3000</span>
+
+<span class="c1"># The public facing domain name used to access grafana from a browser</span>
+<span class="na">domain</span> <span class="o">=</span> <span class="s">metrics.itms.redbyte.eu</span>
+<span class="na">root_url</span> <span class="o">=</span> <span class="s">https://metrics.itms.redbyte.eu/</span></code></pre></div>
+
+<p>Note: As we can see, a NON TLS port 3000 is exposed, but don&rsquo;t worry there is a NGINX in front of Grafana listening on port 443, secured by Let&rsquo;s Encrypt certificate.</p>
+
+<h3 id="monitoring">Monitoring</h3>
+
+<p>Finally, we get to the point where we have everything we need. In order to create some nice charts it is necessary to:</p>
+
+<ol>
+<li>Open a web browser and log into Grafana</li>
+<li>Add Prometheus data source</li>
+<li>Create dashboards</li>
+<li>Create charts</li>
+</ol>
+
+<p>An example of how to create a chart showing the number of HTTP requests per selected interval is shown on the following figure.</p>
+
+
+<figure >
+    
+        <img src="opendata_reqs_per_sec.png" />
+    
+    
+    <figcaption>
+        <h4>Data source for reqs/interval chart</h4>
+        
+    </figcaption>
+    
+</figure>
+
+
+<p>Similarly, we&rsquo;ve created additional charts and placed them in two dashboards as shown on the following figures.</p>
+
+
+<figure >
+    
+        <img src="app_metrics.png" />
+    
+    
+    <figcaption>
+        <h4>Application metrics</h4>
+        
+    </figcaption>
+    
+</figure>
+
+
+
+<figure >
+    
+        <img src="go_processes.png" />
+    
+    
+    <figcaption>
+        <h4>Runtime metrics</h4>
+        
+    </figcaption>
+    
+</figure>
+
+
+<h3 id="summary">Summary</h3>
+
+<p>In this post, we have shown that the application and runtime monitoring may not be difficult at all.</p>
+
+<p>Prometheus client libraries allow us to easily expose metrics from your applications, whether written in Java, Go, Ruby or Python. Prometheus even allows you to expose metrics from an offline applications (behind corporate firewalls) or batch applications (scripts, etc.). In this case, <a href="https://prometheus.io/docs/instrumenting/pushing/">PUSH access</a> can be used. The application then pushes metrics into a push gateway. The push gateway then exposes the metrics as described in this post.</p>
+
+<p>Grafana can be used to create various charts and dashboards, that can be shared. Even static snapshots can be created. This allows you to capture an interesting moments and analyze them later.</p>
+
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="s s-footer">
+    <div class="c">
+        <div class="row">
+            <div class="col">
+                <h2 class="label">Contact</h2>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-6">
+                <p>redByte s.r.o.<br>
+                    M. C. Sklodowskej 31<br>
+                    851 04 Bratislava<br>
+                    Slovakia<br>
+                    <br>
+                </p>
+            </div>
+            <div class="col-sm-6">
+                <p>
+                +421 904 236 791<br>
+                <a href="mailto:info@redbyte.eu">info@redbyte.eu</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+    <div class="modal modal-nav" id="modalNavigation" data-backdrop="static">
+        <div class="modal-dialog" role="navigation">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <a href="/en/solutions-and-services">Solutions &amp; services</a>
+                    <a href="/en/references">References</a>
+                    <a href="/en/about-us">About us</a>
+                    <a href="/en/blog">Blog</a>
+                    <a href="/en/contact">Contact</a>
+                    <span class="language">
+                        <a href="/blog">Slovensky</a>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/main.min.js?v=1"></script>
+</body>
+</html>

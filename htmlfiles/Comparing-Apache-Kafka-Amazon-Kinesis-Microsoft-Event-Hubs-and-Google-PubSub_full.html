@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Comparing Apache Kafka, Amazon Kinesis, Microsoft Event Hubs and Google Pub/Sub</title>
+    <meta name="description" content="Distributed log technologies have matured in the last few years.  In this article, I review the attributes of distributed log technologies, compare four of the most popular and suggest how to choose the one that's right for you." />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="alternate" type="application/atom+xml" href="https://blog.scottlogic.com/atom.xml" title="Scott Logic Blog">
+    <link rel="alternate" type="application/rss+xml" href="https://blog.scottlogic.com/feed.xml" title="Scott Logic Blog">
+    
+        <link rel="canonical" href="https://blog.scottlogic.com/2018/04/17/comparing-big-data-messaging.html">
+    
+    
+    <script async type="text/javascript" src="//use.typekit.net/zhk0dtj.js"></script>
+    <script type="text/javascript">try{Typekit.load();}catch(e){}</script>
+    <script type="text/javascript">siteGithubOwnerName = 'ScottLogic'</script>
+
+    
+    <meta property="og:title" content="Comparing Apache Kafka, Amazon Kinesis, Microsoft Event Hubs and Google Pub/Sub" />
+    <meta property="og:description" content="Distributed log technologies have matured in the last few years.  In this article, I review the attributes of distributed log technologies, compare four of the most popular and suggest how to choose the one that&#39;s right for you."/>
+    
+    <meta property="og:image" content="https://blog.scottlogic.com/dnicholas/assets/featured/distributed.jpg" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="Scott Logic"/>
+    <meta property="og:url" content="https://blog.scottlogic.com/2018/04/17/comparing-big-data-messaging.html" />
+    
+    <meta name="twitter:card" content="summary_large_image"/>
+    <meta name="twitter:site" content="@Scott_Logic"/>
+    <meta name="twitter:image" content="https://blog.scottlogic.com/dnicholas/assets/featured/distributed.jpg"/>
+    
+    <meta name="twitter:creator" content="@">
+    
+
+    <link rel="stylesheet" href="/style.css" type="text/css">
+    <link rel="icon" type="image/png" href="https://www.scottlogic.com/sites/default/files/scott-logic-favicon.jpg" />
+
+    
+    
+    <script>
+        (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+        })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+        
+        ga('create', 'UA-262131-1', 'auto');
+        ga('send', 'pageview');
+    </script>
+    
+    <script>
+   (function(d) {
+     var config = {
+       kitId: 'iig6jdr',
+       scriptTimeout: 3000,
+       async: true
+     },
+     h=d.documentElement,t=setTimeout(function(){h.className=h.className.replace(/\bwf-loading\b/g,"")+" wf-inactive";},config.scriptTimeout),tk=d.createElement("script"),f=false,s=d.getElementsByTagName("script")[0],a;h.className+=" wf-loading";tk.src='https://use.typekit.net/'+config.kitId+'.js';tk.async=true;tk.onload=tk.onreadystatechange=function(){a=this.readyState;if(f||a&&a!="complete"&&a!="loaded")return;f=true;clearTimeout(t);try{Typekit.load(config)}catch(e){}};s.parentNode.insertBefore(tk,s)
+   })(document);
+   </script>
+</head>
+<body>
+<div id="off-canvas-wrapper" style="">
+    <nav id="mobileMenu" aria-hidden="true">
+    <div class="mm-panels">
+        <div class="menu-mobile-menu-container mm-panel mm-hasnavbar mm-opened" id="mm-0">
+            <div class="mm-navbar">
+                <a class="mm-title">Menu</a>
+            </div>
+            <ul id="mobile-menu" class="menu mm-listview">
+                <li ><a href="https://www.scottlogic.com">Home</a></li>
+                <li ><a href="https://www.scottlogic.com/what-we-do/">What we do</a></li>
+                <li ><a href="https://www.scottlogic.com/our-work/">Our work</a></li>
+                <li ><a href="https://www.scottlogic.com/who-we-are/">Who we are</a></li>
+                <li ><a href="https://www.scottlogic.com/careers/">Careers</a></li>
+                <li ><a href="https://www.scottlogic.com/events/">Events</a></li>
+                <li ><a href="https://www.scottlogic.com/news/">News</a></li>
+                <li ><a href="https://www.scottlogic.com/blog">Blog</a></li>
+                <li ><a href="https://www.scottlogic.com/who-we-are/#contact-us">Contact Us</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<header>
+    <div class="mobile-nav-trigger">
+        <div id="nav-icon">
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </div>
+    <div class="mobile-search"></div>
+
+    <div class="grid-container">
+        <div class="grid-x grid-padding-x">
+            <div class="large-6 medium-6 cell">
+                <h1 class="brand"><a href="https://www.scottlogic.com">Scott Logic / Altogether Smarter</a></h1>
+            </div>
+            <div class="large-6 medium-6 cell">
+                <div class="header-nav_top">
+                    <nav aria-label="upper-nav">
+                        <div class="menu-secondary-container">
+                            <ul id="secondary-menu" class="menu">
+                                <li><a href="https://www.scottlogic.com/careers/">Careers</a></li>
+                                <li><a href="https://www.scottlogic.com/events/">Events</a></li>
+                                <li><a href="https://www.scottlogic.com/news/">News</a></li>
+                                <li><a href="https://www.scottlogic.com/who-we-are/#contact-us">Contact</a></li>
+                            </ul>
+                        </div>
+                    </nav>
+                </div>
+                <div class="header-nav_bottom">
+                    <nav aria-label="main-nav">
+                        <div class="menu-primary-container">
+                            <ul id="primary-menu" class="menu">
+                                <li><a href="https://www.scottlogic.com/what-we-do/">What we do</a></li>
+                                <li><a href="https://www.scottlogic.com/our-work/">Our work</a></li>
+                                <li><a href="https://www.scottlogic.com/who-we-are/">Who we are</a></li>
+                                <li><a href="https://www.scottlogic.com/blog">Blog</a></li>
+                            </ul>
+                        </div>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+    
+
+<div class="default-post 
+  
+  yellow
+  
+
+ grid-container">
+  <div class="hero grid-x">
+    <div class="content cell large-7 medium-9 small-11 grid-y grid-padding-y">
+      <div class="cell large-offset-2 medium-offset-1 small-offset-1">
+        
+
+
+<span class="category">
+    
+        
+        
+        
+        
+    
+        
+        
+        
+        
+    
+        
+        
+        
+        
+    
+        
+        
+        
+        
+    
+        
+        
+        
+        
+    
+        
+        
+        
+        
+    
+        
+        
+        
+        
+    
+        
+        
+        
+            <a href="/category/data-engineering.html">
+                
+                    Data Engineering
+                
+            </a>
+            
+    
+</span>
+
+        <span>&middot;</span>
+        <span>17 April 2018</span>
+        <span>&middot;</span>
+        <span>
+
+
+
+
+  9 min read
+
+</span>
+      </div>
+      <div class="cell large-offset-2 medium-offset-1 small-offset-1">
+        <h1 class="title">Comparing Apache Kafka, Amazon Kinesis, Microsoft Event Hubs and Google Pub/Sub</h1>
+      </div>
+      
+      
+        <link rel="canonical" href="https://blog.scottlogic.com/2018/04/17/comparing-big-data-messaging.html">
+      
+    </div>
+    <div class="shape cell large-5 medium-3 small-1 grid-y">
+      
+      
+      
+        <svg class="bg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 650 410" preserveAspectRatio="none">
+          <path d="M0 0h542l108 87v183L420 465H0z" />
+        </svg>
+        <svg class="fg show-for-large" xmlns="http://www.w3.org/2000/svg" width="650" height="410" viewBox="0 0 650 410">
+          <path d="M345 176.475L414.475 107h42.427L345 218.902v-42.427zm0 70.71L485.186 107h.946l20.74 20.74L345 289.612v-42.426zm0 70.712l176.014-176.015 21.213 21.213L346.323 359H345v-41.103zM374.607 359L556.37 177.238l21.213 21.213L417.033 359h-42.426zm70.71 0l146.408-146.407 5.275 5.275v31.876L487.744 359h-42.426z" />
+        </svg>
+        
+    </div>
+  </div>
+
+  <div class="grid-x grid-margin-x grid-padding-y">
+    <div class="cell primary-meta-data large-1 large-offset-1 grid-x">
+      <div class="author-information cell medium-10 small-9 hide-for-large">
+        
+  
+  <img src="/acarr/picture.jpg" alt="Andrew Carr"/>
+  
+
+
+        <a rel="author" href="/acarr">Andrew Carr</a>
+         
+      </div>
+      
+<div class="social">
+  <applause-button color="
+  
+  #f8be4f
+  
+
+"
+    url="https://blog.scottlogic.com/2018/04/17/comparing-big-data-messaging.html"
+    multiclap="true"/>
+</div>
+
+    </div>
+    <div class="cell large-6">
+      <div class="cell post-content">
+        <h2 id="the-rise-of-distributed-log-technologies">The rise of distributed log technologies</h2>
+
+<p>Distributed log technologies such as Apache Kafka, Amazon Kinesis, Microsoft Event Hubs and Google Pub/Sub have matured in the last few years, and have added some great new types of solutions when moving data around for certain use cases.</p>
+
+<p>According to <a href="https://www.itjobswatch.co.uk/">IT Jobs Watch</a>, job vacancies for projects with <a href="https://www.itjobswatch.co.uk/jobs/uk/kafka.do">Apache Kafka</a> have increased by 112% since last year, whereas more traditional point to point brokers haven’t faired so well.  Jobs advertised with <a href="https://www.itjobswatch.co.uk/jobs/uk/activemq.do">Active MQ</a> have decreased by 43% compared to this time last year.  <a href="https://www.itjobswatch.co.uk/jobs/uk/rabbitmq.do">Rabbit MQ</a> is a more modern version of the traditional message broker and efficiently implements AMQP but only saw an increase of 22% in terms of job adverts which ask for it.  I suspect in reality a lot of the use cases that were poorly served by traditional message brokers have moved very quickly to distributed log technologies, and a lot of new development that traditionally used technologies such as Active MQ have moved to Rabbit MQ.</p>
+
+<h2 id="what-are-they">What are they?</h2>
+
+<p>While distributed log technologies may on the surface seem very similar to traditional broker messaging technologies, they differ significantly architecturally and therefore have very different performance and behavioural characteristics.</p>
+
+<p><img src="https://blog.scottlogic.com/dnicholas/assets/messaging-traditional-broker-architecture.jpeg" alt="Traditional Message Broker" title="Traditional Message Broker" /></p>
+
+<p>Traditional message broker systems such as those which are JMS or AMQP compliant tend to have processes which connect direct to brokers, and brokers which connect direct to processes.  Hence for a message to go from one process to another, it can do so routed via a broker.  These solutions tend to be optimised towards flexibility and configurable delivery guarantees.</p>
+
+<p>Recently technologies such as Apache Kafka and the like, or as they are commonly called the distributed commit log technologies have come along and can play a similar role to the traditional broker message systems.  They are optimised towards different use cases however, instead of concentrating on flexibility and delivery guarantees, they tend to be concentrated on scalability and throughput.</p>
+
+<p><img src="https://blog.scottlogic.com/dnicholas/assets/messaging-distributed-commit-log-architecture.jpeg" alt="Distributed Commit Log Architecture" title="Distributed Commit Log Architecture" /></p>
+
+<p>In a distributed commit log architecture the sending and receiving processes are a bit more de-coupled and in some ways the sending process doesn’t care about the receiving processes.  The messages are persisted immediately to the distributed commit log. The delivery guarantees are often viewed in the context that messages in the distributed commit log tend to be persisted only for a period of time.  Once the time has expired, older messages in the distributed commit log disappear regardless of guarantees and therefore usually fit use cases where the data can expire, or will be processed by a certain time.</p>
+
+<h2 id="choice-of-distributed-commit-log-technologies">Choice of distributed commit log technologies</h2>
+
+<p>In this article we will compare the four most popular distributed log technologies. Here is a high-level summary of each:</p>
+
+<h3 id="apache-kafka">Apache Kafka</h3>
+
+<p><a href="https://kafka.apache.org/">Kafka</a> is a distributed streaming service originally developed by LinkedIn.  APIs allow producers to publish data streams to topics.  A topic is a partitioned log of records with each partition being ordered and immutable.  Consumers can subscribe to topics.  Kafka can run on a cluster of brokers with partitions split across cluster nodes.  As a result, Kafka aims to be highly scalable.  However, Kafka can require extra effort by the user to configure and scale according to requirements.</p>
+
+<h3 id="amazon-kinesis">Amazon Kinesis</h3>
+
+<p><a href="https://aws.amazon.com/kinesis/">Kinesis</a> is a cloud based real-time processing service.  Kinesis producers can push data as soon as it is created to the stream.  Kenesis breaks the stream across shards (similar to partitions), determined by your partition key.  Each shard has a hard limit on the number of transactions and data volume per second.  If you exceed this limit, you need to increase your number of shards.  Much of the maintenance and configuration is hidden from the user.  AWS allows ease of scaling with users only paying for what they use.</p>
+
+<h3 id="microsoft-azure-event-hubs">Microsoft Azure Event Hubs</h3>
+
+<p><a href="https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-what-is-event-hubs">Event Hubs</a> describes itself as an event ingestor capable of receiving and processing millions of events per second.  Producers send events to an event hub via <a href="https://en.wikipedia.org/wiki/Advanced_Message_Queuing_Protocol">AMQP</a> or HTTPS.  Event Hubs also have the concept of partitions to enable specific consumers to receive a subset of the stream.  Consumers connect via AMQP.  Consumer groups are used to allow consuming applications to have a separate view of the event stream.  Event Hubs is a fully managed service but users must pre-purchase capacity in terms of throughput units.</p>
+
+<h3 id="google-pubsub">Google Pub/Sub</h3>
+
+<p><a href="https://cloud.google.com/pubsub/docs/overview">Pub/Sub</a> offers scalable cloud based messaging.  Publisher applications send messages to a topic with consumers subscribing to a topic.  Messages are persisted in a message store until they are acknowledged.  Publishers and pull-subscribers are applications that can make Google API HTTPS requests.  Scaling is automatic by distributing load across data centres.  Users are charged by data volume.</p>
+
+<p>It’s not possible in this article to examine each technology in great detail. However, as an example we will explore Apache Kafka more within the following section.</p>
+
+<h3 id="kafka-architecture">Kafka Architecture</h3>
+
+<p>The architecture around Kafka is comprised of the following components:</p>
+
+<ul>
+  <li><strong>Topics</strong> - this is a conceptual division of grouped messages. It could be stock prices, or cars seen, or whatever.</li>
+  <li><strong>Partitions</strong> - this is how parallelism is easily achieved.  A topic can be split into 1 or more partitions.  Then each message is kept in an ordered queue within that partition (messages are not ordered across partitions).</li>
+  <li><strong>Consumers</strong> - 0, 1 or more consumers can process any partition of a topic.</li>
+  <li><strong>Consumer Groups</strong> - these are groups of consumers that are used to load share.  If a consumer group is consuming messages from one partition, each consumer in a consumer group will consume a different message.  Consumer groups are typically used to load share.</li>
+  <li><strong>Replication</strong> - you can set the replication factor on Kafka on a per topic basis. This will can help reliability if one or more servers fail.</li>
+</ul>
+
+<p><img src="https://blog.scottlogic.com/dnicholas/assets/messaging-kafka-architecture.jpeg" alt="Kafka Architecture" title="Kafka Architecture" /></p>
+
+<h2 id="what-are-distributed-commit-log-technologies-good-for">What are distributed commit log technologies good for?</h2>
+
+<p>While I won’t compare and contrast all the use cases of traditional message brokers, when compared with distributed log technologies (we’ll save that for another blog) but if for a moment we compare the drivers behind the design of Active MQ and Apache Kafka we can get a feel for what they are good for.  Apache Kafka was built in Scala at LinkedIn to provide a way to scale out their updates and maximise throughput. Scalability was of paramount concern over latency and message delivery guarantees.  Within the scalability requirement was the need to simplify configuration, management and monitoring.</p>
+
+<p>There are a few use cases that distributed log technologies really excel at, which often have the following characteristics:</p>
+
+<ul>
+  <li>The data has a natural expiry time - such as the price of a stock or share.</li>
+  <li>The data is of a large volume - therefore throughput and scalability are key considerations.</li>
+  <li>The data is a natural stream - there can be value in going back to certain points in the stream or traversing forward to a given point.</li>
+</ul>
+
+<p>So certainly within financial services, Kafka is used for:</p>
+
+<ul>
+  <li>Price feeds</li>
+  <li>Event Sourcing</li>
+  <li>Feeding data into a data lake from OLTP systems</li>
+</ul>
+
+<h2 id="attributes-of-distributed-log-technologies">Attributes of distributed log technologies</h2>
+
+<p>There are a number of attributes that should be considered when choosing a distributed log technology, these include:</p>
+
+<ul>
+  <li>Messaging guarantee</li>
+  <li>Ordering guarantee</li>
+  <li>Throughput</li>
+  <li>Latency</li>
+  <li>Configurable persistence period</li>
+  <li>Persisted storage</li>
+  <li>Partitioning</li>
+  <li>Consumer Groups</li>
+</ul>
+
+<h3 id="messaging-guarantee">Messaging guarantee</h3>
+
+<p>Messaging systems typically provide a specific guarantee when delivering messages. Some guarantees are configurable. The types of guarantees are:</p>
+
+<ul>
+  <li><strong>At most once</strong> - some messages may be lost, and no message is delivered more than once.</li>
+  <li><strong>Precisely once</strong> - each message is guaranteed to be delivered once only, not more or less.</li>
+  <li><strong>At least once</strong> - each message is guaranteed to be delivered, but may in some cases be delivered multiple times.</li>
+</ul>
+
+<h3 id="ordering-guarantee">Ordering guarantee</h3>
+
+<p>For distributed log technologies the following ordering guarantees are possible</p>
+
+<ul>
+  <li><strong>None</strong> - there is absolutely no guarantee of any messages coming out in any order related to the order they came in.</li>
+  <li><strong>Within a partition</strong> - within any given partition the order is absolutely guaranteed, but across partitions the messages may be out of order.</li>
+  <li><strong>Across partitions</strong> - ordering is guaranteed across partitions.  This is very expensive and slows down and makes scaling a lot more complicated.</li>
+</ul>
+
+<h3 id="throughput">Throughput</h3>
+
+<p>The volume of messages that can be processed within a set period of time.</p>
+
+<h3 id="latency">Latency</h3>
+
+<p>The average speed a message is processed after it is put on the queue.  It is worth noting that you can sometimes sacrifice latency to get throughput by batching things together (conversely, improving latency by sending data immediately after it is created can sacrifice throughput).</p>
+
+<h3 id="configurable-persistence-period">Configurable persistence period</h3>
+
+<p>The period of time that messages will be kept for.  Once that time has passed the message is deleted, even if no consumers have consumed that message.</p>
+
+<h2 id="how-to-choose-which-one-to-use">How to choose which one to use?</h2>
+
+<p>When choosing between the distributed commit log technologies there are a few big questions you can ask yourself (captured in a simple decision flow chart below).  Are you looking for a hosted solution or a managed service solution?  While Kafka is possibly the most flexible of all the technologies, it is also the most complex to operate and manage.  What you save in the cost of the tool, you will probably use up in support and devops running and managing.</p>
+
+<p>Common to all distributed commit log technologies is that the messaging guarantees tends to be at least once processing.  This means the consumer needs to protect against receiving the message multiple times.  Combining with a stream processing engine such as Apache Spark can give the consumer precisely once processing and remove the need for the user application to handle duplicate messages.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th> </th>
+      <th>Kafka</th>
+      <th>Amazon Kinesis</th>
+      <th>Microsoft Azure Event Hubs</th>
+      <th>Google pub/sub</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Messaging guarantees</td>
+      <td><strong>At least once</strong> per normal connector.<br /><strong>Precisely once</strong> with Spark direct Connector.</td>
+      <td><strong>At least once</strong> unless you build deduping or idempotency into the consumers.<sup><a href="#references">1</a></sup></td>
+      <td><strong>At least once</strong> but allows consumer managed checkpoints for exactly once reads.<sup><a href="#references">2</a></sup></td>
+      <td><strong>At least once</strong></td>
+    </tr>
+    <tr>
+      <td>Ordering guarantees</td>
+      <td>Guaranteed within a partition.</td>
+      <td>Guaranteed within a shard.</td>
+      <td>Guaranteed within partition.</td>
+      <td>No ordering guarantees.<sup><a href="#references">3</a></sup></td>
+    </tr>
+    <tr>
+      <td>Throughput</td>
+      <td>No quoted throughput figures. Study<sup><a href="#references">22</a></sup> showed a throughput of ~30,000 messages/sec.</td>
+      <td>One shard can support 1 MB/s input, 2 MB/s output or 1000 records per second.<sup><a href="#references">14</a></sup> Study<sup><a href="#references">22</a></sup> showed a throughput of ~20,000 messages/sec.</td>
+      <td>Scaled in throughput units. Each supporting 1 MB/s ingress, 2 MB/s egress or 84 GB storage.<sup><a href="#references">12</a></sup> Standard tier allows 20 throughput units.</td>
+      <td>Default is 100MB/s in, 200MB/s out but maximum is quoted as unlimited.<sup><a href="#references">6</a></sup></td>
+    </tr>
+    <tr>
+      <td>Configurable persistence period</td>
+      <td>No maximum</td>
+      <td>1 to 7 days (default is 24 hours)<sup><a href="#references">4</a></sup></td>
+      <td>1 to 7 days (default is 24 hours)<sup><a href="#references">5</a></sup></td>
+      <td>7 days (not configurable) or until acknowledged by all subscribers.<sup><a href="#references">6</a></sup></td>
+    </tr>
+    <tr>
+      <td>Partitioning</td>
+      <td>Yes</td>
+      <td>Yes (Shards)</td>
+      <td>Yes</td>
+      <td>Yes - but not under user control</td>
+    </tr>
+    <tr>
+      <td>Consumer groups</td>
+      <td>Yes</td>
+      <td>Yes (called auto-scaling groups)</td>
+      <td>Yes (up to 20 for the standard pricing tier)</td>
+      <td>Yes (called subscriptions)</td>
+    </tr>
+    <tr>
+      <td>Disaster recovery - with across region replication</td>
+      <td>Yes (cluster mirroring)<sup><a href="#references">7</a></sup></td>
+      <td>Automatically across 3 zones</td>
+      <td>Yes (for the standard tier)</td>
+      <td>Yes (automatic)</td>
+    </tr>
+    <tr>
+      <td>Maximum size of each data blob</td>
+      <td>Default 1MB (but can be configured)</td>
+      <td>1 MB<sup><a href="#references">8</a></sup></td>
+      <td>Default 256 K<sup><a href="#references">9</a></sup> (paid for up to 1MB)</td>
+      <td>10 MB<sup><a href="#references">6</a></sup></td>
+    </tr>
+    <tr>
+      <td>Change partitioning after setup</td>
+      <td>Yes (increase only - does not re-partition existing data)<sup><a href="#references">10</a></sup></td>
+      <td>Yes by “resharding” (merge or split shards).<sup><a href="#references">11</a></sup></td>
+      <td>No<sup><a href="#references">12</a></sup></td>
+      <td>No (not under user control)</td>
+    </tr>
+    <tr>
+      <td>Partition/shard limit</td>
+      <td>No limit. Optimal partitions depends on your use case.</td>
+      <td>500 (US/EU)<sup><a href="#references">8</a></sup> or 200 (other) although you can apply to Amazon to increase this.</td>
+      <td>Between 28 and 32<sup><a href="#references">9</a></sup> (can pay for more).</td>
+      <td>Not visible to user.</td>
+    </tr>
+    <tr>
+      <td>Latency</td>
+      <td>Milliseconds for some set-ups. Benchmarking<sup><a href="#references">23</a></sup> showed ~2 ms median latency.</td>
+      <td>200 ms to 5 seconds<sup><a href="#references">13</a></sup></td>
+      <td>No quoted figures.</td>
+      <td>No quoted figures.</td>
+    </tr>
+    <tr>
+      <td>Replication</td>
+      <td>Configurable replicas. Acknowledgement of message published can be on send, on receipt or on successful replication (local only)<sup><a href="#references">21</a></sup>.</td>
+      <td>Hidden (across three zones). Message published acknowledgement is always after replication.</td>
+      <td>Configurable (and allowed across regions for the standard tier).</td>
+      <td>Hidden. Message published acknowledgement after half the disks on half the clusters have the message.<sup><a href="#references">20</a></sup></td>
+    </tr>
+    <tr>
+      <td>Push model supported</td>
+      <td>Pseudo with Apache Spark or can request data using blocking long polls, so kind of</td>
+      <td>Yes (via Kinesis Client Library)<sup><a href="#references">15</a></sup></td>
+      <td>Yes (via AMQP 1.0)<sup><a href="#references">17</a></sup></td>
+      <td>Yes<sup><a href="#references">16</a></sup></td>
+    </tr>
+    <tr>
+      <td>Pull model supported</td>
+      <td>Yes</td>
+      <td>Yes<sup><a href="#references">15</a></sup></td>
+      <td>No<sup><a href="#references">17</a></sup></td>
+      <td>Yes<sup><a href="#references">16</a></sup></td>
+    </tr>
+    <tr>
+      <td>Languages supported</td>
+      <td>Java, Go, Scala, Clojure, python, C++, .NET, .NET  Core,  Node.js, PHP, Python, Ruby, Spark and many more…<sup><a href="#references">24</a></sup></td>
+      <td>Kenesis Client Libraries (recommended)<sup><a href="#references">18</a></sup>: Java, Python, Ruby, Node.js, .NET, C++<br />Using AWS SDK: C++<sup><a href="#references">30</a></sup>, Go<sup><a href="#references">30</a></sup>, .NET Core<sup><a href="#references">19</a></sup>, PHP<sup><a href="#references">33</a></sup>, Scala<sup><a href="#references">34</a></sup></td>
+      <td>Java, .NET, .NET Core, C++,<sup><a href="#references">25</a></sup> GO (Preview)<sup><a href="#references">26</a></sup>, Node.js(Preview), Python<sup><a href="#references">27</a></sup>, Spark<sup><a href="#references">28</a></sup></td>
+      <td>Java, Go, .NET, .NET Core, Node.js, PHP, Python, Ruby, Spark. All the API’s for pub/sub are in currently beta with the exception of the PHP API which is at General Availability stage.<sup><a href="#references">19</a></sup> <sup><a href="#references">29</a></sup></td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="decision-flow-chart">Decision flow chart</h3>
+
+<p>To help you choose here is a decision flow chart.  It certainly isn’t recommended you stick to it rigidly. It’s more a general guide to which technologies to consider, and a few decision points to help you eliminate some technologies, so you have a more focused pool to evaluate/compare.  Ultimately Kafka is the most flexible, and has great performance characteristics.  But it is also requires the most energy - both in setup and monitoring/maintaining.  If you wish to go more for a fully managed solution - Kinesis, Event Hubs and pub/sub offer alternative options depending on whether ordering and blob size are important to you.</p>
+
+<p>Hopefully this blog post will help you choose the technology that is right for you, and I am very interested if you have chosen one recently and what reason you chose it over the others.</p>
+
+<p><img src="https://blog.scottlogic.com/dnicholas/assets/messaging-architecture-decision.jpeg" alt="Messaging Architecture Decision" title="Messaging Architecture Decision" /></p>
+
+<h2 id="references">References</h2>
+
+<ol>
+  <li><a href="https://docs.aws.amazon.com/streams/latest/dev/kinesis-record-processor-duplicates.html">Handling duplicate records with Kinesis</a></li>
+  <li><a href="https://docs.microsoft.com/en-gb/azure/event-hubs/event-hubs-features#checkpointing">Event Hubs check-pointing</a></li>
+  <li><a href="https://cloud.google.com/pubsub/docs/ordering">Pub/Sub Message Ordering</a></li>
+  <li><a href="https://docs.aws.amazon.com/streams/latest/dev/kinesis-extended-retention.html">Kenesis Changing the Data Retention Period</a></li>
+  <li><a href="https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-quotas">Event Hubs Quotas</a></li>
+  <li><a href="https://cloud.google.com/pubsub/quotas">Pub Sub Quotas</a></li>
+  <li><a href="https://kafka.apache.org/documentation/#basic_ops_mirror_maker">Kafka Mirroring data between clusters</a></li>
+  <li><a href="https://docs.aws.amazon.com/streams/latest/dev/service-sizes-and-limits.html">Kinesis Data Streams Limits</a></li>
+  <li><a href="https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-quotas">Event Hubs quotas</a></li>
+  <li><a href="https://kafka.apache.org/documentation/#basic_ops_modify_topic">Kafka modifying topics</a></li>
+  <li><a href="https://docs.aws.amazon.com/streams/latest/dev/kinesis-using-sdk-java-resharding.html">Kenesis resharding</a></li>
+  <li><a href="https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-faq">Event Hubs FAQ</a></li>
+  <li><a href="https://docs.aws.amazon.com/streams/latest/dev/kinesis-low-latency.html">Low-Latency Processing</a></li>
+  <li><a href="https://aws.amazon.com/kinesis/data-streams/faqs/">Kinesis Data Streams Concepts</a></li>
+  <li><a href="https://docs.aws.amazon.com/streams/latest/dev/developing-consumers-with-sdk.html">Kinesis Developing Data Streams Consumers</a></li>
+  <li><a href="https://cloud.google.com/pubsub/docs/subscriber">Pub Sub Subscriber Overview</a></li>
+  <li><a href="https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-features#event-consumers">Event Hubs Event consumers</a></li>
+  <li><a href="https://aws.amazon.com/kinesis/data-streams/faqs/">Kinesis data streams</a></li>
+  <li><a href="https://cloud.google.com/pubsub/docs/reference/libraries">Pub/Sub client libraries</a></li>
+  <li><a href="https://cloud.google.com/pubsub/architecture#data_plane_-_the_life_of_a_message">Pub/Sub The life of a message</a></li>
+  <li><a href="https://kafka.apache.org/documentation/#replication">Kafka replication</a></li>
+  <li><a href="https://blog.insightdatascience.com/ingestion-comparison-kafka-vs-kinesis-4c7f5193a7cd">Kafka vs Kenesis study</a></li>
+  <li><a href="https://engineering.linkedin.com/kafka/benchmarking-apache-kafka-2-million-writes-second-three-cheap-machines">Benchmarking Apache Kafka</a></li>
+  <li><a href="https://cwiki.apache.org/confluence/display/KAFKA/Clients">Kafka clients</a></li>
+  <li><a href="https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-api-overview">Event Hubs API</a></li>
+  <li><a href="https://azure.microsoft.com/en-gb/updates/event-hubs-go-preview/">Event Hubs Go Preview</a></li>
+  <li><a href="https://github.com/Azure/azure-event-hubs-python">Event Hubs Python</a></li>
+  <li><a href="https://github.com/Azure/azure-event-hubs-spark">Event Hubs Spark</a></li>
+  <li><a href="https://github.com/GoogleCloudPlatform/bigdata-interop">Pub/Sub Big Data Interoperability</a></li>
+  <li><a href="https://docs.aws.amazon.com/sdk-for-go/api/service/kinesis/">Kenesis GO API</a></li>
+  <li><a href="http://sdk.amazonaws.com/cpp/api/LATEST/namespace_aws_1_1_kinesis.html">Kenesis C++ API</a></li>
+  <li><a href="https://docs.aws.amazon.com/sdk-for-net/v3/developer-guide/net-dg-platform-diffs-v3.html">Kenesis .NET API</a></li>
+  <li><a href="https://docs.aws.amazon.com/aws-sdk-php/v2/guide/service-kinesis.html">Kenesis PHP API</a></li>
+  <li><a href="https://github.com/awslabs/aws-scala-sdk">Kenesis Scala API</a></li>
+</ol>
+
+<h2 id="technology-vacancies-statistics">Technology Vacancies Statistics</h2>
+
+<p>The following statistics were taken from <a href="https://www.itjobswatch.co.uk/">IT Jobs Watch</a>, which highlights the changing number of vacancies for each technology between 2016 and 2018.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="text-align: left"> </th>
+      <th style="text-align: right">6 months to 2 April 2016</th>
+      <th style="text-align: right">6 months to 2 April 2017</th>
+      <th style="text-align: right">6 months to 2 April 2018</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: left">Kafka</td>
+      <td style="text-align: right">499</td>
+      <td style="text-align: right">819</td>
+      <td style="text-align: right">1,734</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">ActiveMQ</td>
+      <td style="text-align: right">675</td>
+      <td style="text-align: right">554</td>
+      <td style="text-align: right">314</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">RabbitMQ</td>
+      <td style="text-align: right">1,048</td>
+      <td style="text-align: right">1,181</td>
+      <td style="text-align: right">1,438</td>
+    </tr>
+  </tbody>
+</table>
+
+      </div>
+
+      
+
+
+
+
+<div class="grid-x grid-margin-y grid-padding-y">
+    <div class="cell grid-x grid-margin-y grid-padding-y">
+        <div class="read-more cell large-6 small-10 grid-margin-y">
+            <svg class="show-for-large" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 252 252">
+                <path d="M0 69.5L69.5 0h42.4L0 111.9V69.5zm0 70.7L140.2 0h.9l20.7 20.7L0 182.6v-42.4zm0 70.7l176-176 21.2 21.2L1.3 252H0v-41.1zM29.6 252L211.4 70.2l21.2 21.2L72 252H29.6zm70.7 0l146.4-146.4 5.3 5.3v31.9L142.7 252h-42.4z"/>
+            </svg>
+
+
+
+            <h2>Read more</h2>
+        </div>
+        <div class="small-2 cell hide-for-large">
+            
+<div class="social">
+  <applause-button color="
+  
+  #f8be4f
+  
+
+"
+    url="https://blog.scottlogic.com/2018/04/17/comparing-big-data-messaging.html"
+    multiclap="true"/>
+</div>
+
+        </div>
+    </div>
+</div>
+
+      
+        
+        
+        
+
+
+<div class="post-summary-list">
+    
+    <div class="content">
+        
+        
+
+
+<div class="post-summary grid-margin-y grid-padding-y 
+  
+  teal
+    
+
+">
+    <div class="post-summary cell grid-margin-y">
+        
+        <div class="title">
+            <a href="/2017/10/13/MetOfficeKafka.html">Using Kafka and Grafana to monitor meteorological conditions</a>
+            
+<span class="post-summary-social">
+  <span class="clap" data-url="https://blog.scottlogic.com/2017/10/13/MetOfficeKafka.html" style="display: none">
+    <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 60 60" >
+      <g class="flat">
+        <path d="M37.1910045 6.68944619C37.7313574 6.14566353 38.4431784 5.8737722 39.155207 5.8737722 39.967916 5.8737722 40.7808327 6.22800418 41.3380002 6.93667712 42.2214969 8.06039707 42.0666359 9.69111808 41.0600392 10.7042842L39.777765 11.9949843C39.5801407 12.1276907 39.3877061 12.2695925 39.2075193 12.430303 39.0619998 11.5985371 38.7167801 10.7954023 38.1668781 10.0961338 37.4907623 9.23636364 36.588375 8.62424242 35.5772114 8.31410658L37.1910045 6.68944619zM28.5289586 3.66394984C29.0691039 3.12016719 29.7811325 2.84827586 30.4931611 2.84827586 31.3060777 2.84848485 32.1187868 3.20271682 32.6759543 3.91138976 33.559451 5.03510972 33.40459 6.66562173 32.3979933 7.67878788L17.6760235 22.3467085 17.6276554 20.6499478C17.6149925 19.014629 16.8595779 17.554441 15.6854573 16.5945664L28.5289586 3.66394984zM.624996757 36.9889537C.491717597 36.554099.508245877 35.7327064.906400646 35.2666667L3.45579518 32.2829676C3.45662553 32.2819923 4.33763118 25.8376176 6.09881213 12.9498433 6.09881213 11.4271682 7.33624726 10.1814002 8.84873717 10.1814002 10.3612271 10.1814002 11.5988698 11.4271682 11.5988698 12.9498433L11.6704878 15.4649948C9.18191673 15.8089864 7.24428555 17.9170324 7.14921001 20.492581L4.62804751 38.9475444 3.8946373 39.8060606C3.04504924 39.4926018 2.3776139 39.1458968 1.89233128 38.7659456 1.16440735 38.1960189.758275917 37.4238085.624996757 36.9889537z"/>
+        <path d="M49.6070811,36.8942529 L42.4182909,44.1316614 C36.2784454,50.3128527 29.8604313,55.2743992 24.2225349,56.5113898 C24.0512744,56.5492163 23.8901857,56.6217346 23.7511014,56.7293626 L20.5013032,59.2417973 C20.2908084,59.4045977 20.1673015,59.6181154 19.5026647,59.6181154 C18.8380279,59.6181154 13.0160695,55.8303982 10.3595306,53.2846814 C7.96626306,50.9912532 3.77432047,43.9549368 4.44453927,43.0079415 L6.99372621,40.0244514 C6.99469496,40.0233368 7.87570061,33.578962 9.63674317,20.6913271 C9.63674317,19.168652 10.8743859,17.922675 12.3868758,17.922675 C13.8993657,17.922675 15.1368008,19.168652 15.1368008,20.6913271 L15.2667512,25.2522466 C15.2883404,26.0100313 15.907577,26.5034483 16.5519317,26.5034483 C16.8662207,26.5034483 17.1867374,26.3857889 17.4464306,26.1245559 L32.0670972,11.4054336 C32.6074501,10.861442 33.3190635,10.5897597 34.0312997,10.5897597 C34.8440088,10.5897597 35.6569254,10.9439916 36.214093,11.6526646 C37.0975897,12.7763845 36.942521,14.4071055 35.9359243,15.4202717 L25.8641449,25.5598746 C25.3412294,26.0865204 25.3412294,26.9398119 25.8641449,27.4660397 C26.1288202,27.7324974 26.4757006,27.8658307 26.822581,27.8658307 C27.1694614,27.8658307 27.5165494,27.7324974 27.7810172,27.4660397 L40.7291431,14.43093 C41.2692884,13.8869383 41.9811094,13.615256 42.6933456,13.615256 C43.5060547,13.615465 44.3189713,13.969697 44.8761389,14.6783699 C45.7596356,15.8018809 45.6045669,17.4326019 44.5979702,18.445768 L31.7106677,31.4198537 C31.1806943,31.953605 31.1806943,32.8183908 31.7106677,33.3521421 C31.9718141,33.615047 32.31392,33.7464995 32.656441,33.7464995 C32.9985469,33.7464995 33.3408603,33.615047 33.6020067,33.3521421 L43.7346096,23.1515152 C44.2749625,22.6075235 44.9867835,22.3358412 45.6988121,22.3358412 C46.5115212,22.3358412 47.3244378,22.6900731 47.8816054,23.3989551 C48.7651021,24.522466 48.6100334,26.153187 47.6034367,27.1663532 L37.5667397,37.2708464 C37.0245185,37.8165099 37.0245185,38.7017764 37.5667397,39.2474399 C37.8334909,39.5161964 38.161896,39.6422153 38.4900934,39.6422153 C38.8184984,39.6422153 39.1469035,39.5161964 39.3972552,39.2639498 L45.6195133,32.999791 C46.1802099,32.4353187 46.93085,32.1368861 47.678999,32.1368861 C48.2741552,32.1368861 48.8676508,32.3258098 49.361919,32.7197492 C50.682182,33.7717868 50.7639719,35.7297806 49.6070811,36.8942529 Z"/>
+      </g>
+    </svg>
+    <span class="count"></span>
+  </span>
+</span>
+
+        </div>
+        <div class="cell">
+            
+            Apache Kafka provides distributed log store used by increasing numbers of companies and often forming the heart of systems processing huge amounts of data. This post shows how to use it for storing meteorological data and displaying this in a graphical dashboard with Graphite and Grafana
+            
+        </div>
+        <div class="avatar-metadata cell">
+            
+  
+  <img src="/okenyon/picture.jpg" alt="Oliver Kenyon"/>
+  
+
+
+            
+
+<div>
+  <span>
+    
+      
+      <a href="/okenyon">Oliver Kenyon</a>
+    
+    <span> &middot;</span>
+  </span>
+  <span class="timestamp" date-published="2017-10-13 00:00:00 +0000">
+    
+
+13<sup>th</sup>&nbsp;
+
+
+
+
+  Oct 2017
+
+
+  </span>
+  
+  <span>&middot;</span>
+  <span>
+
+
+
+
+  14 min read
+
+</span>
+  
+</div>
+
+        </div>
+    </div>
+</div>
+
+        
+
+        
+    </div>
+</div>
+
+        
+        
+
+
+<div class="post-summary-list">
+    
+    <div class="content">
+        
+        
+
+
+<div class="post-summary grid-margin-y grid-padding-y 
+  
+  yellow
+  
+
+">
+    <div class="post-summary cell grid-margin-y">
+        
+        <div class="title">
+            <a href="/2021/05/28/what-actually-is-a-data-mesh-and-is-it-really-a-thing.html">What actually is a Data Mesh? And is it really a thing?</a>
+            
+<span class="post-summary-social">
+  <span class="clap" data-url="https://blog.scottlogic.com/2021/05/28/what-actually-is-a-data-mesh-and-is-it-really-a-thing.html" style="display: none">
+    <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 60 60" >
+      <g class="flat">
+        <path d="M37.1910045 6.68944619C37.7313574 6.14566353 38.4431784 5.8737722 39.155207 5.8737722 39.967916 5.8737722 40.7808327 6.22800418 41.3380002 6.93667712 42.2214969 8.06039707 42.0666359 9.69111808 41.0600392 10.7042842L39.777765 11.9949843C39.5801407 12.1276907 39.3877061 12.2695925 39.2075193 12.430303 39.0619998 11.5985371 38.7167801 10.7954023 38.1668781 10.0961338 37.4907623 9.23636364 36.588375 8.62424242 35.5772114 8.31410658L37.1910045 6.68944619zM28.5289586 3.66394984C29.0691039 3.12016719 29.7811325 2.84827586 30.4931611 2.84827586 31.3060777 2.84848485 32.1187868 3.20271682 32.6759543 3.91138976 33.559451 5.03510972 33.40459 6.66562173 32.3979933 7.67878788L17.6760235 22.3467085 17.6276554 20.6499478C17.6149925 19.014629 16.8595779 17.554441 15.6854573 16.5945664L28.5289586 3.66394984zM.624996757 36.9889537C.491717597 36.554099.508245877 35.7327064.906400646 35.2666667L3.45579518 32.2829676C3.45662553 32.2819923 4.33763118 25.8376176 6.09881213 12.9498433 6.09881213 11.4271682 7.33624726 10.1814002 8.84873717 10.1814002 10.3612271 10.1814002 11.5988698 11.4271682 11.5988698 12.9498433L11.6704878 15.4649948C9.18191673 15.8089864 7.24428555 17.9170324 7.14921001 20.492581L4.62804751 38.9475444 3.8946373 39.8060606C3.04504924 39.4926018 2.3776139 39.1458968 1.89233128 38.7659456 1.16440735 38.1960189.758275917 37.4238085.624996757 36.9889537z"/>
+        <path d="M49.6070811,36.8942529 L42.4182909,44.1316614 C36.2784454,50.3128527 29.8604313,55.2743992 24.2225349,56.5113898 C24.0512744,56.5492163 23.8901857,56.6217346 23.7511014,56.7293626 L20.5013032,59.2417973 C20.2908084,59.4045977 20.1673015,59.6181154 19.5026647,59.6181154 C18.8380279,59.6181154 13.0160695,55.8303982 10.3595306,53.2846814 C7.96626306,50.9912532 3.77432047,43.9549368 4.44453927,43.0079415 L6.99372621,40.0244514 C6.99469496,40.0233368 7.87570061,33.578962 9.63674317,20.6913271 C9.63674317,19.168652 10.8743859,17.922675 12.3868758,17.922675 C13.8993657,17.922675 15.1368008,19.168652 15.1368008,20.6913271 L15.2667512,25.2522466 C15.2883404,26.0100313 15.907577,26.5034483 16.5519317,26.5034483 C16.8662207,26.5034483 17.1867374,26.3857889 17.4464306,26.1245559 L32.0670972,11.4054336 C32.6074501,10.861442 33.3190635,10.5897597 34.0312997,10.5897597 C34.8440088,10.5897597 35.6569254,10.9439916 36.214093,11.6526646 C37.0975897,12.7763845 36.942521,14.4071055 35.9359243,15.4202717 L25.8641449,25.5598746 C25.3412294,26.0865204 25.3412294,26.9398119 25.8641449,27.4660397 C26.1288202,27.7324974 26.4757006,27.8658307 26.822581,27.8658307 C27.1694614,27.8658307 27.5165494,27.7324974 27.7810172,27.4660397 L40.7291431,14.43093 C41.2692884,13.8869383 41.9811094,13.615256 42.6933456,13.615256 C43.5060547,13.615465 44.3189713,13.969697 44.8761389,14.6783699 C45.7596356,15.8018809 45.6045669,17.4326019 44.5979702,18.445768 L31.7106677,31.4198537 C31.1806943,31.953605 31.1806943,32.8183908 31.7106677,33.3521421 C31.9718141,33.615047 32.31392,33.7464995 32.656441,33.7464995 C32.9985469,33.7464995 33.3408603,33.615047 33.6020067,33.3521421 L43.7346096,23.1515152 C44.2749625,22.6075235 44.9867835,22.3358412 45.6988121,22.3358412 C46.5115212,22.3358412 47.3244378,22.6900731 47.8816054,23.3989551 C48.7651021,24.522466 48.6100334,26.153187 47.6034367,27.1663532 L37.5667397,37.2708464 C37.0245185,37.8165099 37.0245185,38.7017764 37.5667397,39.2474399 C37.8334909,39.5161964 38.161896,39.6422153 38.4900934,39.6422153 C38.8184984,39.6422153 39.1469035,39.5161964 39.3972552,39.2639498 L45.6195133,32.999791 C46.1802099,32.4353187 46.93085,32.1368861 47.678999,32.1368861 C48.2741552,32.1368861 48.8676508,32.3258098 49.361919,32.7197492 C50.682182,33.7717868 50.7639719,35.7297806 49.6070811,36.8942529 Z"/>
+      </g>
+    </svg>
+    <span class="count"></span>
+  </span>
+</span>
+
+        </div>
+        <div class="cell">
+            
+            Organisations across the globe have been on a journey to find the optimal approach for managing and leveraging analytics data. In this post, I’ll set out each of the key milestones on the journey, to arrive at the latest milestone – the Data Mesh paradigm – and ask whether it is really a thing. 
+            
+        </div>
+        <div class="avatar-metadata cell">
+            
+  
+  <img src="/acarr/picture.jpg" alt="Andrew Carr"/>
+  
+
+
+            
+
+<div>
+  <span>
+    
+      
+      <a href="/acarr">Andrew Carr</a>
+    
+    <span> &middot;</span>
+  </span>
+  <span class="timestamp" date-published="2021-05-28 00:00:00 +0000">
+    
+
+28<sup>th</sup>&nbsp;
+
+
+
+
+  May 2021
+
+
+  </span>
+  
+  <span>&middot;</span>
+  <span>
+
+
+
+
+  7 min read
+
+</span>
+  
+</div>
+
+        </div>
+    </div>
+</div>
+
+        
+
+        
+    </div>
+</div>
+
+      
+      
+      
+
+
+
+
+
+
+<div class="cell grid-margin-y grid-padding-y grid-x">
+    <div class="cell grid-margin-y grid-padding-y grid-x">
+        <h2>Thinking of joining us?</h2>
+        If you enjoyed this blog post and are interested in working with smart Developers on challenging software projects,
+        <a href="https://www.scottlogic.com/careers/job-family-development">check out our current vacancies</a>.
+    </div>
+</div>
+    </div>
+    <div class="side-lists cell large-3 large-offset-1 show-for-large grid-padding-y">
+      
+      
+      <div class="author-information cell">
+  <img src="/acarr/picture.jpg" alt="Andrew Carr"/>
+  <a rel="author" href="/acarr">Andrew Carr</a>
+</div>
+<div class="cell">
+  <p>I lead the Data Engineering Practice within Scott Logic. I have a strong interest and expertise in low latency Front Office trading systems, software managing very large networks and the technologies involved in processing large volumes of data.</p>
+  
+</div>
+      
+      
+<div class="category-list cell">
+    <h4>Categories</h4>
+    <ul>
+        
+            <li>
+                <a href="/index.html">
+                    <span class="active ">Latest Articles</span>
+                </a>
+            </li>
+        
+            <li>
+                <a href="/category/resources.html">
+                    <span class="">Resources</span>
+                </a>
+            </li>
+        
+            <li>
+                <a href="/category/cloud.html">
+                    <span class="">Cloud</span>
+                </a>
+            </li>
+        
+            <li>
+                <a href="/category/tech.html">
+                    <span class="">Tech</span>
+                </a>
+            </li>
+        
+            <li>
+                <a href="/category/ux.html">
+                    <span class="">UX Design</span>
+                </a>
+            </li>
+        
+            <li>
+                <a href="/category/delivery.html">
+                    <span class="">Delivery</span>
+                </a>
+            </li>
+        
+            <li>
+                <a href="/category/test.html">
+                    <span class="">Testing</span>
+                </a>
+            </li>
+        
+            <li>
+                <a href="/category/data-engineering.html">
+                    <span class="">Data Engineering</span>
+                </a>
+            </li>
+        
+            <li>
+                <a href="/category/people.html">
+                    <span class="">People</span>
+                </a>
+            </li>
+        
+            <li>
+                <a href="/category/videos.html">
+                    <span class="">Videos</span>
+                </a>
+            </li>
+        
+            <li>
+                <a href="/category/open-source.html">
+                    <span class="">Open Source</span>
+                </a>
+            </li>
+        
+            <li>
+                <a href="/category/podcast.html">
+                    <span class="">Podcast</span>
+                </a>
+            </li>
+        
+    </ul>
+</div>
+
+      <div class="back cell">
+        <a href="/index.html">Back to all posts</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="
+  
+  yellow
+  
+
+ grid-container">
+  <div class="footer_top-layer">
+    <div class="footer-logo"><a href="https://www.scottlogic.com">Scott Logic</a></div>
+    <div class="footer-links">
+      <a href="https://www.scottlogic.com/who-we-are/#contact-us">Contact Us</a>
+      <a class="footer-links_twitter" href="https://twitter.com/Scott_Logic" aria-label="Visit our Twitter">
+        <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 49.3 40" style="enable-background:new 0 0 49.3 40;" xml:space="preserve">
+          <path d="M49.3,4.7c-1.8,0.8-3.8,1.3-5.8,1.6c2.1-1.2,3.7-3.2,4.4-5.6c-2,1.2-4.1,2-6.4,2.5C39.6,1.2,37,0,34.1,0
+            C28.5,0,24,4.5,24,10.1c0,0.8,0.1,1.6,0.3,2.3C15.9,12,8.4,8,3.4,1.8C2.6,3.3,2.1,5.1,2.1,6.9c0,3.5,1.8,6.6,4.5,8.4
+            c-1.7-0.1-3.2-0.5-4.6-1.3c0,0,0,0.1,0,0.1c0,4.9,3.5,9,8.1,9.9c-0.8,0.2-1.7,0.4-2.7,0.4c-0.7,0-1.3-0.1-1.9-0.2c1.3,4,5,6.9,9.4,7
+            c-3.5,2.7-7.8,4.3-12.6,4.3c-0.8,0-1.6,0-2.4-0.1C4.5,38.4,9.8,40,15.5,40c18.6,0,28.8-15.4,28.8-28.8c0-0.4,0-0.9,0-1.3
+            C46.2,8.5,47.9,6.8,49.3,4.7z"></path>
+        </svg>
+      </a>
+      <a class="footer-links_linkedin" href="https://www.linkedin.com/company/scott-logic-limited/" aria-label="Visit our LinkedIn">
+        <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 14.1 14" style="enable-background:new 0 0 14.1 14;" xml:space="preserve">
+          <g>
+            <path d="M3.1,14h-3V4h3V14z M14.1,14h-3V8.7c0-1.4-0.5-2.1-1.5-2.1C8.8,6.6,8.3,7,8.1,7.7c0,1.3,0,6.3,0,6.3h-3c0,0,0-9,0-10h2.4
+              l0.2,2h0.1c0.6-1,1.6-1.7,2.9-1.7c1,0,1.9,0.3,2.5,1c0.6,0.7,1,1.7,1,3V14z"></path>
+          </g>
+          <g>
+            <ellipse cx="1.6" cy="1.5" rx="1.6" ry="1.5"></ellipse>
+          </g>
+        </svg>
+      </a>
+    </div>
+  </div>
+  <div class="footer_bottom-layer">
+    <ul>
+      <li>© Copyright Scott Logic 2020.</li>
+      <li><a href="https://www.scottlogic.com/privacy/">Privacy</a></li>
+    </ul>
+  </div>
+</footer>
+
+
+</div>
+
+<script src="/script.js" type="text/javascript"></script>
+<script type="text/javascript">jQuery.noConflict();</script>
+<script>
+initialiseMenu();
+loadClapCount();
+loadGTM();
+</script>
+
+
+</body>
+</html>

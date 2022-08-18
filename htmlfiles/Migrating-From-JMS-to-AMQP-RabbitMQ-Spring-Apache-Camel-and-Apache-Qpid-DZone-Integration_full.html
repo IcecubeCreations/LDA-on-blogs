@@ -1,0 +1,1064 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="As you know I'm open-sourcing and completely overhauling my PhD system. One of my goals was to replace internal JMS queues with AMQP. Today I'll show you how I...">
+  <meta name="keywords" content="Apache Camel, Apache Qpid, Spring Framework">
+
+  <meta property="og:description" content="As you know I'm open-sourcing and completely overhauling my PhD system. One of my goals was to replace internal JMS queues with AMQP. Today I'll show you how I...">
+  <meta property="og:site_name" content="dzone.com">
+  <meta property="og:title" content="Migrating From JMS to AMQP: RabbitMQ, Spring, Apache Camel, and Apache Qpid - DZone Integration">
+  <meta property="og:url" content="https://dzone.com/articles/migrating-jms-amqp-rabbitmq">
+  <meta property="og:image" content="/themes/dz20/images/ArticleImg_4.jpg">
+  <meta property="og:type" content="article">
+
+  <meta name="twitter:site" content="@DZoneInc">
+  <meta name="twitter:image" content="/themes/dz20/images/ArticleImg_4.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:description" content="As you know I'm open-sourcing and completely overhauling my PhD system. One of my goals was to replace internal JMS queues with AMQP. Today I'll show you how I...">
+  <meta name="twitter:title" content="Migrating From JMS to AMQP: RabbitMQ, Spring, Apache Camel, and Apache Qpid - DZone Integration">
+
+  <meta name="referrer" content="origin-when-cross-origin">
+  <meta name="google-site-verification" content="kndbhxcupfEqWmZclhCpB6vlgOs7QSmx2UHAGGnP2mA">
+  <meta name="df-verify" content="df0d76632b4543">
+
+  <link rel="icon" type="image/x-icon" href="https://dz2cdn3.dzone.com/themes/dz20/images/favicon.png">
+  <link rel="image_src" href="/themes/dz20/images/ArticleImg_4.jpg">
+  <link rel="canonical" href="https://dzone.com/articles/migrating-jms-amqp-rabbitmq">
+
+  <title>Migrating From JMS to AMQP: RabbitMQ, Spring, Apache Camel, and Apache Qpid - DZone Integration</title>
+
+  <link rel="preload" href="https://fonts.dzone.com/themes/dz20/font/fontello.woff?11773374" as="font" type="font/woff" crossorigin="anonymous">
+
+  <link rel="stylesheet" media="all" href="https://dz2cdn3.dzone.com/themes/dz20/ftl/icons.css">
+  <link rel="stylesheet" media="all" href="https://dz2cdn3.dzone.com/themes/dz20/lib/static/bootstrap/bootstrap.min.css">
+  <link rel="stylesheet" media="all" href="https://dz2cdn3.dzone.com/themes/dz20/ftl/article/global.css">
+  <link rel="stylesheet" media="all" href="https://dz2cdn3.dzone.com/themes/dz20/ftl/header/styles.css">
+</head>
+<body>
+<div id="ftl-header">
+  <div class="container-fluid header">
+    <div class="row">
+      <div class="col-md-12" style="padding: 0;">
+        <div class="header-top">
+          <div class="header-container">
+            <div class="pull-left logo-container">
+              <div class="logo">
+                <a class="inner" href="/">
+                  <picture>
+                    <source srcset="https://dz2cdn3.dzone.com/themes/dz20/images/dz_logo_2021_cropped.webp" type="image/webp">
+                    <source srcset="https://dz2cdn3.dzone.com/themes/dz20/images/dz_logo_2021_cropped.png" type="image/png">
+                    <img src="https://dz2cdn3.dzone.com/themes/dz20/images/dz_logo_2021_cropped.png" width="160" height="52" alt="DZone">
+                  </picture>
+                </a>
+              </div>
+
+                <div class="active-portal"><a href="/enterprise-integration-training-tools-news">Integration Zone</a></div>
+            </div>
+
+            <div class="pull-right login-and-search">
+              <div id="authenticated-block" class="logged-in">
+                <div class="welcome-back">Thanks for visiting DZone today,</div>
+                <div id="user-header" class="user-info">
+                  <button class="user-avatar">
+                    <span id="header-username" class="username"></span>
+                    <img id="header-avatar" src="" alt="user avatar">
+                  </button>
+                  <div id="user-dropdown" class="browse-user-menu">
+                    <div class="user-content">
+                      <a id="header-user-plug" href="#" class="user-description"></a>
+                      <a id="header-user-edit" href="#" class="edit-profile">Edit Profile</a>
+                    </div>
+                    <ul class="user-actions">
+                      <li id="first-user-action"><a id="header-dropdown-manage-email" href="#">Manage Email Subscriptions</a></li>
+                      <li>
+                        <a href="/articles/how-to-submit-a-post-to-dzone?utm_source=DZone&utm_medium=user_dropdown&utm_campaign=how_to_post">
+                          How to Post to DZone
+                        </a>
+                      </li>
+                      <li>
+                        <a href="/articles/dzones-article-submission-guidelines">
+                          Article Submission Guidelines
+                        </a>
+                      </li>
+                    </ul>
+                    <div class="bottom">
+                      <a href="/users/logout.html" class="sign-out">Sign Out</a>
+                      <a id="dropdown-view-profile" href="#" class="view-profile">View Profile</a>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="post-content">
+                  <button id="post-button" class="post-content--button">
+                    <span class="post-class">Post</span>
+                    <i class="icon-plus"></i>
+                  </button>
+
+                  <div id="post-menu" class="posting-links">
+                    <div class="posting-links-menu">
+                      <ul>
+                        <li>
+                          <img src="/themes/dz20/images/dz-postarticle.svg">
+                          <a href="/content/article/post.html">Post an Article</a>
+                        </li>
+                        <li>
+                          <a id="drafts-link" href="#">Manage My Drafts</a>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div id="unauthenticated-block">
+                <div class="dz-intro">Over 2 million developers have joined DZone.</div>
+                <div class="mobile-invisible sign-in-join">
+                  <a href="/users/login.html">Log In</a>
+                  <span class="dz-intro-span">/</span>
+                  <a href="/static/registration.html">Join</a>
+                </div>
+                <a class="join-icon" href="/users/login.html"><i class="icon-user"></i></a>
+              </div>
+              <div class="headerSearch">
+                <a class="icon-search dropdown-toggle" href="/search"></a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="header-bottom">
+
+
+          <ul class="portals header-container scrollable-ul">
+            <li>
+              <a href="/refcardz" id="header-refcardz">
+                <em>Refcardz</em>
+              </a>
+            </li>
+            <li>
+              <a href="/trendreports" id="header-research">
+                <em>Trend Reports</em>
+              </a>
+            </li>
+            <li>
+              <a href="/webinars" id="header-webinars">
+                <em>Webinars</em>
+              </a>
+            </li>
+            <li class="last-portal-link">
+              <a href="#" id="header-portals">
+                <em>
+                  Zones
+                  <span id="zone-arrow" class="collapsible-toggle">
+                    <i class="icon-angle-down"></i>
+                    <i class="icon-angle-up"></i>
+                  </span>
+                </em>
+              </a>
+            </li>
+
+            <li class="separator" aria-hidden="true" style="color: #d9dcdd;">|</li>
+            <li id="portal-list" class="portal-topics">
+              <ul>
+                  <li>
+                    <a href="/agile-methodology-training-tools-news" id="header-2">Agile</a>
+                  </li>
+                  <li>
+                    <a href="/artificial-intelligence-tutorials-tools-news" id="header-4001">AI</a>
+                  </li>
+                  <li>
+                    <a href="/big-data-analytics-tutorials-tools-news" id="header-3">Big Data</a>
+                  </li>
+                  <li>
+                    <a href="/cloud-computing-tutorials-tools-news" id="header-4">Cloud</a>
+                  </li>
+                  <li>
+                    <a href="/database-sql-nosql-tutorials-tools-news" id="header-5">Database</a>
+                  </li>
+                  <li>
+                    <a href="/devops-tutorials-tools-news" id="header-6">DevOps</a>
+                  </li>
+                  <li>
+                    <a href="/enterprise-integration-training-tools-news" id="header-7">Integration</a>
+                  </li>
+                  <li>
+                    <a href="/iot-developer-tutorials-tools-news-reviews" id="header-8">IoT</a>
+                  </li>
+                  <li>
+                    <a href="/java-jdk-development-tutorials-tools-news" id="header-1">Java</a>
+                  </li>
+                  <li>
+                    <a href="/microservices-news-tutorials-tools" id="header-6001">Microservices</a>
+                  </li>
+                  <li>
+                    <a href="/open-source-news-tutorials-tools" id="header-7001">Open Source</a>
+                  </li>
+                  <li>
+                    <a href="/apm-tools-performance-monitoring-optimization" id="header-10">Performance</a>
+                  </li>
+                  <li>
+                    <a href="/application-web-network-security" id="header-2001">Security</a>
+                  </li>
+                  <li>
+                    <a href="/web-development-programming-tutorials-tools-news" id="header-11">Web Dev</a>
+                  </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script async src="https://dz2cdn3.dzone.com/themes/dz20/ftl/header/bundle.js"></script><link rel="stylesheet" media="all" href="https://dz2cdn3.dzone.com/themes/dz20/ftl/article/styles.css">
+
+
+
+
+<div id="ftl-article" >
+  <div class="container-fluid body">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="articles-wrap">
+              <div class="ad-container">
+                <div id="div-gpt-ad-1435246566686-0" class="ads-billboard-article" data-gpt-slot="top"></div>
+              </div>
+
+
+          <div class="article-stream widget-top-border">
+                <div class="content-right-images">
+                  <div id="div-gpt-ad-1435246566686-2" class="sidebar-ad" data-gpt-desktop="true" data-gpt-slot="sidebar1"></div>
+                </div>
+
+                <script type="application/ld+json">
+                  {
+                    "@context": "http://schema.org",
+                    "@type": "Article",
+                    "headline": "Migrating From JMS to AMQP: RabbitMQ, Spring, Apache Camel, and Apache Qpid",
+                    "author": {
+                      "@type": "Person",
+                      "name": "Łukasz Budnik"
+                    },
+                    "audience": "software developers",
+                    "keywords": "No keywords",
+                    "timeRequired": "PT4M",
+                    "commentCount": 6,
+                    "wordCount": "752",
+                    "accessMode": "textual, visual",
+                    "dateCreated": "2012-04-17T08:16:28Z",
+                    "datePublished": "2012-04-17T08:16:28Z",
+                    "dateModified": "2012-04-17T08:16:28Z",
+                    "articleSection": "enterprise-integration-training-tools-news",
+                    "publisher": {
+                      "@type": "Organization",
+                      "name": "DZone",
+                      "url": "https://dzone.com",
+                      "logo": {
+                        "@type": "ImageObject",
+                        "url": "https://dzone.com/themes/dz20/images/dz_logo_2021_cropped.png"
+                      }
+                    },
+                    "articleBody": "As you know I'm open-sourcing and completely overhauling my PhD system. One of my goals was to replace internal JMS queues with AMQP. Today I'll show you how I did it and why I was forced to change RabbitMQ to Apache Qpid. AMQP In short. AMQP is an open standard application layer protocol for message-oriented middleware. The most important feature is that AMQP is a wire-level protocol and is interoperable by design. JMS is just an API. Altough JMS brokers can be used in .NET applications (see my post: ActiveMQ and .NET combined!), the whole JMS specification does not guarantee interoperability. Also, the AMQP standard is by design more flexible and powerful (e.g., supports two-way communication by design) - they simply learnt from JMS mistakes :). Oh, forgot to mention. The AMQP was originally developed by banks :) so I don't have to say that AMQP is secure, fault-tolerant, and so on. RabbitMQ RabbitMQ is the most mature AMQP broker. RabbitMQ is written in Erlang so you have to download that first (RabbitMQ Windows installer does it for you). Download it from here: http://www.rabbitmq.com/. I also recommend installing the web management console. From Rabbit's sbin directory execute: rabbitmq-plugins enable rabbitmq_management If you're on Windows and you installed a Rabbit service you have to restart it. That's it. Spring Well, it turned out that VMware bought RabbitMQ and SpringSource developers are now developing it. Given this fact, you shouldn't be surprised that Spring - RabbitMQ integration is childishly simple. Add spring-rabbit dependency to your Maven project, and then in Spring configuration paste the following: &lt;rabbit:connection-factory id=\"connectionFactory\" /&gt; &lt;rabbit:template connection-factory=\"connectionFactory\" id=\"amqpTemplate\" routing-key=\"myqueue\" /&gt; &lt;rabbit:admin connection-factory=\"connectionFactory\" /&gt; &lt;rabbit:queue name=\"myqueue\" /&gt;The default configuration assumes that RabbitMQ is running on a local server using the default port and default credentials (guest/guest). Of course all these settings are configurable. To sent a message to \"myqueue\" queue, just inject an instance of AmqpTemplate into your service and send the message. An example would be: @Service public class HomeController { @Autowired private AmqpTemplate amqpTemplate; public void sendMessage(Bundle bundle) throws IOException { byte[] body = IOUtils.toByteArray(bundle.getInputStream()); MessageProperties messageProperties = new MessageProperties(); messageProperties.setContentType(bundle.getContentType()); messageProperties.setContentLength(bundle.getSize()); messageProperties.setTimestamp(new Date()); messageProperties.setDeliveryMode(MessageDeliveryMode.PERSISTENT); Message message = new Message(body, messageProperties); amqpTemplate.send(message); } }You can open the web console http://localhost:55672/mgmt/ and see 1 message in \"myqueue\" queue. Apache Camel To read a message from Apache Camel you first have to add camel-amqp dependency to your POM. Then just copy and paste the following route definition: &lt;camelContext xmlns=\"http://camel.apache.org/schema/spring\"&gt; &lt;route&gt; &lt;from uri=\"amqp:queue:myqueue\" /&gt; &lt;to uri=\"log:Message\" /&gt; &lt;/route&gt; &lt;/camelContext&gt; Run the route by executing mvn:camel-run and... you'll see an error. Making a long story short, Apache Camel 2.9.0 doesn't work with RabbitMQ. This is because the camel-amqp component is using the Apache Qpid client under the hood. The current Qpid version is 0.14, but Qpid guys forgot to upload new jars to the Maven public repo. Thus camel-amqp is still using Qpid 0.12 whose client doesn't seem to negotiate protocols. Even if you exclude qpid-commons and qpid-client dependencies and explicitly add Qpid 0.14 ones (download them and install in your local repo) there will be an exception thrown from the camel-amqp component as there is no longer a default ConnectionFactory constructor. Thus I was forced to install Qpid. Qpid I downloaded the Java server and simply ran it. There is no web management console, but that's OK. You can use JConsole for JMX. Spring AMQP and Qpid In order to make Spring AMQP work with Qpid copy and paste the following configuration: &lt;camelContext xmlns=\"http://camel.apache.org/schema/spring\"&gt; &lt;route&gt; &lt;from uri=\"amqp:queue:queue\" /&gt; &lt;to uri=\"log:Message\" /&gt; &lt;/route&gt; &lt;/camelContext&gt; &lt;bean id=\"amqp\" class=\"org.apache.camel.component.amqp.AMQPComponent\"&gt; &lt;property name=\"connectionFactory\" ref=\"amqConnectionFactory\" /&gt; &lt;/bean&gt; &lt;bean id=\"amqConnectionFactory\" class=\"org.apache.qpid.client.AMQConnectionFactory\"&gt; &lt;property name=\"host\" value=\"localhost\" /&gt; &lt;property name=\"port\" value=\"5672\" /&gt; &lt;property name=\"defaultUsername\" value=\"guest\" /&gt; &lt;property name=\"defaultPassword\" value=\"guest\" /&gt; &lt;property name=\"virtualPath\" value=\"/development\" /&gt; &lt;/bean&gt;As you can see in the above snippet I explicitly created AMPQComponent with connectionFactory set to Apache Qpid AMQConnectionFactory object. Source code and working example This solution is a part of the Qualitas project. I use Spring MVC to handle uploads of business processes bundles (e.g., zipped archive of a WS-BPEL process) and send it to an AMQP queue. Then Apache Camel consumes the message, does additional processing of the bundle, and installs it on a remote business process execution engine. The projects you are most interested in are: qualitas-webapp (Spring MVC sending messages to AMQP) qualitas-internall-installation (Apache Camel route consuming messages from AMQP) To check out 0.0.2-SNAPSHOT tag from here: http://code.google.com/p/qualitas/source/browse/. Qualitas Read more about Qualitas project here: http://code.google.com/p/qualitas/. Happy to welcome new developers on board! cheers, Łukasz",
+                    "mainEntityOfPage": {
+                      "@type": "WebPage",
+                      "@id": "https://dzone.com/articles/migrating-jms-amqp-rabbitmq"
+                    },
+                    "image": {
+                      "@type": "ImageObject",
+                      "url": "https://dzone.com/themes/dz20/images/dz_logo_2021_cropped.png"
+                    }
+                  }
+                </script>
+
+                  <script type="application/ld+json">
+                    {
+                      "@context": "https://schema.org",
+                      "@type": "BreadcrumbList",
+                      "itemListElement": [{
+                        "@type": "ListItem",
+                        "position": 1,
+                        "name": "DZone",
+                        "item": "https://dzone.com"
+                      }, {
+                        "@type": "ListItem",
+                        "position": 2,
+                        "name": "Integration Zone",
+                        "item": "https://dzone.com/enterprise-integration-training-tools-news"
+                      }, {
+                        "@type": "ListItem",
+                        "position": 3,
+                        "name": "Migrating From JMS to AMQP: RabbitMQ, Spring, Apache Camel, and Apache Qpid",
+                        "item": "https://dzone.com/articles/migrating-jms-amqp-rabbitmq"
+                      }]
+                    }
+                  </script>
+
+            <article>
+              <div class="content">
+                <div class="header">
+                  <div class="col-xs-12 breadcrumb-padding">
+                    <a href="/">DZone</a>
+                    >
+                      <a href="/enterprise-integration-training-tools-news">Integration Zone</a>
+                      >
+                      <a href="#">Migrating From JMS to AMQP: RabbitMQ, Spring, Apache Camel, and Apache Qpid</a>
+                  </div>
+
+
+                  <div class="header-title">
+                    <div class="title">
+                      <h1 class="article-title">Migrating From JMS to AMQP: RabbitMQ, Spring, Apache Camel, and Apache Qpid</h1>
+                    </div>
+
+                    <div class="subhead">
+                      <h3></h3>
+                    </div>
+
+                    <div class="publish-meta">
+                        <div class="article-author-meta">
+                          <img src="https://secure.gravatar.com/avatar/eaaf038292771e7ae25f730e55ded0e9?d=identicon&r=PG" class="avatar" alt="Łukasz Budnik user avatar" width="40">
+                          by
+
+                          <div class="author-info">
+                            <span class="author-name">
+                              <a href="/users/363608/xh.html" rel="nofollow">Łukasz Budnik</a>
+                            </span>
+                          </div>
+
+
+                            <div class="mvb-award">
+                              <i title="Most Valuable Blogger" class="icon-mvb-1"></i>
+                            </div>
+
+
+                          &middot;
+                        </div>
+                      <span class="author-date">
+                        Apr. 17, 12
+                      </span>
+                      &middot;
+                        <a href="/enterprise-integration-training-tools-news" id="portal-name">
+                          <span class="portal-name">Integration Zone</span>
+                        </a>
+                      &middot;
+                      <span>Interview</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="author-n-useraction">
+                  <div class="like action">
+                    <div id="activity-like-icon" class="dz-like icon-thumbs-up">
+                      <span class="action-label">
+                        <span id="activity-like-text">Like</span>
+                      </span>
+                      <a href="#">
+                        <span id="activity-like-counter">(2)</span>
+                      </a>
+                    </div>
+                  </div>
+
+                  <div class="action">
+
+                    <button class="comment">
+                      <i class="icon-comment"></i>
+                      Comment
+                      <span id="activity-comment-counter" class="comment-count"></span>
+                    </button>
+                  </div>
+
+                  <div class="save action">
+                    <div id="activity-save-icon" class="save icon-star-empty">
+                      <span id="activity-save-text" class="action-label">Save</span>
+                    </div>
+                  </div>
+
+                  <div class="tweet action">
+                    <a id="tweet-link" href="" class="title" target="_blank">
+                      <span><i class="icon-twitter"></i></span>
+                      <span class="action-label">Tweet</span>
+                    </a>
+                  </div>
+
+                  <div class="pull-right">
+                    <div id="activity-view-container" class="article-views action">
+                      <i class="icon-eye"></i> 40.02K
+                      <span class="action-label">Views</span>
+                    </div>
+                  </div>
+                </div>
+
+                    <div class="signin-prompt">
+                      <p>Join the DZone community and get the full member experience.</p>
+                      <a id="article-signin-prompt" href="/static/registration.html">Join For Free</a>
+                    </div>
+                    <div class="arrow-down"></div>
+
+                  <div id="top-bumper-container"></div>
+
+                <div>
+                  <div class="content-html">As you know I'm open-sourcing and completely overhauling my PhD system. 
+One of my goals was to replace internal JMS queues with AMQP. Today I'll
+ show you how I did it and why I was forced to change RabbitMQ to Apache
+ Qpid.<br />
+<br />
+<h2><span style="font-size: large"><b>AMQP</b></span></h2>
+<br />
+In short. AMQP is an open standard application layer protocol for 
+message-oriented middleware. The most important feature is that AMQP is a
+ wire-level protocol and is interoperable by design. JMS is just an API.
+ Altough JMS brokers can be used in .NET applications (see my post: <a href="http://jee-bpel-soa.blogspot.com/2011/06/activemq-and-net-combined.html" target="_blank">ActiveMQ and .NET combined!</a>), the whole JMS specification does not guarantee interoperability. 
+Also, the AMQP standard is by design more flexible and powerful (e.g., supports 
+two-way communication by design) - they simply learnt from JMS mistakes 
+:).<br />
+<br />
+Oh, forgot to mention. The AMQP was originally developed by banks :) so I
+ don't have to say that AMQP is secure, fault-tolerant, and so on.<br />
+<br />
+<h2><span style="font-size: large"><b>RabbitMQ</b></span></h2>
+<br />
+RabbitMQ is the most mature AMQP broker. RabbitMQ is written in Erlang so 
+you have to download that first (RabbitMQ Windows installer does it for 
+you). Download it from here: <a href="http://www.rabbitmq.com/" target="_blank">http://www.rabbitmq.com/</a>.<br />
+<br />
+I also recommend installing the web management console. From Rabbit's sbin directory execute:<br />
+<pre class="brush:shell">rabbitmq-plugins enable rabbitmq_management</pre>
+If you're on Windows and you installed a Rabbit service you have to restart it.<br />
+<br />
+That's it.<br />
+<br />
+<h2><span style="font-size: large"><b>Spring</b></span></h2>
+<br />
+Well, it turned out that VMware bought RabbitMQ and SpringSource 
+developers are now developing it. Given this fact, you shouldn't be 
+surprised that Spring - RabbitMQ integration is childishly simple.<br />
+<br />
+Add spring-rabbit dependency to your Maven project, and then in Spring configuration paste the following:<br /><pre class="brush:xml">&lt;rabbit:connection-factory id=&quot;connectionFactory&quot; /&gt;
+&lt;rabbit:template connection-factory=&quot;connectionFactory&quot; id=&quot;amqpTemplate&quot; routing-key=&quot;myqueue&quot; /&gt;
+&lt;rabbit:admin connection-factory=&quot;connectionFactory&quot; /&gt;
+&lt;rabbit:queue name=&quot;myqueue&quot; /&gt;</pre>The default configuration assumes that RabbitMQ is running on a local 
+server using the default port and default credentials (guest/guest). Of 
+course all these settings are configurable.<br />
+<br />
+To sent a message to &quot;myqueue&quot; queue, just inject an instance of AmqpTemplate into your service and send the message. An example would be:<br /><pre class="brush:java">@Service
+public class HomeController {
+    @Autowired
+    private AmqpTemplate amqpTemplate;
+    public void sendMessage(Bundle bundle) throws IOException {       
+        byte[] body = IOUtils.toByteArray(bundle.getInputStream());
+        MessageProperties messageProperties = new MessageProperties();
+        messageProperties.setContentType(bundle.getContentType());
+        messageProperties.setContentLength(bundle.getSize());
+        messageProperties.setTimestamp(new Date());
+        messageProperties.setDeliveryMode(MessageDeliveryMode.PERSISTENT);
+        Message message = new Message(body, messageProperties);
+        amqpTemplate.send(message);
+    }
+}</pre>You can open the web console http://localhost:55672/mgmt/ and see 1 message in &quot;myqueue&quot; queue.<br />
+<br />
+<h2><span style="font-size: large"><b>Apache Camel</b></span></h2>
+<br />
+To read a message from Apache Camel you first have to add camel-amqp dependency to your POM. Then just copy and paste the following route definition:<br />
+<pre class="brush:xml">&lt;camelContext xmlns=&quot;http://camel.apache.org/schema/spring&quot;&gt;
+ &lt;route&gt;
+  &lt;from uri=&quot;amqp:queue:myqueue&quot; /&gt;
+  &lt;to uri=&quot;log:Message&quot; /&gt;
+ &lt;/route&gt;
+&lt;/camelContext&gt;</pre><br />
+Run the route by executing <code>mvn:camel-run</code> and... you'll see an error.<br />
+<br />
+Making a long story short, Apache Camel 2.9.0 doesn't work with RabbitMQ. This is because the <code>camel-amqp</code>
+ component is using the Apache Qpid client under the hood. The current Qpid 
+version is 0.14, but Qpid guys forgot to upload new jars to the Maven public
+ repo. Thus <code>camel-amqp</code> is still using Qpid 0.12 whose client doesn't seem to negotiate protocols. Even if you exclude <code>qpid-commons</code> and <code>qpid-client</code>
+ dependencies and explicitly add Qpid 0.14 ones (download them and 
+install in your local repo) there will be an exception thrown from the <code>camel-amqp</code> component as there is no longer a default <code>ConnectionFactory</code> constructor.<br />
+<br />
+Thus I was forced to install Qpid.<br />
+<br />
+<h2><span style="font-size: large"><b>Qpid</b></span></h2>
+<br />
+I downloaded the Java server and simply ran it. There is no web management console, but that's OK. You can use JConsole for JMX.<br />
+<br />
+<h2><span style="font-size: large"><b>Spring AMQP and Qpid</b></span></h2>
+<br />
+In order to make Spring AMQP work with Qpid copy and paste the following configuration:<br /><pre class="brush:xml">&lt;camelContext xmlns=&quot;http://camel.apache.org/schema/spring&quot;&gt;
+ &lt;route&gt;
+  &lt;from uri=&quot;amqp:queue:queue&quot; /&gt;
+  &lt;to uri=&quot;log:Message&quot; /&gt;
+ &lt;/route&gt;
+&lt;/camelContext&gt;
+
+&lt;bean id=&quot;amqp&quot; class=&quot;org.apache.camel.component.amqp.AMQPComponent&quot;&gt;
+ &lt;property name=&quot;connectionFactory&quot; ref=&quot;amqConnectionFactory&quot; /&gt;
+&lt;/bean&gt;
+
+&lt;bean id=&quot;amqConnectionFactory&quot; class=&quot;org.apache.qpid.client.AMQConnectionFactory&quot;&gt;
+ &lt;property name=&quot;host&quot; value=&quot;localhost&quot; /&gt;
+ &lt;property name=&quot;port&quot; value=&quot;5672&quot; /&gt;
+ &lt;property name=&quot;defaultUsername&quot; value=&quot;guest&quot; /&gt;
+ &lt;property name=&quot;defaultPassword&quot; value=&quot;guest&quot; /&gt;
+ &lt;property name=&quot;virtualPath&quot; value=&quot;/development&quot; /&gt;
+&lt;/bean&gt;</pre>As you can see in the above snippet I explicitly created <code>AMPQComponent</code> with <code>connectionFactory</code> set to Apache Qpid <code>AMQConnectionFactory</code> object.  <br />
+<br />
+<h2><span style="font-size: large"><b>Source code and working example</b></span></h2>
+<br />
+This solution is a part of the Qualitas project. I use Spring MVC to 
+handle uploads of business processes bundles (e.g., zipped archive of a 
+WS-BPEL process) and send it to an AMQP queue. Then Apache Camel consumes 
+the message, does additional processing of the bundle, and installs it 
+on a remote business process execution engine.<br />
+<br />
+The projects you are most interested in are:<br /><br />
+<ul><li>qualitas-webapp (Spring MVC sending messages to AMQP)</li><li>qualitas-internall-installation (Apache Camel route consuming messages from AMQP)</li></ul><br />
+To check out 0.0.2-SNAPSHOT tag from here: <a href="http://code.google.com/p/qualitas/source/browse/" target="_blank">http://code.google.com/p/qualitas/source/browse/</a>.<br />
+<br />
+<h2><span style="font-size: large"><b>Qualitas</b></span></h2>
+<br />
+Read more about Qualitas project here: <a href="http://code.google.com/p/qualitas/" target="_blank">http://code.google.com/p/qualitas/</a>. Happy to welcome new developers on board!<br />
+<br />
+cheers,<br />
+Łukasz<br /><br /></div>
+                </div>
+
+                  <div id="bottom-bumper-container"></div>
+                  <div class="article-tag-pill-container">
+                      <span class="article-tag-pill">Apache Camel</span>
+                      <span class="article-tag-pill">Apache Qpid</span>
+                      <span class="article-tag-pill">Spring Framework</span>
+                  </div>
+
+                  <div class="attribution">
+                      <p>Published at DZone with permission of <span>Łukasz Budnik<span>, DZone MVB</span></span>.
+                        <span>
+                          <a href="http://jee-bpel-soa.blogspot.com/2012/02/amqp-rabbitmq-spring-apache-camel-and.html" target="_blank">See the original article here.
+                            <i class="icon-link-ext-alt"></i>
+                          </a>
+                        </span>
+                      </p>
+                    <p>Opinions expressed by DZone contributors are their own.</p>
+                  </div>
+
+                    <div class="related">
+                      <h3>Popular on DZone</h3>
+                        <ul>
+                            <li class="relateddiv">
+                              <a href="/articles/the-end-of-the-beginning-for-apache-cassandra?fromrel=true">The End of the Beginning for Apache Cassandra</a>
+                            </li>
+                            <li class="relateddiv">
+                              <a href="/articles/top-soft-skills-to-identify-a-great-software-engineer?fromrel=true">Top Soft Skills to Identify a Great Software Engineer</a>
+                            </li>
+                            <li class="relateddiv">
+                              <a href="/articles/enough-already-with-event-streaming?fromrel=true">Enough Already With ‘Event Streaming’</a>
+                            </li>
+                            <li class="relateddiv">
+                              <a href="/articles/traits-of-an-effective-software-asset-manager?fromrel=true">7 Traits of an Effective Software Asset Manager</a>
+                            </li>
+                        </ul>
+                      </div>
+<div class="comments-overlay"></div>
+<div id="comment-box">
+  <div class="comment-box-wrapper">
+    <div id="comment-input-editor"></div>
+  </div>
+  <div class="info hidden"></div>
+  <div class="comments-content">
+    <div class="comment-header">
+      <hr />
+      <span class="icon-comment">
+        <span class="numOfComments"></span> Comments
+      </span>
+    </div>
+    <div class="comments"></div>
+  </div>
+</div>
+            </article>
+          </div>
+
+            <div id="above-pr-ad" class="bottom-ad-container">
+              <div id="div-gpt-ad-1435246566686-11" data-gpt-slot="bottom"></div>
+            </div>
+            <div class="layout-card widget-top-border partner-resources-block" style="width:100%; margin-bottom: 1em;">
+              <div class="main-container">
+                <div class="featured-header">
+                  <h2>
+                      Integration<span> Partner Resources</span>
+                  </h2>
+                </div>
+                <div class="partner-resources-container">
+                  <div id="div-gpt-ad-1435246566686-5" class="resource-block" data-gpt-slot="partner" data-gpt-position="pr1"></div>
+                  <div id="div-gpt-ad-1435246566686-6" class="resource-block" data-gpt-slot="partner" data-gpt-position="pr2"></div>
+                  <div id="div-gpt-ad-1435246566686-7" class="resource-block" data-gpt-slot="partner" data-gpt-position="pr3"></div>
+                </div>
+              </div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <div id="bsa-parent" class="bottom-sticky-ad-container hide">
+      <div class="container">
+        <div class="col-md-9">
+          <div class="fixed-bottom-div">
+            <div class="inline-block">
+              <div id="div-gpt-ad-1635294790718-12" data-gpt-desktop="true" class="bottom-sticky-ad"></div>
+            </div>
+            <div class="inline-block">
+              <span id="close" class="bottom-sticky-ad-close-button" onclick="removeBottomStickyAd()">
+                X
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  <div class="modal fade bd-example-modal-lg" id="modal-message" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header"></div>
+        <div class="modal-body"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script async>const articleTitle = 'Migrating From JMS to AMQP: RabbitMQ, Spring, Apache Camel, and Apache Qpid'
+const articleUrl = 'https://dzone.com/articles/migrating-jms-amqp-rabbitmq'
+
+const retweetLink = document.querySelector('#tweet-link')
+
+function retweet(event) {
+    event.preventDefault()
+    event.stopPropagation()
+
+    const twitter = 'https://twitter.com/intent/tweet'
+    const params = '?text=' + encodeURIComponent(articleTitle) + '&url=' + articleUrl + '&ref=dzone.com&via=DZoneInc'
+    const win = window.open(twitter + params, '_blank')
+    win.focus()
+}
+
+retweetLink.addEventListener('click', retweet);
+
+function showStatusMessage(options) {
+  var modal = document.getElementById("modal-message");
+
+  if(modal) {
+    modal.classList.add(options.type);
+    var modalBody = modal.querySelector(".modal-content .modal-body");
+    var modalHeader = modal.querySelector(".modal-content .modal-header");
+
+    modalHeader.innerText = options.header ? options.header : "";
+    modalBody.innerText = options.body ? options.body : "" ;
+
+    $(modal).modal("show");
+
+    $(modal).on('hidden.bs.modal', function () {
+      modal.classList.remove(options.type);
+    });
+  }
+}
+
+function showConfirmMessage(options) {
+  var modal = document.getElementById("modal-message");
+
+  if(modal) {
+    modal.classList.add(options.type);
+    var modalBody = modal.querySelector(".modal-content .modal-body");
+    var modalHeader = modal.querySelector(".modal-content .modal-header");
+
+    modalHeader.innerText = options.header ? options.header : "";
+    modalBody.innerText = options.body ? options.body : "" ;
+
+    if (options.textarea) {
+      const textareaDiv = document.createElement('div')
+      const textareaLabel = document.createElement('label')
+      textareaLabel.setAttribute('for', 'modal-textarea')
+      textareaLabel.innerText = options.textarea.label
+
+      const textarea = document.createElement('textarea')
+      textarea.id = 'modal-textarea'
+      textarea.placeholder = (options.textarea.placeholder || '')
+      textarea.setAttribute('rows', (options.textarea.rows || 3))
+      textarea.classList.add('form-control', 'not-resizable')
+
+      if (options.textarea.maxlength) {
+        textarea.maxLength = options.textarea.maxlength
+      }
+
+      textareaDiv.appendChild(textareaLabel)
+      textareaDiv.appendChild(textarea)
+      modalBody.appendChild(textareaDiv)
+    }
+
+    var btnContainer = document.createElement("div");
+    btnContainer.classList.add("btn-container");
+
+    var noBtn = document.createElement("button");
+    noBtn.innerText = options.noBtnText ? options.noBtnText : "No";
+    noBtn.classList.add("no-btn");
+
+    var yesBtn = document.createElement("button");
+    yesBtn.innerText = options.yesBtnText ? options.yesBtnText : "Yes";
+    yesBtn.classList.add("yes-btn");
+
+    btnContainer.appendChild(noBtn);
+    btnContainer.appendChild(yesBtn);
+
+    modalBody.appendChild(btnContainer);
+
+    $(modal).modal("show");
+
+    $(noBtn).one("click", function() {
+      $(modal).modal("hide");
+
+      if(options.noCallback) {
+        $(modal).one('hidden.bs.modal', function () {
+          options.noCallback();
+        });
+      }
+    });
+
+    $(yesBtn).one("click", function() {
+      $(modal).modal("hide");
+
+      if(options.yesCallback) {
+        $(modal).one('hidden.bs.modal', function () {
+          options.yesCallback();
+        });
+      }
+    });
+
+    $(modal).on('hidden.bs.modal', function () {
+      modal.classList.remove(options.type);
+    });
+  }
+}
+</script><link rel="stylesheet" media="all" href="https://dz2cdn3.dzone.com/themes/dz20/ftl/footer/styles.css">
+
+<div id="ftl-footer">
+  <div class="container-fluid footerOuter">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="container">
+          <div class="row footer">
+            <div class="col-md-12 footerWidget">
+              <div class="row footerContainer footer">
+                <div class="left col-xs-12 col-sm-7">
+                  <div class="col-xs-12 social-media-icons footer-mobile">
+                    <ul class="icons-only">
+                      <li class="rss-icon" id="rss-footer-1">
+                        <a href="/pages/feeds" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-rss-1"></i>
+                        </a>
+                      </li>
+                      <li class="twitter-icon">
+                        <a href="https://twitter.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-twitter"></i>
+                        </a>
+                      </li>
+                      <li class="facebook-icon">
+                        <a href="https://www.facebook.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-facebook-1"></i>
+                        </a>
+                      </li>
+                      <li class="linkedin-icon">
+                        <a href="https://www.linkedin.com/company/dzone/" target="_blank"
+                           rel="noreferrer noopener">
+                          <i class="icon-linkedin-1"></i>
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div class="top-section col-xs-12">
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">ABOUT US</p>
+                      <ul class="link-group">
+                        <li><a href="/pages/about" rel="noreferrer noopener">About DZone</a></li>
+                        <li><a href="mailto:support@dzone.com" rel="noreferrer noopener">Send feedback</a></li>
+                        <li><a href="https://careers.dzone.com/" target="_blank" rel="noreferrer noopener">Careers</a></li>
+                          <li><a href="/sitemap" rel="noreferrer noopener">Sitemap</a></li>
+                      </ul>
+                    </div>
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">ADVERTISE</p>
+                      <ul class="link-group">
+                        <li><a href="https://advertise.dzone.com" target="_blank" rel="noreferrer noopener">Advertise with DZone</a></li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div class="bottom-section col-xs-12">
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">CONTRIBUTE ON DZONE</p>
+                      <ul class="bottom-top-list link-group">
+                        <li><a href="/articles/dzones-article-submission-guidelines">Article Submission Guidelines</a></li>
+                        <li><a href="/pages/mvb" rel="noreferrer noopener">MVB Program</a></li>
+                        <li><a href="/pages/contribute" rel="noreferrer noopener">Become a Contributor</a></li>
+                        <li><a href="/writers-zone" rel="noreferrer noopener">Visit the Writers' Zone</a></li>
+                      </ul>
+
+                      <p class="section-header">LEGAL</p>
+                      <ul class="link-group">
+                        <li><a href="/pages/tos" rel="noreferrer noopener">Terms of Service</a></li>
+                        <li><a href="/pages/privacy" rel="noreferrer noopener">Privacy Policy</a></li>
+                      </ul>
+                    </div>
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">CONTACT US</p>
+                      <ul class="link-group">
+                        <li>600 Park Offices Drive</li>
+                        <li>Suite 300</li>
+                        <li>Durham, NC 27709</li>
+                        <li><a href="mailto:support@dzone.com" rel="noreferrer noopener">support@dzone.com</a></li>
+                        <li><a href="tel:+19196780300" rel="noreferrer noopener">+1 (919) 678-0300</a></li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="right col-xs-12 col-sm-5">
+
+                  <p class="connect-text">Let's be friends:</p>
+                  <div class="col-xs-12 social-media-icons footer-wide">
+                    <ul class="icons-only">
+                      <li class="rss-icon" id="rss-footer-1">
+                        <a href="/pages/feeds" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-rss-1"></i>
+                        </a>
+                      </li>
+                      <li class="twitter-icon">
+                        <a href="https://twitter.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-twitter"></i>
+                        </a>
+                      </li>
+                      <li class="facebook-icon">
+                        <a href="https://www.facebook.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-facebook-1"></i>
+                        </a>
+                      </li>
+                      <li class="linkedin-icon">
+                        <a href="https://www.linkedin.com/company/dzone/" target="_blank"
+                           rel="noreferrer noopener">
+                          <i class="icon-linkedin-1"></i>
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div class="col-xs-12 powered-by">
+                    <p>DZone.com is powered by&nbsp;</p>
+                    <a href="https://devada.com/answerhub/" rel="noreferrer noopener">
+                      <img src=""
+                           data-src="https://dz2cdn3.dzone.com/themes/dz20/images/answerhub_logo_white_footer.png"
+                           width="150"
+                           height="56"
+                           class="lazyload"
+                           alt="AnswerHub logo">
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  <script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"></script>
+
+  <script async>
+      (function(w, d, s, l, i) {
+          w[l] = w[l] || [];
+          w[l].push({'gtm.start': new Date().getTime(), event: 'gtm.js'});
+          var f = d.getElementsByTagName(s)[0], j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : '';
+          j.async = true;
+          j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+          f.parentNode.insertBefore(j,f);
+      })(window, document, 'script', 'dataLayer', 'GTM-K25QL22');
+  </script>
+
+  <script>
+      window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+      ga('create', 'UA-410289-1', 'auto');
+      ga('require', 'linkid', 'linkid.js');
+      ga('require', 'GTM-TSD9TZP');
+      ga('set', 'siteSpeedSampleRate', 25);
+  </script>
+  <script async src="https://www.google-analytics.com/analytics.js"></script>
+  <script async>const analytics = {
+    'dimension1': 'integration',
+    'dimension2': 'article/',
+    'dimension3': '2012-04-17',
+    'dimension4': '0',
+    'dimension5': '',
+    'dimension7': 'Apache Camel, Apache Qpid, Spring Framework',
+    'dimension8': 'xh',
+    'dimension9': 'undefined',
+    'dimension10': 'DZone MVB'
+}
+
+if (window.ga) {
+    Object.keys(analytics).forEach(function(key) {
+        window.ga('set', key, analytics[key])
+    })
+
+    window.ga('send', 'pageview')
+}</script>
+
+  <script>
+      !function (e, o, n, i) {
+          if (!e) {
+              e = e || {}, window.permutive = e, e.q = [];
+              var t = function () {
+                  return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, function (e) {
+                      return (e ^ (window.crypto || window.msCrypto).getRandomValues(new Uint8Array(1))[0] & 15 >> e / 4).toString(16)
+                  })
+              };
+              e.config = i || {}, e.config.apiKey = o, e.config.workspaceId = n, e.config.environment = e.config.environment || "production", (window.crypto || window.msCrypto) && (e.config.viewId = t());
+              for (var g = ["addon", "identify", "track", "trigger", "query", "segment", "segments", "ready", "on", "once", "user", "consent"], r = 0; r < g.length; r++) {
+                  var w = g[r];
+                  e[w] = function (o) {
+                      return function () {
+                          var n = Array.prototype.slice.call(arguments, 0);
+                          e.q.push({
+                              functionName: o,
+                              arguments: n
+                          })
+                      }
+                  }(w)
+              }
+          }
+      }(window.permutive, "bca90777-e088-4f2a-96c2-13ad18deeccc", "18ad0c5b-460c-4d19-a729-dc537805538f", {});
+      window.googletag = window.googletag || {}, window.googletag.cmd = window.googletag.cmd || [], window.googletag.cmd.push(function () {
+          if (0 === window.googletag.pubads().getTargeting("permutive").length) {
+              var e = window.localStorage.getItem("_pdfps");
+              window.googletag.pubads().setTargeting("permutive", e ? JSON.parse(e) : []);
+              var o = window.localStorage.getItem("permutive-id");
+              o && (window.googletag.pubads().setTargeting("puid", o), window.googletag.pubads().setTargeting("ptime", Date.now().toString())), window.permutive.config.viewId && window.googletag.pubads().setTargeting("prmtvvid", window.permutive.config.viewId), window.permutive.config.workspaceId && window.googletag.pubads().setTargeting("prmtvwid", window.permutive.config.workspaceId)
+          }
+      });
+
+
+      permutive.addon('web', {
+          'page': {
+              'category': 'Integration',
+              'node': {
+                  'authorCompany': 'DZone MVB',
+                  'authors': [363608, ],
+                  'publishDate': new Date(1334650588000),
+                  'sponsorAuthor': false,
+                  'tags': ['Apache Camel', 'Apache Qpid', 'Spring Framework', ],
+                  'title': 'Migrating From JMS to AMQP: RabbitMQ, Spring, Apache Camel, and Apache Qpid',
+                  'type': 'article',
+              },
+              'section': 'article',
+          }
+      });
+  </script>
+  <script async src="https://18ad0c5b-460c-4d19-a729-dc537805538f.edge.permutive.app/18ad0c5b-460c-4d19-a729-dc537805538f-web.js"></script>
+
+  <script>
+      const csrf = '-8298580282258255932'
+      const articleId = 480731
+      const likes = 2
+      const assetDomain = 'https://dz2cdn3.dzone.com'
+      const codemirrorVars = {
+          modeURI: 'https://dz2cdn3.dzone.com/themes/dz20/lib/codemirror/mode/',
+          requiredScripts: [
+              'https://dz2cdn3.dzone.com/themes/dz20/lib/codemirror/lib/codemirror.js',
+              'https://dz2cdn3.dzone.com/themes/dz20/lib/codemirror/mode/meta.js'
+          ]
+      }
+
+      const gptTags = {
+          'zone': 'integration',
+          'topicTag': 'Apache Camel,Apache Qpid,Spring Framework',
+          'company': '',
+          'siteSection': 'Zones',
+          'articleCategory': '',
+          'nodeID': '480731',
+          'authorID': '363608',
+          'publishYear': '2012',
+          'publishMonth': '04',
+          'jobRole': '',
+          'companySize': ''
+      }
+
+      const minCommentChar = 10;
+      const peer39Enabled = true;
+  </script>
+
+  <script src="https://dz2cdn3.dzone.com/themes/dz20/lib/static/jquery/jquery.min.js"></script>
+  <script async src="https://dz2cdn3.dzone.com/themes/dz20/lib/static/bootstrap/bootstrap.min.js"></script>
+  <script async src="https://dz2cdn3.dzone.com/themes/dz20/ftl/article/ads.js"></script>
+
+
+
+  <script>
+      function loadScript(src) {
+          return new Promise(function (resolve, reject) {
+              const s = document.createElement('script')
+              s.src = src
+              s.onload = resolve
+              s.onerror = reject
+              document.head.appendChild(s)
+          })
+      }
+
+      function loadStyle(href) {
+          const link = document.createElement('link')
+          link.rel = 'stylesheet'
+          link.href = href
+          document.head.appendChild(link)
+      }
+
+      function loadScriptsSync(deferred) {
+          var p = Promise.resolve()
+          for (var i = 0; i < deferred.length; i++) {
+              let script = deferred[i]
+              p = p.then(function() {
+                  return loadScript(script)
+              })
+          }
+          return p
+      }
+
+      function loadStyles() {
+          const deferred = [
+              'https://dz2cdn3.dzone.com/themes/dz20/lib/codemirror/lib/codemirror.css',
+              'https://dz2cdn3.dzone.com/themes/dz20/ftl/comments/styles.css',
+              'https://dz2cdn3.dzone.com/themes/dz20/lib/froala3/css/froala_editor.pkgd.min.css',
+              'https://dz2cdn3.dzone.com/themes/dz20/lib/froala3/css/themes/gray.min.css',
+              'https://dz2cdn3.dzone.com/themes/dz20/ftl/article/mini-profile.css'
+          ]
+
+          for (var i = 0; i < deferred.length; i++) {
+              loadStyle(deferred[i])
+          }
+      }
+
+      window.addEventListener('load', function(event) {
+          loadStyles()
+          loadScriptsSync([
+              'https://dz2cdn3.dzone.com/themes/dz20/ftl/header/auth-status.js',
+              'https://dz2cdn3.dzone.com/themes/dz20/lib/lazysizes.min.js',
+              'https://dz2cdn3.dzone.com/themes/dz20/ftl/article/codeblocks.js',
+              'https://dz2cdn3.dzone.com/themes/dz20/ftl/article/activity-bar.js',
+              'https://dz2cdn3.dzone.com/themes/dz20/lib/froala3/js/froala_editor.pkgd.min.js',
+              'https://dz2cdn3.dzone.com/themes/dz20/ftl/froala/content.js',
+              'https://dz2cdn3.dzone.com/themes/dz20/ftl/comments/content.js',
+              'https://dz2cdn3.dzone.com/themes/dz20/ftl/article/content.js'
+          ])
+      })
+  </script>
+</body>
+</html>

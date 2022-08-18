@@ -1,0 +1,436 @@
+
+
+
+
+
+Managing data consistency in a microservice architecture using Sagas - part 1
+
+
+
+
+
+
+
+
+
+
+
+
+Toggle navigation
+
+
+
+
+
+
+
+
+
+
+Home
+Learn
+Consulting
+Training
+Speaking
+Blog
+About
+Contact Us
+
+
+
+
+
+
+
+
+
+
+
+
+Blog
+
+
+
+
+
+
+
+
+
+Managing data consistency in a microservice architecture using Sagas - part 1
+This is the first in a series of posts that expands on my recent MicroCPH talk on Managing data consistency in a microservice architecture using Sagas (slides, video).
+The other posts in this series are:
+
+Part 2 - Coordinating sagas
+Part 3 - Choreography-based sagas
+Part 4 - Orchestration-based sagas
+
+Why sagas?
+A distinctive characteristic of the microservice architecture is that in order to ensure loose coupling each serviceâs data is private.
+Unlike in a monolithic application, you no longer have a single database that any module of the application can update.
+As a result, one of the key challenges that you will face is maintaining data consistency across services.
+Consider, for example, the customers and orders example application from my presentation.
+It consists of two services:
+
+Order Service
+
+Manages orders
+Operations include createOrder() and cancelOrder()
+
+
+Customer Service
+
+Manages customer information including the customerâs available credit
+Operations include createCustomer()
+
+
+
+When the Order Service creates an Order it must ensure that there is sufficient credit available.
+Specifically, the createOrder() command must update data in both the Order Service and the Customer Service.
+In a traditional application, you might consider using distributed transactions a.k.a. two phase commit (2PC).
+However, using 2PC is generally a bad idea a microservice architecture.
+Itâs a form of synchronous communication that results in runtime coupling that significantly impacts the availability of an application.
+What is a saga?
+
+The solution is to implement commands, such as createOrder(), using a saga.
+A saga is a sequence of local transactions in each of the participating services.
+For example, here is the definition of the Create Order Saga, which is initiated by the createOrder() command:
+
+
+
+Step
+Participant
+Transaction
+Compensating Transaction
+
+
+
+
+1
+Order Service
+createPendingOrder()
+rejectOrder()
+
+
+2
+Customer Service
+reserveCredit()
+-
+
+
+3
+Order Service
+approveOrder()
+-
+
+
+
+The purpose of each step is as follows:
+
+createPendingOrder() - create the Order in a PENDING state
+reserveCredit() - attempt to reserve credit
+approveOrder() - change the state of the Order to APPROVED
+rejectOrder() - change the state of the Order to REJECTED
+
+The sequence for the happy path is as follows:
+
+Order Service : createPendingOrder()
+Customer Service : reserveCredit()
+Order Service : approveOrder()
+
+The sequence for the path when there is insufficient credit is as follows:
+
+Order Service : createPendingOrder()
+Customer Service : reserveCredit()
+Order Service : rejectOrder()
+
+What are compensating transactions?
+The rejectOrder() command is an example of a compensating transaction.
+Unlike ACID transactions, sagas cannot automatically undo changes made by previous steps since those changes are already committed.
+Instead, you must write compensating transactions that explicitly undo those changes.
+Each step of a saga that is followed by a step that can fail (for business reasons) must have a corresponding compensating transaction.
+In the Create Order Saga, createOrder() has the rejectOrder() compensating transaction because the reserveCredit() step can fail.
+The reserveCredit() step does not need a compensating transaction because the approveOrder() step  cannot fail.
+And, the approveOrder() step does not need a compensating transaction because itâs the last step of the saga.
+What is the semantic lock counter-measure?
+You might be wondering why createOrder() creates the order in a PENDING state, which is then changed to APPROVED by approveOrder().
+The use of a PENDING state is an example of what is known as a semantic lock counter-measure.
+It prevents another transaction/saga from updating the Order while it is in the process of being created.
+To see why this is necessary consider the following scenario where the cancelOrder() command is invoked while the Order is still being created:
+
+
+
+Create Order Saga
+Cancel Order Saga
+
+
+
+
+createOrder() - state=CREATED
+Â 
+
+
+Â 
+cancelOrder() - state=CANCELLED
+
+
+reserveCredit()
+Â 
+
+
+approveObject() - state=APPROVED
+Â 
+
+
+
+In this scenario, the cancelOrder() command changes the status of the order to CANCELLED, and the approveOrder() command overwrites that change by setting the status to APPROVED.
+The customer would be quite surprised when the order is delivered!
+The PENDING state prevents this problem.
+The cancelOrder() command will only cancel an Order if its state is APPROVED.
+If the state is PENDING, cancelOrder() returns an error to the client indicating that it should try again later.
+The semantic lock counter-measure is a kind of application-level locking.
+As I describe in the presentation, itâs a way to make sagas, which are inherently ACD, ACID again.
+In a later post, Iâll describe how to implement this saga.
+To learn more
+
+Read the other posts in this series:
+    
+Coordinating sagas
+
+
+Read my Microservices patterns book, which includes a comprehensive discussion of sagas
+Read or watch MicroCPH talk on Managing data consistency in a microservice architecture using Sagas (slides, video)
+Talk to me about my microservices consulting and training services.
+Learn more about microservices at adopt.microservices.io
+
+
+
+Posts 
+04 May 2022 » Essential characteristics of the microservice architecture: independently deployable
+
+02 May 2022 » Dark energy, dark matter and microservice architecture collaboration patterns
+
+01 May 2022 » My new Windows 365 Cloud PC: Windows 11, Docker Desktop and WSL2
+
+12 Apr 2022 » Interview about microservices with Koushik Kothagal (@Java_Brains)
+
+06 Apr 2022 » Using scenarios to reinvigorate your microservice architecture
+
+16 Mar 2022 » Icebergs, the Interface Segregation Principle and microservices
+
+02 Mar 2022 » The Eventuate Tram Customers and Orders example now runs on Arm/M1 MacBook!!
+
+25 Feb 2022 » Publishing a multi-architecture Docker image for the Eventuate CDC service
+
+23 Feb 2022 » Publishing multi-architecture base images for services
+
+18 Feb 2022 » The developer's essential knowledge pyramid
+
+14 Feb 2022 » Building a multi-architecture Docker image for Apache Kafka
+
+13 Feb 2022 » Finding that special plus one for your architecture
+
+11 Feb 2022 » Configuring CircleCI to build, test and publish multi-architecture images for Eventuate Common
+
+28 Jan 2022 » Developing the Eventuate Common library on an M1/Arm MacBook
+
+20 Jan 2022 » Configuring CircleCI to publish a multi-architecture Docker image
+
+19 Jan 2022 » Testing an Intel and Arm multi-architecture Docker image on CircleCI
+
+18 Jan 2022 » Configuring a CircleCI-based pipeline to build multi-architecture Docker images
+
+16 Jan 2022 » Building multi-architecture Docker images for Intel and ARM
+
+10 Jan 2022 » My Apple M1 MacBook: lots of cores, memory and crashing containers
+
+04 Jan 2022 » Writing better problem reports: 6 essential details
+
+30 Nov 2021 » Designing an architecture using dark matter and dark energy
+
+31 Oct 2021 » iSAQB keynote - Modular monoliths and microservices: architectural patterns for rapid, reliable, frequent and sustainable development
+
+15 Sep 2021 » Techlead Journal Podcast - Principles for Adopting Microservices Successfully
+
+28 Jul 2021 » Events to the rescue: solving distributed data problems in a microservice architecture
+
+27 Jul 2021 » A pattern language for microservices
+
+27 Jul 2021 » The Confident Commit podcast| Episode 6: Architecture meets delivery
+
+21 May 2021 » QConPlus 2021: Takeout burritos and minimizing design-time coupling in a microservice architecture
+
+15 Apr 2021 » Mucon 2021 - Dark energy, dark matter: imperfect metaphors for designing microservices
+
+21 Feb 2021 » Events on the outside, on the inside and at the core
+
+14 Feb 2021 » Why microservices - part 5 - the monolithic architecture and rapid, frequent, reliable and sustainable software delivery
+
+14 Dec 2020 » Designing loosely coupled services
+
+24 Nov 2020 » Microservices - an architecture that enables DevOps
+
+16 Nov 2020 » Working in a high-performance organization
+
+18 Oct 2020 » Microservices and monoliths are both mistakes
+
+16 Oct 2020 » Handling duplicate messages using the Idempotent consumer pattern
+
+29 Sep 2020 » 497K views and counting: My DockerCon 2016 talk - Microservices + Events + Docker = A Perfect Trio
+
+22 Sep 2020 » TDC 2020 keynote: The microservice architecture - enabling rapid, reliable, frequent and sustainable development
+
+21 Aug 2020 » Decompose your monolith - ten principles for refactoring a monolith to microservices
+
+28 Jul 2020 » Decompose your monolith - Six principles for refactoring a monolith to microservices
+
+02 Jun 2020 » Enrollment is now open for the beta of distributed data patterns for microservices virtual bootcamp
+
+21 May 2020 » Why microservices - part 4, the last third of the success triangle - architectural requirements for rapid, frequent, reliable and sustainable development
+
+14 May 2020 » A pattern language and visual notation for messaging systems - Enterprise integration patterns by @ghohpe and @bobby_woolf
+
+03 May 2020 » IT in the time of COVID-19 - the tale of three fictitious grocery stores
+
+29 Apr 2020 » Announcing the first virtual bootcamp - distributed data patterns in a microservice architecture
+
+11 Apr 2020 » Why microservices - part 3, two thirds of the success triangle - process and organization
+
+30 Mar 2020 » Why microservices - part 2, the need for sustainable development
+
+12 Mar 2020 » Online microservices workshops and virtual bootcamps
+
+18 Feb 2020 » Why microservices - part 1, the need to deliver software rapidly, frequently, and reliably
+
+04 Feb 2020 » Jfokus 2020 - Cubes, Hexagons, Triangles, and More - Understanding Microservices
+
+02 Feb 2020 » Just a reminder - picking the appropriate architecture for your application is a best practice
+
+07 Jan 2020 » Books about high-performance software delivery - DevOps Handbook + Team Topologies + Accelerate + Microservices Patterns
+
+12 Dec 2019 » Managing data consistency in a microservice architecture using Sagas - part 4 - implementing an orchestration-based saga
+
+12 Nov 2019 » Video for my presentation - Cubes, Hexagons, Triangles, and More - Understanding the Microservice Architecture Through Shapes
+
+09 Oct 2019 » Decompose Your Monolith - Strategies for Migrating to Microservices
+
+02 Oct 2019 » GOTO Chicago presentation - Not Just Events - Developing Asynchronous Microservices
+
+15 Aug 2019 » Managing data consistency in a microservice architecture using Sagas - part 3 - implementing a choreography-based saga
+
+04 Aug 2019 » Managing data consistency in a microservice architecture using Sagas part 2 - coordinating sagas
+
+23 Jul 2019 » Do your architects actually work on architecture?
+
+16 Jul 2019 » A great trilogy by Mark Schwartz (@schwartz_cio) - War and Peace and IT, A Seat at the Table, and The Art of Business Value
+
+15 Jul 2019 » The FTGO application and the Database per service pattern
+
+09 Jul 2019 » The YOW conferences in Perth, Hong Kong, and Singapore
+
+09 Jul 2019 » Managing data consistency in a microservice architecture using Sagas - part 1
+
+22 Jun 2019 » Containers, the developer workflow and the test pyramid
+
+07 Jun 2019 » Microservices adoption anti-pattern - Red flag law
+
+21 May 2019 » Microservices adoption anti-pattern - More the merrier
+
+12 May 2019 » Self-documenting services - generating a microservice canvas
+
+30 Apr 2019 » Microservices adoption anti-pattern - Focussing on technology
+
+16 Apr 2019 » Books you should read - Why we sleep
+
+09 Apr 2019 » Microservices adoption anti-pattern - Trying to fly before you can walk
+
+24 Mar 2019 » Public microservices training in the Netherlands, May 15th and 16th
+
+27 Feb 2019 » Documenting a service using the microservice canvas
+
+25 Feb 2019 » Microservices adoption anti-pattern - scattershot adoption
+
+16 Feb 2019 » What's a (micro)service - part 1?
+
+29 Jan 2019 » Public microservices training in Stockholm, May 8th and 9th
+
+28 Jan 2019 » Microservices anti-patterns in Melbourne
+
+14 Jan 2019 » Anti-pattern - microservices as the goal
+
+12 Jan 2019 » My YOW! 2018 presentation - Events and Commands, Developing Asynchronous Microservices
+
+10 Jan 2019 » Workshops at O'Reilly Software Architecture New York and GOTO Chicago
+
+07 Jan 2019 » Microservices adoption anti-patterns -  microservices are a magic pixie dust
+
+31 Dec 2018 » The Microservice Architecture Assessment is now available
+
+
+
+Book
+
+
+
+Training
+Learn more about workshops and bootcamps that enable you to successfully develop applications with the microservices architecture.
+Delivered in-person and remotely.
+Take a look at my self-paced, virtual bootcamp on distributed data patterns in microservice architecture.
+Consulting
+Learn more about consulting services that derisk and accelerate your microservices initiative.
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+Tweet
+Follow @crichardson
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Copyright Â© 2020 Chris Richardson Consulting, Inc â¢ All rights reserved
+CHRIS RICHARDSON CONSULTING INC, San Francisco Bay Area
+
+  
+              
+              
+              
+              
+        
+
+
+
+
+
+
+
+
+
+
+Please enable JavaScript to view the comments powered by Disqus.

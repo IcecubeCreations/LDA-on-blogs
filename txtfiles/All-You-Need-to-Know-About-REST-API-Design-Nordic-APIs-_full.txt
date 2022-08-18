@@ -1,0 +1,142 @@
+All You Need to Know About REST API Design | Nordic APIs |          Platform Summit 2020BlogAbout Nordic APIsContact UsE-booksWriteSpeakSponsor   BlogeBooksEventsLiveCast: API Design Best PracticesBest Public API 2021Call for SpeakersVolunteerEvent CalendarPartnersOur PartnersPartner With UsAboutNewsletter – Bill’s API DigestContact usPrivacy PolicyCreate with UsNordic APIs for WomenSearch   Menu    All You Need to Know About REST API Design  Posted inDesign  J Simpson  April 30, 2020                 If you study or create APIs in any way, you’ve almost undoubtedly come across the terms REST, RESTful, or REST-like. We often reference REST as a best practice for implementing APIs. But what, exactly, is Representational State Transfer? And what’s the difference between a REST and REST-like API?The principles of REST were laid out by Roy Fielding in his 2000 dissertation. Fielding loosely defines REST as a means for clients and servers to exchange data. One key component of REST architecture is that the end-user doesn’t have to know anything about the application ahead of time to use it.REST’s Architectural ElementsFielding doesn’t mention file formats or specifications. Instead, he defines REST as meeting certain specific architectural elements and constraints.Client-Server: REST applications must contain a server that manages application data and defines its state. The server interacts with a client that interfaces with user interactions. Each of these components is independent and can be modified independently.Stateless: REST applications must be stateless. All of the state data are managed from the client-side. A request from the application contains all of the information necessary for their processing.Cacheable: REST servers mark their data as cacheable or not. This lets clients and infrastructures decide if they want to cache information or not to improve performance. It also enables them to dispose of non-cacheable information, so the data they receive is guaranteed to be fresh and relevant.Uniform Interface: Having a uniform interface may be REST’s most defining characteristic. Fielding states, “The central feature that distinguishes the REST architectural style from other network-based styles is its emphasis on a uniform interface between components.”Layered System: Components of a REST system cannot see beyond their layer. This makes it easier to add additional levels of security and load-balancing for enhanced performance.How to Implement RESTREST is mostly concerned with the uniform presentation of data as a resource. One of the cornerstones of the “REST vs. RESTful” debate is looking only at URI endpoints or HTTP commands. That’s not the entire picture, however.To illustrate, consider a web service for modifying an eCommerce database using GET, POST, and DELETE commands.One version of this application might have a single URL that handles all of the GET and POST commands. A user can amend the database by POSTing a document stating the required changes.One could add a new item to the database using a ‘NewItem’ command:POST /inventory HTTP/1.1
+ 
+{
+    "NewItem": {
+          "name": "new item",
+          "price": "9.99",
+          "id": "1001"
+      }
+}    Or they could query the database using an ‘ItemRequest’ call:POST /inventory HTTP/1.1
+ 
+{
+    "ItemRequest": {
+          "id": "1001"
+      }
+}Finally, you could change or delete items using ‘ItemDelete’ or ‘ItemUpdate’:POST /inventory HTTP/1.1
+
+{
+    "ItemDelete": {
+          "id": "1001"
+      }
+}None of these approaches meet the requirements for REST. They’re just calling functions using arguments for resources that happen to be stored in a JSON document using HTTP requests.A RESTful service would have a URI for every item in the inventory. Posting an item would look like something like this:POST /item HTTP/1.1
+
+{
+    "Item": {
+          "name": "new item",
+          "price": "9.99",
+          "id": "1001"
+      }
+}    That’s where the similarities end, however. GET, POST, and DELETE commands would all look very different. For instance, retrieving an item would always require a GET command:GET /item/1001 HTTP/1.1    Deleting a post would look like:DELETE /item/1001 HTTP/1.1   Items can be modified using PUT commands:PUT /inventory HTTP/1.1
+
+{
+    "Item": {
+          "name": "new item",
+          "price": "7.99",
+          "id": "1001"
+      }
+}  REST works with specific HTTP actions, which correspond to specific URIs. There’s another reason this distinction is essential, as well.REST, RESTful, and the Richardson Maturity IndexWhen specific resources fuel URIs, you make an API predictable. Developers and users are almost able to visualize your API even if they don’t know what it does. Even if an API isn’t entirely predictable, it can still be documented using hypertext. This makes it so that every item returned by an API would have links for deleting, updating, or specifying the security level of a resource in the inventory.For example, let’s start by looking at some code without resources. Here’s a little bit of simple sample code for scheduling a doctor’s appointment only using HTTP and a remote interaction method, usually based on the Remote Procedure Invocation.POST /appointmentService HTTP/1.1
+[various other headers]
+
+This returns an answer from the database, showing available open slots at an endpoint specified by a URI. The server would return something like this:HTTP/1.1 200 OK
+[various headers]
+
+
+  
+    
+  
+  
+    
+  
+
+The next step would be to book an appointment using a similar method:POST /appointmentService HTTP/1.1
+[various other headers]
+
+
+  
+  
+
+If everything is working as it should, you’d see a response like this returned to the API endpoint.HTTP/1.1 200 OK
+[various headers]
+
+
+  
+  
+
+So far, this is a standard Remote Procedure Call system, as your code is simply moving XML back and forth.Now let’s take a look at what happens when we add resources, which deliver results to particular endpoints rather than one universal URI.POST /doctors/mjones HTTP/1.1
+[various other headers]
+
+
+This returns the same essential information but makes each slot a resource that can be explicitly addressed.HTTP/1.1 200 OK
+[various headers]
+
+
+
+  
+  
+
+Using specific resources means returning queries to a particular slot.POST /slots/1234 HTTP/1.1
+[various other headers]
+
+
+  
+
+If everything is as it should be, you should get a similar response as above:HTTP/1.1 200 OK
+[various headers]
+
+
+  
+  
+
+This means that if the API caller needed to access their appointment for any reason, they have a dedicated place to do so.Unfortunately, many sites don’t meet these requirements, yet they’re still referred to as REST. This prompted Leonard Richardson to create a model for differentiating the levels of REST compliance. This is known as the Richardson Maturity Index.The Levels Of The Richardson Maturity IndexLevel 0: Exporting an API over HTTP with methods controlled by argumentsLevel 1: Exporting resources instead of methodsLevel 2: Proper use of HTTP verbsLevel 3: Exporting hypertext or objects to make part of an API discoverableAccording to Richardson’s model, Fielding’s specification means that only Level 3 applications qualify as REST. That means that many applications we consider REST actually aren’t.Hardly anything uses a purely REST approach. Technically speaking, REST only concerns itself with resources, which are routed to unique URIs. Resources are never bundled under REST.That doesn’t mean it’s not possible, however. The World Wide Web itself is one example of an actual REST application. It involves a client and a server, for one thing. It’s stateless, for another, as a web browser doesn’t need to know what it’s returning.Let’s take a look at a proper REST application, to help you get an idea of what separates representational state transfer APIs from the rest. Instagram’s API is compliant with REST.Let’s start by looking at a list of all of the different actions for interacting with a user account.GET /users/self     Get information about the owner of an access token
+GET /users/user-id     Get information about a user
+GET /users/self/media/recent   Get most recent media from the user
+GET /users/user-id/media/recent    Get most recent media from a user
+GET /users/self/media/liked    Get most recent media liked by the user
+GET /users/search     Search for a particular userAs you can see, this allows you to interact with a user’s most recent media, media they’ve liked, commented on, and even specific locations. This content can then be returned to a separate application.Consider a request to Instagram’s API for photos of a particular location.GET /v1/locations/search?access_token=ACCESS_TOKEN&lat=40.7127&lng=74.0059
+Here’s what a response might look like, in JSON format:HTTP/1.1 200 OK
+
+{
+ "meta": {
+   "code": 200
+ },
+ "data": [
+   {
+     "latitude": 40.714198749,
+     "id": "93496093",
+     "longitude": 74.006001183,
+     "name": "John's Pizzeria 278 Bleecker St NY, NY"
+   },
+   {
+     "latitude": 40.7142,
+     "id": "46371155",
+     "longitude": 74.0064,
+     "name": "Thunderpocalypse 2012"
+   },
+   {
+     "latitude": 40.714201754,
+     "id": "35932492",
+     "longitude": 74.006397137,
+     "name": "Avenue of the Americas, New York"
+   },
+   {
+     "latitude": 40.71296389,
+     "id": "1023103828",
+     "longitude": 74.00388611,
+     "name": "Manhattan Municipal Building"
+   },
+   {
+     "latitude": 40.71322,
+     "id": "92582758",
+     "longitude": 74.003963,
+     "name": "Sleepers Filming Location"
+   },
+   {
+     "latitude": 40.716833,
+     "id": "97921846",
+     "longitude": 74.005833,
+     "name": "Atera"
+   }
+ ]
+}This should give you an example of how Instagram’s API returns data about the state of different resources via the API. It also should give you an illustration of how those resources can be returned to various API endpoints.Most applications use some of REST’s principles but don’t adhere to Fielding’s strict specifications. This makes them more REST-like than REST proper.REST Vs. REST-LikeAs you can see from the specifications above, not a lot of resources qualify as purely REST. That’s okay, as REST is more of a philosophy or an architectural style than a concrete format.Pure REST is often too difficult to implement to be pragmatic for a lot of projects. Clients spend too much time, energy, and resources defining custom media types. It’s a lot of work to get every individual data point to conform to the particular architectural constraints of REST. As a result, most real-world applications of REST are REST-like.That doesn’t stop people from describing any URL-based, resource-oriented service as REST. It’s a matter of semantics, really. Language evolves, and so do definitions.The tendency to split hairs over whether an API’s REST or not shows that you’re thinking more like a developer than an API user, which is a mistake. An API consumer could likely care less if an API adheres to Roy Fielding’s purist vision. They’re the ones you need to worry about if you want your API to be successful.In the past, we’ve referred to REST-like APIs as pragmatic REST. To ensure your API follows REST best practices without getting too worked up about URI endpoints and resources, here are some REST-like API best practices:Principles Of REST-Like DesignEasy to useStatelessSecurePlatform agnosticContinually evolvingConsistencyFlexibilityUseful documentationREST-like APIS and HATEOASAccording to Roy Fielding, only APIs using hyperlinks and hypermedia qualify as true REST applications. That means that applications making use of HATEOAS (Hypermedia as the Engine of Application State) are truly REST devices. Many widely-used APIs don’t use hypermedia, however, including APIs from Facebook and Twitter. Clearly there is a case to be made that HATEOAS is unnecessary to have a successful API.For one thing, many end-users end up not utilizing HATEOAS. Casual users will be content to discover the endpoints they need via the documentation rather than links provided in a response.There’s also a lack of consensus over which format HATEOAS should be implemented in. JSON-LD is useful for attaching to existing APIs, for instance. Collection-JSON and JSON API are both helpful for dealing with lists.This lack of standards makes it difficult to implement standardized APIs, which is one of the reasons for REST and REST-like architecture in the first place.HATEOAS also isn’t ideal for transmitting data, as it reads it as just another generic media type. This means you need to delineate the difference via documentation, making development unnecessarily complicated.Also Read: 8 Tips For Designing Quality REST APIsREST vs REST-like APIs: Final VerdictRoy Fielding laid out the ground rules for REST at the turn of the century. Obviously, the internet has evolved tremendously in the last 20 years. We didn’t have iOS or Android, for one thing. We didn’t even have Google Chrome at that point.Many of the principles laid out in Fielding’s vision are still relevant and valid, however. They’re good guidelines to shoot for but you shouldn’t worry about it too much. The Richardson Maturity Index is more useful for actual development. You should aspire to reach Level 3 of the Maturity Index if you haven’t already.  api, API design, APIs, Cacheable, client, HATEOAS, HTTP methods, HTTP verbs, JSON-LD, Layered System, Leonard Richardson, Representational State Transfer, rest, REST API Design, REST architecture, REST-like, RESTful, Richardson Maturity Index, Roy Fielding, server, stateless, uniform interface 0    J Simpson J. Simpson lives at the crossroads of logic and creativity. He writes and researches tech-related topics extensively for a wide variety of publications, including Forbes Finds. He is also a graphic designer, journalist, and academic writer, writing on the ways that technology is shaping our society while using the most cutting-edge tools and techniques to aid his path. He lives in Portland, Or.        5 Affordable API Management...  Does HTTP Multiplexing Make... Latest Posts The Difference Between Client-Server and Publisher-Subscriber   Kristopher                  Sandoval   May 26, 2022  Helpful API Design Best Practices and Tips   Bill                  Doerrfeld   May 25, 2022  Now’s the Time to Shift Left of Traditional API Management   Gemma                  Sindall   May 19, 2022  Smarter Tech Decisions Using APIs High impact blog posts and eBooks on API business models, and tech advice Connect with market leading platform creators at our events  Join a helpful community of API practitioners API Insights Straight to Your Inbox!Can't make it to the event? Signup to the Nordic APIs newsletter for quality content. High
+ impact blog posts on API business models and tech advice.   Join Our Thriving CommunityBecome a part of the world’s largest community of API practitioners and enthusiasts. Share your insights on the blog, speak at an event or exhibit at our conferences and create new business relationships with decision makers and top influencers responsible for API solutions.     Write  Speak  Sponsor EventsEvents CalendarBest Public API of 2021Curity WebinarsBlogBlogBusiness ModelsMarketingPlatformsSecurityStrategyDesignOpen BankingResourceseBooksBlog Submission GuidelinesCall for SpeakersCode of ConductAboutAboutNordic APIs for WomenVolunteerPrivacy PolicyContact usSocial                   © 2013-2022      Nordic APIs AB
+   |  Supported by   |   Website policies      

@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html class="no-js" lang="cs">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>Json Java parsers / generators microbenchmark - Myšlenky dne otce Fura</title>
+	<script>(function(d,e){d[e]=d[e].replace("no-js","js");})(document.documentElement,"className");</script>
+	<meta name="description" content="">
+		<meta property="og:title" content="Json Java parsers / generators microbenchmark" />
+<meta property="og:description" content="A month ago I had an incident in production that was caused, as I found out later, by poor performance of used JSON parser library. I&#39;ve optimalized the code and managed to solve it but decided to look for another library with better performance characteristics. I searched for some existing benchmarks and found two of them - one is for JSON manipulation on Android and the second one is thorough serialization test focused on different use-cases than I had." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://blog.novoj.net/posts/2012-02-05-json-java-parsers-generators-microbenchmark/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2012-02-05T10:41:22+01:00" />
+<meta property="article:modified_time" content="2012-02-05T10:41:22+01:00" />
+
+
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link rel="dns-prefetch" href="//fonts.googleapis.com">
+	<link rel="dns-prefetch" href="//fonts.gstatic.com">
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:400,400i,700">
+
+	<link rel="stylesheet" href="/css/style.css">
+	
+
+	<link rel="shortcut icon" href="/favicon.ico">
+		
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-3197117-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
+<body class="body">
+	<div class="container container--outer">
+		<header class="header">
+	<div class="container header__container">
+		
+	<div class="logo">
+		<a class="logo__link" href="/" title="Myšlenky dne otce Fura" rel="home">
+			<div class="logo__item logo__text">
+					<div class="logo__title">Myšlenky dne otce Fura</div>
+					<div class="logo__tagline">Dává je jen zřídka, obvykle jim není moc rozumět a často vám ani k ničemu nejsou.</div>
+				</div>
+		</a>
+	</div>
+		<a href="http://www.fg.cz/gameofcode" target="_blank">
+	<img src="/files/Reklama/fg_banner_gameofcode_728x90.jpg" width="728" height="90" style="margin-bottom: 2em">
+</a>
+<nav class="menu">
+	<button class="menu__btn" aria-haspopup="true" aria-expanded="false" tabindex="0">
+		<span class="menu__btn-title" tabindex="-1">Menu</span>
+	</button>
+	<ul class="menu__list">
+		<li class="menu__item"><a class="menu__link" href="https://kafemlejnek.tv" target="_blank">Kafemlejnek.TV</a></li>
+		<li class="menu__item"><a class="menu__link" href="https://www.jopenspace.cz" target="_blank">jOpenSpace</a></li>
+		<li class="menu__item"><a class="menu__link" href="https://www.fg.cz" target="_blank">FG Forrest</a></li>
+		<li class="menu__item"><a class="menu__link" href="/about/">O autorovi</a></li>
+	</ul>
+</nav>
+	</div>
+</header>
+		<div class="wrapper flex">
+			<div class="primary">
+			
+<main class="main" role="main">
+	<article class="post">
+		<header class="post__header">
+			<h1 class="post__title">Json Java parsers / generators microbenchmark</h1>
+			<div class="post__meta meta">
+<div class="meta__item-datetime meta__item">
+	<svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class="meta__text" datetime="2012-02-05T10:41:22&#43;01:00">5. 2. 2012</time></div></div>
+		</header>
+		<div class="content post__content clearfix">
+			<p><img class="alignleft size-full wp-image-1834" title="JSON" src="/binary/2012/02/json160.gif" alt="" width="120" height="120" /> A month ago I had an incident in production that was caused, as I found out later, by poor performance of used JSON parser library. I've optimalized the code and managed to solve it but decided to look for another library with better performance characteristics. I searched for some existing benchmarks and found two of them - one is for <a href="http://martinadamek.com/2011/02/01/adding-gson-to-android-json-parser-comparison/" target="_blank">JSON manipulation on Android</a> and the second one is <a href="https://github.com/eishay/jvm-serializers/wiki/" target="_blank">thorough serialization test focused on different use-cases</a> than I had. So I decided to write my own microbenchmark copying the use-case I had in the production.</p>
+<p>There are many differencies among JSON libraries regarding their features and resulting performance. So if you want to know my findings continue reading ...</p>
+<p><a id="more"></a><a id="more-1824"></a></p>
+<h2>Benchmarks (2012-03-18)</h2>
+<p>Tested use case is a serialization of a rich POJO with collection of inner POJOs referencing another POJO (see PhotoAlbum model object). Tested JSON parser must have direct POJO to JSON serialization and deserialization support in order to get into the suite. I've used all libraries by same naive approach - grab it and use it the simpliest way possible. No tweaking, no optimalizing whatsoever (that's the way they are usually used). Average size of generated JSON data is 160KB, so it is rather big. The problem in production was caused by data of 33KB size in my case.</p>
+<p><strong>Disclaimer</strong> microbenchmarking results may be misleading - if you want to be sure write your own tests, with your custom data on your hardware to be really sure.</p>
+<h3>Update 2012-03-18</h3>
+<p>I've added new tests for Staxon - with three different serialization factories - internal, GSon and Jackson. New section added. I've re-run all the tests and updated the numbers.</p>
+<h3>Setup</h3>
+<p><strong>Hardware:</strong> Intel® Core™2 Duo CPU T7500 @ 2.20GHz × 2, SSD disk (but File IO time is not counted)<br />
+<strong>Software:</strong> Java(TM) SE Runtime Environment (build 1.6.0_23-b05), Java HotSpot(TM) Server VM on Ubuntu Linux 11.10 32-bit<br />
+<strong>JVM options:</strong> -Xmx32m -server</p>
+<p>Data value being tested: <a href="https://github.com/novoj/JavaJsonPerformanceTest/blob/master/src/main/java/org/novoj/json/model/PhotoAlbum.java" target="_blank">PhotoAlbum</a>.</p>
+<h3>Methodology:</h3>
+<p>Before taking measurements I warmed things up by running the task 250 times, next 3000 loops are counted. No other operations except the serialization or deserialization is measured. Finally average execution time is taken for each operation and library. I ran tests as a full suite and separately by each library - but the results didn't differ much.</p>
+<p>Tested libraries and their versions:</p>
+<ol>
+<li>FlexJson (2.1)</li>
+<li>GSon (2.1)</li>
+<li>Jackson (2.0.4)</li>
+<li>JsonLib (2.4)</li>
+<li>JsonMarshaller (0.21)</li>
+<li>JsonSmart (2.0-beta2)</li>
+<li>Protostuff JSON (1.0.4)</li>
+<li>XStream (1.4.2)</li>
+<li>Staxon (1.0)</li>
+</ol>
+<p>Testing code is placed on GitHub: <a href="https://github.com/novoj/JavaJsonPerformanceTest" target="_blank">https://github.com/novoj/JavaJsonPerformanceTest</a></p>
+<h2>Results and comments</h2>
+<h3><a href="http://flexjson.sourceforge.net/" target="_blank">FlexJson</a></h3>
+<p>There are a few catches when using this library. In order to serialize POJO right you have to exclude serialization of a class property deep-wise and include serialization of collections as they are not serialized by default. Library has neither problems with Date handling nor with using generated Groovy classes. I haven't noticed any support for resolution of circular references. Library is easily reachable in maven repos. Main advantage of this library according authors is ability to pick and choose specific properties and structures that should be converted to/from JSON.</p>
+<p><strong>Serialization:</strong> 5.978ms / 1 PhotoAlbum, JSON file size 165KB<br />
+<strong>Deserialization:</strong> 14.314ms / 1 PhotoAlbum</p>
+<h3><a href="http://code.google.com/p/google-gson/" target="_blank">GSon</a></h3>
+<p>It's very sophisticated and configurable library - it supports versioning, custom handlers and instantiation factories, exclusion of certain properties, custom naming. Library is super easy to use with good documentation. I haven't noticed any support for resolution of circular references, handling Groovy classes or Date objects. Library is easily reachable in maven repos.</p>
+<p><strong>Serialization:</strong> 5.11ms / 1 PhotoAlbum, JSON file size 169KB<br />
+<strong>Deserialization:</strong> 9.396667ms / 1 PhotoAlbum</p>
+<h3><a href="http://jackson.codehaus.org/" target="_blank">Jackson</a></h3>
+<p>It claims to be a fastest Java JSON library among all - and according to my statistics - they are quite right. Even then it has very rich feature set that exceeds what is provided by GSon (but no versioning support out of the box). It is super easy to use, it has native support for Dates (and JodaTime too!).</p>
+<p><strong>Serialization:</strong> 1.291ms / 1 PhotoAlbum, JSON file size 165KB<br />
+<strong>Deserialization:</strong> 1.588ms / 1 PhotoAlbum</p>
+<h3><a href="http://json-lib.sourceforge.net/" target="_blank">JSON-Lib</a></h3>
+<p>This library is very configurable but has some glitches - for example deserializing of Date objects doesn't work out of the box and you have to provide type handlers. It has several strategies how to cope with circular referencies. Very good documentation is provided and it has integration with Groovy. It is easily reachable from maven repos (but beware you have to provide classifier=jdk15). This library burned me at the production - as you can see it has really bad performance stats.</p>
+<p><strong>Serialization:</strong> 17.592ms / 1 PhotoAlbum, JSON file size 168KB<br />
+<strong>Deserialization:</strong> 92.248ms / 1 PhotoAlbum</p>
+<h3><a href="http://code.google.com/p/jsonmarshaller/" target="_blank">JsonMarshaller</a></h3>
+<p>It has problems with serialization / deserialization of Groovy objects (throws exception regarding ASM). It has no Date support built-in. It requires you to place annotations into your model (or DTO) classes that might be rather uncomfortable (and maybe unacceptable) in some cases. Documentation is quite poor. It is not placed in Maven repos.</p>
+<p><strong>Serialization:</strong> 3.8146667ms / 1 PhotoAlbum, JSON file size 165KB<br />
+<strong>Deserialization:</strong> 6.125ms / 1 PhotoAlbum</p>
+<h3><a href="http://code.google.com/p/json-smart/" target="_blank">Json Smart</a></h3>
+<p>This library is very simplistic and small - POJO deserialization comes first in version 2, which is currently in beta. Almost nothing is configurable, documentation is poor. Library is not reachable in Maven repos. It's not currently possible to deserialize Date objects, more than that there is no configurable option to add custom type handler, so that deserialization of object containing date is not possible at all.</p>
+<p><strong>Serialization:</strong> 4.026ms / 1 PhotoAlbum, JSON file size 172KB<br />
+<strong>Deserialization:</strong> -</p>
+<h3><a href="http://code.google.com/p/protostuff/" target="_blank">Protostuff - JSON</a></h3>
+<p>Powerful library requiring rather complicated setup when not using RuntimeSchema generator. In standard setup I believe library is used to do much more stuff than I've used it for. JSON transformations are just piece of work it can do (it can convert to YAML, XML and more). It had no problems with Date objects and Groovy classes. Library is accessible in Maven repos.</p>
+<p><strong>Serialization:</strong> 1.9116666ms / 1 PhotoAlbum, JSON file size 165KB<br />
+<strong>Deserialization:</strong> 1.2213334ms / 1 PhotoAlbum</p>
+<h3><a href="http://xstream.codehaus.org/" target="_blank">XStream</a></h3>
+<p>Library formerly used to serialize and deserialize to / from XML internally using <a href="http://jettison.codehaus.org/" target="_blank">Jettison</a> to transfrom data to / from JSON. It is easy to use, highly customizable and supports resolution of circular references. Library handles Date objects out of the box, it has no problem with Groovy classes and is placed in Maven repos.</p>
+<p><strong>Serialization:</strong> 76.84967ms / 1 PhotoAlbum, JSON file size 171KB<br />
+<strong>Deserialization:</strong> 26.361ms / 1 PhotoAlbum</p>
+<h3><a href="https://github.com/beckchr/staxon/wiki/" target="_blank">Staxon</a></h3>
+<p>Staxon aims primarily on the streaming API and presented use-case is not its primary kind of targeted usage. Nevertheless I was asked in the commentaries section to add some tests for this library so I did so. Staxon seems very easy to use, very well documented. It handles Date objects out of the box and is placed in Maven repos. It's performance is not one of the best - seems rather average for the use-case tested, but remember - when using streaming style or reading / writing results might be different.</p>
+<p><strong>Staxon over GSon</strong><br />
+<strong>Serialization:</strong> 7.510667ms / 1 PhotoAlbum, JSON file size 176KB<br />
+<strong>Deserialization:</strong> 12.171ms / 1 PhotoAlbum</p>
+<p><strong>Staxon over Jackson</strong><br />
+<strong>Serialization:</strong> 4.8446665ms / 1 PhotoAlbum, JSON file size 176KB<br />
+<strong>Deserialization:</strong> 11.099ms / 1 PhotoAlbum</p>
+<p><strong>Staxon default implementation</strong><br />
+<strong>Serialization:</strong> 6.3436666ms / 1 PhotoAlbum, JSON file size 176KB<br />
+<strong>Deserialization:</strong> 15.087ms / 1 PhotoAlbum</p>
+<h3><a href="https://github.com/AlibabaTech/fastjson/wiki" target="_blank">Fastjson</a></h3>
+<p>Young library (since mid 2011) that performs really fast. It dynamically creates specific serializer / deserializer class using ASM for each custom POJO type. It has considerable <a href="https://github.com/AlibabaTech/fastjson/blob/master/src/main/java/com/alibaba/fastjson/serializer/SerializerFeature.java" target="_blank">amount of processing features</a> though not very well documented. Documentation as a whole is very poor but as long as it works you are safe to go. Library handles Date objects out of the box, it has no problem with Groovy classes and is placed in Maven repos.</p>
+<p><strong>Serialization:</strong> 1.88ms / 1 PhotoAlbum, JSON file size 165KB<br />
+<strong>Deserialization:</strong> 1.02ms / 1 PhotoAlbum</p>
+<h3>Summary</h3>
+<p>All stats are clearly comparable on the following graph:</p>
+<p><img src="https://docs.google.com/spreadsheet/oimg?key=0AqgjPgS28rtndFo0RnpOR2Zsckg5S2xUcVFDZlFMM2c&amp;oid=1&amp;zx=rwrcgsbcamwp" alt="" /></p>
+<p>My conclusion is that when you need easily serialize / deserialize Java POJOs without sacrificing performance and have some backup in terms of extensibility and configurability you should choose Jackson, Fastjson or GSon library. Jackson is my winner and I am going to migrate all of my code to this one. Any comments and thoughts are appreciated (and remember this is only microbenchmark so make tests for your own use-cases if you want to be 100% sure)!</p>
+<p><strong>Update 8/2012</strong> Fastjson tests was added - it placed itself among the best performing libraries. Serialization is slightly worse than Jackson but in deserialization it is the clear winner.</p>
+
+		</div>
+	</article>
+</main>
+
+<div class="authorbox clearfix">
+	<figure class="authorbox__avatar">
+		<img alt="Jan Novotný avatar" src="/img/novoj.png" class="avatar" height="90" width="90">
+	</figure>
+	<div class="authorbox__header">
+		<span class="authorbox__name">O autorovi: Jan Novotný</span>
+	</div>
+	<div class="authorbox__description">
+		Alias Novoj. Vývojář v FG Forrest, autor Kafemlejnek.TV, spoluorganizátor jOpenSpace ne-konference.
+	</div>
+</div>
+
+
+<section class="comments">
+	<h3>Komentáře</h3>
+		<div>
+			<span class="comment_author">Comment j&amp;rsquo;ai battu CORBA | OCTO talks !</span>
+			<span class="comment_time">
+				<svg class="meta__icon icon icon-time" width="10" height="10" viewBox="0 0 16 16"><path d="m8-.0000003c-4.4 0-8 3.6-8 8 0 4.4000003 3.6 8.0000003 8 8.0000003 4.4 0 8-3.6 8-8.0000003 0-4.4-3.6-8-8-8zm0 14.4000003c-3.52 0-6.4-2.88-6.4-6.4000003 0-3.52 2.88-6.4 6.4-6.4 3.52 0 6.4 2.88 6.4 6.4 0 3.5200003-2.88 6.4000003-6.4 6.4000003zm.4-10.4000003h-1.2v4.8l4.16 2.5600003.64-1.04-3.6-2.1600003z"/></svg>
+				<time class="meta__text" datetime="2014-12-22T19:20:37">22.12.2014 19:20</time>
+			</span>
+			<blockquote class="comment_content">[…] une sérialisation rapide :  Faisant confiance à la communauté, ainsi qu’à quelques benchmarks , je choisis de prendre Jackson comme parseur JSON. (Par la suite des essais avec boon ou […]</blockquote>
+		</div>
+		<div>
+			<span class="comment_author">JSON y Java: Introducción a Gson | danielme.com</span>
+			<span class="comment_time">
+				<svg class="meta__icon icon icon-time" width="10" height="10" viewBox="0 0 16 16"><path d="m8-.0000003c-4.4 0-8 3.6-8 8 0 4.4000003 3.6 8.0000003 8 8.0000003 4.4 0 8-3.6 8-8.0000003 0-4.4-3.6-8-8-8zm0 14.4000003c-3.52 0-6.4-2.88-6.4-6.4000003 0-3.52 2.88-6.4 6.4-6.4 3.52 0 6.4 2.88 6.4 6.4 0 3.5200003-2.88 6.4000003-6.4 6.4000003zm.4-10.4000003h-1.2v4.8l4.16 2.5600003.64-1.04-3.6-2.1600003z"/></svg>
+				<time class="meta__text" datetime="2013-07-11T19:12:25">11.7.2013 19:12</time>
+			</span>
+			<blockquote class="comment_content">[&hellip;] si necesitamos optimizar al máximo los procesos que impliquen estas coversiones entre Java y JSON. Aquí hay un benchmark muy interesante sobre varias librerias de parseo en las que Gson no sale mal [&hellip;]</blockquote>
+		</div>
+		<div>
+			<span class="comment_author">JSON Parser &amp;laquo; Peace be with you</span>
+			<span class="comment_time">
+				<svg class="meta__icon icon icon-time" width="10" height="10" viewBox="0 0 16 16"><path d="m8-.0000003c-4.4 0-8 3.6-8 8 0 4.4000003 3.6 8.0000003 8 8.0000003 4.4 0 8-3.6 8-8.0000003 0-4.4-3.6-8-8-8zm0 14.4000003c-3.52 0-6.4-2.88-6.4-6.4000003 0-3.52 2.88-6.4 6.4-6.4 3.52 0 6.4 2.88 6.4 6.4 0 3.5200003-2.88 6.4000003-6.4 6.4000003zm.4-10.4000003h-1.2v4.8l4.16 2.5600003.64-1.04-3.6-2.1600003z"/></svg>
+				<time class="meta__text" datetime="2012-10-31T23:03:37">31.10.2012 23:03</time>
+			</span>
+			<blockquote class="comment_content">[&hellip;] <a href="http://blog.novoj.net/2012/02/05/json-java-parsers-generators-microbenchmark/">http://blog.novoj.net/2012/02/05/json-java-parsers-generators-microbenchmark/</a> [&hellip;]</blockquote>
+		</div>
+		<div>
+			<span class="comment_author">ryu</span>
+			<span class="comment_time">
+				<svg class="meta__icon icon icon-time" width="10" height="10" viewBox="0 0 16 16"><path d="m8-.0000003c-4.4 0-8 3.6-8 8 0 4.4000003 3.6 8.0000003 8 8.0000003 4.4 0 8-3.6 8-8.0000003 0-4.4-3.6-8-8-8zm0 14.4000003c-3.52 0-6.4-2.88-6.4-6.4000003 0-3.52 2.88-6.4 6.4-6.4 3.52 0 6.4 2.88 6.4 6.4 0 3.5200003-2.88 6.4000003-6.4 6.4000003zm.4-10.4000003h-1.2v4.8l4.16 2.5600003.64-1.04-3.6-2.1600003z"/></svg>
+				<time class="meta__text" datetime="2012-09-20T15:40:37">20.9.2012 15:40</time>
+			</span>
+			<blockquote class="comment_content"><p>Try this solution in very easy way, copy and paste service or website URL and then click go</p>
+<p><a href="http://www.maya-wizard.com/services/json2java.php">http://www.maya-wizard.com/services/json2java.php</a></p>
+</blockquote>
+		</div>
+		<div>
+			<span class="comment_author">Cowtowncoder</span>
+			<span class="comment_time">
+				<svg class="meta__icon icon icon-time" width="10" height="10" viewBox="0 0 16 16"><path d="m8-.0000003c-4.4 0-8 3.6-8 8 0 4.4000003 3.6 8.0000003 8 8.0000003 4.4 0 8-3.6 8-8.0000003 0-4.4-3.6-8-8-8zm0 14.4000003c-3.52 0-6.4-2.88-6.4-6.4000003 0-3.52 2.88-6.4 6.4-6.4 3.52 0 6.4 2.88 6.4 6.4 0 3.5200003-2.88 6.4000003-6.4 6.4000003zm.4-10.4000003h-1.2v4.8l4.16 2.5600003.64-1.04-3.6-2.1600003z"/></svg>
+				<time class="meta__text" datetime="2012-08-08T01:11:09">8.8.2012 01:11</time>
+			</span>
+			<blockquote class="comment_content"><p>Good to see FastJSON included too &ndash; it is definitely fast, as name implies (which is not always the case with new libs).</p>
+<p>One other thing that&rsquo;d be nice to test if you happen to have time is Jackson Afterburner module from:</p>
+<p><a href="https://github.com/FasterXML/jackson-module-afterburner">https://github.com/FasterXML/jackson-module-afterburner</a></p>
+<p>which speeds up Jackson serialization and deserialization a bit, by using dynamic byte code generation.</p>
+</blockquote>
+		</div>
+		<div>
+			<span class="comment_author">Otec Fura</span>
+			<span class="comment_time">
+				<svg class="meta__icon icon icon-time" width="10" height="10" viewBox="0 0 16 16"><path d="m8-.0000003c-4.4 0-8 3.6-8 8 0 4.4000003 3.6 8.0000003 8 8.0000003 4.4 0 8-3.6 8-8.0000003 0-4.4-3.6-8-8-8zm0 14.4000003c-3.52 0-6.4-2.88-6.4-6.4000003 0-3.52 2.88-6.4 6.4-6.4 3.52 0 6.4 2.88 6.4 6.4 0 3.5200003-2.88 6.4000003-6.4 6.4000003zm.4-10.4000003h-1.2v4.8l4.16 2.5600003.64-1.04-3.6-2.1600003z"/></svg>
+				<time class="meta__text" datetime="2012-08-04T20:53:45">4.8.2012 20:53</time>
+			</span>
+			<blockquote class="comment_content">Update 8/2012: Fastjson tests was added – it placed itself among the best performing libraries. Serialization is slightly worse than Jackson but in deserialization it is the clear winner.</blockquote>
+		</div>
+		<div>
+			<span class="comment_author">wenshao</span>
+			<span class="comment_time">
+				<svg class="meta__icon icon icon-time" width="10" height="10" viewBox="0 0 16 16"><path d="m8-.0000003c-4.4 0-8 3.6-8 8 0 4.4000003 3.6 8.0000003 8 8.0000003 4.4 0 8-3.6 8-8.0000003 0-4.4-3.6-8-8-8zm0 14.4000003c-3.52 0-6.4-2.88-6.4-6.4000003 0-3.52 2.88-6.4 6.4-6.4 3.52 0 6.4 2.88 6.4 6.4 0 3.5200003-2.88 6.4000003-6.4 6.4000003zm.4-10.4000003h-1.2v4.8l4.16 2.5600003.64-1.04-3.6-2.1600003z"/></svg>
+				<time class="meta__text" datetime="2012-08-03T01:30:25">3.8.2012 01:30</time>
+			</span>
+			<blockquote class="comment_content"><p>fastjson support POJO, it&rsquo;s api very simple:</p>
+<p>serialize API : JSON.toJSONString(obj);
+deserialize API : VO vo = JSON.parseObject(&quot;&hellip;&quot;, VO.class);</p>
+</blockquote>
+		</div>
+		<div>
+			<span class="comment_author">Otec Fura</span>
+			<span class="comment_time">
+				<svg class="meta__icon icon icon-time" width="10" height="10" viewBox="0 0 16 16"><path d="m8-.0000003c-4.4 0-8 3.6-8 8 0 4.4000003 3.6 8.0000003 8 8.0000003 4.4 0 8-3.6 8-8.0000003 0-4.4-3.6-8-8-8zm0 14.4000003c-3.52 0-6.4-2.88-6.4-6.4000003 0-3.52 2.88-6.4 6.4-6.4 3.52 0 6.4 2.88 6.4 6.4 0 3.5200003-2.88 6.4000003-6.4 6.4000003zm.4-10.4000003h-1.2v4.8l4.16 2.5600003.64-1.04-3.6-2.1600003z"/></svg>
+				<time class="meta__text" datetime="2012-08-02T17:06:37">2.8.2012 17:06</time>
+			</span>
+			<blockquote class="comment_content"><p>If it supports POJO serialization and deserialization I would add it when have some spare time. According to docs it is supposed to work with POJOs.</p>
+<p>Or you can make benchmark test on your own and create a pull request. Thanks for suggestion.</p>
+</blockquote>
+		</div>
+		<div>
+			<span class="comment_author">wenshao</span>
+			<span class="comment_time">
+				<svg class="meta__icon icon icon-time" width="10" height="10" viewBox="0 0 16 16"><path d="m8-.0000003c-4.4 0-8 3.6-8 8 0 4.4000003 3.6 8.0000003 8 8.0000003 4.4 0 8-3.6 8-8.0000003 0-4.4-3.6-8-8-8zm0 14.4000003c-3.52 0-6.4-2.88-6.4-6.4000003 0-3.52 2.88-6.4 6.4-6.4 3.52 0 6.4 2.88 6.4 6.4 0 3.5200003-2.88 6.4000003-6.4 6.4000003zm.4-10.4000003h-1.2v4.8l4.16 2.5600003.64-1.04-3.6-2.1600003z"/></svg>
+				<time class="meta__text" datetime="2012-08-02T13:28:39">2.8.2012 13:28</time>
+			</span>
+			<blockquote class="comment_content">fastjson hosting in github: 
+<a href="https://github.com/AlibabaTech/fastjson">https://github.com/AlibabaTech/fastjson</a></blockquote>
+		</div>
+		<div>
+			<span class="comment_author">wenshao</span>
+			<span class="comment_time">
+				<svg class="meta__icon icon icon-time" width="10" height="10" viewBox="0 0 16 16"><path d="m8-.0000003c-4.4 0-8 3.6-8 8 0 4.4000003 3.6 8.0000003 8 8.0000003 4.4 0 8-3.6 8-8.0000003 0-4.4-3.6-8-8-8zm0 14.4000003c-3.52 0-6.4-2.88-6.4-6.4000003 0-3.52 2.88-6.4 6.4-6.4 3.52 0 6.4 2.88 6.4 6.4 0 3.5200003-2.88 6.4000003-6.4 6.4000003zm.4-10.4000003h-1.2v4.8l4.16 2.5600003.64-1.04-3.6-2.1600003z"/></svg>
+				<time class="meta__text" datetime="2012-08-02T13:27:45">2.8.2012 13:27</time>
+			</span>
+			<blockquote class="comment_content"><p>why not include fastjson?</p>
+<p><a href="https://github.com/eishay/jvm-serializers/wiki/Staging-Results">https://github.com/eishay/jvm-serializers/wiki/Staging-Results</a></p>
+<p>fastjson faster than jackson, it&rsquo;s fast!</p>
+</blockquote>
+		</div>
+		<div>
+			<span class="comment_author">Cowtowncoder</span>
+			<span class="comment_time">
+				<svg class="meta__icon icon icon-time" width="10" height="10" viewBox="0 0 16 16"><path d="m8-.0000003c-4.4 0-8 3.6-8 8 0 4.4000003 3.6 8.0000003 8 8.0000003 4.4 0 8-3.6 8-8.0000003 0-4.4-3.6-8-8-8zm0 14.4000003c-3.52 0-6.4-2.88-6.4-6.4000003 0-3.52 2.88-6.4 6.4-6.4 3.52 0 6.4 2.88 6.4 6.4 0 3.5200003-2.88 6.4000003-6.4 6.4000003zm.4-10.4000003h-1.2v4.8l4.16 2.5600003.64-1.04-3.6-2.1600003z"/></svg>
+				<time class="meta__text" datetime="2012-03-27T23:42:38">27.3.2012 23:42</time>
+			</span>
+			<blockquote class="comment_content">Your findings are odd, because using POJOs should be faster than HashMaps, not slower. HashMaps have higher overhead than basic Java objects (due to key/value lookups), use up more memory, so their use does not make much sense to me for high-performance use cases.
+POJO binding is definitely faster than Maps with Jackson, at any rate. I have not found json-smart particularly fast &ndash; it appears to be medium speed (see [https://github.com/eishay/jvm-serializers/wiki]), which is good enough for many use cases.</blockquote>
+		</div>
+		<div>
+			<span class="comment_author">Otec Fura</span>
+			<span class="comment_time">
+				<svg class="meta__icon icon icon-time" width="10" height="10" viewBox="0 0 16 16"><path d="m8-.0000003c-4.4 0-8 3.6-8 8 0 4.4000003 3.6 8.0000003 8 8.0000003 4.4 0 8-3.6 8-8.0000003 0-4.4-3.6-8-8-8zm0 14.4000003c-3.52 0-6.4-2.88-6.4-6.4000003 0-3.52 2.88-6.4 6.4-6.4 3.52 0 6.4 2.88 6.4 6.4 0 3.5200003-2.88 6.4000003-6.4 6.4000003zm.4-10.4000003h-1.2v4.8l4.16 2.5600003.64-1.04-3.6-2.1600003z"/></svg>
+				<time class="meta__text" datetime="2012-03-18T09:36:26">18.3.2012 09:36</time>
+			</span>
+			<blockquote class="comment_content">Staxon tests were finally added. I had some issues with switching serialization/deserialization factory in runtime. It seems library is optimized for choosing one factory at the start of the application and never change it (what is rather common usage I suppose).</blockquote>
+		</div>
+		<div>
+			<span class="comment_author">Kazuaki Maeda</span>
+			<span class="comment_time">
+				<svg class="meta__icon icon icon-time" width="10" height="10" viewBox="0 0 16 16"><path d="m8-.0000003c-4.4 0-8 3.6-8 8 0 4.4000003 3.6 8.0000003 8 8.0000003 4.4 0 8-3.6 8-8.0000003 0-4.4-3.6-8-8-8zm0 14.4000003c-3.52 0-6.4-2.88-6.4-6.4000003 0-3.52 2.88-6.4 6.4-6.4 3.52 0 6.4 2.88 6.4 6.4 0 3.5200003-2.88 6.4000003-6.4 6.4000003zm.4-10.4000003h-1.2v4.8l4.16 2.5600003.64-1.04-3.6-2.1600003z"/></svg>
+				<time class="meta__text" datetime="2012-02-22T02:36:44">22.2.2012 02:36</time>
+			</span>
+			<blockquote class="comment_content"><p>I have read your source code in groovy. Thank you.</p>
+<p>In org/novoj/json/transformer/protostuff/ProtostuffIO.groovy, you wrote
+JsonIOUtil.writeTo(out, photoAlbum, schema, true)
+This statement serializes attribute names in numeric, for example,
+{
+&ldquo;1&rdquo;:1,
+&ldquo;2&rdquo;:&ldquo;John Doe&rdquo;,
+&ldquo;3&rdquo;:&ldquo;Speed kills!&rdquo;,
+&ldquo;4&rdquo;:1
+}
+If you changed it to
+JsonIOUtil.writeTo(out, photoAlbum, schema, false)
+, the code serializes them in alphabetic,
+{
+&ldquo;id&rdquo;:1,
+&ldquo;name&rdquo;:&ldquo;John Doe&rdquo;,
+&ldquo;motto&rdquo;:&ldquo;Speed kills!&rdquo;,
+&ldquo;gender&rdquo;:1
+}
+This is a small thing, but I prefer the latter(false) to the former(true).</p>
+<p>And I would like to know about your information in English.
+I can not read your mother language :-&lt;
+When I write technical documents, I would like to your name in acknowledgements.
+I wrote my contact information in my web page,
+<a href="http://www.rugson.org/">http://www.rugson.org/</a>
+Could you send email to me, please.
+Thank you very much.</p>
+</blockquote>
+		</div>
+		<div>
+			<span class="comment_author">Otec Fura</span>
+			<span class="comment_time">
+				<svg class="meta__icon icon icon-time" width="10" height="10" viewBox="0 0 16 16"><path d="m8-.0000003c-4.4 0-8 3.6-8 8 0 4.4000003 3.6 8.0000003 8 8.0000003 4.4 0 8-3.6 8-8.0000003 0-4.4-3.6-8-8-8zm0 14.4000003c-3.52 0-6.4-2.88-6.4-6.4000003 0-3.52 2.88-6.4 6.4-6.4 3.52 0 6.4 2.88 6.4 6.4 0 3.5200003-2.88 6.4000003-6.4 6.4000003zm.4-10.4000003h-1.2v4.8l4.16 2.5600003.64-1.04-3.6-2.1600003z"/></svg>
+				<time class="meta__text" datetime="2012-02-16T08:20:41">16.2.2012 08:20</time>
+			</span>
+			<blockquote class="comment_content"><p>Some more detail benchmarks are located at <a href="https://github.com/eishay/jvm-serializers/wiki/">https://github.com/eishay/jvm-serializers/wiki/</a> (that I referenced in the article perex). But there are many approaches that could be tested - I took only one of them (POJO related).</p>
+<p>Of course you can use my source codes and use it for you own experimenting. Everything at this blog is Creative Commons licensed, so do with it what you will. Sources are at GitHub so you can fork easily if you like.</p>
+<p>Sharing your results will be highly appreciated.</p>
+</blockquote>
+		</div>
+		<div>
+			<span class="comment_author">Kazuaki Maeda</span>
+			<span class="comment_time">
+				<svg class="meta__icon icon icon-time" width="10" height="10" viewBox="0 0 16 16"><path d="m8-.0000003c-4.4 0-8 3.6-8 8 0 4.4000003 3.6 8.0000003 8 8.0000003 4.4 0 8-3.6 8-8.0000003 0-4.4-3.6-8-8-8zm0 14.4000003c-3.52 0-6.4-2.88-6.4-6.4000003 0-3.52 2.88-6.4 6.4-6.4 3.52 0 6.4 2.88 6.4 6.4 0 3.5200003-2.88 6.4000003-6.4 6.4000003zm.4-10.4000003h-1.2v4.8l4.16 2.5600003.64-1.04-3.6-2.1600003z"/></svg>
+				<time class="meta__text" datetime="2012-02-16T07:17:30">16.2.2012 07:17</time>
+			</span>
+			<blockquote class="comment_content"><p>I&rsquo;m very interested in your work.</p>
+<p>I tried serialization benchmark last year.
+But the formats to serialize were XML and binary based.
+I would like to compare many approaches of object serialization from qualitative and quantitative aspects.</p>
+<p>Can I use your testing programs and the results in my benchmark?
+After finishing the experiments, I can open the results on my web site.</p>
+<p>Thank you.</p>
+</blockquote>
+		</div>
+		<div>
+			<span class="comment_author">sreenath v</span>
+			<span class="comment_time">
+				<svg class="meta__icon icon icon-time" width="10" height="10" viewBox="0 0 16 16"><path d="m8-.0000003c-4.4 0-8 3.6-8 8 0 4.4000003 3.6 8.0000003 8 8.0000003 4.4 0 8-3.6 8-8.0000003 0-4.4-3.6-8-8-8zm0 14.4000003c-3.52 0-6.4-2.88-6.4-6.4000003 0-3.52 2.88-6.4 6.4-6.4 3.52 0 6.4 2.88 6.4 6.4 0 3.5200003-2.88 6.4000003-6.4 6.4000003zm.4-10.4000003h-1.2v4.8l4.16 2.5600003.64-1.04-3.6-2.1600003z"/></svg>
+				<time class="meta__text" datetime="2012-02-12T20:41:04">12.2.2012 20:41</time>
+			</span>
+			<blockquote class="comment_content">Jackson for mobile device you can use minified jar which is ~134kb.
+Jackson mini doesn&rsquo;t support annotations and which off-course is fine for mobile devices.</blockquote>
+		</div>
+		<div>
+			<span class="comment_author">jesse wilson</span>
+			<span class="comment_time">
+				<svg class="meta__icon icon icon-time" width="10" height="10" viewBox="0 0 16 16"><path d="m8-.0000003c-4.4 0-8 3.6-8 8 0 4.4000003 3.6 8.0000003 8 8.0000003 4.4 0 8-3.6 8-8.0000003 0-4.4-3.6-8-8-8zm0 14.4000003c-3.52 0-6.4-2.88-6.4-6.4000003 0-3.52 2.88-6.4 6.4-6.4 3.52 0 6.4 2.88 6.4 6.4 0 3.5200003-2.88 6.4000003-6.4 6.4000003zm.4-10.4000003h-1.2v4.8l4.16 2.5600003.64-1.04-3.6-2.1600003z"/></svg>
+				<time class="meta__text" datetime="2012-02-12T04:43:56">12.2.2012 04:43</time>
+			</span>
+			<blockquote class="comment_content"><p>Source code? My measurements showed a closer race between Gson and Jackson.</p>
+<p>Don&rsquo;t forget that gson&rsquo;s jar is way smaller than Jackson&rsquo;s: The gson-2.1.jar is 176 Kib; this includes both streaming and binding. To do both 
+with Jackson you&rsquo;ll need 874 Kib in .jar files.</p>
+</blockquote>
+		</div>
+		<div>
+			<span class="comment_author">Otec Fura</span>
+			<span class="comment_time">
+				<svg class="meta__icon icon icon-time" width="10" height="10" viewBox="0 0 16 16"><path d="m8-.0000003c-4.4 0-8 3.6-8 8 0 4.4000003 3.6 8.0000003 8 8.0000003 4.4 0 8-3.6 8-8.0000003 0-4.4-3.6-8-8-8zm0 14.4000003c-3.52 0-6.4-2.88-6.4-6.4000003 0-3.52 2.88-6.4 6.4-6.4 3.52 0 6.4 2.88 6.4 6.4 0 3.5200003-2.88 6.4000003-6.4 6.4000003zm.4-10.4000003h-1.2v4.8l4.16 2.5600003.64-1.04-3.6-2.1600003z"/></svg>
+				<time class="meta__text" datetime="2012-02-10T09:35:33">10.2.2012 09:35</time>
+			</span>
+			<blockquote class="comment_content"><p>Staxon is focused on SAX like reading / writing and therefore I didn’t include it into the test suite in the first time. Test suite measures direct POJO serialization / deserialization and this is not main aim of the Staxon as I get it.</p>
+<p>After reading some docs I found out, that with combination with JaxB tags Staxson could be used for POJO serialization / deserialization so I’ll try to prepare a test for it. Check updates of this article please.</p>
+</blockquote>
+		</div>
+		<div>
+			<span class="comment_author">Pratik Parikh</span>
+			<span class="comment_time">
+				<svg class="meta__icon icon icon-time" width="10" height="10" viewBox="0 0 16 16"><path d="m8-.0000003c-4.4 0-8 3.6-8 8 0 4.4000003 3.6 8.0000003 8 8.0000003 4.4 0 8-3.6 8-8.0000003 0-4.4-3.6-8-8-8zm0 14.4000003c-3.52 0-6.4-2.88-6.4-6.4000003 0-3.52 2.88-6.4 6.4-6.4 3.52 0 6.4 2.88 6.4 6.4 0 3.5200003-2.88 6.4000003-6.4 6.4000003zm.4-10.4000003h-1.2v4.8l4.16 2.5600003.64-1.04-3.6-2.1600003z"/></svg>
+				<time class="meta__text" datetime="2012-02-09T18:23:27">9.2.2012 18:23</time>
+			</span>
+			<blockquote class="comment_content"><p>Can you also put <a href="https://github.com/beckchr/staxon/">https://github.com/beckchr/staxon/</a> in equation to tell us how it performs.  It seems like you have a set test that you running against all the api. It would really help to see how this new api performances in compare to Jackson.  I am personally a fan of Jackson and their implementation but like the concept being staxon  and the conversion capability in place between xml and json.</p>
+<p>Thanks for sharing</p>
+</blockquote>
+		</div>
+		<div>
+			<span class="comment_author">Otec Fura</span>
+			<span class="comment_time">
+				<svg class="meta__icon icon icon-time" width="10" height="10" viewBox="0 0 16 16"><path d="m8-.0000003c-4.4 0-8 3.6-8 8 0 4.4000003 3.6 8.0000003 8 8.0000003 4.4 0 8-3.6 8-8.0000003 0-4.4-3.6-8-8-8zm0 14.4000003c-3.52 0-6.4-2.88-6.4-6.4000003 0-3.52 2.88-6.4 6.4-6.4 3.52 0 6.4 2.88 6.4 6.4 0 3.5200003-2.88 6.4000003-6.4 6.4000003zm.4-10.4000003h-1.2v4.8l4.16 2.5600003.64-1.04-3.6-2.1600003z"/></svg>
+				<time class="meta__text" datetime="2012-02-06T20:08:17">6.2.2012 20:08</time>
+			</span>
+			<blockquote class="comment_content">Oh well, that&rsquo;s nasty. I haven&rsquo;t run at this issue yet. Thanks for sharing!</blockquote>
+		</div>
+		<div>
+			<span class="comment_author">Steve Loughran</span>
+			<span class="comment_time">
+				<svg class="meta__icon icon icon-time" width="10" height="10" viewBox="0 0 16 16"><path d="m8-.0000003c-4.4 0-8 3.6-8 8 0 4.4000003 3.6 8.0000003 8 8.0000003 4.4 0 8-3.6 8-8.0000003 0-4.4-3.6-8-8-8zm0 14.4000003c-3.52 0-6.4-2.88-6.4-6.4000003 0-3.52 2.88-6.4 6.4-6.4 3.52 0 6.4 2.88 6.4 6.4 0 3.5200003-2.88 6.4000003-6.4 6.4000003zm.4-10.4000003h-1.2v4.8l4.16 2.5600003.64-1.04-3.6-2.1600003z"/></svg>
+				<time class="meta__text" datetime="2012-02-06T18:20:44">6.2.2012 18:20</time>
+			</span>
+			<blockquote class="comment_content"><p>I had to rip all of jsonlib out last week as it seems to auto-parse strings beginning with &ldquo;[&rdquo; or &ldquo;{&rdquo; as json whenever you insert them into the object model, or attach a parent to another node.</p>
+<a href="http://steveloughran.blogspot.com/2012/02/just-because-you-can-rewrite-your.html" rel="nofollow">
+http://steveloughran.blogspot.com/2012/02/just-because-you-can-rewrite-your.html
+</a>
+<p>Try testing what the libs do with multiple entries of the same name; json-lib assumes you wanted an array of that name and aggregates them. similarly, see what rejects illegal JSON, such as unquoted keys: {illegal:true} or trailing commas. The authors think they are being helpful, but they are encouraging you to create invalid JSON.</p>
+</blockquote>
+		</div>
+		<div>
+			<span class="comment_author">Otec Fura</span>
+			<span class="comment_time">
+				<svg class="meta__icon icon icon-time" width="10" height="10" viewBox="0 0 16 16"><path d="m8-.0000003c-4.4 0-8 3.6-8 8 0 4.4000003 3.6 8.0000003 8 8.0000003 4.4 0 8-3.6 8-8.0000003 0-4.4-3.6-8-8-8zm0 14.4000003c-3.52 0-6.4-2.88-6.4-6.4000003 0-3.52 2.88-6.4 6.4-6.4 3.52 0 6.4 2.88 6.4 6.4 0 3.5200003-2.88 6.4000003-6.4 6.4000003zm.4-10.4000003h-1.2v4.8l4.16 2.5600003.64-1.04-3.6-2.1600003z"/></svg>
+				<time class="meta__text" datetime="2012-02-06T16:28:05">6.2.2012 16:28</time>
+			</span>
+			<blockquote class="comment_content"><p>Yes, I focused on POJO serialization / deserialization which is quite common in web space (IMHO). Though according to this stats:</p>
+<p><a href="https://github.com/eishay/jvm-serializers/wiki/">https://github.com/eishay/jvm-serializers/wiki/</a></p>
+<p>Json-Smart places itself in the middle of the performance chart. Maybe in some specific use-case it jumps up?</p>
+<p>If you have your tests somewhere public it might be interesting to other readers to study your use-case it they give different results.</p>
+</blockquote>
+		</div>
+		<div>
+			<span class="comment_author">Leo</span>
+			<span class="comment_time">
+				<svg class="meta__icon icon icon-time" width="10" height="10" viewBox="0 0 16 16"><path d="m8-.0000003c-4.4 0-8 3.6-8 8 0 4.4000003 3.6 8.0000003 8 8.0000003 4.4 0 8-3.6 8-8.0000003 0-4.4-3.6-8-8-8zm0 14.4000003c-3.52 0-6.4-2.88-6.4-6.4000003 0-3.52 2.88-6.4 6.4-6.4 3.52 0 6.4 2.88 6.4 6.4 0 3.5200003-2.88 6.4000003-6.4 6.4000003zm.4-10.4000003h-1.2v4.8l4.16 2.5600003.64-1.04-3.6-2.1600003z"/></svg>
+				<time class="meta__text" datetime="2012-02-06T15:58:36">6.2.2012 15:58</time>
+			</span>
+			<blockquote class="comment_content"><p>I did extensive testing of json parsers with really large json data sets (parsing alone) and we never use POJO because it is simply a speed bump. In my tests, no other parser matched the speed of smart-json which is available in maven in it&rsquo;s 1.0.9 version.</p>
+<p>Our use-case is slightly different though, we have to parse the json as fast as possible into managable hash maps to stay real-time.</p>
+</blockquote>
+		</div>
+		<div>
+			<span class="comment_author">geemang</span>
+			<span class="comment_time">
+				<svg class="meta__icon icon icon-time" width="10" height="10" viewBox="0 0 16 16"><path d="m8-.0000003c-4.4 0-8 3.6-8 8 0 4.4000003 3.6 8.0000003 8 8.0000003 4.4 0 8-3.6 8-8.0000003 0-4.4-3.6-8-8-8zm0 14.4000003c-3.52 0-6.4-2.88-6.4-6.4000003 0-3.52 2.88-6.4 6.4-6.4 3.52 0 6.4 2.88 6.4 6.4 0 3.5200003-2.88 6.4000003-6.4 6.4000003zm.4-10.4000003h-1.2v4.8l4.16 2.5600003.64-1.04-3.6-2.1600003z"/></svg>
+				<time class="meta__text" datetime="2012-02-06T14:09:43">6.2.2012 14:09</time>
+			</span>
+			<blockquote class="comment_content">It&rsquo;d be interesting to see how the JSON support in Groovy 1.8 measures up.</blockquote>
+		</div>
+		<div>
+			<span class="comment_author">Otec Fura</span>
+			<span class="comment_time">
+				<svg class="meta__icon icon icon-time" width="10" height="10" viewBox="0 0 16 16"><path d="m8-.0000003c-4.4 0-8 3.6-8 8 0 4.4000003 3.6 8.0000003 8 8.0000003 4.4 0 8-3.6 8-8.0000003 0-4.4-3.6-8-8-8zm0 14.4000003c-3.52 0-6.4-2.88-6.4-6.4000003 0-3.52 2.88-6.4 6.4-6.4 3.52 0 6.4 2.88 6.4 6.4 0 3.5200003-2.88 6.4000003-6.4 6.4000003zm.4-10.4000003h-1.2v4.8l4.16 2.5600003.64-1.04-3.6-2.1600003z"/></svg>
+				<time class="meta__text" datetime="2012-02-06T12:41:11">6.2.2012 12:41</time>
+			</span>
+			<blockquote class="comment_content"><p>Yes, you&rsquo;re right - in terms of performance Protostuff seems to be one of the best. But as I said in the beginning of the article:</p>
+<p>&ldquo;I’ve used all libraries by same naive approach – grab it and use it the simpliest way possible. No tweaking, no optimalizing whatsoever (that’s the way they are usually used).&rdquo;</p>
+<p>This library took me most time to integrate among all tested libraries, so I would recommend it for more serious work when you have time to study and try. For quick usage I wouldn&rsquo;t go that way because Jackson or GSon are performant enough and much easier to use.</p>
+</blockquote>
+		</div>
+		<div>
+			<span class="comment_author">Tomek Kaczanowski</span>
+			<span class="comment_time">
+				<svg class="meta__icon icon icon-time" width="10" height="10" viewBox="0 0 16 16"><path d="m8-.0000003c-4.4 0-8 3.6-8 8 0 4.4000003 3.6 8.0000003 8 8.0000003 4.4 0 8-3.6 8-8.0000003 0-4.4-3.6-8-8-8zm0 14.4000003c-3.52 0-6.4-2.88-6.4-6.4000003 0-3.52 2.88-6.4 6.4-6.4 3.52 0 6.4 2.88 6.4 6.4 0 3.5200003-2.88 6.4000003-6.4 6.4000003zm.4-10.4000003h-1.2v4.8l4.16 2.5600003.64-1.04-3.6-2.1600003z"/></svg>
+				<time class="meta__text" datetime="2012-02-06T11:46:09">6.2.2012 11:46</time>
+			</span>
+			<blockquote class="comment_content">So you do not recommend Protostuff JSON because it is harder to use than the competition, right?</blockquote>
+		</div>
+</section>
+
+			</div>
+			<aside class="sidebar"><div class="widget-search widget">
+	<form class="widget-search__form" role="search" method="get" action="https://google.com/search">
+		<label>
+			<input class="widget-search__field" type="search" placeholder="Hledej..." value="" name="q" aria-label="Hledej...">
+		</label>
+		<input class="widget-search__submit" type="submit" value="Search">
+		<input type="hidden" name="sitesearch" value="https://blog.novoj.net/" />
+	</form>
+</div>
+<div class="widget-recent widget">
+	<h4 class="widget__title">Poslední články</h4>
+	<div class="widget__content">
+		<ul class="widget__list">
+			<li class="widget__item"><a class="widget__link" href="/posts/2022-03-19-proxycian/">Proxycian</a></li>
+			<li class="widget__item"><a class="widget__link" href="/posts/2021-01-30-killing-monkey-tracker/">Zkušenosti MonkeyTracker projektu a jeho ukončení</a></li>
+			<li class="widget__item"><a class="widget__link" href="/posts/2020-09-11-open-source-software-in-fg/">Forresti publikují Open source software</a></li>
+			<li class="widget__item"><a class="widget__link" href="/posts/2019-09-14-logical-operations-over-matrices-of-sorted-numbers/">Logical operations over matrices of sorted numbers</a></li>
+			<li class="widget__item"><a class="widget__link" href="/posts/2019-08-27-about-e-commerce-filtering/">What lies on background of e-commerce site</a></li>
+			<li class="widget__item"><a class="widget__link" href="/posts/2019-05-05-pmptt/">Precalculated modified preorder tree traversal</a></li>
+			<li class="widget__item"><a class="widget__link" href="/posts/2019-03-19-kafemlnek-tv-42-netio-chytre-zasuvky-pro-prumysl/">Kafemlejnek.TV 42 – NETIO, chytré zásuvky pro průmysl (soutěž!)</a></li>
+			<li class="widget__item"><a class="widget__link" href="/posts/2019-01-15-kafemlejnek-tv-41-techniky-a-nastroje-kterymi-po-vas-hackeri-pujdou/">Kafemlejnek.TV 41 – Techniky a nástroje, kterými po Vás hackeři půjdou</a></li>
+			<li class="widget__item"><a class="widget__link" href="/posts/2019-01-20-thoughts-on-processes/">Zamyšlení nad procesy</a></li>
+			<li class="widget__item"><a class="widget__link" href="/posts/2019-01-15-kafemlejnek-tv-40-hacktrophy-bug-bounty-as-a-service/">Kafemlejnek.TV 40 – Hacktrophy, bug bounty as a service</a></li>
+		</ul>
+	</div>
+</div>
+<div class="widget-categories widget">
+	<h4 class="widget__title">Kategorie</h4>
+	<div class="widget__content">
+		<ul class="widget__list">
+			<li class="widget__item">
+				<a class="widget__link" href="/categories/android/">Android</a></li>
+			<li class="widget__item">
+				<a class="widget__link" href="/categories/bezpe%C4%8Dnost/">Bezpečnost</a></li>
+			<li class="widget__item">
+				<a class="widget__link" href="/categories/datab%C3%A1ze/">Databáze</a></li>
+			<li class="widget__item">
+				<a class="widget__link" href="/categories/devfest/">DevFest</a></li>
+			<li class="widget__item">
+				<a class="widget__link" href="/categories/english/">English</a></li>
+			<li class="widget__item">
+				<a class="widget__link" href="/categories/geecon/">GeeCON</a></li>
+			<li class="widget__item">
+				<a class="widget__link" href="/categories/groovy/">Groovy</a></li>
+			<li class="widget__item">
+				<a class="widget__link" href="/categories/hackathon/">Hackathon</a></li>
+			<li class="widget__item">
+				<a class="widget__link" href="/categories/ibatis/">iBatis</a></li>
+			<li class="widget__item">
+				<a class="widget__link" href="/categories/intellij-idea/">IntelliJ Idea</a></li>
+			<li class="widget__item">
+				<a class="widget__link" href="/categories/java/">Java</a></li>
+			<li class="widget__item">
+				<a class="widget__link" href="/categories/java-softwarov%C3%A9-n%C3%A1stroje-programov%C3%A1n%C3%AD-programming/">Java, Softwarové nástroje, Programování, Programming</a></li>
+			<li class="widget__item">
+				<a class="widget__link" href="/categories/javascript/">JavaScript</a></li>
+			<li class="widget__item">
+				<a class="widget__link" href="/categories/jopenspace/">jOpenSpace</a></li>
+			<li class="widget__item">
+				<a class="widget__link" href="/categories/linux/">Linux</a></li>
+			<li class="widget__item">
+				<a class="widget__link" href="/categories/management/">Management</a></li>
+			<li class="widget__item">
+				<a class="widget__link" href="/categories/management-%C3%BAvahy/">Management, Úvahy</a></li>
+			<li class="widget__item">
+				<a class="widget__link" href="/categories/maven/">Maven</a></li>
+			<li class="widget__item">
+				<a class="widget__link" href="/categories/mongodb/">MongoDB</a></li>
+			<li class="widget__item">
+				<a class="widget__link" href="/categories/monkeytracker/">MonkeyTracker</a></li>
+			<li class="widget__item">
+				<a class="widget__link" href="/categories/neza%C5%99azen%C3%A9/">Nezařazené</a></li>
+			<li class="widget__item">
+				<a class="widget__link" href="/categories/podcast/">Podcast</a></li>
+			<li class="widget__item">
+				<a class="widget__link" href="/categories/programming/">Programming</a></li>
+			<li class="widget__item">
+				<a class="widget__link" href="/categories/programov%C3%A1n%C3%AD/">Programování</a></li>
+			<li class="widget__item">
+				<a class="widget__link" href="/categories/report%C3%A1%C5%BEe/">Reportáže</a></li>
+			<li class="widget__item">
+				<a class="widget__link" href="/categories/selenium/">Selenium</a></li>
+			<li class="widget__item">
+				<a class="widget__link" href="/categories/softwarov%C3%A9-n%C3%A1stroje/">Softwarové nástroje</a></li>
+			<li class="widget__item">
+				<a class="widget__link" href="/categories/spring-framework/">Spring Framework</a></li>
+			<li class="widget__item">
+				<a class="widget__link" href="/categories/stripes/">Stripes</a></li>
+			<li class="widget__item">
+				<a class="widget__link" href="/categories/teamcity/">TeamCity</a></li>
+			<li class="widget__item">
+				<a class="widget__link" href="/categories/testov%C3%A1n%C3%AD/">Testování</a></li>
+			<li class="widget__item">
+				<a class="widget__link" href="/categories/user-experience/">User Experience</a></li>
+			<li class="widget__item">
+				<a class="widget__link" href="/categories/web/">Web</a></li>
+			<li class="widget__item">
+				<a class="widget__link" href="/categories/webexpo/">WebExpo</a></li>
+			<li class="widget__item">
+				<a class="widget__link" href="/categories/%C3%BAvahy/">Úvahy</a></li>
+		</ul>
+	</div>
+</div><div style="text-align: center">
+	<a href="http://www.webarchiv.cz/files/vydavatele/certifikat.html"
+	   onclick="return !window.open(this, 'kod', 'toolbar=no, menubar=no, directories=no, resizable=yes, status=no, , , top=200, left=50')">
+		<img title="STRÁNKY ARCHIVOVÁNY NÁRODNÍ KNIHOVNOU ČR" style="border:none; margin-top: 10px;"
+			oncontextmenu="return false"
+			src="https://blog.novoj.net/files/webarchiv_certifikat_cb_inverse.gif" width="150" height="150"></a>
+</div>
+<div style="text-align: center; margin-top: 1em;">
+	<a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+		<img alt="Licence Creative Commons" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png"/>
+	</a>
+	<br/>Toto dílo podléhá licenci <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Uveďte
+	původ - Zachovejte licenci 4.0 Mezinárodní License</a>.
+</div>
+<div class="widget-taglist widget">
+	<h4 class="widget__title">Štítky</h4>
+	<div class="widget__content">
+		<a class="widget-taglist__link widget__link btn" href="/tags/ajax/" title="ajax">ajax</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/asus-infinity-pad/" title="asus infinity pad">asus infinity pad</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/b%C4%9B%C5%BEn%C3%A9-probl%C3%A9my/" title="Běžné problémy">Běžné problémy</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/c3p0/" title="C3P0">C3P0</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/cglib/" title="CgLib">CgLib</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/count/" title="count">count</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/dbcp/" title="DBCP">DBCP</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/download/" title="download">download</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/e-commerce/" title="E-commerce">E-commerce</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/eclipse/" title="Eclipse">Eclipse</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/games/" title="games">games</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/geecon/" title="geecon">geecon</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/generiky/" title="generiky">generiky</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/gpars/" title="GPars">GPars</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/groovyserv/" title="GroovyServ">GroovyServ</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/hacking/" title="hacking">hacking</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/hardware/" title="hardware">hardware</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/httpclient/" title="HttpClient">HttpClient</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/httpserver/" title="HttpServer">HttpServer</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/ide/" title="IDE">IDE</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/java/" title="Java">Java</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/jdk-1.6/" title="JDK 1.6">JDK 1.6</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/jelly-bean/" title="jelly bean">jelly bean</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/jopenspace/" title="jOpenSpace">jOpenSpace</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/jquery/" title="jQuery">jQuery</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/junit/" title="jUnit">jUnit</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/jwplayer/" title="jwplayer">jwplayer</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/kafemlejnektv/" title="kafemlejnektv">kafemlejnektv</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/konference/" title="konference">konference</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/letsencrypt/" title="LetsEncrypt">LetsEncrypt</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/manual-upgrade/" title="manual upgrade">manual upgrade</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/measure/" title="measure">measure</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/mock/" title="mock">mock</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/monitor-video-plays/" title="monitor video plays">monitor video plays</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/monkeytracker/" title="MonkeyTracker">MonkeyTracker</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/motion-capture/" title="motion capture">motion capture</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/mysql/" title="mysql">mysql</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/open-source/" title="Open-Source">Open-Source</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/proxy/" title="Proxy">Proxy</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/reflection/" title="reflection">reflection</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/reflexe/" title="reflexe">reflexe</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/rest/" title="REST">REST</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/reuse/" title="reuse">reuse</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/security/" title="security">security</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/selenium/" title="selenium">selenium</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/simulate/" title="simulate">simulate</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/springframework/" title="SpringFramework">SpringFramework</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/springone/" title="SpringOne">SpringOne</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/testov%C3%A1n%C3%AD/" title="Testování">Testování</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/tomcat/" title="tomcat">tomcat</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/turris-omnia/" title="turris omnia">turris omnia</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/unit-testing/" title="unit testing">unit testing</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/vimeo/" title="vimeo">vimeo</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/warhorse/" title="warhorse">warhorse</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/webexpo/" title="webexpo">webexpo</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/youtube/" title="youtube">youtube</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/z%C3%A1klady/" title="Základy">Základy</a>
+		<a class="widget-taglist__link widget__link btn" href="/tags/%C5%A1kolen%C3%AD/" title="Školení">Školení</a>
+	</div>
+</div>
+</aside>
+		</div>
+		<footer class="footer">
+	<div class="container footer__container flex">
+		
+		<div class="footer__copyright">
+			&copy; 2022 Myšlenky dne otce Fura.
+			<span class="footer__copyright-credits">Generated with <a href="https://gohugo.io/" rel="nofollow noopener" target="_blank">Hugo</a> and <a href="https://github.com/Vimux/Mainroad/" rel="nofollow noopener" target="_blank">Mainroad</a> theme.</span>
+		</div>
+	</div>
+</footer>
+	</div>
+<script async defer src="/js/menu.js"></script>
+</body>
+</html>

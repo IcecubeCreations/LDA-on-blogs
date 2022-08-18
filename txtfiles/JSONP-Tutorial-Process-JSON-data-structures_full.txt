@@ -1,0 +1,312 @@
+  JSON-P Tutorial - Process JSON data structures                                                     Testing Java Applications Made SimpleQuick Links: Online Courses - Course Login | #Testcontainers #Kotlin #JUnit  #SpringBoot #Mockito #Maven #AWS #Testing  __CONFIG_colors_palette__{"active_palette":0,"config":{"colors":{"6cd47":{"name":"Main Accent","parent":-1}},"gradients":[]},"palettes":[{"name":"Default","value":{"colors":{"6cd47":{"val":"var(--tcb-skin-color-0)","hsl":{"h":2,"s":0.8436,"l":0.01,"a":1}}},"gradients":[]},"original":{"colors":{"6cd47":{"val":"rgb(47, 138, 229)","hsl":{"h":210,"s":0.77,"l":0.54,"a":1}}},"gradients":[]}}]}__CONFIG_colors_palette__ Start Here  Testing Tutorials   Getting Started With Testing Java Applications Email Course  Testing Java Applications Cheat Sheet  Recommended Resources For Testing Java Applications  Java Testing Toolbox  Hands-On Mocking With Mockito Online Course  Testing Spring Boot Applications Primer  Testing Spring Boot Applications Masterclass    All Posts  Courses  Other   About Me  Create a Course Account  Join the Newsletter  Meta Blog  AWS Tutorials  Jakarta EE Tutorials  MicroProfile Tutorials  Stratospheric eBook    Free Testing Course         Search             New Course Batch    Share this Article          Tweet 0           Share 0           Share 0     Recently Published    Spring Boot Test Spring Web MVC HandlerInterceptor    Read More     Spring Boot Test Spring Web MVC HandlerInterceptor    LaunchDarkly Java Testing and Local Development Hints    Read More     LaunchDarkly Java Testing and Local Development Hints    Java Development on an Apple M1 – A One Year Review    Read More     Java Development on an Apple M1 – A One Year Review    Automatic Java Code Migration with OpenRewrite (Mockito Example)    Read More     Automatic Java Code Migration with OpenRewrite (Mockito Example)    Write Gatling Performance Tests with Java    Read More     Write Gatling Performance Tests with Java         Search        Enrich Your Toolbox    QuicklinksAll Blog PostsStart HereAbout MeCourse LoginOnline CoursesCreate a Course Account & Reset Password    Spring Boot & AWS       Jakarta EE Tutorials, MicroProfile TutorialsJSON-P Tutorial – Process JSON data structuresLast Updated:  May 13, 2020 | Published: September 26, 2019      Follow @rieckpil on Twitter  Besides binding and converting JSON from an to Java objects with JSON-B, the Java EE specification (now Jakarta EE) offers a specification to process JSON data: JSON Processing (JSON-P). With this spec, you can easily create, write, read, stream, transform and query JSON objects. This specification is also part of the Eclipse MicroProfile project and provides a simple API to handle and further process JSON data structures as you'll see it in the following examples. Learn more about the JSON Processing (JSON-P) specification and how to use it in this blog post. Specification profile: JSON Processing (JSON-P)  Current version: 1.1 GitHub repository Specification homepage Basic use case: Process JSON messages (parse, generate, transform and query)  Construct JSON objects using JSON-P With JSON-P you can easily build JSON objects on-demand. You can create a JsonObjectBuilder using the Json class and build the JSON object while adding new attributes to the object:   Java  
+JsonObject json = Json.createObjectBuilder()
+
+    .add("name", "Duke")
+
+    .add("age", 42)
+
+    .add("skills",
+
+        Json.createArrayBuilder()
+
+        .add("Java SE")
+
+        .add("Java EE").build())
+
+    .add("address",
+
+        Json.createObjectBuilder()
+
+        .add("street", "Mainstreet")
+
+        .add("city", "Jakarta")
+
+        .build())
+
+    .build();     12345678910111213  JsonObject json = Json.createObjectBuilder()    .add("name", "Duke")    .add("age", 42)    .add("skills",        Json.createArrayBuilder()        .add("Java SE")        .add("Java EE").build())    .add("address",        Json.createObjectBuilder()        .add("street", "Mainstreet")        .add("city", "Jakarta")        .build())    .build();     If you print this object, you already have a valid JSON and can return this e.g. from a JAX-RS endpoint or use it as an HTTP request body:     
+{"name":"Duke","age":42,"skills":["Java SE","Java EE"],"address":{"street":"Mainstreet","city":"Jakarta"}}     1  {"name":"Duke","age":42,"skills":["Java SE","Java EE"],"address":{"street":"Mainstreet","city":"Jakarta"}}     You are not limited to create JSON objects only, you can also request for a JsonArrayBuilder and start constructing your JSON array:   Java  
+JsonArray jsonArray = Json.createArrayBuilder()
+
+    .add("foo")
+
+    .add("bar")
+
+    .add("duke")
+
+    .build();     12345  JsonArray jsonArray = Json.createArrayBuilder()    .add("foo")    .add("bar")    .add("duke")    .build();      Write JSON objects Given a JSON object, you can also write it to a different source using JSON-P and its JsonWriterFactory. As an example, I'm writing a JSON object to a File in pretty-print:   Java  
+private void prettyPrintJsonToFile(JsonObject json) throws IOException {
+
+    Map<String,Boolean> config = new HashMap<>();
+
+    config.put(JsonGenerator.PRETTY_PRINTING, true);
+
+
+
+    JsonWriterFactory writerFactory = Json.createWriterFactory(config);
+
+    try (OutputStream outputStream = new FileOutputStream(new File("/tmp/output.json")); 
+
+         JsonWriter jsonWriter = writerFactory.createWriter(outputStream)) {
+
+
+
+        jsonWriter.write(json);
+
+    }
+
+}     1234567891011  private void prettyPrintJsonToFile(JsonObject json) throws IOException {    Map<String,Boolean> config = new HashMap<>();    config.put(JsonGenerator.PRETTY_PRINTING, true);     JsonWriterFactory writerFactory = Json.createWriterFactory(config);    try (OutputStream outputStream = new FileOutputStream(new File("/tmp/output.json"));          JsonWriter jsonWriter = writerFactory.createWriter(outputStream)) {         jsonWriter.write(json);    }}     The JsonWriterFactory accepts any Writer or OutputStream to instantiate the JsonWriter:   Java  
+private void prettyPrintJsonToConsole(JsonObject json) throws IOException {
+
+    Map<String,Boolean> config = new HashMap<>();
+
+    config.put(JsonGenerator.PRETTY_PRINTING, true);
+
+
+
+    JsonWriterFactory writerFactory = Json.createWriterFactory(config);
+
+    try (Writer stringWriter = new StringWriter(); 
+
+         JsonWriter jsonWriter = writerFactory.createWriter(stringWriter)) {
+
+        jsonWriter.write(json);
+
+        System.out.println(stringWriter);
+
+    }
+
+}     1234567891011  private void prettyPrintJsonToConsole(JsonObject json) throws IOException {    Map<String,Boolean> config = new HashMap<>();    config.put(JsonGenerator.PRETTY_PRINTING, true);     JsonWriterFactory writerFactory = Json.createWriterFactory(config);    try (Writer stringWriter = new StringWriter();          JsonWriter jsonWriter = writerFactory.createWriter(stringWriter)) {        jsonWriter.write(json);        System.out.println(stringWriter);    }}     Using the JSON object from the chapter above, the output on the console will look like the following:     
+{
+
+    "name": "Duke",
+
+    "age": 42,
+
+    "skills": [
+
+        "Java SE",
+
+        "Java EE"
+
+    ],
+
+    "address": {
+
+        "street": "Mainstreet",
+
+        "city": "Jakarta"
+
+    }
+
+}     123456789101112  {    "name": "Duke",    "age": 42,    "skills": [        "Java SE",        "Java EE"    ],    "address": {        "street": "Mainstreet",        "city": "Jakarta"    }}      Read JSON with the JSON-P specification The specification also provides a convenient way to read and parse JSON from a given source (e.g. File or String). To create a JsonReader instance, you either have to provide a InputStream or a Reader. As an example, I'm reading from both a String and a File on the classpath:   Java  
+private void readFromString() {
+
+    JsonReader jsonReader = Json.createReader(
+
+        new StringReader("{\"name\":\"duke\",\"age\":42,\"skills\":[\"Java SE\", \"Java EE\"]}"));
+
+    JsonObject jsonObject = jsonReader.readObject();
+
+    System.out.println(jsonObject);
+
+}
+
+
+
+private void readFromFile() {
+
+    JsonReader jsonReader = Json.createReader(this.getClass().getClassLoader()
+
+        .getResourceAsStream("books.json"));
+
+    JsonArray jsonArray = jsonReader.readArray();
+
+    System.out.println(jsonArray);
+
+}     12345678910111213  private void readFromString() {    JsonReader jsonReader = Json.createReader(        new StringReader("{\"name\":\"duke\",\"age\":42,\"skills\":[\"Java SE\", \"Java EE\"]}"));    JsonObject jsonObject = jsonReader.readObject();    System.out.println(jsonObject);} private void readFromFile() {    JsonReader jsonReader = Json.createReader(this.getClass().getClassLoader()        .getResourceAsStream("books.json"));    JsonArray jsonArray = jsonReader.readArray();    System.out.println(jsonArray);}     If the JSON is not valid, the JsonReader throws a JsonParsingExcpetion while parsing it and will give a hint about what is wrong e.g. Invalid token=SQUARECLOSE at (line no=1, column no=54, offset=53). Expected tokens are: [COLON]. Stream JSON data For use cases where you have to process big JSON objects (which might not fit into memory), you should have a look at the streaming options of JSON-P. The specification says the following about its streaming capabilities: Unlike the Object model this offers more generic access to JSON strings that may change more often with attributes added or similar structural changes. Streaming API is also the preferred method for very large JSON strings that could take more memory reading them altogether through the Object model API. Streaming works for both parsing and generating JSON objects. To parse and process a big JSON object, the spec provides the JsonParser:   Java  
+String jsonString = "{\"name\":\"duke\",\"isRetired\":false,\"age\":42,\"skills\":[\"Java SE\", \"Java EE\"]}";
+
+try (JsonParser parser = Json.createParser(new StringReader(jsonString))) {
+
+    while (parser.hasNext()) {
+
+        final Event event = parser.next();
+
+        switch (event) {
+
+            case START_ARRAY:
+
+                System.out.println("Start of array");
+
+                break;
+
+            case END_ARRAY:
+
+                System.out.println("End of array");
+
+                break;
+
+            case KEY_NAME:
+
+                System.out.println("Key found " + parser.getString());
+
+                break;
+
+            case VALUE_STRING:
+
+                System.out.println("Value found " + parser.getString());
+
+                break;
+
+            case VALUE_NUMBER:
+
+                System.out.println("Number found " + parser.getLong());
+
+                break;
+
+            case VALUE_TRUE:
+
+                System.out.println(true);
+
+                break;
+
+            case VALUE_FALSE:
+
+                System.out.println(false);
+
+                break;
+
+        }
+
+    }
+
+}     1234567891011121314151617181920212223242526272829  String jsonString = "{\"name\":\"duke\",\"isRetired\":false,\"age\":42,\"skills\":[\"Java SE\", \"Java EE\"]}";try (JsonParser parser = Json.createParser(new StringReader(jsonString))) {    while (parser.hasNext()) {        final Event event = parser.next();        switch (event) {            case START_ARRAY:                System.out.println("Start of array");                break;            case END_ARRAY:                System.out.println("End of array");                break;            case KEY_NAME:                System.out.println("Key found " + parser.getString());                break;            case VALUE_STRING:                System.out.println("Value found " + parser.getString());                break;            case VALUE_NUMBER:                System.out.println("Number found " + parser.getLong());                break;            case VALUE_TRUE:                System.out.println(true);                break;            case VALUE_FALSE:                System.out.println(false);                break;        }    }}     This offers rather low-level access to the JSON object and you can access all Event objects (e.g. START_ARRAY, KEY_NAME, VALUE_STRING) while parsing.  For creating a JSON object in a streaming-fashion, you can use the JsonGenerator class and write to any source using a Writer or OutputStream:   Java  
+StringWriter stringWriter = new StringWriter();
+
+
+
+try (JsonGenerator jsonGenerator = Json.createGenerator(stringWriter)) {
+
+    jsonGenerator.writeStartArray()
+
+        .writeStartObject()
+
+        .write("name", "duke")
+
+        .writeEnd()
+
+        .writeStartObject()
+
+        .write("name", "jakarta")
+
+        .writeEnd()
+
+        .writeEnd();
+
+    jsonGenerator.flush();
+
+}
+
+
+
+System.out.println(stringWriter.toString());     123456789101112131415  StringWriter stringWriter = new StringWriter(); try (JsonGenerator jsonGenerator = Json.createGenerator(stringWriter)) {    jsonGenerator.writeStartArray()        .writeStartObject()        .write("name", "duke")        .writeEnd()        .writeStartObject()        .write("name", "jakarta")        .writeEnd()        .writeEnd();    jsonGenerator.flush();} System.out.println(stringWriter.toString());      Transform JSON with JsonPointer, JsonPatch and JsonMergePatch Since JSON-P 1.1, the specification offers a great way to query and transform JSON structures using the following standardized JSON operations:  JSON Pointer (official RFC) JSON Patch (official RFC) JSON MergePatch (official RFC)  Identify a specific value with JSON Pointer If your JSON object contains several sub-objects and arrays and you have to find the value of a specific attribute, iterating over the whole object is cumbersome. With JSON Pointer you can specify an expression and point to a specific attribute and directly access it. The expression is defined in the official RFC. Once you have a JSON pointer in place, you can get the value, remove it, replace it, add a new and check for existence with JSON-P and its JsonPointer class:   Java  
+String jsonString = "{\"name\":\"duke\",\"age\":42,\"skills\":[\"Java SE\", \"Java EE\"]}";
+
+
+
+JsonObject jsonObject = Json.createReader(new StringReader(jsonString)).readObject();
+
+
+
+JsonPointer arrayElementPointer = Json.createPointer("/skills/1");
+
+JsonPointer agePointer = Json.createPointer("/age");
+
+JsonPointer namePointer = Json.createPointer("/name");
+
+JsonPointer addressPointer = Json.createPointer("/address");
+
+JsonPointer tagsPointer = Json.createPointer("/tags");
+
+
+
+System.out.println("Get array element with pointer: " 
+
+          + arrayElementPointer.getValue(jsonObject).toString());
+
+System.out.println("Remove age with pointer: " 
+
+          + agePointer.remove(jsonObject));
+
+System.out.println("Replace name with pointer: " 
+
+          + namePointer.replace(jsonObject, Json.createValue("john")));
+
+System.out.println("Check address with pointer: " 
+
+          + addressPointer.containsValue(jsonObject));
+
+System.out.println("Add tags with pointer: " 
+
+          + tagsPointer.add(jsonObject, Json.createArrayBuilder().add("nice").build()));     1234567891011121314151617181920  String jsonString = "{\"name\":\"duke\",\"age\":42,\"skills\":[\"Java SE\", \"Java EE\"]}"; JsonObject jsonObject = Json.createReader(new StringReader(jsonString)).readObject(); JsonPointer arrayElementPointer = Json.createPointer("/skills/1");JsonPointer agePointer = Json.createPointer("/age");JsonPointer namePointer = Json.createPointer("/name");JsonPointer addressPointer = Json.createPointer("/address");JsonPointer tagsPointer = Json.createPointer("/tags"); System.out.println("Get array element with pointer: "           + arrayElementPointer.getValue(jsonObject).toString());System.out.println("Remove age with pointer: "           + agePointer.remove(jsonObject));System.out.println("Replace name with pointer: "           + namePointer.replace(jsonObject, Json.createValue("john")));System.out.println("Check address with pointer: "           + addressPointer.containsValue(jsonObject));System.out.println("Add tags with pointer: "           + tagsPointer.add(jsonObject, Json.createArrayBuilder().add("nice").build()));      Define a sequence of operations to apply using JSON Patch Similar to the JSON Pointer in the example above, you can define a set of operations to apply on a given JSON with JSON Patch. The possible operations to apply to a JSON are defined in the official RFC. As an example, I'm modifying an existing JSON with JsonPatch like the following:   Java  
+String jsonString = "{\"name\":\"duke\",\"age\":42,\"skills\":[\"Java SE\", \"Java EE\"]}";
+
+
+
+JsonObject jsonObject = Json.createReader(new StringReader(jsonString)).readObject();
+
+
+
+JsonPatch patch = Json.createPatchBuilder()
+
+    .add("/isRetired", false)
+
+    .add("/skills/2", "Jakarta EE")
+
+    .remove("/age")
+
+    .replace("/name", "duke two")
+
+    .build();
+
+
+
+JsonObject patchedJson = patch.apply(jsonObject);
+
+System.out.println("Patched JSON: " + patchedJson);     12345678910111213  String jsonString = "{\"name\":\"duke\",\"age\":42,\"skills\":[\"Java SE\", \"Java EE\"]}"; JsonObject jsonObject = Json.createReader(new StringReader(jsonString)).readObject(); JsonPatch patch = Json.createPatchBuilder()    .add("/isRetired", false)    .add("/skills/2", "Jakarta EE")    .remove("/age")    .replace("/name", "duke two")    .build(); JsonObject patchedJson = patch.apply(jsonObject);System.out.println("Patched JSON: " + patchedJson);     The patched JSON object looks like the following:     
+Patched JSON: {"name":"duke two","skills":["Java SE","Java EE","Jakarta EE"],"isRetired":false}     1  Patched JSON: {"name":"duke two","skills":["Java SE","Java EE","Jakarta EE"],"isRetired":false}      Merge two JSON objects with JSON Merge Patch If you want to merge a given JSON object with another JSON, you can make use of the JSON Merge Patch. With this, you first have to define how the merge JSON object looks like and can then apply it to a target JSON structure.   Java  
+String jsonString = "{\"name\":\"duke\",\"age\":42,\"skills\":[\"Java SE\", \"Java EE\"]}";
+
+
+
+JsonObject jsonObject = Json.createReader(new StringReader(jsonString)).readObject();
+
+
+
+JsonObject merge = Json.createObjectBuilder()
+
+    .add("name", "duke2")
+
+    .add("isEmployee", true)
+
+    .add("skills", Json.createArrayBuilder()
+
+        .add("CSS")
+
+        .add("HTML")
+
+        .add("JavaScript")
+
+        .build())
+
+    .build();
+
+
+
+JsonMergePatch mergePatch = Json.createMergePatch(merge);
+
+JsonValue mergedJson = mergePatch.apply(jsonObject);
+
+System.out.println("Merged JSON: " + mergedJson);     1234567891011121314151617  String jsonString = "{\"name\":\"duke\",\"age\":42,\"skills\":[\"Java SE\", \"Java EE\"]}"; JsonObject jsonObject = Json.createReader(new StringReader(jsonString)).readObject(); JsonObject merge = Json.createObjectBuilder()    .add("name", "duke2")    .add("isEmployee", true)    .add("skills", Json.createArrayBuilder()        .add("CSS")        .add("HTML")        .add("JavaScript")        .build())    .build(); JsonMergePatch mergePatch = Json.createMergePatch(merge);JsonValue mergedJson = mergePatch.apply(jsonObject);System.out.println("Merged JSON: " + mergedJson);     The merged JSON in this example looks like the following:     
+Merged JSON: {"name":"duke2","age":42,"skills":["CSS","HTML","JavaScript"],"isEmployee":true}     1  Merged JSON: {"name":"duke2","age":42,"skills":["CSS","HTML","JavaScript"],"isEmployee":true}     For more information about the JSON Merge Patch, have a look at the official RFC. YouTube video for using JSON-P 1.1 specification Watch the following YouTube video of my Getting started with Eclipse MicroProfile series to see JSON-P 1.1 in action:  You can find the source code with further instructions to run this example on GitHub. Have fun using the JSON-P specification, Phil            Tweet 0           Share 0           Share 0                   Java Weekly, Issue 301 | Baeldung says:   October 4, 2019 at 2:30 pm    […] >> JSON Processing (JSON-P) [rieckpil.de] […]        Reply          {"email":"Email address invalid","url":"Website address invalid","required":"Required field missing"}    Sign up for Our Mailing List And Get the Testing Java Applications ($9) Cheat Sheet for Free         Sign Up             TESTING STARTER COURSE    TESTING DEEP-DIVE COURSE    QUICKLINKSAll Blog PostsStart HereAbout MeOnline CoursesCourse LoginCreate a Course Account & Reset PasswordRECENTLY PUBLISHED  Spring Boot Test Spring Web MVC HandlerInterceptor  LaunchDarkly Java Testing and Local Development Hints  Java Development on an Apple M1 – A One Year Review MAIN BLOG CATEGORIESSpring Framework TutorialsTesting TutorialsAWS TutorialsLET'S CONNECT__CONFIG_colors_palette__{"active_palette":0,"config":{"colors":{"f3080":{"name":"Main Accent","parent":-1},"f2bba":{"name":"Main Light 10","parent":"f3080"},"trewq":{"name":"Main Light 30","parent":"f3080"},"poiuy":{"name":"Main Light 80","parent":"f3080"},"f83d7":{"name":"Main Light 80","parent":"f3080"},"frty6":{"name":"Main Light 45","parent":"f3080"},"flktr":{"name":"Main Light 80","parent":"f3080"}},"gradients":[]},"palettes":[{"name":"Default","value":{"colors":{"f3080":{"val":"var(--tcb-skin-color-0)"},"f2bba":{"val":"rgba(113, 253, 53, 0.5)","hsl_parent_dependency":{"h":102,"l":0.6,"s":0.98}},"trewq":{"val":"rgba(113, 253, 53, 0.7)","hsl_parent_dependency":{"h":102,"l":0.6,"s":0.98}},"poiuy":{"val":"rgba(113, 253, 53, 0.35)","hsl_parent_dependency":{"h":102,"l":0.6,"s":0.98}},"f83d7":{"val":"rgba(113, 253, 53, 0.4)","hsl_parent_dependency":{"h":102,"l":0.6,"s":0.98}},"frty6":{"val":"rgba(113, 253, 53, 0.2)","hsl_parent_dependency":{"h":102,"l":0.6,"s":0.98}},"flktr":{"val":"rgba(113, 253, 53, 0.8)","hsl_parent_dependency":{"h":102,"l":0.6,"s":0.98}}},"gradients":[]},"original":{"colors":{"f3080":{"val":"rgb(23, 23, 22)","hsl":{"h":60,"s":0.02,"l":0.09}},"f2bba":{"val":"rgba(23, 23, 22, 0.5)","hsl_parent_dependency":{"h":60,"s":0.02,"l":0.09,"a":0.5}},"trewq":{"val":"rgba(23, 23, 22, 0.7)","hsl_parent_dependency":{"h":60,"s":0.02,"l":0.09,"a":0.7}},"poiuy":{"val":"rgba(23, 23, 22, 0.35)","hsl_parent_dependency":{"h":60,"s":0.02,"l":0.09,"a":0.35}},"f83d7":{"val":"rgba(23, 23, 22, 0.4)","hsl_parent_dependency":{"h":60,"s":0.02,"l":0.09,"a":0.4}},"frty6":{"val":"rgba(23, 23, 22, 0.2)","hsl_parent_dependency":{"h":60,"s":0.02,"l":0.09,"a":0.2}},"flktr":{"val":"rgba(23, 23, 22, 0.8)","hsl_parent_dependency":{"h":60,"s":0.02,"l":0.09,"a":0.8}}},"gradients":[]}}]}__CONFIG_colors_palette__                                               Home - About - Newsletter - Affiliate Program - Imprint - Privacy Policy - Terms and ConditionsTesting Java Applications Made Simple - built with Thrive Themes and powered by NitroPack © Copyright 2022 rieckpil         Close dialog   Session expired Please log in again. The login page will open in a new tab. After logging in you can close it and return to this page.                     >                                                              
+  

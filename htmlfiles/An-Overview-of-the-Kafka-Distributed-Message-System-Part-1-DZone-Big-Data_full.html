@@ -1,0 +1,1013 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="An in-depth look under the hood of Apache Kafka, focusing on topics such as messaging systems, the various types two message system models, and more.">
+  <meta name="keywords" content="kafka, Big data, mobile app, Stream processing, web service, microservice, Message queue, clustering, Batch processing">
+
+  <meta property="og:description" content="An in-depth look under the hood of Apache Kafka, focusing on topics such as messaging systems, the various types two message system models, and more.">
+  <meta property="og:site_name" content="dzone.com">
+  <meta property="og:title" content="An Overview of the Kafka Distributed Message System (Part 1) - DZone Big Data">
+  <meta property="og:url" content="https://dzone.com/articles/an-overview-of-kafka-distributed-message-system">
+  <meta property="og:image" content="https://dz2cdn1.dzone.com/storage/article-thumb/10818468-thumb.jpg">
+  <meta property="og:type" content="article">
+
+  <meta name="twitter:site" content="@DZoneInc">
+  <meta name="twitter:image" content="https://dz2cdn1.dzone.com/storage/article-thumb/10818468-thumb.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:description" content="An in-depth look under the hood of Apache Kafka, focusing on topics such as messaging systems, the various types two message system models, and more.">
+  <meta name="twitter:title" content="An Overview of the Kafka Distributed Message System (Part 1) - DZone Big Data">
+
+  <meta name="referrer" content="origin-when-cross-origin">
+  <meta name="google-site-verification" content="kndbhxcupfEqWmZclhCpB6vlgOs7QSmx2UHAGGnP2mA">
+  <meta name="df-verify" content="df0d76632b4543">
+
+  <link rel="icon" type="image/x-icon" href="https://dz2cdn2.dzone.com/themes/dz20/images/favicon.png">
+  <link rel="image_src" href="https://dz2cdn1.dzone.com/storage/article-thumb/10818468-thumb.jpg">
+  <link rel="canonical" href="https://dzone.com/articles/an-overview-of-kafka-distributed-message-system">
+
+  <title>An Overview of the Kafka Distributed Message System (Part 1) - DZone Big Data</title>
+
+  <link rel="preload" href="https://fonts.dzone.com/themes/dz20/font/fontello.woff?11773374" as="font" type="font/woff" crossorigin="anonymous">
+
+  <link rel="stylesheet" media="all" href="https://dz2cdn2.dzone.com/themes/dz20/ftl/icons.css">
+  <link rel="stylesheet" media="all" href="https://dz2cdn2.dzone.com/themes/dz20/lib/static/bootstrap/bootstrap.min.css">
+  <link rel="stylesheet" media="all" href="https://dz2cdn2.dzone.com/themes/dz20/ftl/article/global.css">
+  <link rel="stylesheet" media="all" href="https://dz2cdn2.dzone.com/themes/dz20/ftl/header/styles.css">
+</head>
+<body>
+<div id="ftl-header">
+  <div class="container-fluid header">
+    <div class="row">
+      <div class="col-md-12" style="padding: 0;">
+        <div class="header-top">
+          <div class="header-container">
+            <div class="pull-left logo-container">
+              <div class="logo">
+                <a class="inner" href="/">
+                  <picture>
+                    <source srcset="https://dz2cdn2.dzone.com/themes/dz20/images/dz_logo_2021_cropped.webp" type="image/webp">
+                    <source srcset="https://dz2cdn2.dzone.com/themes/dz20/images/dz_logo_2021_cropped.png" type="image/png">
+                    <img src="https://dz2cdn2.dzone.com/themes/dz20/images/dz_logo_2021_cropped.png" width="160" height="52" alt="DZone">
+                  </picture>
+                </a>
+              </div>
+
+                <div class="active-portal"><a href="/big-data-analytics-tutorials-tools-news">Big Data Zone</a></div>
+            </div>
+
+            <div class="pull-right login-and-search">
+              <div id="authenticated-block" class="logged-in">
+                <div class="welcome-back">Thanks for visiting DZone today,</div>
+                <div id="user-header" class="user-info">
+                  <button class="user-avatar">
+                    <span id="header-username" class="username"></span>
+                    <img id="header-avatar" src="" alt="user avatar">
+                  </button>
+                  <div id="user-dropdown" class="browse-user-menu">
+                    <div class="user-content">
+                      <a id="header-user-plug" href="#" class="user-description"></a>
+                      <a id="header-user-edit" href="#" class="edit-profile">Edit Profile</a>
+                    </div>
+                    <ul class="user-actions">
+                      <li id="first-user-action"><a id="header-dropdown-manage-email" href="#">Manage Email Subscriptions</a></li>
+                      <li>
+                        <a href="/articles/how-to-submit-a-post-to-dzone?utm_source=DZone&utm_medium=user_dropdown&utm_campaign=how_to_post">
+                          How to Post to DZone
+                        </a>
+                      </li>
+                      <li>
+                        <a href="/articles/dzones-article-submission-guidelines">
+                          Article Submission Guidelines
+                        </a>
+                      </li>
+                    </ul>
+                    <div class="bottom">
+                      <a href="/users/logout.html" class="sign-out">Sign Out</a>
+                      <a id="dropdown-view-profile" href="#" class="view-profile">View Profile</a>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="post-content">
+                  <button id="post-button" class="post-content--button">
+                    <span class="post-class">Post</span>
+                    <i class="icon-plus"></i>
+                  </button>
+
+                  <div id="post-menu" class="posting-links">
+                    <div class="posting-links-menu">
+                      <ul>
+                        <li>
+                          <img src="/themes/dz20/images/dz-postarticle.svg">
+                          <a href="/content/article/post.html">Post an Article</a>
+                        </li>
+                        <li>
+                          <a id="drafts-link" href="#">Manage My Drafts</a>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div id="unauthenticated-block">
+                <div class="dz-intro">Over 2 million developers have joined DZone.</div>
+                <div class="mobile-invisible sign-in-join">
+                  <a href="/users/login.html">Log In</a>
+                  <span class="dz-intro-span">/</span>
+                  <a href="/static/registration.html">Join</a>
+                </div>
+                <a class="join-icon" href="/users/login.html"><i class="icon-user"></i></a>
+              </div>
+              <div class="headerSearch">
+                <a class="icon-search dropdown-toggle" href="/search"></a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="header-bottom">
+
+
+          <ul class="portals header-container scrollable-ul">
+            <li>
+              <a href="/refcardz" id="header-refcardz">
+                <em>Refcardz</em>
+              </a>
+            </li>
+            <li>
+              <a href="/trendreports" id="header-research">
+                <em>Trend Reports</em>
+              </a>
+            </li>
+            <li>
+              <a href="/webinars" id="header-webinars">
+                <em>Webinars</em>
+              </a>
+            </li>
+            <li class="last-portal-link">
+              <a href="#" id="header-portals">
+                <em>
+                  Zones
+                  <span id="zone-arrow" class="collapsible-toggle">
+                    <i class="icon-angle-down"></i>
+                    <i class="icon-angle-up"></i>
+                  </span>
+                </em>
+              </a>
+            </li>
+
+            <li class="separator" aria-hidden="true" style="color: #d9dcdd;">|</li>
+            <li id="portal-list" class="portal-topics">
+              <ul>
+                  <li>
+                    <a href="/agile-methodology-training-tools-news" id="header-2">Agile</a>
+                  </li>
+                  <li>
+                    <a href="/artificial-intelligence-tutorials-tools-news" id="header-4001">AI</a>
+                  </li>
+                  <li>
+                    <a href="/big-data-analytics-tutorials-tools-news" id="header-3">Big Data</a>
+                  </li>
+                  <li>
+                    <a href="/cloud-computing-tutorials-tools-news" id="header-4">Cloud</a>
+                  </li>
+                  <li>
+                    <a href="/database-sql-nosql-tutorials-tools-news" id="header-5">Database</a>
+                  </li>
+                  <li>
+                    <a href="/devops-tutorials-tools-news" id="header-6">DevOps</a>
+                  </li>
+                  <li>
+                    <a href="/enterprise-integration-training-tools-news" id="header-7">Integration</a>
+                  </li>
+                  <li>
+                    <a href="/iot-developer-tutorials-tools-news-reviews" id="header-8">IoT</a>
+                  </li>
+                  <li>
+                    <a href="/java-jdk-development-tutorials-tools-news" id="header-1">Java</a>
+                  </li>
+                  <li>
+                    <a href="/microservices-news-tutorials-tools" id="header-6001">Microservices</a>
+                  </li>
+                  <li>
+                    <a href="/open-source-news-tutorials-tools" id="header-7001">Open Source</a>
+                  </li>
+                  <li>
+                    <a href="/apm-tools-performance-monitoring-optimization" id="header-10">Performance</a>
+                  </li>
+                  <li>
+                    <a href="/application-web-network-security" id="header-2001">Security</a>
+                  </li>
+                  <li>
+                    <a href="/web-development-programming-tutorials-tools-news" id="header-11">Web Dev</a>
+                  </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script async src="https://dz2cdn2.dzone.com/themes/dz20/ftl/header/bundle.js"></script><link rel="stylesheet" media="all" href="https://dz2cdn2.dzone.com/themes/dz20/ftl/article/styles.css">
+
+
+
+
+<div id="ftl-article" >
+  <div class="container-fluid body">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="articles-wrap">
+              <div class="ad-container">
+                <div id="div-gpt-ad-1435246566686-0" class="ads-billboard-article" data-gpt-slot="top"></div>
+              </div>
+
+
+          <div class="article-stream widget-top-border">
+                <div class="content-right-images">
+                  <div id="div-gpt-ad-1435246566686-2" class="sidebar-ad" data-gpt-desktop="true" data-gpt-slot="sidebar1"></div>
+                </div>
+
+                <script type="application/ld+json">
+                  {
+                    "@context": "http://schema.org",
+                    "@type": "Article",
+                    "headline": "An Overview of the Kafka Distributed Message System (Part 1)",
+                    "author": {
+                      "@type": "Person",
+                      "name": "Leona Zhang"
+                    },
+                    "audience": "software developers",
+                    "keywords": "big data,apache kafka,apache kafka tutorial,distributed messaging systems",
+                    "timeRequired": "PT8M",
+                    "commentCount": 1,
+                    "wordCount": "1844",
+                    "accessMode": "textual, visual",
+                    "dateCreated": "2018-12-07T14:09:01Z",
+                    "datePublished": "2018-12-07T00:00:00Z",
+                    "dateModified": "2018-12-24T08:44:52Z",
+                    "articleSection": "big-data-analytics-tutorials-tools-news",
+                    "publisher": {
+                      "@type": "Organization",
+                      "name": "DZone",
+                      "url": "https://dzone.com",
+                      "logo": {
+                        "@type": "ImageObject",
+                        "url": "https://dzone.com/themes/dz20/images/dz_logo_2021_cropped.png"
+                      }
+                    },
+                    "articleBody": "I originally intended to name this article \"Setting up a Kafka Message Queue Cluster.\" However, unlike RabbitMQ, Kafka does not implement message queue protocols (for example, Advanced Message Queuing Protocol (AMQP)). AMQP provides advanced queuing protocols for unified message services. It is an open standard for application layer protocols and designed for message-oriented middleware. Therefore, although Kafka's usage mode is more like a queue, it is still not strictly a message queue. So I decided to give this article a more generic name: \"An Overview of Kafka Distributed Message System.\" Introduction to Kafka LinkedIn was the first company to develop Kafka using the Java and Scala languages. Its source code was open sourced in 2011, and it became a top project of the Apache Software Foundation in 2012. In 2014, several founders of Kafka set up a new company named Confluent, which specialized in Kafka. The purpose of the Kafka project is to provide a unified, high-throughput, and low-delay system platform for real-time data processing. Kafka delivers the following three functions: Publishing and Subscription: Kafka publishes subscription streaming data similar to other message systems. Processing: Kafka compiles a stream processing application and responds to real-time events. Storage: Kafka securely stores streaming data in a distributed and fault-tolerant cluster. Message System Kafka is a message system. Let us understand more about the message system and the problems it solves. Take the currently popular microservice architecture as an example. Let's assume that there are three terminal-oriented (WeChat official account, mobile app, and browser) web services (HTTP protocols) at the web end, namely Web1, Web2, and Web3, and three internal application services App1, App2, and App3 (Remote Procedure Call, for example, WCF and gRPC). If there is no message system and the direct connected mode is adopted, the communication mode between them may be as follows: Figure 1: Structure of the System that Communicates in the Direct Connected Mode The following issues exist while adopting this mode: Tightly coupled services increase the challenges. If an external interface of application service two is modified, all components invoking the interface would require modification. In the extreme circumstance shown above, (where all components invoke the interface, which is rare in practice) all other web and application services would require modification. Modifying an interface with tightly coupled services is difficult. If an uncontrolled third-party application invokes the interface, the interface would require a modification. This would make third-party applications unavailable. Modifying WeChat's official interface will lead to a failure of thousands of applications. Launching different versions of an interface is the resolution to this problem. There are various access modes provided such as web/v1/interface, web/v1.1/interface, and app/v2.0/interface. Interfaces are compatible among minor versions; however, they aren't compatible among versions that are significantly different and completely tweaked. Although the above interface planning method solves the issue of tight coupling to some extent, this method isn't entirely free of challenges. Firstly, multiple versions need to be modified should there be an update and secondly, a large number of versions need maintenance. The method also creates difficulties in operation. It becomes complex to increase or decrease clients. If application service 4 is now added to provide a function necessary for a web service, web service 1, web service 2, and web service 3 must be modified. Similarly, if application service 2 is no longer required, the code that is used to invoke this service must be removed on the web service's end. Performance is limited, and expansion becomes difficult. For example, it is imperative to use a third-party tool such as ZooKeeper or Consul to achieve load balancing. An alternative approach is to either rewrite the code or adding specific configurations. However, after the introduction of the message system, the structure changes as below: Figure 2: Structure of the System After the Introduction of the Message System After the introduction of the message system, all the issues mentioned previously get resolved. Components, web services, and application services no longer need to be concerned about each other's interface definitions. Instead, they only need to be concerned about the data structure (JSON structure). There isn't a need to worry about the structure of Kafka. It is mature, highly standard, and relatively stable. However, the protocol used to communicate with Kafka needs attention. Kafka improves performance. It is not only designed to transmit big data but also meet the requirements of most enterprises with its throughput. Kafka makes expansion easy through clustering. Moreover, it has a unique model that provisions common needs such as load balancing. Two Message System Models Producer/Consumer Model: Producer is an application that produces messages at one end of a data pipeline. Consumer is an application that consumes messages at one end of a data pipeline. Outlined below are the two scenarios when the producer sends messages to a queue: If no consumer connects to the queue or consumes messages at this time, messages are saved in the queue until it is full or a consumer is online. If multiple consumers connect to the queue at this time, one consumer receives only one message. Therefore, load balancing is naturally achieved in cases where there are multiple consumers in practice. Publisher/Subscriber Model: Publisher: an application that generates events at one end of a data pipeline. Subscriber: an application that responds to events at one end of a data pipeline. In the Publisher/Subscriber model, the data sent to a queue is in the form of events instead of messages. In this case, data processing is the subscription of an event, and not message consumption. If no subscriber connects to the queue after the publisher publishes an event, the event gets lost, i.e., no application responds to it. If a subscriber is online later, he will not receive the event. In case if multiple subscribers connect to the queue after the publisher publishes an event at the same time, the event gets broadcasted to all the subscribers, and each subscriber receives the same event. Therefore, load balancing does not exist. Stream Processing Application There is a difference between batch processing applications and stream processing applications. A visible boundary determines the most significant difference between batch processing and stream processing. If it exists, it is called batch processing. For example, a client collects the data once every hour, sends this data to the server for statistics, and then saves the statistical results in the statistical database. If the boundary doesn't exist, the processing is called streaming data (stream processing). Here is an example of stream processing: logs and orders are generated continuously on a large website just like a data flow. If the processing of each log and order takes less than several hundred milliseconds or several seconds after its generation, the application is called a stream application. If the collection of logs and orders happens once every hour followed by a unified transmission, the original stream data converts into batch data. Occasionally, stream processing becomes imperative. For example, Jack Ma wanted to display the orders and sales on Tmall for November 11 on a large screen. If the data center works in a T+1 mode and can obtain data for November 11 on November 12, Jack Ma would not be happy. The method for processing stream data is different from the method for processing batch data. Kafka provides a unique component, Kafka Streaming, to process stream data. Kafka offers different elements for other projects in the Hadoop ecosystem. For example, Spark also uses Spark Streaming to process stream data. Storm was the first system that was built to process stream data exclusively. Apart from data boundaries, processing times can be used to differentiate stream processing and batch processing. The processing cycle for batch processing is generally hours or days, while the processing cycle for stream processing is usually seconds. Correspondingly, batch processing is referred to as offline data processing, whereas, stream processing is referred to as real-time data processing. In the unit of minutes, data processing is referred as near-line data processing. However, data processing is seldom discussed and generally processed offline unless the processing cycle slows down. Storage Kafka securely stores data in a distributed and fault-tolerant cluster. The default storage period is one week. Additionally, Kafka naturally supports clusters. Kafka allows us to conveniently add or reduce machines and specify the number of copies for data. This ensures that the cluster provides break free services even when individual servers in the cluster break down. Kafka is primarily used to transmit data in our data center project. Let me first introduce the background of this project and then provide an understanding of issues that Kafka solves. At present, 10 applications are running in the front-end which might increase with time. The front-end applications send data to the backend data center (an application called data collector or collector for short). The collector corresponds to multiple applications. While it is idle most of the time, when numerous applications send data at the same time, the collector isn't able to process the data. In this case, there is a requirement for buffer mechanisms so that the collector is not too idle or busy. Kafka is useful as a buffer pool for the data in such situations. In this example, instead of selecting a traditional message queue component such as RabbitMQ, I have selected Kafka. This is because Kafka is inherently developed to cope with a large batch of data and provide better performance. Kafka serves the function of \"smooth upgrading\" in a data center in addition to data buffering. Outlined below is a quick diagrammatic representation: Figure 3: Smooth Upgrading In the previous use case, we used .NET for developing front-end, data collection, and data cleaning applications. MS SQL stores the same. Big data technology helped us to store large amounts of data on the HDFS and Sparks helped us to collect statistics. There was no need to change the previous versions of front-end, data collection, or data cleaning applications after introducing Kafka. The new versions of collection or cleaning applications can be accessed because Kafka allows us to extract data at any point in time. It is easy to switch to the new system by simply stopping previous versions of the applications once the new versions pass the test. Challenges After a Message Queue Is Introduced Every coin has two sides. After introducing Kafka, the following changes take place. Although the applications in the system are not mutually dependent, they depend heavily on Kafka. Stability of Kafka, therefore, becomes very important (similar to infrastructure such as Microsoft SQL Server). In practice, implement microservices. Microservices offer decentralization as each service can independently work without depending on the other. It is critical to determine when to use these two modes. A message queue is naturally asynchronous. Although a message queue improves performance, it increases code complexity. Initially, it was simple to invoke returned results by using RPC synchronously. However, code compilation and debugging become more complicated after adopting an asynchronous message queue. That's all for Part 1. Tune in next time when we'll discuss brokers, topics, partitions, and more!",
+                    "mainEntityOfPage": {
+                      "@type": "WebPage",
+                      "@id": "https://dzone.com/articles/an-overview-of-kafka-distributed-message-system"
+                    },
+                    "image": {
+                      "@type": "ImageObject",
+                      "url": "https://dzone.com//dz2cdn1.dzone.com/storage/article-thumb/10818468-thumb.jpg"
+                    }
+                  }
+                </script>
+
+                  <script type="application/ld+json">
+                    {
+                      "@context": "https://schema.org",
+                      "@type": "BreadcrumbList",
+                      "itemListElement": [{
+                        "@type": "ListItem",
+                        "position": 1,
+                        "name": "DZone",
+                        "item": "https://dzone.com"
+                      }, {
+                        "@type": "ListItem",
+                        "position": 2,
+                        "name": "Big Data Zone",
+                        "item": "https://dzone.com/big-data-analytics-tutorials-tools-news"
+                      }, {
+                        "@type": "ListItem",
+                        "position": 3,
+                        "name": "An Overview of the Kafka Distributed Message System (Part 1)",
+                        "item": "https://dzone.com/articles/an-overview-of-kafka-distributed-message-system"
+                      }]
+                    }
+                  </script>
+
+            <article>
+              <div class="content">
+                <div class="header">
+                  <div class="col-xs-12 breadcrumb-padding">
+                    <a href="/">DZone</a>
+                    >
+                      <a href="/big-data-analytics-tutorials-tools-news">Big Data Zone</a>
+                      >
+                      <a href="#">An Overview of the Kafka Distributed Message System (Part 1)</a>
+                  </div>
+
+
+                  <div class="header-title">
+                    <div class="title">
+                      <h1 class="article-title">An Overview of the Kafka Distributed Message System (Part 1)</h1>
+                    </div>
+
+                    <div class="subhead">
+                      <h3>Apache Kafka is one of the most popular tools for big data out there. If you're curious as to why, read on to take a look under the hood!</h3>
+                    </div>
+
+                    <div class="publish-meta">
+                        <div class="article-author-meta">
+                          <img src="https://dz2cdn1.dzone.com/thumbnail?fid=11612545&w=80" class="avatar" alt="Leona Zhang user avatar" width="40">
+                          by
+
+                          <div class="author-info">
+                            <span class="author-name">
+                              <a href="/users/3166594/andera-j.html" rel="nofollow">Leona Zhang</a>
+                            </span>
+                          </div>
+
+
+
+
+                          &middot;
+                        </div>
+                      <span class="author-date">
+                        Dec. 07, 18
+                      </span>
+                      &middot;
+                        <a href="/big-data-analytics-tutorials-tools-news" id="portal-name">
+                          <span class="portal-name">Big Data Zone</span>
+                        </a>
+                      &middot;
+                      <span>Tutorial</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="author-n-useraction">
+                  <div class="like action">
+                    <div id="activity-like-icon" class="dz-like icon-thumbs-up">
+                      <span class="action-label">
+                        <span id="activity-like-text">Like</span>
+                      </span>
+                      <a href="#">
+                        <span id="activity-like-counter">(16)</span>
+                      </a>
+                    </div>
+                  </div>
+
+                  <div class="action">
+
+                    <button class="comment">
+                      <i class="icon-comment"></i>
+                      Comment
+                      <span id="activity-comment-counter" class="comment-count"></span>
+                    </button>
+                  </div>
+
+                  <div class="save action">
+                    <div id="activity-save-icon" class="save icon-star-empty">
+                      <span id="activity-save-text" class="action-label">Save</span>
+                    </div>
+                  </div>
+
+                  <div class="tweet action">
+                    <a id="tweet-link" href="" class="title" target="_blank">
+                      <span><i class="icon-twitter"></i></span>
+                      <span class="action-label">Tweet</span>
+                    </a>
+                  </div>
+
+                  <div class="pull-right">
+                    <div id="activity-view-container" class="article-views action">
+                      <i class="icon-eye"></i> 29.82K
+                      <span class="action-label">Views</span>
+                    </div>
+                  </div>
+                </div>
+
+                    <div class="signin-prompt">
+                      <p>Join the DZone community and get the full member experience.</p>
+                      <a id="article-signin-prompt" href="/static/registration.html">Join For Free</a>
+                    </div>
+                    <div class="arrow-down"></div>
+
+                  <div id="top-bumper-container"></div>
+
+                <div>
+                  <div class="content-html"><p pid="1">I originally intended to name this article &quot;Setting up a Kafka Message Queue Cluster.&quot; However, unlike RabbitMQ, Kafka does not implement message queue protocols (for example, Advanced Message Queuing Protocol (AMQP)). AMQP provides advanced queuing protocols for unified message services. It is an open standard for application layer protocols and designed for message-oriented middleware. Therefore, although Kafka's usage mode is more like a queue, it is still not strictly a message queue. So I decided to give this article a more generic name: &quot;An Overview of Kafka Distributed Message System.&quot;</p> 
+<h2>Introduction to Kafka</h2> 
+<p pid="2">LinkedIn was the first company to develop Kafka using the Java and Scala languages. Its source code was open sourced in 2011, and it became a top project of the Apache Software Foundation in 2012. In 2014, several founders of Kafka set up a new company named Confluent, which specialized in Kafka.</p> 
+<p pid="3">The purpose of the Kafka project is to provide a unified, high-throughput, and low-delay system platform for real-time data processing. Kafka delivers the following three functions:</p> 
+<ol> 
+ <li><strong>Publishing and Subscription:</strong> Kafka publishes subscription streaming data similar to other message systems.</li> 
+ <li><strong>Processing:</strong> Kafka compiles a stream processing application and responds to real-time events.</li> 
+ <li><strong>Storage:</strong> Kafka securely stores streaming data in a distributed and fault-tolerant cluster.</li> 
+</ol> 
+<h2>Message System</h2> 
+<p pid="4">Kafka is a message system. Let us understand more about the message system and the problems it solves. Take the currently popular microservice architecture as an example. Let's assume that there are three terminal-oriented (WeChat official account, mobile app, and browser) web services (HTTP protocols) at the web end, namely Web1, Web2, and Web3, and three internal application services App1, App2, and App3 (Remote Procedure Call, for example, WCF and gRPC). If there is no message system and the direct connected mode is adopted, the communication mode between them may be as follows:</p> 
+<p pid="5" style="text-align: center;"><img alt="1" class="fr-fin fr-dib" src="https://yqintl.alicdn.com/ac68524817947f2a825eab1fb2668cbabe622c5e.png" title="1" /><em>Figure 1: Structure of the System that Communicates in the Direct Connected Mode</em></p> 
+<p pid="6">The following issues exist while adopting this mode:</p> 
+<ol> 
+ <li>Tightly coupled services increase the challenges. If an external interface of application service two is modified, all components invoking the interface would require modification. In the extreme circumstance shown above, (where all components invoke the interface, which is rare in practice) all other web and application services would require modification.</li> 
+ <li>Modifying an interface with tightly coupled services is difficult. If an uncontrolled third-party application invokes the interface, the interface would require a modification. This would make third-party applications unavailable. Modifying WeChat's official interface will lead to a failure of thousands of applications.</li> 
+ <li>Launching different versions of an interface is the resolution to this problem. There are various access modes provided such as web/v1/interface, web/v1.1/interface, and app/v2.0/interface. Interfaces are compatible among minor versions; however, they aren't compatible among versions that are significantly different and completely tweaked.</li> 
+ <li>Although the above interface planning method solves the issue of tight coupling to some extent, this method isn't entirely free of challenges. Firstly, multiple versions need to be modified should there be an update and secondly, a large number of versions need maintenance.</li> 
+ <li>The method also creates difficulties in operation. It becomes complex to increase or decrease clients. If application service 4 is now added to provide a function necessary for a web service, web service 1, web service 2, and web service 3 must be modified. Similarly, if application service 2 is no longer required, the code that is used to invoke this service must be removed on the web service's end.</li> 
+ <li>Performance is limited, and expansion becomes difficult. For example, it is imperative to use a third-party tool such as ZooKeeper or Consul to achieve load balancing. An alternative approach is to either rewrite the code or adding specific configurations.</li> 
+</ol> 
+<p pid="14">However, after the introduction of the message system, the structure changes as below:</p> 
+<p pid="15" style="text-align: center;"><img alt="2" class="fr-fin fr-dib" src="https://yqintl.alicdn.com/a4cc0306fdd77eae1bca725a71c89acd0ff702e6.png" title="2" /><em>Figure 2: Structure of the System After the Introduction of the Message System</em></p> 
+<p pid="16">After the introduction of the message system, all the issues mentioned previously get resolved.</p> 
+<ol> 
+ <li>Components, web services, and application services no longer need to be concerned about each other's interface definitions. Instead, they only need to be concerned about the data structure (JSON structure).</li> 
+ <li>There isn't a need to worry about the structure of Kafka. It is mature, highly standard, and relatively stable. However, the protocol used to communicate with Kafka needs attention.</li> 
+ <li>Kafka improves performance. It is not only designed to transmit big data but also meet the requirements of most enterprises with its throughput.</li> 
+ <li>Kafka makes expansion easy through clustering. Moreover, it has a unique model that provisions common needs such as load balancing.</li> 
+</ol> 
+<h2>Two Message System Models</h2> 
+<h3 pid="27"><strong>Producer/Consumer Model:</strong></h3> 
+<p pid="28">Producer is an application that produces messages at one end of a data pipeline. Consumer is an application that consumes messages at one end of a data pipeline.</p> 
+<p pid="29">Outlined below are the two scenarios when the producer sends messages to a queue:</p> 
+<ol> 
+ <li>If no consumer connects to the queue or consumes messages at this time, messages are saved in the queue until it is full or a consumer is online.</li> 
+ <li>If multiple consumers connect to the queue at this time, one consumer receives only one message. Therefore, load balancing is naturally achieved in cases where there are multiple consumers in practice.</li> 
+</ol> 
+<h3 pid="30"><strong>Publisher/Subscriber Model:</strong></h3> 
+<p pid="31">Publisher: an application that generates events at one end of a data pipeline.</p> 
+<p pid="32">Subscriber: an application that responds to events at one end of a data pipeline.</p> 
+<p pid="33">In the Publisher/Subscriber model, the data sent to a queue is in the form of events instead of messages. In this case, data processing is the subscription of an event, and not message consumption.</p> 
+<p pid="34">If no subscriber connects to the queue after the publisher publishes an event, the event gets lost, i.e., no application responds to it. If a subscriber is online later, he will not receive the event.</p> 
+<p pid="35">In case if multiple subscribers connect to the queue after the publisher publishes an event at the same time, the event gets broadcasted to all the subscribers, and each subscriber receives the same event. Therefore, load balancing does not exist.</p> 
+<h2>Stream Processing Application</h2> 
+<p pid="36">There is a difference between batch processing applications and stream processing applications. A visible boundary determines the most significant difference between batch processing and stream processing. If it exists, it is called batch processing. For example, a client collects the data once every hour, sends this data to the server for statistics, and then saves the statistical results in the statistical database.</p> 
+<p pid="37">If the boundary doesn't exist, the processing is called streaming data (stream processing). Here is an example of stream processing: logs and orders are generated continuously on a large website just like a data flow. If the processing of each log and order takes less than several hundred milliseconds or several seconds after its generation, the application is called a stream application. If the collection of logs and orders happens once every hour followed by a unified transmission, the original stream data converts into batch data.</p> 
+<p pid="38">Occasionally, stream processing becomes imperative. For example, Jack Ma wanted to display the orders and sales on Tmall for November 11 on a large screen. If the data center works in a T+1 mode and can obtain data for November 11 on November 12, Jack Ma would not be happy.</p> 
+<p pid="39">The method for processing stream data is different from the method for processing batch data. Kafka provides a unique component, Kafka Streaming, to process stream data. Kafka offers different elements for other projects in the Hadoop ecosystem. For example, Spark also uses Spark Streaming to process stream data. Storm was the first system that was built to process stream data exclusively.</p> 
+<p pid="40">Apart from data boundaries, processing times can be used to differentiate stream processing and batch processing. The processing cycle for batch processing is generally hours or days, while the processing cycle for stream processing is usually seconds. Correspondingly, batch processing is referred to as offline data processing, whereas, stream processing is referred to as real-time data processing. In the unit of minutes, data processing is referred as near-line data processing. However, data processing is seldom discussed and generally processed offline unless the processing cycle slows down.</p> 
+<h2>Storage</h2> 
+<p pid="41">Kafka securely stores data in a distributed and fault-tolerant cluster. The default storage period is one week. Additionally, Kafka naturally supports clusters. Kafka allows us to conveniently add or reduce machines and specify the number of copies for data. This ensures that the cluster provides break free services even when individual servers in the cluster break down.</p> 
+<p pid="42">Kafka is primarily used to transmit data in our data center project. Let me first introduce the background of this project and then provide an understanding of issues that Kafka solves.</p> 
+<p pid="43">At present, 10 applications are running in the front-end which might increase with time. The front-end applications send data to the backend data center (an application called data collector or collector for short). The collector corresponds to multiple applications. While it is idle most of the time, when numerous applications send data at the same time, the collector isn't able to process the data. In this case, there is a requirement for buffer mechanisms so that the collector is not too idle or busy. Kafka is useful as a buffer pool for the data in such situations.</p> 
+<p pid="44">In this example, instead of selecting a traditional message queue component such as RabbitMQ, I have selected Kafka. This is because Kafka is inherently developed to cope with a large batch of data and provide better performance.</p> 
+<p pid="45">Kafka serves the function of &quot;smooth upgrading&quot; in a data center in addition to data buffering. Outlined below is a quick diagrammatic representation:</p> 
+<p pid="46" style="text-align: center;"><img alt="3" class="fr-fin fr-dib" src="https://yqintl.alicdn.com/ef02bfeb3cbc9580dc854fc15d7ea27de60595f9.png" title="3" /><em>Figure 3: Smooth Upgrading</em></p> 
+<p pid="47">In the previous use case, we used .NET for developing front-end, data collection, and data cleaning applications. MS SQL stores the same. Big data technology helped us to store large amounts of data on the HDFS and Sparks helped us to collect statistics.</p> 
+<p pid="60">There was no need to change the previous versions of front-end, data collection, or data cleaning applications after introducing Kafka. The new versions of collection or cleaning applications can be accessed because Kafka allows us to extract data at any point in time.</p> 
+<p pid="61">It is easy to switch to the new system by simply stopping previous versions of the applications once the new versions pass the test.</p> 
+<h3>Challenges After a Message Queue Is Introduced</h3> 
+<p pid="62">Every coin has two sides. After introducing Kafka, the following changes take place.</p> 
+<p pid="63">Although the applications in the system are not mutually dependent, they depend heavily on Kafka. Stability of Kafka, therefore, becomes very important (similar to infrastructure such as Microsoft SQL Server).</p> 
+<ol> 
+ <li>In practice, implement microservices. Microservices offer decentralization as each service can independently work without depending on the other. It is critical to determine when to use these two modes.</li> 
+ <li>A message queue is naturally asynchronous. Although a message queue improves performance, it increases code complexity. Initially, it was simple to invoke returned results by using RPC synchronously. However, code compilation and debugging become more complicated after adopting an asynchronous message queue.</li> 
+</ol> 
+<p pid="126">That's all for Part 1. Tune in next time when we'll discuss brokers, topics, partitions, and more!</p></div>
+                </div>
+
+                  <div id="bottom-bumper-container"></div>
+                  <div class="article-tag-pill-container">
+                      <span class="article-tag-pill">kafka</span>
+                      <span class="article-tag-pill">Big data</span>
+                      <span class="article-tag-pill">mobile app</span>
+                      <span class="article-tag-pill">Stream processing</span>
+                      <span class="article-tag-pill">Web Service</span>
+                      <span class="article-tag-pill">microservice</span>
+                      <span class="article-tag-pill">Message queue</span>
+                      <span class="article-tag-pill">clustering</span>
+                      <span class="article-tag-pill">Batch processing</span>
+                  </div>
+
+                  <div class="attribution">
+                      <p>Published at DZone with permission of <span>Leona Zhang</span>.
+                        <span>
+                          <a href="https://www.alibabacloud.com/blog/an-overview-of-kafka-distributed-message-system_594218?spm=a2c41.12345588.0.0" target="_blank">See the original article here.
+                            <i class="icon-link-ext-alt"></i>
+                          </a>
+                        </span>
+                      </p>
+                    <p>Opinions expressed by DZone contributors are their own.</p>
+                  </div>
+
+                    <div class="related">
+                      <h3>Popular on DZone</h3>
+                        <ul>
+                            <li class="relateddiv">
+                              <a href="/articles/how-to-hash-salt-and-verify-passwords-in-nodejs-py?fromrel=true">How to Hash, Salt, and Verify Passwords in NodeJS, Python, Golang, and Java</a>
+                            </li>
+                            <li class="relateddiv">
+                              <a href="/articles/usage-of-java-streams-amp-lambdas-in-selenium-webd?fromrel=true">Usage of Java Streams and Lambdas in Selenium WebDriver</a>
+                            </li>
+                            <li class="relateddiv">
+                              <a href="/articles/data-visualization-of-healthcare-expenses-by-count?fromrel=true">Data Visualization of Healthcare Expenses by Country Using Web Scraping in Python</a>
+                            </li>
+                            <li class="relateddiv">
+                              <a href="/articles/implementing-one-way-and-two-way-ssl-mutual-authen?fromrel=true">Implementing One and Two Way SSL (Mutual Authentication) for MuleSoft Application</a>
+                            </li>
+                        </ul>
+                      </div>
+<div class="comments-overlay"></div>
+<div id="comment-box">
+  <div class="comment-box-wrapper">
+    <div id="comment-input-editor"></div>
+  </div>
+  <div class="info hidden"></div>
+  <div class="comments-content">
+    <div class="comment-header">
+      <hr />
+      <span class="icon-comment">
+        <span class="numOfComments"></span> Comments
+      </span>
+    </div>
+    <div class="comments"></div>
+  </div>
+</div>
+            </article>
+          </div>
+
+            <div id="above-pr-ad" class="bottom-ad-container">
+              <div id="div-gpt-ad-1435246566686-11" data-gpt-slot="bottom"></div>
+            </div>
+            <div class="layout-card widget-top-border partner-resources-block" style="width:100%; margin-bottom: 1em;">
+              <div class="main-container">
+                <div class="featured-header">
+                  <h2>
+                      Big Data<span> Partner Resources</span>
+                  </h2>
+                </div>
+                <div class="partner-resources-container">
+                  <div id="div-gpt-ad-1435246566686-5" class="resource-block" data-gpt-slot="partner" data-gpt-position="pr1"></div>
+                  <div id="div-gpt-ad-1435246566686-6" class="resource-block" data-gpt-slot="partner" data-gpt-position="pr2"></div>
+                  <div id="div-gpt-ad-1435246566686-7" class="resource-block" data-gpt-slot="partner" data-gpt-position="pr3"></div>
+                </div>
+              </div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <div id="bsa-parent" class="bottom-sticky-ad-container hide">
+      <div class="container">
+        <div class="col-md-9">
+          <div class="fixed-bottom-div">
+            <div class="inline-block">
+              <div id="div-gpt-ad-1635294790718-12" data-gpt-desktop="true" class="bottom-sticky-ad"></div>
+            </div>
+            <div class="inline-block">
+              <span id="close" class="bottom-sticky-ad-close-button" onclick="removeBottomStickyAd()">
+                X
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  <div class="modal fade bd-example-modal-lg" id="modal-message" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header"></div>
+        <div class="modal-body"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script async>const articleTitle = 'An Overview of the Kafka Distributed Message System (Part 1)'
+const articleUrl = 'https://dzone.com/articles/an-overview-of-kafka-distributed-message-system'
+
+const retweetLink = document.querySelector('#tweet-link')
+
+function retweet(event) {
+    event.preventDefault()
+    event.stopPropagation()
+
+    const twitter = 'https://twitter.com/intent/tweet'
+    const params = '?text=' + encodeURIComponent(articleTitle) + '&url=' + articleUrl + '&ref=dzone.com&via=DZoneInc'
+    const win = window.open(twitter + params, '_blank')
+    win.focus()
+}
+
+retweetLink.addEventListener('click', retweet);
+
+function showStatusMessage(options) {
+  var modal = document.getElementById("modal-message");
+
+  if(modal) {
+    modal.classList.add(options.type);
+    var modalBody = modal.querySelector(".modal-content .modal-body");
+    var modalHeader = modal.querySelector(".modal-content .modal-header");
+
+    modalHeader.innerText = options.header ? options.header : "";
+    modalBody.innerText = options.body ? options.body : "" ;
+
+    $(modal).modal("show");
+
+    $(modal).on('hidden.bs.modal', function () {
+      modal.classList.remove(options.type);
+    });
+  }
+}
+
+function showConfirmMessage(options) {
+  var modal = document.getElementById("modal-message");
+
+  if(modal) {
+    modal.classList.add(options.type);
+    var modalBody = modal.querySelector(".modal-content .modal-body");
+    var modalHeader = modal.querySelector(".modal-content .modal-header");
+
+    modalHeader.innerText = options.header ? options.header : "";
+    modalBody.innerText = options.body ? options.body : "" ;
+
+    if (options.textarea) {
+      const textareaDiv = document.createElement('div')
+      const textareaLabel = document.createElement('label')
+      textareaLabel.setAttribute('for', 'modal-textarea')
+      textareaLabel.innerText = options.textarea.label
+
+      const textarea = document.createElement('textarea')
+      textarea.id = 'modal-textarea'
+      textarea.placeholder = (options.textarea.placeholder || '')
+      textarea.setAttribute('rows', (options.textarea.rows || 3))
+      textarea.classList.add('form-control', 'not-resizable')
+
+      if (options.textarea.maxlength) {
+        textarea.maxLength = options.textarea.maxlength
+      }
+
+      textareaDiv.appendChild(textareaLabel)
+      textareaDiv.appendChild(textarea)
+      modalBody.appendChild(textareaDiv)
+    }
+
+    var btnContainer = document.createElement("div");
+    btnContainer.classList.add("btn-container");
+
+    var noBtn = document.createElement("button");
+    noBtn.innerText = options.noBtnText ? options.noBtnText : "No";
+    noBtn.classList.add("no-btn");
+
+    var yesBtn = document.createElement("button");
+    yesBtn.innerText = options.yesBtnText ? options.yesBtnText : "Yes";
+    yesBtn.classList.add("yes-btn");
+
+    btnContainer.appendChild(noBtn);
+    btnContainer.appendChild(yesBtn);
+
+    modalBody.appendChild(btnContainer);
+
+    $(modal).modal("show");
+
+    $(noBtn).one("click", function() {
+      $(modal).modal("hide");
+
+      if(options.noCallback) {
+        $(modal).one('hidden.bs.modal', function () {
+          options.noCallback();
+        });
+      }
+    });
+
+    $(yesBtn).one("click", function() {
+      $(modal).modal("hide");
+
+      if(options.yesCallback) {
+        $(modal).one('hidden.bs.modal', function () {
+          options.yesCallback();
+        });
+      }
+    });
+
+    $(modal).on('hidden.bs.modal', function () {
+      modal.classList.remove(options.type);
+    });
+  }
+}
+</script><link rel="stylesheet" media="all" href="https://dz2cdn2.dzone.com/themes/dz20/ftl/footer/styles.css">
+
+<div id="ftl-footer">
+  <div class="container-fluid footerOuter">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="container">
+          <div class="row footer">
+            <div class="col-md-12 footerWidget">
+              <div class="row footerContainer footer">
+                <div class="left col-xs-12 col-sm-7">
+                  <div class="col-xs-12 social-media-icons footer-mobile">
+                    <ul class="icons-only">
+                      <li class="rss-icon" id="rss-footer-1">
+                        <a href="/pages/feeds" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-rss-1"></i>
+                        </a>
+                      </li>
+                      <li class="twitter-icon">
+                        <a href="https://twitter.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-twitter"></i>
+                        </a>
+                      </li>
+                      <li class="facebook-icon">
+                        <a href="https://www.facebook.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-facebook-1"></i>
+                        </a>
+                      </li>
+                      <li class="linkedin-icon">
+                        <a href="https://www.linkedin.com/company/dzone/" target="_blank"
+                           rel="noreferrer noopener">
+                          <i class="icon-linkedin-1"></i>
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div class="top-section col-xs-12">
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">ABOUT US</p>
+                      <ul class="link-group">
+                        <li><a href="/pages/about" rel="noreferrer noopener">About DZone</a></li>
+                        <li><a href="mailto:support@dzone.com" rel="noreferrer noopener">Send feedback</a></li>
+                        <li><a href="https://careers.dzone.com/" target="_blank" rel="noreferrer noopener">Careers</a></li>
+                          <li><a href="/sitemap" rel="noreferrer noopener">Sitemap</a></li>
+                      </ul>
+                    </div>
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">ADVERTISE</p>
+                      <ul class="link-group">
+                        <li><a href="https://advertise.dzone.com" target="_blank" rel="noreferrer noopener">Advertise with DZone</a></li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div class="bottom-section col-xs-12">
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">CONTRIBUTE ON DZONE</p>
+                      <ul class="bottom-top-list link-group">
+                        <li><a href="/articles/dzones-article-submission-guidelines">Article Submission Guidelines</a></li>
+                        <li><a href="/pages/mvb" rel="noreferrer noopener">MVB Program</a></li>
+                        <li><a href="/pages/contribute" rel="noreferrer noopener">Become a Contributor</a></li>
+                        <li><a href="/writers-zone" rel="noreferrer noopener">Visit the Writers' Zone</a></li>
+                      </ul>
+
+                      <p class="section-header">LEGAL</p>
+                      <ul class="link-group">
+                        <li><a href="/pages/tos" rel="noreferrer noopener">Terms of Service</a></li>
+                        <li><a href="/pages/privacy" rel="noreferrer noopener">Privacy Policy</a></li>
+                      </ul>
+                    </div>
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">CONTACT US</p>
+                      <ul class="link-group">
+                        <li>600 Park Offices Drive</li>
+                        <li>Suite 300</li>
+                        <li>Durham, NC 27709</li>
+                        <li><a href="mailto:support@dzone.com" rel="noreferrer noopener">support@dzone.com</a></li>
+                        <li><a href="tel:+19196780300" rel="noreferrer noopener">+1 (919) 678-0300</a></li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="right col-xs-12 col-sm-5">
+
+                  <p class="connect-text">Let's be friends:</p>
+                  <div class="col-xs-12 social-media-icons footer-wide">
+                    <ul class="icons-only">
+                      <li class="rss-icon" id="rss-footer-1">
+                        <a href="/pages/feeds" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-rss-1"></i>
+                        </a>
+                      </li>
+                      <li class="twitter-icon">
+                        <a href="https://twitter.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-twitter"></i>
+                        </a>
+                      </li>
+                      <li class="facebook-icon">
+                        <a href="https://www.facebook.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-facebook-1"></i>
+                        </a>
+                      </li>
+                      <li class="linkedin-icon">
+                        <a href="https://www.linkedin.com/company/dzone/" target="_blank"
+                           rel="noreferrer noopener">
+                          <i class="icon-linkedin-1"></i>
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div class="col-xs-12 powered-by">
+                    <p>DZone.com is powered by&nbsp;</p>
+                    <a href="https://devada.com/answerhub/" rel="noreferrer noopener">
+                      <img src=""
+                           data-src="https://dz2cdn2.dzone.com/themes/dz20/images/answerhub_logo_white_footer.png"
+                           width="150"
+                           height="56"
+                           class="lazyload"
+                           alt="AnswerHub logo">
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  <script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"></script>
+
+  <script async>
+      (function(w, d, s, l, i) {
+          w[l] = w[l] || [];
+          w[l].push({'gtm.start': new Date().getTime(), event: 'gtm.js'});
+          var f = d.getElementsByTagName(s)[0], j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : '';
+          j.async = true;
+          j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+          f.parentNode.insertBefore(j,f);
+      })(window, document, 'script', 'dataLayer', 'GTM-K25QL22');
+  </script>
+
+  <script>
+      window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+      ga('create', 'UA-410289-1', 'auto');
+      ga('require', 'linkid', 'linkid.js');
+      ga('require', 'GTM-TSD9TZP');
+      ga('set', 'siteSpeedSampleRate', 25);
+  </script>
+  <script async src="https://www.google-analytics.com/analytics.js"></script>
+  <script async>const analytics = {
+    'dimension1': 'big-data',
+    'dimension2': 'article/tutorial',
+    'dimension3': '2018-12-07',
+    'dimension4': '0',
+    'dimension5': '',
+    'dimension7': 'kafka, Big data, mobile app, Stream processing, web service, microservice, Message queue, clustering, Batch processing',
+    'dimension8': 'Andera_J',
+    'dimension9': 'undefined',
+    'dimension10': 'Alibaba Cloud'
+}
+
+if (window.ga) {
+    Object.keys(analytics).forEach(function(key) {
+        window.ga('set', key, analytics[key])
+    })
+
+    window.ga('send', 'pageview')
+}</script>
+
+  <script>
+      !function (e, o, n, i) {
+          if (!e) {
+              e = e || {}, window.permutive = e, e.q = [];
+              var t = function () {
+                  return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, function (e) {
+                      return (e ^ (window.crypto || window.msCrypto).getRandomValues(new Uint8Array(1))[0] & 15 >> e / 4).toString(16)
+                  })
+              };
+              e.config = i || {}, e.config.apiKey = o, e.config.workspaceId = n, e.config.environment = e.config.environment || "production", (window.crypto || window.msCrypto) && (e.config.viewId = t());
+              for (var g = ["addon", "identify", "track", "trigger", "query", "segment", "segments", "ready", "on", "once", "user", "consent"], r = 0; r < g.length; r++) {
+                  var w = g[r];
+                  e[w] = function (o) {
+                      return function () {
+                          var n = Array.prototype.slice.call(arguments, 0);
+                          e.q.push({
+                              functionName: o,
+                              arguments: n
+                          })
+                      }
+                  }(w)
+              }
+          }
+      }(window.permutive, "bca90777-e088-4f2a-96c2-13ad18deeccc", "18ad0c5b-460c-4d19-a729-dc537805538f", {});
+      window.googletag = window.googletag || {}, window.googletag.cmd = window.googletag.cmd || [], window.googletag.cmd.push(function () {
+          if (0 === window.googletag.pubads().getTargeting("permutive").length) {
+              var e = window.localStorage.getItem("_pdfps");
+              window.googletag.pubads().setTargeting("permutive", e ? JSON.parse(e) : []);
+              var o = window.localStorage.getItem("permutive-id");
+              o && (window.googletag.pubads().setTargeting("puid", o), window.googletag.pubads().setTargeting("ptime", Date.now().toString())), window.permutive.config.viewId && window.googletag.pubads().setTargeting("prmtvvid", window.permutive.config.viewId), window.permutive.config.workspaceId && window.googletag.pubads().setTargeting("prmtvwid", window.permutive.config.workspaceId)
+          }
+      });
+
+
+      permutive.addon('web', {
+          'page': {
+              'category': 'Big Data',
+              'node': {
+                  'authorCompany': 'Alibaba Cloud',
+                  'authors': [3166594, ],
+                  'publishDate': new Date(1544140800000),
+                  'sponsorAuthor': false,
+                  'tags': ['kafka', 'Big data', 'mobile app', 'Stream processing', 'web service', 'microservice', 'Message queue', 'clustering', 'Batch processing', ],
+                  'title': 'An Overview of the Kafka Distributed Message System (Part 1)',
+                  'type': 'article',
+              },
+              'section': 'article',
+          }
+      });
+  </script>
+  <script async src="https://18ad0c5b-460c-4d19-a729-dc537805538f.edge.permutive.app/18ad0c5b-460c-4d19-a729-dc537805538f-web.js"></script>
+
+  <script>
+      const csrf = '8706996539822934488'
+      const articleId = 2612106
+      const likes = 16
+      const assetDomain = 'https://dz2cdn2.dzone.com'
+      const codemirrorVars = {
+          modeURI: 'https://dz2cdn2.dzone.com/themes/dz20/lib/codemirror/mode/',
+          requiredScripts: [
+              'https://dz2cdn2.dzone.com/themes/dz20/lib/codemirror/lib/codemirror.js',
+              'https://dz2cdn2.dzone.com/themes/dz20/lib/codemirror/mode/meta.js'
+          ]
+      }
+
+      const gptTags = {
+          'zone': 'big_data',
+          'topicTag': 'kafka,Big data,mobile app,Stream processing,web service,microservice,Message queue,clustering,Batch processing',
+          'company': '',
+          'siteSection': 'Zones',
+          'articleCategory': 'tutorial',
+          'nodeID': '2612106',
+          'authorID': '3166594',
+          'publishYear': '2018',
+          'publishMonth': '12',
+          'jobRole': '',
+          'companySize': ''
+      }
+
+      const minCommentChar = 10;
+      const peer39Enabled = true;
+  </script>
+
+  <script src="https://dz2cdn2.dzone.com/themes/dz20/lib/static/jquery/jquery.min.js"></script>
+  <script async src="https://dz2cdn2.dzone.com/themes/dz20/lib/static/bootstrap/bootstrap.min.js"></script>
+  <script async src="https://dz2cdn2.dzone.com/themes/dz20/ftl/article/ads.js"></script>
+
+
+
+  <script>
+      function loadScript(src) {
+          return new Promise(function (resolve, reject) {
+              const s = document.createElement('script')
+              s.src = src
+              s.onload = resolve
+              s.onerror = reject
+              document.head.appendChild(s)
+          })
+      }
+
+      function loadStyle(href) {
+          const link = document.createElement('link')
+          link.rel = 'stylesheet'
+          link.href = href
+          document.head.appendChild(link)
+      }
+
+      function loadScriptsSync(deferred) {
+          var p = Promise.resolve()
+          for (var i = 0; i < deferred.length; i++) {
+              let script = deferred[i]
+              p = p.then(function() {
+                  return loadScript(script)
+              })
+          }
+          return p
+      }
+
+      function loadStyles() {
+          const deferred = [
+              'https://dz2cdn2.dzone.com/themes/dz20/lib/codemirror/lib/codemirror.css',
+              'https://dz2cdn2.dzone.com/themes/dz20/ftl/comments/styles.css',
+              'https://dz2cdn2.dzone.com/themes/dz20/lib/froala3/css/froala_editor.pkgd.min.css',
+              'https://dz2cdn2.dzone.com/themes/dz20/lib/froala3/css/themes/gray.min.css',
+              'https://dz2cdn2.dzone.com/themes/dz20/ftl/article/mini-profile.css'
+          ]
+
+          for (var i = 0; i < deferred.length; i++) {
+              loadStyle(deferred[i])
+          }
+      }
+
+      window.addEventListener('load', function(event) {
+          loadStyles()
+          loadScriptsSync([
+              'https://dz2cdn2.dzone.com/themes/dz20/ftl/header/auth-status.js',
+              'https://dz2cdn2.dzone.com/themes/dz20/lib/lazysizes.min.js',
+              'https://dz2cdn2.dzone.com/themes/dz20/ftl/article/codeblocks.js',
+              'https://dz2cdn2.dzone.com/themes/dz20/ftl/article/activity-bar.js',
+              'https://dz2cdn2.dzone.com/themes/dz20/lib/froala3/js/froala_editor.pkgd.min.js',
+              'https://dz2cdn2.dzone.com/themes/dz20/ftl/froala/content.js',
+              'https://dz2cdn2.dzone.com/themes/dz20/ftl/comments/content.js',
+              'https://dz2cdn2.dzone.com/themes/dz20/ftl/article/content.js'
+          ])
+      })
+  </script>
+</body>
+</html>

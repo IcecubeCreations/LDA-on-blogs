@@ -1,0 +1,530 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<title>The Model View Controller pattern in web applications</title>
+<meta  http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta  name="generator" content="Org-mode" />
+<meta  name="author" content="Joost Diepenmaat" />
+<link rel="stylesheet" type="text/css" href="../zeekat.css" />
+<link rel="shortcut icon" href="/favicon.ico" />
+<link rel="apple-touch-icon" href="/favicon.png" />
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script> (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o), m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)})(window,document,'script','//www.google-analytics.com/analytics.js','ga'); ga('create', 'UA-45917633-1', 'zeekat.nl'); ga('send', 'pageview'); </script>
+</head>
+<body>
+<div id="content">
+<h1 class="title">The Model View Controller pattern in web applications</h1>
+<div class="topnav">
+<p>
+<a href="../index.html">Development Consulting</a>
+</p>
+
+<p>
+<a href="index.html" class="selected">Articles</a>
+</p>
+
+<p>
+<a href="../news/index.html">News</a>
+</p>
+</div>
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1">The rambling introduction</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+For centuries people have sought ways to separate style from
+substance, good manners from good science, and user interface from 
+application logic. The Model View Controller (MVC) design pattern is a 
+way of separating the user-interface from the substance of the 
+application.
+</p>
+
+<p>
+In recent years, MVC has become a popular strategy for building
+websites. There are now  web-MVC frameworks available 
+for many programming languages, for instance Struts 
+for Java, Maypole for Perl and Rails for Ruby.
+</p>
+
+<p>
+This article introduces the MVC pattern and its use in web 
+development. I will mention some Perl modules, but most
+of it will be applicable to any language supporting object-oriented 
+programming.
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2">Apologies</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+MVC is usually implemented in an object-oriented style, so I&rsquo;ll 
+mention objects, classes etc here. This text might not make
+very much sense without some experience in OO programming and web
+development. Information about all the patterns mentioned here
+can be found at the C2 Wiki: <a href="http://c2.com/cgi/wiki">http://c2.com/cgi/wiki</a>
+</p>
+
+<p>
+Since MVC was originally invented for traditional GUI applications,
+certain details in original MVC pattern don&rsquo;t map well to web 
+applications. (L&lt;Note 1|Note 1&gt;)
+Since I&rsquo;m describing MVC for the web, I will simplify, change, 
+misrepresent and ignore those details here.
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3">So what the heck is it?</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+The idea of the MVC pattern is to divide an application into 3 parts:
+the Model, View and Controller. 
+Let&rsquo;s take a look at each of them.
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-4" class="outline-2">
+<h2 id="sec-4">Model</h2>
+<div class="outline-text-2" id="text-4">
+<p>
+The Model handles the state of the application. The state is what 
+your application is <i>about</i>.
+If your application is a forum, your Model might contain Class::DBI
+objects 
+representing threads, users and postings. The Model does not know 
+anything about 
+HTML, or web servers or anything like that. It just supplies ways to
+query the state, and ways to change that state.
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-5" class="outline-2">
+<h2 id="sec-5">View</h2>
+<div class="outline-text-2" id="text-5">
+<p>
+The View is the representation of the user interface. Usually there are
+many (possibly nested) Views in a single application. A view can query the
+model, but it is not supposed to change the state.  In web based MVC 
+systems, a view can be implemented using a template that renders
+an HTML page. In our hypothetical forum application, the Views would be the
+templates for rendering a full thread, the login page, the posting page
+etc.
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-6" class="outline-2">
+<h2 id="sec-6">Controller</h2>
+<div class="outline-text-2" id="text-6">
+<p>
+User actions on the View are send to the Controller. In a web environment, 
+this is usually done by having the Controller handle the incoming HTTP 
+requests.
+</p>
+
+<p>
+The Controller receives user requests, and translates them
+into actions that the Model should take. Then it selects
+the appropriate View to handle the response.
+</p>
+
+<p>
+It is possible to have more than one Controller, but most web application
+frameworks I&rsquo;ve used assume you only have one.
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-7" class="outline-2">
+<h2 id="sec-7">Example: a HTTP request.</h2>
+<div class="outline-text-2" id="text-7">
+<p>
+Figure 1. A sequence diagram of a single request/response
+pair. 
+</p>
+
+<pre class="example">
+Browser           View              Controller      Model
+ .                 .                 .               .
+ . HTTP Request    .                 .               .
+ +----------------------------------&gt;+               .
+ |                 .                 | update model  .
+ |                 .                 +--------------&gt;+
+ |                 .                 |               |
+ |                 .                 | return status |
+ |                 .                 +&lt;--------------+
+ |                 .     select view |               .
+ |                 +&lt;----------------+               .
+ |                 |                 .               .
+ |                 | query state     .               .
+ |                 +--------------------------------&gt;+
+ |                 |                 .               |
+ |		      |                 .  return state |
+ |                 +&lt;--------------------------------+
+ |   HTTP Response |                 .               .
+ +&lt;----------------+                 .               .
+ .                 .                 .               .
+</pre>
+
+<p>
+Notice that the Controller does not handle the communication
+between the View and the Model: the Views make direct requests
+to the Model.
+</p>
+</div>
+</div>
+
+
+<div id="outline-container-sec-8" class="outline-2">
+<h2 id="sec-8">What&rsquo;s so useful about it</h2>
+<div class="outline-text-2" id="text-8">
+</div><div id="outline-container-sec-8-1" class="outline-3">
+<h3 id="sec-8-1">Separation of requests and pages</h3>
+<div class="outline-text-3" id="text-8-1">
+<p>
+Since the Controller is in charge of handling the requests and
+selecting an appropriate page (View), there is no immediate coupling
+between the request made by the user and the resulting page.
+</p>
+
+<p>
+This turns out to be very useful if the page-flow in the application is
+complex, but even for simple applications the Controller is a good 
+place to handle common actions  - authentication and session management
+can be handled in the Controller, for instance.
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-8-2" class="outline-3">
+<h3 id="sec-8-2">Views are dumb</h3>
+<div class="outline-text-3" id="text-8-2">
+<p>
+Since all code that does anything except building a nice page for the
+user is outside the View objects, changing the layout does not involve 
+touching the logic of the application. Since the part of the application
+that changes the most during and after development is the layout,
+this means much less chance of adding bugs.
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-8-3" class="outline-3">
+<h3 id="sec-8-3">Shielding of the Model implementation</h3>
+<div class="outline-text-3" id="text-8-3">
+<p>
+Since all actions on the application state are handled by the Model,
+it is possible to change the Model&rsquo;s implementation without touching
+the user interface, as long as the Model&rsquo;s public API doesn&rsquo;t change.
+(but see L&lt;Coupling between View and Model|Coupling between View and Model&gt;).
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-8-4" class="outline-3">
+<h3 id="sec-8-4">Problems and limitations</h3>
+<div class="outline-text-3" id="text-8-4">
+</div><div id="outline-container-sec-8-4-1" class="outline-4">
+<h4 id="sec-8-4-1">What goes where</h4>
+<div class="outline-text-4" id="text-8-4-1">
+<p>
+Sometimes is just hard to figure out where a specific piece of the
+application is supposed to go. Especially dividing the
+Model from the Controller can be hard. As a rule of thumb, the Controller
+should be as minimal as possible - it is only responsible for translating
+HTTP requests into Model actions and selecting the right View - the 
+Model should provide all the behavior
+it can without handling the HTTP requests or output formatting details.
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-8-4-2" class="outline-4">
+<h4 id="sec-8-4-2">Coupling between View and Model</h4>
+<div class="outline-text-4" id="text-8-4-2">
+<p>
+One problem with having the View and Controller querying the Model
+is that changing the Model&rsquo;s public API means you also have to adapt
+the Controller and Views that act on it (L&lt;Note 2|Note 2&gt;). Adapting the Controller is
+usually not too much work, but changing a large number of Views
+will be annoying.
+</p>
+
+<p>
+The Model Model View Controller pattern tries to minimize the impact
+of these changes by using two Models: a Domain Model and an Application
+Model - the View only queries the Application Model, and the Application
+model can query the Domain Model. The Application Model usually
+partly generated by the GUI design tools. I haven&rsquo;t used this pattern at
+all, so I don&rsquo;t know how useful it is for web applications
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-8-4-3" class="outline-4">
+<h4 id="sec-8-4-3">Lots of objects</h4>
+<div class="outline-text-4" id="text-8-4-3">
+<p>
+Creating an MVC application can result in more classes and objects than 
+a &ldquo;page-based&rdquo; system. That means more design up front. On the
+other hand, a well designed MVC system will be easier to adapt and expand,
+because the code will be separated better.
+</p>
+</div>
+</div>
+</div>
+</div>
+
+
+
+<div id="outline-container-sec-9" class="outline-2">
+<h2 id="sec-9">Should I use it</h2>
+<div class="outline-text-2" id="text-9">
+<p>
+Possibly :-) I think that any web-based application that uses more than 
+a handful of templates, or has a complex interaction between pages would
+be a good candidate for the MVC pattern. There are alternatives, of course.
+See L&lt;Resources - Alternatives|resources__alternatives&gt;.
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-10" class="outline-2">
+<h2 id="sec-10">Available frameworks for Perl</h2>
+<div class="outline-text-2" id="text-10">
+<p>
+/Note: There are more frameworks. These are two examples I picked because
+they were the only two I had tried at the time I wrote this
+article./
+</p>
+</div>
+
+
+
+<div id="outline-container-sec-10-1" class="outline-3">
+<h3 id="sec-10-1">CGI::Application</h3>
+<div class="outline-text-3" id="text-10-1">
+<p>
+CGI::Application, by Jesse Erlbaum is a relatively simple module 
+that provides a good base-class for a Controller.
+It&rsquo;s easy to understand and it has some convenient HTML::Template support 
+(though it doesn&rsquo;t force you to use HTML::Template if you like another
+templating system better).
+</p>
+
+<p>
+You derive your Controller from the CGI::Application
+class, handling user requests via the run_modes system
+and you can use a templating system to implement the Views.
+</p>
+
+<p>
+How you implement your Model is entirely up to you. IMO this is a Good 
+Thing; the model is the most specific thing in an application, and a 
+framework should not make unnecessary restrictions on it.
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-10-2" class="outline-3">
+<h3 id="sec-10-2">Maypole</h3>
+<div class="outline-text-3" id="text-10-2">
+<p>
+Maypole, a fairly new project by Simon Cozens is a complete MVC 
+framework that uses lots 
+of other CPAN modules: CGI::Untaint, Class::DBI and extensions, 
+Template::Toolkit etc. 
+It &ldquo;aims to be the most generic and extensible [ &#x2026; ] MVC-based web 
+application framework&rdquo;, and comes bundled with templates
+for building CRUD (Create Update Delete) applications. Maypole runs best
+on mod_perl (mod_perl 2 now supported).
+</p>
+
+<p>
+While CGI::Application&rsquo;s approach is to set up a minimal base for
+your Controller, giving the programmer as much
+choice as possible, Maypole&rsquo;s focus is on rapid development: the
+example BeerDB application requires about 20 lines of Perl and
+a database schema. If you&rsquo;re building a CRUD application on mod_perl,
+Maypole might be just what you&rsquo;re looking for.
+</p>
+
+<p>
+All this convenience comes at a price, of course - Maypole is big,
+slow to load (can be a problem in CGI environment), and if you
+<i>don&rsquo;t</i> want it to auto-generate a whole CRUD application based on your 
+database schema, it takes a lot more time to figure out than 
+CGI::Application.
+</p>
+</div>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-11" class="outline-2">
+<h2 id="sec-11">Resources - Perl</h2>
+<div class="outline-text-2" id="text-11">
+</div><div id="outline-container-sec-11-1" class="outline-3">
+<h3 id="sec-11-1">Maypole</h3>
+<div class="outline-text-3" id="text-11-1">
+<p>
+Maypole&rsquo;s homepage
+</p>
+
+<p>
+<a href="http://maypole.perl.org/">http://maypole.perl.org/</a>
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-11-2" class="outline-3">
+<h3 id="sec-11-2">CGI::Application</h3>
+<div class="outline-text-3" id="text-11-2">
+<p>
+CGI::Application - Best Practices Wiki
+</p>
+
+<p>
+<a href="http://twiki.med.yale.edu/twiki2/bin/view/CGIapp/WebHome">http://twiki.med.yale.edu/twiki2/bin/view/CGIapp/WebHome</a>
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-11-3" class="outline-3">
+<h3 id="sec-11-3">mod_perl - Choosing a Templating System</h3>
+<div class="outline-text-3" id="text-11-3">
+<p>
+A discussion of many Perl templating systems.
+</p>
+
+<p>
+<a href="http://perl.apache.org/docs/tutorials/tmpl/comparison/comparison.html">http://perl.apache.org/docs/tutorials/tmpl/comparison/comparison.html</a>
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-11-4" class="outline-3">
+<h3 id="sec-11-4">POOP</h3>
+<div class="outline-text-3" id="text-11-4">
+<p>
+Discussion of several Perl Object-Oriented Persistence systems.
+</p>
+
+<p>
+<a href="http://poop.sourceforge.net/">http://poop.sourceforge.net/</a>
+</p>
+</div>
+</div>
+</div>
+
+
+
+<div id="outline-container-sec-12" class="outline-2">
+<h2 id="sec-12">Resources - articles on MVC</h2>
+<div class="outline-text-2" id="text-12">
+</div><div id="outline-container-sec-12-1" class="outline-3">
+<h3 id="sec-12-1">Building Graphical User Interfaces with the MVC Pattern</h3>
+<div class="outline-text-3" id="text-12-1">
+<p>
+An explanation of the MVC pattern in traditional GUI applications.
+</p>
+
+<p>
+<a href="http://csis.pace.edu/~bergin/mvc/mvcgui.html">http://csis.pace.edu/~bergin/mvc/mvcgui.html</a>
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-12-2" class="outline-3">
+<h3 id="sec-12-2">C2 wiki - Model View Controller</h3>
+<div class="outline-text-3" id="text-12-2">
+<p>
+With discussion and links to related topics. Many other design patterns
+are also discussed here.
+</p>
+
+<p>
+<a href="http://c2.com/cgi/wiki?ModelViewController">http://c2.com/cgi/wiki?ModelViewController</a>
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-12-3" class="outline-3">
+<h3 id="sec-12-3">Web Application Toolkit - MVC</h3>
+<div class="outline-text-3" id="text-12-3">
+<p>
+A clear explanation of the MVC pattern as used by the PHP based
+Web Application Toolkit.
+</p>
+
+<p>
+<a href="http://wact.sourceforge.net/index.php/ModelViewController">http://wact.sourceforge.net/index.php/ModelViewController</a>
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-12-4" class="outline-3">
+<h3 id="sec-12-4">Java BluePrints - MVC</h3>
+<div class="outline-text-3" id="text-12-4">
+<p>
+Sun&rsquo;s explanation of the MVC architecture.
+</p>
+
+<p>
+<a href="http://java.sun.com/blueprints/patterns/MVC-detailed.html">http://java.sun.com/blueprints/patterns/MVC-detailed.html</a>
+</p>
+</div>
+</div>
+</div>
+
+
+
+<div id="outline-container-sec-13" class="outline-2">
+<h2 id="sec-13">Resources - Alternatives</h2>
+<div class="outline-text-2" id="text-13">
+</div><div id="outline-container-sec-13-1" class="outline-3">
+<h3 id="sec-13-1">C2 wiki - Four Layer Architecture</h3>
+<div class="outline-text-3" id="text-13-1">
+<p>
+An alternative pattern that directly addresses the problems
+in designing a client-server application.
+</p>
+
+<p>
+<a href="http://c2.com/cgi/wiki?FourLayerArchitecture">http://c2.com/cgi/wiki?FourLayerArchitecture</a>
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-13-2" class="outline-3">
+<h3 id="sec-13-2">JavaWorld - Building user interfaces for object-oriented systems</h3>
+<div class="outline-text-3" id="text-13-2">
+<p>
+A series of articles describing an alternative to MVC, arguing
+that MVC is <i>not</i> object-oriented.
+</p>
+
+<p>
+<a href="http://www.javaworld.com/javaworld/jw-07-1999/jw-07-toolbox.html">http://www.javaworld.com/javaworld/jw-07-1999/jw-07-toolbox.html</a>
+</p>
+
+<p>
+$Revision: 1.8 $ $Date: 2005/06/28 14:52:41 $
+</p>
+
+</div>
+</div>
+</div>
+</div>
+</div>
+</body>
+</html>

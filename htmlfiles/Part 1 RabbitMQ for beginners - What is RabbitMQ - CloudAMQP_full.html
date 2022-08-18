@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='utf-8'>
+<title>Part 1: RabbitMQ for beginners - What is RabbitMQ? - CloudAMQP</title>
+<meta content='RabbitMQ for beginners explains what RabbitMQ and message queuing is. It gives a brief understanding of messaging and important RabbitMQ concepts are explained.' name='description'>
+<meta content='RabbitMQ, MQ, CloudAMQP, AMQP, hosted RabbitMQ, RabbitMQ hosting, cloud AMQP, message, queues, hosting, cloud, decouple, distrubute, scale, ' name='keywords'>
+<meta content='qP-zj5OL535dQC2SNy0qko_ofW5GWeYpfrE23axJIvE' name='google-site-verification'>
+<link href='https://www.cloudamqp.com/blog/part1-rabbitmq-for-beginners-what-is-rabbitmq.html' rel='canonical'>
+<link href='/css/cloudamqp.css' rel='stylesheet' type='text/css'>
+<link href='/favicon.ico' rel='icon' type='image/x-icon'>
+<link href='/rss' rel='alternate' title='CloudAMQP Blog feed' type='application/rss+xml'>
+<link href='/changelog/rss' rel='alternate' title='CloudAMQP Changelog feed' type='application/rss+xml'>
+<meta content='width=device-width, initial-scale=1.0' name='viewport'>
+<meta content='Part 1: RabbitMQ for beginners - What is RabbitMQ? - CloudAMQP' property='og:title'>
+<meta content='https://www.cloudamqp.com/img/blog/sm-what-is-rabbitmq.jpg' property='og:image'>
+<meta content='CloudAMQP' property='og:site_name'>
+<meta content='website' property='og:type'>
+<meta content='RabbitMQ for beginners explains what RabbitMQ and message queuing is. It gives a brief understanding of messaging and important RabbitMQ concepts are explained.' property='og:description'>
+<meta content='https://www.cloudamqp.com/blog/part1-rabbitmq-for-beginners-what-is-rabbitmq.html' property='og:url'>
+<meta content='summary_large_image' name='twitter:card'>
+<meta content='@cloudamqp' name='twitter:site'>
+<meta content='Part 1: RabbitMQ for beginners - What is RabbitMQ? - CloudAMQP' name='twitter:title'>
+<meta content='RabbitMQ for beginners explains what RabbitMQ and message queuing is. It gives a brief understanding of messaging and important RabbitMQ concepts are explained.' name='twitter:description'>
+<meta content='https://www.cloudamqp.com/img/blog/sm-what-is-rabbitmq.jpg' name='twitter:image'>
+<script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-29704653-1', 'auto');
+  ga('set', 'anonymizeIp', true);
+  ga('send', 'pageview');
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+</head>
+<body>
+<script src='/js/jquery-3.6.0.min.js' type='text/javascript'></script>
+<script src='/js/popper.min.js' type='text/javascript'></script>
+<script src='/js/bootstrap.min.js' type='text/javascript'></script>
+<nav class='navbar navbar-expand-md navbar-light'>
+<div class='container'>
+<a class='navbar-brand' href='/'>
+<img class='logo' src='/img/cloudamqp-logo.png'>
+CloudAMQP
+</a>
+<button aria-controls='camqpnavbar' aria-expanded='false' aria-label='Toggle navigation' class='navbar-toggler navbar-toggler-right' data-target='#camqpnavbar' data-toggle='collapse' type='button'>
+<span class='navbar-toggler-icon'></span>
+</button>
+<div class='collapse navbar-collapse' id='camqpnavbar'>
+<ul class='navbar-nav mx-auto'>
+<li class='nav-item'>
+<a class='nav-link' href='/tour.html'>Tour</a>
+</li>
+<li class='nav-item'>
+<a class='nav-link' href='/plans.html'>Pricing</a>
+</li>
+<li class='nav-item'>
+<a class='nav-link' href='/docs/index.html'>Documentation</a>
+</li>
+<li class='nav-item'>
+<a class='nav-link' href='/support.html'>Support</a>
+</li>
+<li class='nav-item active'>
+<a class='nav-link' href='/blog/index.html'>Blog</a>
+</li>
+</ul>
+<ul class='navbar-nav'>
+<li class='nav-item'>
+<a class='nav-link' href='https://customer.cloudamqp.com/'>Login</a>
+</li>
+<li class='nav-item'>
+<a class='btn btn-outline-secondary' href='https://customer.cloudamqp.com/signup'>
+<span class='d-md-none d-lg-inline'>Get Started</span>
+<span class='d-none d-md-inline d-lg-none'>Start</span>
+</a>
+</li>
+</ul>
+</div>
+</div>
+</nav>
+<section class='blog'></section>
+<div class='blog-header text-center' style='background-image: url(/img/blog/header-guide-part-1.jpg);'>
+<div class='blog-title' style='background-color: rgba(170, 83, 33, 0.8);'>
+<h1>Part 1: RabbitMQ for beginners - What is RabbitMQ?</h1>
+<p class='post-meta'>
+<i aria-hidden='true' class='fa fa-clock-o'></i>
+Last updated:
+<time datetime='2019-09-23'>
+2019-09-23
+</time>
+</p>
+</div>
+</div>
+<section class='blog-post'>
+<div class='container'>
+<div class='row'>
+<div class='col-lg-9 col-md-8 col-sm-12 blog-content'>
+<div class='lead'>
+The first part of
+<strong>RabbitMQ for beginners</strong>
+explains what RabbitMQ and message queueing is - the guide also gives a brief
+understanding of message queueing and defines important concepts.
+The guide goes on to explain the steps to set up a connection and the
+basics of publishing/consuming messages from a queue.
+</div>
+<div class='row'>
+<div class='col-md-6'>
+<h4>
+This blog series is a living document that is continually updated.
+Last updated January 2022.
+</h4>
+<p>
+RabbitMQ is a message-queueing software also known as a
+<em>message broker</em>
+or
+<em>queue manager.</em>
+Simply said; it is software where queues are defined, to which applications connect in order to transfer a message or messages.
+</p>
+<img alt='message queue' class='imgBorder' src='/img/blog/message-queue-small.png' title='message queue'>
+<p>
+A message can include any kind of information. It could, for example,
+have information about a process or task that should start on another
+application (which could even be on another server), or it could be
+just a simple text message. The queue-manager software stores the
+messages until a receiving application connects and takes a message
+off the queue. The receiving application then processes the message.
+</p>
+<p>
+All articles from
+<b>Getting Started with RabbitMQ</b>
+can be downloaded as a free ebook
+<a href='/rabbitmq_ebook.html' onclick='ga(&#39;send&#39;, &#39;event&#39;, &#39;Ebook Download&#39;, &#39;CTA&#39;, &#39;Blog beginners guide button&#39;);'>here.</a>
+</p>
+<p>
+An
+<strong>
+online training tool for RabbitMQ
+</strong>
+can be found at:
+<a href='https://training.cloudamqp.com/'>
+https://training.cloudamqp.com/
+</a>
+</p>
+</div>
+<div class='col-md-6'>
+<div class='toc'>
+<h4 class='mt-0 text-center'>Table of Contents</h4>
+<hr>
+<ol class='mb-4'>
+<li>
+<a href='/blog/part1-rabbitmq-for-beginners-what-is-rabbitmq.html'>
+RabbitMQ for beginners -  What is RabbitMQ?
+</a>
+<p>
+Gives a brief understanding of messaging and important RabbitMQ concepts are defined
+</p>
+</li>
+<li>
+<a href='/blog/part2-rabbitmq-for-beginners_example-and-sample-code.html'>
+RabbitMQ step-by-step coding instructions
+</a>
+<p>
+Step-by-step instructions which show how to set up a connection, how to publish to a queue,
+and how to subscribe from the queue
+</p>
+<ul>
+<li>
+<a href='/blog/part2-1-rabbitmq-for-beginners_example-and-sample-code-ruby.html'>
+Ruby sample code
+</a>
+</li>
+<li>
+<a href='/blog/part2-2-rabbitmq-for-beginners_example-and-sample-code-node-js.html'>
+Node.js sample code
+</a>
+</li>
+<li>
+<a href='/blog/part2-3-rabbitmq-for-beginners_example-and-sample-code-python.html'>
+Python sample code
+</a>
+</li>
+</ul>
+</li>
+<li>
+<a href='/blog/part3-rabbitmq-for-beginners_the-management-interface.html'>
+The management interface
+</a>
+<p>
+Describes how to monitor and handle your RabbitMQ server from a web browser
+</p>
+</li>
+<li>
+<a href='/blog/part4-rabbitmq-for-beginners-exchanges-routing-keys-bindings.html'>
+Exchanges, routing keys and bindings
+</a>
+<p>
+Explains the different types of exchanges in RabbitMQ and how exchanges and queues are associated with each other
+</p>
+</li>
+</ol>
+<a class='btn btn-secondary' href='/rabbitmq_ebook.html' onclick='ga(&#39;send&#39;, &#39;event&#39;, &#39;Ebook Download&#39;, &#39;CTA&#39;, &#39;Blog beginners guide button&#39;);'>
+Download the ebook
+<b>Getting started with RabbitMQ</b>
+for free
+</a>
+</div>
+</div>
+</div>
+<h3>
+RabbitMQ Example
+</h3>
+<p>
+A message broker acts as a middleman for various services (e.g. a web
+application, as in this example). They can be used to reduce loads and
+delivery times of web application servers by delegating tasks that
+would normally take up a lot of time or resources to a third party
+that has no other job.
+</p>
+<p>
+In this guide, we follow a scenario where a web application allows
+users to upload information to a website. The site will handle
+this information, generate a PDF, and email it back to the user.
+Handling the information, generating the PDF, and sending the
+email will, in this example case, take several seconds. That is
+one of the reasons why a message queue will be used to perform the task.
+</p>
+<p>
+When the user has entered user information into the web interface,
+the web application will create a "PDF processing" message that
+includes all of the important information the user needs into a
+message and place it onto a queue defined in RabbitMQ.
+</p>
+<img alt='RabbitMQ workflow tutorial' class='imgBorder' src='/img/blog/workflow-rabbitmq.png' title='RabbitMQ workflow tutorial'>
+<p>
+The basic architecture of a message queue is simple - there are client
+applications called producers that create messages and deliver them to
+the broker (the message queue). Other applications, called consumers,
+connect to the queue and subscribe to the messages to be processed.
+Software may act as a producer, or consumer, or both a consumer and a
+producer of messages. Messages placed onto the queue are stored
+until the consumer retrieves them.
+</p>
+<div class='row'>
+<div class='col-md-12'>
+<h5>
+When and why should you use RabbitMQ?
+</h5>
+<p>
+Message queueing allows web servers to respond to requests quickly
+instead of being forced to perform resource-heavy procedures on
+the spot that may delay response time. Message queueing is also
+good when you want to distribute a message to multiple consumers
+or to balance loads between workers.
+</p>
+<p>
+The consumer takes a message off the queue and starts processing the PDF.
+At the same time, the producer is queueing up new messages. The consumer
+can be on a totally different server than the producer or they can be
+located on the same server. The request can be created in one programming
+language and handled in another programming language. The point is, the
+two applications will only communicate through the messages they are
+sending to each other, which means the sender and receiver have low coupling.
+</p>
+<img alt='RabbitMQ beginners tutorial' class='imgBorder' src='/img/blog/rabbitmq-beginners-updated.png' title='RabbitMQ beginners tutorial'>
+<ol>
+<li>
+The user sends a PDF creation request to the web application.
+</li>
+<li>
+The web application (the producer) sends a message to
+RabbitMQ that includes data from the request such as name and email.
+</li>
+<li>
+An exchange accepts the messages from the producer and routes
+them to correct message queues for PDF creation.
+</li>
+<li>
+The PDF processing worker (the consumer)
+receives the task message and starts processing the PDF.
+</li>
+</ol>
+</div>
+</div>
+<div class='row'>
+<div class='col-md-12'>
+<h4>
+Exchanges
+</h4>
+<p>
+Messages are not published directly to a queue; instead, the producer
+sends messages to an exchange. An exchange is responsible for routing
+the messages to different queues with the help of bindings and routing
+keys. A binding is a link between a queue and an exchange.
+</p>
+</div>
+</div>
+<div class='row'>
+<div class='col-md-7'>
+<img Title='RabbitMQ Exchanges, Bindings and Routing Keys' alt='RabbitMQ Exchanges, Bindings and Routing Keys' src='/img/blog/exchanges-bidings-routing-keys.png'>
+</div>
+<div class='col-md-5'>
+<h5>
+Message flow in RabbitMQ
+</h5>
+<ol>
+<li>
+The producer publishes a message to an exchange.
+When creating an exchange, the type must be specified. This topic will be covered later on.
+</li>
+<li>
+The exchange receives the message and is now responsible for routing the message.
+The exchange takes different message attributes into account, such as the routing key,
+depending on the exchange type.
+</li>
+<li>
+Bindings must be created from the exchange to queues. In this case,
+there are two bindings to two different queues from the exchange.
+The exchange routes the message into the queues depending on message attributes.
+</li>
+<li>
+The messages stay in the queue until they are handled by a consumer
+</li>
+<li>
+The consumer handles the message.
+</li>
+</ol>
+</div>
+</div>
+<div class='row'>
+<div class='col-md-12'>
+<h4>
+Types of exchanges
+</h4>
+<p>
+Part 2 of the tutorial uses direct exchanges. A deeper understanding of
+the different exchange types, binding keys, routing keys and how or when
+you should use them can be found in
+<a href='/blog/part4-rabbitmq-for-beginners-exchanges-routing-keys-bindings.html'>Part 4: RabbitMQ for beginners - Exchanges, routing keys and bindings.</a>
+</p>
+<img alt='RabbitMQ Topic Exchange' src='/img/blog/exchanges-topic-fanout-direct.png' title='RabbitMQ Topic Exchange'>
+<ul>
+<li>
+<strong>Direct:</strong>
+The message is routed to the queues whose binding key exactly matches
+the routing key of the message. For example, if the queue is bound to
+the exchange with the binding key
+<i>pdfprocess, a message published to</i>
+the exchange with a routing key
+<i>pdfprocess is routed to that queue.</i>
+</li>
+<li>
+<strong>Fanout:</strong>
+A fanout exchange routes messages to all of the queues bound to it.
+</li>
+<li>
+<strong>Topic:</strong>
+The topic exchange does a wildcard match between the routing key and
+the routing pattern specified in the binding.
+</li>
+<li>
+<strong>Headers:</strong>
+Headers exchanges use the message header attributes for routing.
+</li>
+</ul>
+</div>
+</div>
+<div class='row'>
+<div class='col-md-12'>
+<h4>
+RabbitMQ and server concepts
+</h4>
+<p>
+Some important concepts need to be described before we dig deeper into
+RabbitMQ. The default virtual host, the default user, and the default
+permissions are used in the examples, so let’s go over the elements
+and concepts:
+</p>
+<ul>
+<li>
+<strong>Producer:</strong>
+Application that sends the messages.
+</li>
+<li>
+<strong>Consumer:</strong>
+Application that receives the messages.
+</li>
+<li>
+<strong>Queue:</strong>
+Buffer that stores messages.
+</li>
+<li>
+<strong>Message:</strong>
+Information that is sent from the producer to a consumer through RabbitMQ.
+</li>
+<li>
+<strong>Connection:</strong>
+A TCP connection between your application and the RabbitMQ broker.
+</li>
+<li>
+<strong>Channel:</strong>
+A virtual connection inside a connection.
+When publishing or consuming messages from a queue -
+it's all done over a channel.
+</li>
+<li>
+<strong>Exchange:</strong>
+Receives messages from producers and pushes them to queues depending on
+rules defined by the exchange type. To receive messages, a queue needs
+to be bound to at least one exchange.
+</li>
+<li>
+<strong>Binding:</strong>
+A binding is a link between a queue and an exchange.
+</li>
+<li>
+<strong>Routing key:</strong>
+A key that the exchange looks at to decide how to route the message to queues.
+Think of the routing key like an
+<i>address for the message.</i>
+</li>
+<li>
+<strong>AMQP:</strong>
+Advanced Message Queuing Protocol is the protocol used by RabbitMQ for messaging.
+</li>
+<li>
+<strong>Users:</strong>
+It is possible to connect to RabbitMQ with a given username and password.
+Every user can be assigned permissions such as rights to read, write and
+configure privileges within the instance. Users can also be assigned
+permissions for specific virtual hosts.
+</li>
+<li>
+<strong>Vhost, virtual host:</strong>
+Provides a way to segregate applications using the same RabbitMQ instance.
+Different users can have different permissions to different vhost and queues
+and exchanges can be created, so they only exist in one vhost.
+</li>
+</ul>
+<p>
+At the beginning of this article series, we had one producer (the website application)
+and one consumer (the PDF processing application). If the PDF processing application
+crashes, or if many PDF requests are coming at the same time, messages would continue
+to stack up in the queue until the consumer starts again. It would then process
+all the messages, one by one.
+</p>
+<h3 id='set_up_instance'>
+Set up a RabbitMQ instance
+</h3>
+<p>
+To be able to follow this guide you need to set up a CloudAMQP instance or
+download and install RabbitMQ. CloudAMQP is a hosted RabbitMQ solution,
+meaning that all you need to do is sign up for an account and create an
+instance. You do not need to set up and install RabbitMQ or care about
+cluster handling, CloudAMQP will do that for you. CloudAMQP can be used
+for free with the plan little lemur.
+Go to the
+<a href='/plans.html'>plan</a>
+page and sign up for any plan and create an instance.
+</p>
+<img alt='RabbitMQ tutorial' class='imgBorder no-border' src='/img/screens/new-create-new.jpg' style='width:98%' title='RabbitMQ tutorial'>
+<p>
+When your instance is created, click on details for your instance to
+find your username, password, and connection URL for your cloud-hosted RabbitMQ instance.
+</p>
+<img alt='RabbitMQ tutorial' class='imgBorder no-border' src='/img/screens/new-instance-details.jpg' style='width:98%' title='RabbitMQ tutorial'>
+</div>
+</div>
+<div class='row'>
+<div class='col-md-12'>
+<h3>
+Getting started with RabbitMQ
+</h3>
+<p>
+Immediately after a RabbitMQ instance has been created it is possible to
+send a message across languages, platforms, and OS. This way of handling
+messages decouple your processes and creates a highly scalable system.
+You can now start by opening the management interface to get an overview
+of your RabbitMQ server.
+</p>
+<h4>
+The Management Interface - Management and Monitoring
+</h4>
+<p>
+RabbitMQ provides a web UI for the management and monitoring of your
+RabbitMQ server. The RabbitMQ management interface is enabled by default
+in CloudAMQP and a link can be found on the details page for your
+CloudAMQP instance.
+</p>
+<p>
+From the management interface, it is possible to handle, create, delete
+and list queues. It is also possible to monitor queue length,
+check message rate, or change and add users permissions and much more.
+</p>
+<img alt='Rabbitmq monitoring tutorial' class='no-border' src='/img/screens/new-rabbitmq-manager.jpg' title='Rabbitmq monitoring tutorial'>
+<p>
+More information about the management interface can be found in
+<a href='/blog/part3-rabbitmq-for-beginners_the-management-interface.html'>Part 3 - The management interface.</a>
+</p>
+<h4>
+Publish and subscribe messages
+</h4>
+<p>
+RabbitMQ uses a protocol called AMQP by default. To be able to communicate
+with RabbitMQ you need a library that understands the same protocol as
+RabbitMQ. Download the client library for the programming language that
+you intend to use for your applications. A client library is an application
+programming interface (API) for use in writing client applications.
+A client library has several methods; in this case, to communicate
+with RabbitMQ. The methods should be used when you connect to the
+RabbitMQ broker (using the given parameters, hostname, port number,
+etc.), for example, or when you declare a queue or an exchange.
+There is a choice of libraries for almost every programming language.
+</p>
+<p>
+Steps to follow when setting up a connection and publishing a message/consuming a message:
+</p>
+<ol>
+<li>
+Set up/create a connection object. The username, password,
+connection URL, port, etc., will need to be specified.
+A TCP connection will be set up between the application and
+RabbitMQ when the
+<i>start</i>
+method is called.
+</li>
+<li>
+Create a channel in the TCP connection, then the connection
+interface can be used to open a channel through which to
+send and receive messages.
+</li>
+<li>
+Declare/create a queue. Declaring a queue will cause it to be created
+if it does not already exist. All queues need to be declared
+before they can be used.
+</li>
+<li>
+Set up exchanges and bind a queue to an exchange in subscriber/consumer.
+All exchanges must be declared before they can be used. An exchange
+accepts messages from a producer application and routes them to message
+queues. For messages to be routed to queues, queues must be bound
+to an exchange.
+</li>
+<li>
+In publisher: Publish a message to an exchange
+<br>
+In subscriber/consumer: Consume a message from a queue.
+</li>
+<li>
+Close the channel and the connection.
+</li>
+</ol>
+<h4>
+Sample code
+</h4>
+<p>
+Sample code will be given in part 2, starting with
+<a href='/blog/part2-1-rabbitmq-for-beginners_example-and-sample-code-ruby.html'>Part 2.1 - Ruby,</a>
+followed by
+<a href='/blog/part2-2-rabbitmq-for-beginners_example-and-sample-code-node-js.html'>Part 2.2 - Node.js,</a>
+and
+<a href='/blog/part2-3-rabbitmq-for-beginners_example-and-sample-code-python.html'>Part 2.3 Python,</a>
+Having different programming languages on different parts of the system is possible - for example, the publisher could be written in node.js and the subscriber in Python.
+</p>
+<p>
+We hope this article helped you gain an understanding of RabbitMQ!
+</p>
+<p class='muted'>
+Please email us at
+<a href='mailto:contact@cloudamqp.com'>contact@cloudamqp.com</a>
+if you have any suggestions or feedback.
+</p>
+</div>
+</div>
+<h4 class='mb-3 mt-5 text-center'>Guide - RabbitMQ for beginners</h4>
+<div class='guide-cta'>
+<a class='next' href='/blog/part2-rabbitmq-for-beginners_example-and-sample-code.html'>
+<span class='float-right chevron'>
+<i aria-hidden='true' class='fa fa-chevron-right'></i>
+</span>
+<h3 class='mt-0'>Continue with part 2</h3>
+<p>Get started with RabbitMQ - Sample code</p>
+</a>
+<a class='signup dark-bg' href='/plans.html' onclick='ga(&#39;send&#39;, &#39;event&#39;, &#39;Beginners guide&#39;, &#39;CTA&#39;, &#39;Part 1: RabbitMQ for beginners - What is RabbitMQ?&#39;);'>
+<h2>
+CloudAMQP - industry-leading
+<br>
+RabbitMQ as a Service
+</h2>
+<p class='btn btn-secondary mt-4 pl-5 pr-5'>Sign Up</p>
+</a>
+</div>
+
+<div class='blog-post-footer social-buttons'>
+<h3>
+Enjoy this article? Don't forget to share it with others. 😉
+</h3>
+<a class='facebook' href='https://www.facebook.com/sharer/sharer.php?u=https://www.cloudamqp.com/blog/part1-rabbitmq-for-beginners-what-is-rabbitmq.html' rel='noopener' target='_blank'>
+<span class='fa-stack fa-lg'>
+<i class='fa fa-square fa-stack-2x'></i>
+<i class='fa fa-facebook fa-stack-1x fa-inverse'></i>
+</span>
+</a>
+<a class='twitter' href='https://twitter.com/share?text=Part 1: RabbitMQ for beginners - What is RabbitMQ?&amp;url=https://www.cloudamqp.com/blog/part1-rabbitmq-for-beginners-what-is-rabbitmq.html&amp;hashtags=cloudamqp,blog,rabbitmq' rel='noopener' target='_blank'>
+<span class='fa-stack fa-lg'>
+<i class='fa fa-square fa-stack-2x'></i>
+<i class='fa fa-twitter fa-stack-1x fa-inverse'></i>
+</span>
+</a>
+<a class='linkedin' href='https://www.linkedin.com/shareArticle?mini=true&amp;title=Part 1: RabbitMQ for beginners - What is RabbitMQ?&amp;url=https://www.cloudamqp.com/blog/part1-rabbitmq-for-beginners-what-is-rabbitmq.html&amp;source=CloudAMQP' rel='noopener' target='_blank'>
+<span class='fa-stack fa-lg'>
+<i class='fa fa-square fa-stack-2x'></i>
+<i class='fa fa-linkedin fa-stack-1x fa-inverse'></i>
+</span>
+</a>
+<a class='email' href='mailto:?&amp;subject=Check out this blog post from CloudAMQP&amp;body=Hi,%0A%0AI%20just%20found%20this%20blog%20post%20and%20thought%20you%20might%20find%20it%20interesting.%20Check%20it%20out!%0A%0A%22Part 1: RabbitMQ for beginners - What is RabbitMQ?%22,%0Ahttps://www.cloudamqp.com/blog/part1-rabbitmq-for-beginners-what-is-rabbitmq.html'>
+<span class='fa-stack fa-lg'>
+<i class='fa fa-square fa-stack-2x'></i>
+<i class='fa fa-envelope-o fa-stack-1x fa-inverse'></i>
+</span>
+</a>
+<div id='disqus_thread'></div>
+</div>
+</div>
+<div class='col-lg-3 col-md-4 col-sm-12 blog-sidebar text-center'>
+<div class='sidebar-card mb-4'>
+<div class='sidebar-card-block'>
+<img class='img-thumbnail mx-auto img-fluid profile' src='/img/profiles/lovisajohansson.jpg'>
+<h3>
+Lovisa Johansson
+</h3>
+<p class='team-role'>
+Developer
+</p>
+</div>
+</div>
+<div class='sidebar-card mb-4'>
+<div class='header-image'>
+<a href='/rabbitmq_ebook.html' onclick='ga(&#39;send&#39;, &#39;event&#39;, &#39;Ebook Download&#39;, &#39;CTA&#39;, &#39;Blog ebook sidebar&#39;);'></a>
+</div>
+<div class='sidebar-card-block ebook-block arrow'>
+<h4 class='ebook-title'>
+<a href='/rabbitmq_ebook.html' onclick='ga(&#39;send&#39;, &#39;event&#39;, &#39;Ebook Download&#39;, &#39;CTA&#39;, &#39;Blog ebook sidebar&#39;);'>Free Ebook</a>
+</h4>
+<p class='ebook-text mt-3 mb-3'>
+"The Optimal
+<br>
+RabbitMQ Guide"
+</p>
+</div>
+<div class='row social-links no-gutters'>
+<div class='col'>
+<a href='/rabbitmq_ebook.html' onclick='ga(&#39;send&#39;, &#39;event&#39;, &#39;Ebook Download&#39;, &#39;CTA&#39;, &#39;Blog ebook sidebar&#39;);'>
+<i aria-hidden='true' class='fa fa-download'></i>
+Download
+<span class='d-none d-md-inline'>your copy</span>
+</a>
+</div>
+</div>
+</div>
+<div class='card mb-4 d-none d-md-block'>
+<a class='twitter-timeline' data-height='500' data-theme='light' data-width='255' href='https://twitter.com/CloudAMQP'>Tweets by CloudAMQP</a>
+<script async='' charset='utf-8' src='//platform.twitter.com/widgets.js'></script>
+</div>
+</div>
+</div>
+</div>
+</section>
+<script src='/js/jquery-3.1.1.min.js' type='text/javascript'></script>
+<script>
+  jQuery(document).ready(function($){
+    var shareWindow = function(url, medium, path) {
+      var width = $(window).width();
+      var height = $(window).height();
+      var H=Math.round((width/2)-(550/2)),
+      G=0;
+      if(height>450) {
+        G=Math.round((height/2)-(450/2));
+      }
+      if (typeof ga === 'function') {
+        ga('send', 'event', 'Share', medium, path);
+      }
+      if (medium == 'email') {
+        window.location.href = url;
+      } else {
+        window.open(url,'','left='+H+',top='+G+',width=550,height=450,personalbar=0,toolbar=0,scrollbars=1,resizable=1');
+      }
+    };
+    $(".social-buttons a").click(function(e){
+      e.preventDefault();
+      shareWindow($(this).attr("href"),$(this).attr("class"), window.location.pathname);
+    });
+  });
+</script>
+<script>
+  var disqus_config = function () {
+  this.page.url = "https://www.cloudamqp.com/blog/part1-rabbitmq-for-beginners-what-is-rabbitmq.html";
+  this.page.identifier = "https://www.cloudamqp.com/blog/part1-rabbitmq-for-beginners-what-is-rabbitmq.html";
+  };
+  
+  (function() {
+  var d = document, s = d.createElement('script');
+  s.src = 'https://cloudamqp.disqus.com/embed.js';
+  s.setAttribute('data-timestamp', +new Date());
+  (d.head || d.body).appendChild(s);
+  })();
+</script>
+<script src='/js/anchor-titles.js' type='text/javascript'></script>
+<link href='/prettify/prettify.css' rel='stylesheet' type='text/css'>
+<script src='/prettify/prettify.js' type='text/javascript'></script>
+
+<footer class='dark-bg hidden-print'>
+<div class='footer-top pt-5 pb-4'>
+<div class='container'>
+<div class='row justify-content-center'>
+<div class='col-md-3 col-sm-3 col-6 hidden-print'>
+<h4>Menu</h4>
+<ul class='quicklinks list-unstyled'>
+<li>
+<a href='/'>Home</a>
+</li>
+<li>
+<a href='/tour.html'>Tour</a>
+</li>
+<li>
+<a href='/plans.html'>Pricing</a>
+</li>
+<li>
+<a href='/docs/index.html'>Documentation</a>
+</li>
+<li>
+<a href='/support.html'>Support</a>
+</li>
+<li>
+<a href='/blog/index.html'>Blog</a>
+</li>
+<li>
+<a href='/customers.html'>Customers</a>
+</li>
+<li>
+<a href='/about_us.html'>About Us</a>
+</li>
+</ul>
+</div>
+<div class='col-md-3 col-sm-3 col-6 hidden-print'>
+<h4>Resources</h4>
+<ul class='quicklinks list-unstyled'>
+<li>
+<a href='/changelog.html'>Changelog</a>
+</li>
+<li>
+<a href='/docs/faq.html'>FAQ</a>
+</li>
+<li>
+<a href='/legal/legal_and_policies.html'>Legal and Policies</a>
+</li>
+<li>
+<a href='/legal/security_and_compliance.html'>Security and Compliance</a>
+</li>
+<li>
+<a href='https://status.cloudamqp.com/' target='_new'>Status</a>
+</li>
+</ul>
+</div>
+<div class='col-md-3 col-sm-3 col-6 hidden-print'></div>
+<div class='col-12 col-sm-3 col-md-3 ml-auto mx-auto text-center support-call-out'>
+<h4 class='mt-3 mt-md-0 mb-3'>Need help?</h4>
+<a class='btn btn-xl btn-secondary mb-3 hidden-print' href='/support.html'>Contact Support</a>
+<p class='opening-hours hidden-print'>Open 24 hours a day, 7 days a week.</p>
+<h4 class='mt-4 mb-2'>Talk to Sales</h4>
+<ul class='quicklinks list-unstyled mb-2'>
+<li>
+<a href='tel:+01-812-461-6841'>+1 812 461 6841</a>
+</li>
+</ul>
+<p class='opening-hours hidden-print'>Sales inquiries only. Open: 8-5 CST</p>
+</div>
+</div>
+</div>
+</div>
+<div class='footer-bottom pt-4'>
+<div class='container'>
+<div class='row justify-content-center'>
+<div class='col-12 col-xl-3 col-lg-4 col-md-5 mb-4 mb-md-0'>
+<h4>Brought to you by</h4>
+<a class='codes-link' href='https://www.84codes.com' rel='noopener' target='_blank'>
+<img alt='84codes' class='logo mb-0' src='/img/84codes-logo.png'>
+<span>www.84codes.com</span>
+</a>
+</div>
+<div class='col-12 col-xl-3 col-lg-4 col-md-5 ml-auto'>
+<h4>Our Services</h4>
+<div class='dropdown'>
+<a aria-expanded='false' aria-haspopup='true' class='btn btn-secondary dropdown-toggle' data-toggle='dropdown' href='#' id='dropdownMenuLink' role='button'>
+<img alt='CloudAMQP' src='/img/logo-cloudamqp-footer.png'>
+</a>
+<div aria-labelledby='dropdownMenuLink' class='dropdown-menu'>
+<a class='dropdown-item' href='https://www.cloudkarafka.com/' rel='noopener' target='_blank'>
+<strong>CloudKarafka</strong>
+&ndash; Apache Kafka
+</a>
+<a class='dropdown-item' href='https://www.elephantsql.com/' rel='noopener' target='_blank'>
+<strong>ElephantSQL</strong>
+&ndash; PostgreSQL
+</a>
+<a class='dropdown-item' href='https://www.cloudmqtt.com/' rel='noopener' target='_blank'>
+<strong>CloudMQTT</strong>
+&ndash; MQTT
+</a>
+</div>
+</div>
+</div>
+</div>
+<div class='row'>
+<div class='col-md-12 text-center pt-3 pb-3'>
+<hr>
+<p class='mb-0'>© Copyright 2011-2022 CloudAMQP. RabbitMQ and the RabbitMQ Logo are trademarks of VMware, Inc.</p>
+</div>
+</div>
+</div>
+</div>
+</footer>
+<script>
+  !function(e,t,n){function a(){var e=t.getElementsByTagName("script")[0],n=t.createElement("script");n.type="text/javascript",n.async=!0,n.src="https://beacon-v2.helpscout.net",e.parentNode.insertBefore(n,e)}if(e.Beacon=n=function(t,n,a){e.Beacon.readyQueue.push({method:t,options:n,data:a})},n.readyQueue=[],"complete"===t.readyState)return a();e.attachEvent?e.attachEvent("onload",a):e.addEventListener("load",a,!1)}(window,document,window.Beacon||function(){});
+  window.Beacon('init', 'ff675097-ec55-404b-999e-a3d16efa5340')
+</script>
+</body>
+<script>
+  function follow () {
+    var footerHeight = document.querySelector('footer').offsetHeight
+    var viewHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0)
+    window.scrollTo(0, document.body.scrollHeight - viewHeight - footerHeight);
+  }
+</script>
+</html>

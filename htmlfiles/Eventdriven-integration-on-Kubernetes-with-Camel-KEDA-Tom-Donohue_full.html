@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Event-driven integration on Kubernetes with Camel & KEDA | Tom Donohue</title>
+    <meta charset="utf-8"/>
+    <link rel="stylesheet" href="/assets/css/main.css"/>
+    <link rel="stylesheet" href="/assets/css/asciinema-player.css"/>
+    <!-- This defines the width of the browser viewport as the device's width itself (for nice rendering on mobile!) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <link href="/feed.xml" type="application/atom+xml" rel="alternate" title="Tom Donohue Feed"/>
+    <!-- Begin Jekyll SEO tag v2.6.1 -->
+    <title>Event-driven integration on Kubernetes with Camel &amp; KEDA | Tom Donohue</title>
+    <meta name="generator" content="Jekyll v4.1.1" />
+    <meta property="og:title" content="Event-driven integration on Kubernetes with Camel &amp; KEDA" />
+    <meta name="author" content="Tom Donohue" />
+    <meta property="og:locale" content="en_GB" />
+    <meta name="description" content="Can we develop apps in Kubernetes that autoscale based on events? Perhaps, with this example using KEDA, ActiveMQ and Apache Camel" />
+    <meta property="og:description" content="Can we develop apps in Kubernetes that autoscale based on events? Perhaps, with this example using KEDA, ActiveMQ and Apache Camel" />
+    <link rel="canonical" href="https://tomd.xyz/kubernetes-event-driven-keda/" />
+    <meta property="og:url" content="https://tomd.xyz/kubernetes-event-driven-keda/" />
+    <meta property="og:site_name" content="Tom Donohue" />
+    <meta property="og:image" content="https://tomd.xyz/assets/img/keda-article-header.png" />
+    <meta property="og:type" content="article" />
+    <meta property="article:published_time" content="2020-07-14T11:00:00+00:00" />
+    <meta name="twitter:card" content="summary" />
+    <meta property="twitter:image" content="https://tomd.xyz/assets/img/keda-article-header.png" />
+    <meta property="twitter:title" content="Event-driven integration on Kubernetes with Camel &amp; KEDA" />
+    <meta name="twitter:site" content="@monodot" />
+    <meta name="twitter:creator" content="@Tom Donohue" />
+    <script type="application/ld+json">
+      {"image":"https://tomd.xyz/assets/img/keda-article-header.png","mainEntityOfPage":{"@type":"WebPage","@id":"https://tomd.xyz/kubernetes-event-driven-keda/"},"description":"Can we develop apps in Kubernetes that autoscale based on events? Perhaps, with this example using KEDA, ActiveMQ and Apache Camel","@type":"BlogPosting","url":"https://tomd.xyz/kubernetes-event-driven-keda/","headline":"Event-driven integration on Kubernetes with Camel &amp; KEDA","dateModified":"2020-09-21T17:46:47+00:00","datePublished":"2020-07-14T11:00:00+00:00","author":{"@type":"Person","name":"Tom Donohue"},"@context":"https://schema.org"}
+    </script>
+    <!-- End Jekyll SEO tag -->
+    <!-- Fathom - simple website analytics - https://github.com/usefathom/fathom -->
+    <script>
+      (function(f, a, t, h, o, m){
+      	a[h]=a[h]||function(){
+      		(a[h].q=a[h].q||[]).push(arguments)
+      	};
+      	o=f.createElement('script'),
+      	m=f.getElementsByTagName('script')[0];
+      	o.async=1; o.src=t; o.id='fathom-script';
+      	m.parentNode.insertBefore(o,m)
+      })(document, window, '//fathom.mndt.co.uk/tracker.js', 'fathom');
+      fathom('set', 'siteId', 'GNOQK');
+      fathom('trackPageview');
+    </script>
+    <!-- / Fathom -->
+    <script defer data-domain="tomd.xyz" src="https://plausible.mndt.co.uk/js/plausible.js"></script>
+    <script>
+      window.plausible = window.plausible || function() { (window.plausible.q = window.plausible.q || []).push(arguments) }
+    </script>
+  </head>
+  <body class="post">
+    <header>
+      <label for="menu-toggle" id="menu-icon">Menu &darr;</label>
+      <a href="/" rel="home">
+        <img src="/assets/img/me-standard.jpg" width="40" height="40" alt="Tom Donohue"/>
+        Tom Donohue
+      </a>
+      <input type="checkbox" id="menu-toggle"/>
+      <nav>
+        <ul>
+          <li>
+            <a href="/articles/"><span>Articles</span></a>
+          </li>
+          <li>
+            <a href="/products/"><span>Products</span></a>
+          </li>
+          <li>
+            <a href="/newsletter/"><span>Newsletter</span></a>
+          </li>
+          <li>
+            <a href="/resources/"><span>Resources</span></a>
+          </li>
+          <li>
+            <a href="/about/"><span>About me</span></a>
+          </li>
+        </ul>
+      </nav>
+    </header>
+    <main>
+      <section class="post">
+        <article itemscope itemtype="http://schema.org/CreativeWork">
+          <meta itemprop="headline" content="Event-driven integration on Kubernetes with Camel &amp; KEDA">
+          <meta itemprop="description" content="Can we develop apps in Kubernetes that autoscale based on events? Perhaps, with this example using KEDA, ActiveMQ and Apache Camel">
+          <meta itemprop="datePublished" content="2020-07-14T11:00:00+00:00">
+          <meta itemprop="dateModified" content="2020-09-21T17:46:47+00:00">
+          <header>
+            <h1>Event-driven integration on Kubernetes with Camel &amp; KEDA
+            </h1>
+            <div class="byline">
+              <p>Updated 21 September 2020</p>
+              <p>
+                <i class="tag"></i> Tags:
+                <span itemprop="keywords">
+                  <a href="/tag/apache-activemq" rel="tag">Apache ActiveMQ</a><span class="sep">, </span>
+                  <a href="/tag/apache-camel" rel="tag">Apache Camel</a><span class="sep">, </span>
+                  <a href="/tag/kubernetes" rel="tag">Kubernetes</a>
+                </span>
+              </p>
+              <p>
+                <a href="#isso-thread">Comments</a>
+              </p>
+            </div>
+          </header>
+          <section>
+            <p>I’ve been working with a team this week who are investigating how they could use <a href="https://aws.amazon.com/lambda/">AWS Lambda</a> for data processing. The process is vaguely something like this:</p>
+            <ol>
+              <li>
+                <p>write some data processing logic</p>
+              </li>
+              <li>
+                <p>spin it up when an event happens (e.g. a message arrives on an SQS queue)</p>
+              </li>
+              <li>
+                <p>terminate when finished.</p>
+              </li>
+            </ol>
+            <p>So they want to use AWS Lambda for this, to make it scalable and serverless. These are going to create lightweight bits of data transformation logic, driven by events, that use minimal compute power. Sounds good so far.</p>
+            <p>However, I wondered whether it was possible to do something similar with the current field of Kubernetes alternatives. I prefer to look at options for Kubernetes because, although it does have a steep initial learning curve, solutions for K8s are less tightly coupled to the cloud provider (AWS) and so way more portable.</p>
+            <h2 id="keda-kubernetes-event-driven-autoscaling">KEDA: Kubernetes Event-Driven Autoscaling</h2>
+            <p>After digging around for a little while, I found <a href="https://keda.sh">KEDA - Kubernetes Event-Driven Autoscaling</a>. This is quite new and backed by Microsoft (Azure).</p>
+            <p>KEDA is a way of auto-scaling applications in Kubernetes based on an external metric. The metrics are collected by a set of <strong>Scalers</strong> which support things like:</p>
+            <ul>
+              <li>
+                <p>ActiveMQ Artemis</p>
+              </li>
+              <li>
+                <p>Apache Kafka</p>
+              </li>
+              <li>
+                <p>Amazon SQS</p>
+              </li>
+              <li>
+                <p>Azure Service Bus</p>
+              </li>
+              <li>
+                <p>and lots more….</p>
+              </li>
+            </ul>
+            <p>The basic idea is that a KEDA Scaler monitors one of these objects for a metric. The metric is usually something like the number of messages on a queue.</p>
+            <p>When the metric goes above a certain threshold, KEDA can scale up a Deployment automatically (called “Scaling Deployments”), or create a Job (called “Scaling Jobs”). It can also scale down Deployments when the metric goes down.</p>
+            <p>It does this by creating a Horizontal Pod Autoscaler (HPA).</p>
+            <p>So KEDA is more concerned with scaling applications based on an external metric. I can think of many potential use cases for this, but I think primarily I’m interested in scaling up Pods when messages are received on a queue. This is very useful, because I often work with message queues as a way of providing events to an application. The queues are entirely external to the app, so it makes sense that the scaling should be external too.</p>
+            <p>And when I think of messaging, of course I immediately think of <a href="/camel-activemq/">ActiveMQ and Camel</a> and how KEDA could be used. I think I feel an example coming on….</p>
+            <h2 id="keda-example-apache-camel-and-activemq">KEDA example: Apache Camel and ActiveMQ</h2>
+            <p>We’re going to see what KEDA can do by deploying a demo application which will consume messages from a queue. We’ll use ActiveMQ Artemis as the message broker, and use KEDA’s Artemis scaler to watch for messages on the queue and scale the application up or down.</p>
+            <figure class="">
+              <img src="/assets/img/keda-example-app.png" loading="lazy" alt="Architecture diagram of KEDA Camel example application" />
+              <figcaption>
+                A basic architecture for a KEDA-scaled Camel/ActiveMQ app
+              </figcaption>
+            </figure>
+            <h3 id="about-the-demo-app">About the demo app</h3>
+            <p>I’ve created an example Camel app which uses Quarkus as the runtime. I’ve published the image to Docker Hub and I use that in the steps further below. But if you’re interested in how it was created, read on.</p>
+            <p><a href="https://github.com/monodot/camel-amqp-quarkus"><b>Get the code on GitHub</b></a> <a href="https://hub.docker.com/r/monodot/camel-amqp-quarkus"><b>Get the image on Docker Hub</b></a></p>
+            <p>I decided to use Quarkus because it boasts super-fast startup times, way faster than Spring Boot. When we’re reacting to events, we want to be able to start up quickly and not wait 30-60 seconds for the app to start.</p>
+            <p>To create the app, I used the <a href="https://code.quarkus.io/">Quarkus app generator</a>.</p>
+            <p>As Quarkus is configured using extensions, I needed to find a Quarkus extension which would help me create a connection factory to talk to ActiveMQ Artemis. So I’m using the <a href="https://github.com/amqphub/quarkus-qpid-jms">Qpid JMS Extension for Quarkus</a>, which wraps up the <a href="https://qpid.apache.org/components/jms/">Apache Qpid JMS</a> client for Quarkus applications. This allows me to talk to ActiveMQ Artemis using the nice, open AMQP 1.0 protocol.</p>
+            <p>The Qpid JMS extension creates a connection factory to ActiveMQ when it finds certain config properties. You only need to set the properties <code class="language-plaintext highlighter-rouge">quarkus.qpid-jms.url</code>, <code class="language-plaintext highlighter-rouge">quarkus.qpid-jms.username</code> and <code class="language-plaintext highlighter-rouge">quarkus.qpid-jms.password</code>. The Extension will do the rest automatically, as it says in the docs:</p>
+            <figure class="">
+              <img src="/assets/img/keda-amqphub-quarkus.png" loading="lazy" alt="Table showing the config properties required for Qpid JMS Quarkus extension" />
+              <figcaption>
+                Checking out how to configure the Qpid JMS extension for Quarkus
+              </figcaption>
+            </figure>
+            <p>Then, I use Camel’s AMQP component to actually consume the messages. This will detect and use the connection factory created by the extension.</p>
+            <p>I’ve compiled and packaged the application into a native binary, not a JAR. This will help it to start up very fast. You need GraalVM to be able to do this.</p>
+            <div class="language-plaintext highlighter-rouge">
+              <div class="highlight">
+                <pre class="highlight"><code>./mvnw package -Pnative
+</code></pre>
+              </div>
+            </div>
+            <p>Or, if you don’t want to install GraalVM, you can tell Quarkus to use a helper <a href="https://quay.io/repository/quarkus/ubi-quarkus-native-image">container with GraalVM baked in</a>, in order to build the native image. You’ll need Docker running for this, of course:</p>
+            <div class="language-plaintext highlighter-rouge">
+              <div class="highlight">
+                <pre class="highlight"><code>./mvnw package -Pnative -Dquarkus.native.container-build=true
+</code></pre>
+              </div>
+            </div>
+            <p>The output from this is a native binary which should start up faster than a typical JVM-based application. Nice. Good for rapid scale-up when we receive a message!</p>
+            <p>Finally, I built a container image with Docker and pushed it up to Docker Hub. There’s a Dockerfile provided with the Quarkus quickstart to do the build, and then it’s an easy <code class="language-plaintext highlighter-rouge">docker push</code>:</p>
+            <div class="language-plaintext highlighter-rouge">
+              <div class="highlight">
+                <pre class="highlight"><code>docker build -f src/main/docker/Dockerfile.native -t monodot/camel-amqp-quarkus .
+docker push monodot/camel-amqp-quarkus
+</code></pre>
+              </div>
+            </div>
+            <p>Now we’re ready to deploy the app, deploy KEDA and configure it to auto-scale the app.</p>
+            <!-- -->
+            <h3 id="deploying-keda-and-the-demo-app">Deploying KEDA and the demo app</h3>
+            <ol class="tech-steps">
+              <li>
+                <p>First, install KEDA on your Kubernetes cluster. You’ll probably need to have cluster-admin permissions to be able to do this.</p>
+                <p><em>If you need a Kubernetes cluster of your own, you can use Minikube or a cloud offering like Amazon’s EKS. <a href="/aws-kubernetes/">Read about my experiences with EKS on AWS</a>).</em></p>
+                <p>To install KEDA, you should probably follow the <a href="https://keda.sh/docs/1.5/deploy/">instructions on the KEDA web site</a>, but I installed it with <a href="https://helm.sh/">Helm</a> like this:</p>
+                <div class="language-plaintext highlighter-rouge">
+                  <div class="highlight">
+                    <pre class="highlight"><code>$ helm repo add kedacore https://kedacore.github.io/charts
+$ helm repo update
+$ kubectl create namespace keda
+$ helm install keda kedacore/keda --namespace keda
+</code></pre>
+                  </div>
+                      </div>
+              </li>
+              <li>
+                <p>Create a namespace for our demo.</p>
+                <div class="language-plaintext highlighter-rouge">
+                  <div class="highlight">
+                    <pre class="highlight"><code>kubectl create namespace keda-demo
+</code></pre>
+                  </div>
+                      </div>
+              </li>
+              <li>
+                <p>Now we need to deploy an ActiveMQ Artemis message broker.</p>
+                <p>Here’s some YAML to create a Service and Deployment for it in Kubernetes. It uses the <a href="https://hub.docker.com/r/vromero/activemq-artemis"><code class="language-plaintext highlighter-rouge">vromero/activemq-artemis</code> community image of Artemis</a> on Docker Hub, and exposes its console and amqp ports. I’m customising it by adding a ConfigMap which:</p>
+                <ul>
+                  <li>
+                    <p>Changes the internal name of the broker to a static name: <code class="language-plaintext highlighter-rouge">keda-demo-broker</code></p>
+                  </li>
+                  <li>
+                    <p>Defines one queue, called <code class="language-plaintext highlighter-rouge">ALEX.HONKING</code>. If we don’t do this, then the queue will be created when a consumer connects to it, but it will be removed again when the consumer disappears, and so KEDA will just get confused. So we define the queue first.</p>
+                  </li>
+                </ul>
+                <div class="language-plaintext highlighter-rouge">
+                  <div class="highlight">
+                    <pre class="highlight"><code>$ kubectl apply -f - &lt;&lt;API
+apiVersion: v1
+kind: List
+items:
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: null
+    name: artemis
+    namespace: keda-demo
+  spec:
+    ports:
+    - port: 61616
+      protocol: TCP
+      targetPort: 61616
+      name: amqp
+    - port: 8161
+      protocol: TCP
+      targetPort: 8161
+      name: console
+    selector:
+      run: artemis
+  status:
+    loadBalancer: {}
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    creationTimestamp: null
+    labels:
+      run: artemis
+    name: artemis
+    namespace: keda-demo
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        run: artemis
+    strategy: {}
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          run: artemis
+      spec:
+        containers:
+        - env:
+          - name: ARTEMIS_USERNAME
+            value: quarkus
+          - name: ARTEMIS_PASSWORD
+            value: quarkus
+          image: vromero/activemq-artemis:2.11.0-alpine
+          name: artemis
+          ports:
+          - containerPort: 61616
+          - containerPort: 8161
+          volumeMounts:
+          - name: config-volume
+            mountPath: /var/lib/artemis/etc-override
+        volumes:
+          - name: config-volume
+            configMap:
+              name: artemis
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: artemis
+    namespace: keda-demo
+  data:
+    broker-0.xml: |
+      &lt;?xml version="1.0" encoding="UTF-8" standalone="no"?&gt;
+      &lt;configuration xmlns="urn:activemq" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:activemq /schema/artemis-configuration.xsd"&gt;
+        &lt;core xmlns="urn:activemq:core" xsi:schemaLocation="urn:activemq:core "&gt;
+          &lt;name&gt;keda-demo-broker&lt;/name&gt;
+          &lt;addresses&gt;
+            &lt;address name="DLQ"&gt;
+              &lt;anycast&gt;
+                &lt;queue name="DLQ"/&gt;
+              &lt;/anycast&gt;
+            &lt;/address&gt;
+            &lt;address name="ExpiryQueue"&gt;
+              &lt;anycast&gt;
+                &lt;queue name="ExpiryQueue"/&gt;
+              &lt;/anycast&gt;
+            &lt;/address&gt;
+            &lt;address name="ALEX.HONKING"&gt;
+              &lt;anycast&gt;
+                &lt;queue name="ALEX.HONKING"/&gt;
+              &lt;/anycast&gt;
+            &lt;/address&gt;
+          &lt;/addresses&gt;
+        &lt;/core&gt;
+      &lt;/configuration&gt;
+API
+</code></pre>
+                  </div>
+                      </div>
+              </li>
+              <li>
+                <p>Next, we deploy the demo Camel Quarkus AMQP consumer application, and add some configuration.</p>
+                <p>So we create a Deployment. I’m deploying my demo image <code class="language-plaintext highlighter-rouge">monodot/camel-amqp-quarkus</code> from Docker Hub. You can also deploy my image, or you can build and deploy your own image if you want.</p>
+                <p>We use the environment variables <code class="language-plaintext highlighter-rouge">QUARKUS_QPID_JMS_*</code> to set the URL, username and password for the ActiveMQ Artemis broker. These will override the properties <code class="language-plaintext highlighter-rouge">quarkus.qpid-jms.*</code> in my application’s properties file:</p>
+                <div class="language-plaintext highlighter-rouge">
+                  <div class="highlight">
+                    <pre class="highlight"><code>$ kubectl apply -f - &lt;&lt;API
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    run: camel-amqp-quarkus
+  name: camel-amqp-quarkus
+  namespace: keda-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: camel-amqp-quarkus
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        run: camel-amqp-quarkus
+    spec:
+      containers:
+      - env:
+        - name: QUARKUS_QPID_JMS_URL
+          value: amqp://artemis:61616
+        - name: QUARKUS_QPID_JMS_USERNAME
+          value: quarkus
+        - name: QUARKUS_QPID_JMS_PASSWORD
+          value: quarkus
+        image: monodot/camel-amqp-quarkus:latest
+        name: camel-amqp-quarkus
+        resources: {}
+API
+</code></pre>
+                  </div>
+                      </div>
+              </li>
+              <li>
+                <p>Now we tell KEDA to scale the pod down when there are no messages, and back up when there are messages.</p>
+                <p>We do this by creating a <code class="language-plaintext highlighter-rouge">ScaledObject</code>. This tells KEDA which Deployment to scale, and when to scale it.</p>
+                <div class="language-plaintext highlighter-rouge">
+                  <div class="highlight">
+                    <pre class="highlight"><code>$ kubectl apply -f - &lt;&lt;API
+apiVersion: keda.k8s.io/v1alpha1
+kind: ScaledObject
+metadata:
+  name: camel-amqp-quarkus-scaler
+  namespace: keda-demo
+spec:
+  scaleTargetRef:
+    deploymentName: camel-amqp-quarkus
+  pollingInterval: 30
+  cooldownPeriod:  30  # Default: 300 seconds
+  minReplicaCount: 0
+  maxReplicaCount: 2
+  triggers:
+  - type: artemis-queue
+    metadata:
+      managementEndpoint: "artemis.keda-demo:8161"
+      brokerName: "keda-demo-broker"
+      username: 'QUARKUS_QPID_JMS_USERNAME'
+      password: 'QUARKUS_QPID_JMS_PASSWORD'
+      queueName: "ALEX.HONKING"
+      brokerAddress: "ALEX.HONKING"
+      queueLength: '10'
+API
+</code></pre>
+                  </div>
+                      </div>
+                <p>By the way, to get the credentials to use the Artemis API, KEDA will look for any environment variables on the Deployment pods of the Camel app This means you don’t have to specify the credentials twice :-) So here, I’m using <code class="language-plaintext highlighter-rouge">QUARKUS_QPID_JMS_USERNAME</code> and <code class="language-plaintext highlighter-rouge">_PASSWORD</code>. They reference the environment variables on the demo app’s Deployment.</p>
+              </li>
+              <li>
+                <p>Now let’s put some test messages onto the queue.</p>
+                <p>You can do this in a couple of different ways: either point and click using the Artemis web console, or use the Jolokia REST API.</p>
+                <p>Either way, we need to be able to reach the <code class="language-plaintext highlighter-rouge">artemis</code> Kubernetes Service, which isn’t exposed outside the Kubernetes cluster. You can expose it by setting up an Ingress, or a Route in OpenShift, but I just use kubectl’s port forwarding feature instead. It’s simple. This allows me to access the ActiveMQ web console and API on <code class="language-plaintext highlighter-rouge">localhost</code> port <code class="language-plaintext highlighter-rouge">8161</code>:</p>
+                <div class="language-plaintext highlighter-rouge">
+                  <div class="highlight">
+                    <pre class="highlight"><code>kubectl port-forward -n keda-demo svc/artemis 8161:8161
+</code></pre>
+                  </div>
+                      </div>
+                <p>Leave that running in the background.</p>
+                <p>Now, in a different terminal, hit the Artemis Jolokia API with <code class="language-plaintext highlighter-rouge">curl</code>, via the kubectl port-forwarding proxy. We want to send a message to an Artemis queue called ALEX.HONKING.</p>
+                <p>This part requires a ridiculously long API call, so I’ve added some line breaks here to make it easier to read. This uses ActiveMQ’s Jolokia REST API to put a message in the Artemis queue:</p>
+                <div class="language-plaintext highlighter-rouge">
+                  <div class="highlight">
+                    <pre class="highlight"><code>curl -X POST --data "{\"type\":\"exec\",\
+\"mbean\":\
+\"org.apache.activemq.artemis:broker=\\\"keda-demo-broker\\\",component=addresses,address=\\\"ALEX.HONKING\\\",subcomponent=queues,routing-type=\\\"anycast\\\",queue=\\\"ALEX.HONKING\\\"\",\
+\"operation\":\
+\"sendMessage(java.util.Map,int,java.lang.String,boolean,java.lang.String,java.lang.String)\",\
+\"arguments\":\
+[null,3,\"HELLO ALEX\",false,\"quarkus\",\"quarkus\"]}" http://quarkus:quarkus@localhost:8161/console/jolokia/
+</code></pre>
+                  </div>
+                      </div>
+                <p>(If you have any issues with this, just use the Artemis web UI to send a message, it’s at <code class="language-plaintext highlighter-rouge">http://localhost:8161/console</code>)</p>
+                <p>All good!</p>
+              </li>
+            </ol>
+            <p>You put messages in the queue, you should see the Camel app pod starting up and consuming the messages.</p>
+            <figure class="">
+              <img src="/assets/img/keda-scaled-dashboard.jpg" loading="lazy" alt="Kubernetes Dashboard showing Camel and Artemis pod" />
+              <figcaption>
+                KEDA scaled up the demo app (camel-amqp-quarkus) when it noticed a message
+              </figcaption>
+            </figure>
+            <p>After all messages are consumed, there will be no messages left on the queue. KEDA waits for the cooldown period (in this demo I’ve used 30 seconds as an example), and then scales down the deployment back to zero, so there are no pods running.</p>
+            <p>This is autoscaling… in action!</p>
+            <h2 id="epilogue-you-forgot-knative">Epilogue: You forgot Knative</h2>
+            <figure class="small-right">
+              <img src="/assets/img/knative.png" loading="lazy" alt="Knative logo" />
+              <figcaption>
+                Knative
+              </figcaption>
+            </figure>
+            <p>So you’ve probably noticed that I didn’t mention Knative.</p>
+            <p>I started my research by looking at Knative. Knative is a beast of a project. It was announced a couple of years ago and is backed by Google.</p>
+            <p>There are a couple of major parts to Knative, but the interesting ones to me are:</p>
+            <ul>
+              <li>
+                <p><strong>Knative Serving</strong> - this is the “serverless apps” part. It can create a Pod from nothing when a web request is received, and then delete the Pod when it’s no longer needed. This basically allows you to have microservices that run only when needed, but is heavily focused on APIs. Knative Serving can also do more complex things like managing multiple versions of the same app. But that’s beyond the scope of today’s post.</p>
+              </li>
+              <li>
+                <p><strong>Knative Eventing</strong> - is the other half of the project, which is about making “events” a native concept in Kubernetes, and decoupling producers and consumers. You can then write apps which respond to these events.</p>
+              </li>
+            </ul>
+            <p>I thought Knative Eventing might be able to create Pods when a particular event is received - in other words, autoscaling Pods based on an event. But after bit of digging, it seems that autoscaling in Knative Eventing is still a work in progress. At the time I had a look at it (July 2020), it’s still in the proposal stage:</p>
+            <figure class="">
+              <img src="/assets/img/knative-eventing-wip.png" loading="lazy" alt="Screenshot of Knative Eventing open issue" />
+              <figcaption>
+                Autoscaling for Knative Eventing is still WIP
+              </figcaption>
+            </figure>
+            <p>I think that means that Knative is out of the running. For now….</p>
+          </section>
+          <section>
+            <aside class="important">
+              <figure>
+                <img src="/assets/img/me-newsletter.png" width="110" height="115">
+              </figure>
+              <h3>Don't miss my next post!</h3>
+              <p><strong>Join my newsletter</strong> to enjoy my latest tutorials, thoughts and recommended links, no more than 2-3 times per month. Put your details in the form below to join today.</p>
+              <form class="newsletter" action="https://mailer.tomd.xyz/subscribe" method="POST" accept-charset="utf-8">
+                <input type="hidden" name="SourceURL" value="https://tomd.xyz/kubernetes-event-driven-keda/"/>
+                <input type="hidden" name="list" value="yuMPn8Q9nHm0jpn65d763hZA"/>
+                <input type="hidden" name="subform" value="yes"/>
+                <div class="controls">
+                  <label for="email" style="display: none;">Your email</label>
+                  <input type="email" name="email" id="email" placeholder="Enter your email address"/>
+                  <button type="submit" name="btnSubmit" id="btnSubmit" data-analytics='"Subscribe", {"props":{"Campaign": "newsletter"}}'>Subscribe</button>
+                </div>
+                <div style="display:none;">
+                  <label for="hp">HP</label><br/>
+                  <input type="text" name="hp" id="hp"/>
+                </div>
+              </form>
+            </aside>
+          </section>
+          <footer>
+            <p><small>
+                Icons by Freepik, These Icons and ultimatearm on Flaticon<a href="https://www.flaticon.com">&nearr;</a> &nbsp;
+              </small></p>
+          </footer>
+        </article>
+        <section>
+          <h2>Comments</h2>
+          <p>What do you think? You can use <a href="https://daringfireball.net/projects/markdown/syntax" target="_blank">Markdown</a> in your comment.</p>
+          <p><strong>To write code, indent each line with 4 spaces.</strong> Or, to paste a lot of code, you can put it in <a href="https://pastebin.com/" target="_blank">pastebin.com</a> and share the link in your comment.</p>
+          <section id="isso-thread"></section>
+          <noscript>If you want to view or add comments to this article, please enable JavaScript.</noscript>
+        </section>
+      </section>
+    </main>
+    <div style="clear: both;"></div>
+    <footer>
+      <section>
+        <p><strong>Tom Donohue</strong> | Tom D's blog, sharing tutorials, opinions, and stuff I'm working on.
+        </p>
+        <p><a href="/about">About me</a> &bull; <a href="/resources/">Recommended resources</a> &bull; <a href="/newsletter">Join my newsletter</a> &bull; <a href="/contact">Contact me</a> &bull; <a href="/feed.xml">Atom/RSS Feed <img src="/assets/img/rss.svg" width="15" height="15" /></a></p>
+        <p><small>&copy; 2015-2020 Tom Donohue.</small></p>
+      </section>
+    </footer>
+    <script data-isso="https://isso.tomd.xyz"
+          data-isso-vote="false"
+          src="https://isso.tomd.xyz/js/embed.min.js"></script>
+    <script>
+      // Handle link events - those that have data-analytics
+      let elements = document.querySelectorAll("a[data-analytics]");
+      registerAnalyticsEvents(elements, handleLinkEvent);
+      
+      // Handle button form events - those that have data-analytics
+      elements = document.querySelectorAll("button[data-analytics]");
+      registerAnalyticsEvents(elements, handleFormEvent);
+      
+      
+      /**
+      * Iterate Elements and add event listener
+      *
+      * @param {NodeList} Array of elements
+      * @param {string} callback function name
+      */
+      function registerAnalyticsEvents(elements, callback) {
+          for (var i = 0; i < elements.length; i++) {
+              elements[i].addEventListener('click', callback);
+              elements[i].addEventListener('auxclick', callback);
+          }
+      }
+      
+      /**
+      * Handle Link Events with plausible
+      * https://github.com/plausible/analytics/blob/e1bb4368460ebb3a0bb86151b143176797b686cc/tracker/src/plausible.js#L74
+      *
+      * @param {Event} click
+      */
+      function handleLinkEvent(event) {
+          var link = event.target;
+          var middle = event.type == "auxclick" && event.which == 2;
+          var click = event.type == "click";
+          while (link && (typeof link.tagName == 'undefined' || link.tagName.toLowerCase() != 'a' || !link.href)) {
+              link = link.parentNode;
+          }
+      
+          if (middle || click)
+              registerEvent(link.getAttribute('data-analytics'));
+      
+          // Delay navigation so that Plausible is notified of the click
+          if (!link.target) {
+              if (!(event.ctrlKey || event.metaKey || event.shiftKey) && click) {
+                  setTimeout(function () {
+                      location.href = link.href;
+                  }, 150);
+                  event.preventDefault();
+              }
+          }
+      }
+      
+      /**
+      * Handle form button submit events with plausible
+      *
+      * @param {Event} click
+      */
+      function handleFormEvent(event) {
+          event.preventDefault();
+      
+          registerEvent(event.target.getAttribute('data-analytics'));
+      
+          setTimeout(function () {
+              event.target.form.submit();
+          }, 150);
+      }
+      
+      /**
+      * Parse data and call plausible
+      * Using data attribute in html eg. data-analytics='"Register", {"props":{"plan":"Starter"}}'
+      *
+      * @param {string} data - plausible event "Register", {"props":{"plan":"Starter"}}
+      */
+      function registerEvent(data) {
+          // break into array
+          let attributes = data.split(/,(.+)/);
+      
+          // Parse it to object
+          let events = [JSON.parse(attributes[0]), JSON.parse(attributes[1] || '{}')];
+      
+          plausible(...events);
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,1613 @@
+<!DOCTYPE html>
+<!--[if IE 7]>
+<html class="ie ie7" lang="en">
+<![endif]-->
+<!--[if IE 8]>
+<html class="ie ie8" lang="en">
+<![endif]-->
+<!--[if !(IE 7) & !(IE 8)]><!-->
+<html lang="en">
+<!--<![endif]-->
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width" />
+<title>Evaluating message brokers &#8211; Amazon SQS | Neil Brown</title>
+<link rel="profile" href="https://gmpg.org/xfn/11" />
+<link rel="pingback" href="https://neiljbrown.com/xmlrpc.php">
+<!--[if lt IE 9]>
+<script src="https://s2.wp.com/wp-content/themes/pub/twentytwelve/js/html5.js?ver=3.7.0" type="text/javascript"></script>
+<![endif]-->
+<meta name='robots' content='max-image-preview:large' />
+
+<!-- Async WordPress.com Remote Login -->
+<script id="wpcom_remote_login_js">
+var wpcom_remote_login_extra_auth = '';
+function wpcom_remote_login_remove_dom_node_id( element_id ) {
+	var dom_node = document.getElementById( element_id );
+	if ( dom_node ) { dom_node.parentNode.removeChild( dom_node ); }
+}
+function wpcom_remote_login_remove_dom_node_classes( class_name ) {
+	var dom_nodes = document.querySelectorAll( '.' + class_name );
+	for ( var i = 0; i < dom_nodes.length; i++ ) {
+		dom_nodes[ i ].parentNode.removeChild( dom_nodes[ i ] );
+	}
+}
+function wpcom_remote_login_final_cleanup() {
+	wpcom_remote_login_remove_dom_node_classes( "wpcom_remote_login_msg" );
+	wpcom_remote_login_remove_dom_node_id( "wpcom_remote_login_key" );
+	wpcom_remote_login_remove_dom_node_id( "wpcom_remote_login_validate" );
+	wpcom_remote_login_remove_dom_node_id( "wpcom_remote_login_js" );
+	wpcom_remote_login_remove_dom_node_id( "wpcom_request_access_iframe" );
+	wpcom_remote_login_remove_dom_node_id( "wpcom_request_access_styles" );
+}
+
+// Watch for messages back from the remote login
+window.addEventListener( "message", function( e ) {
+	if ( e.origin === "https://r-login.wordpress.com" ) {
+		var data = {};
+		try {
+			data = JSON.parse( e.data );
+		} catch( e ) {
+			wpcom_remote_login_final_cleanup();
+			return;
+		}
+
+		if ( data.msg === 'LOGIN' ) {
+			// Clean up the login check iframe
+			wpcom_remote_login_remove_dom_node_id( "wpcom_remote_login_key" );
+
+			var id_regex = new RegExp( /^[0-9]+$/ );
+			var token_regex = new RegExp( /^.*|.*|.*$/ );
+			if (
+				token_regex.test( data.token )
+				&& id_regex.test( data.wpcomid )
+			) {
+				// We have everything we need to ask for a login
+				var script = document.createElement( "script" );
+				script.setAttribute( "id", "wpcom_remote_login_validate" );
+				script.src = '/remote-login.php?wpcom_remote_login=validate'
+					+ '&wpcomid=' + data.wpcomid
+					+ '&token=' + encodeURIComponent( data.token )
+					+ '&host=' + window.location.protocol
+					+ '//' + window.location.hostname
+					+ '&postid=390'
+					+ '&is_singular=1';
+				document.body.appendChild( script );
+			}
+
+			return;
+		}
+
+		// Safari ITP, not logged in, so redirect
+		if ( data.msg === 'LOGIN-REDIRECT' ) {
+			window.location = 'https://wordpress.com/log-in?redirect_to=' + window.location.href;
+			return;
+		}
+
+		// Safari ITP, storage access failed, remove the request
+		if ( data.msg === 'LOGIN-REMOVE' ) {
+			var css_zap = 'html { -webkit-transition: margin-top 1s; transition: margin-top 1s; } /* 9001 */ html { margin-top: 0 !important; } * html body { margin-top: 0 !important; } @media screen and ( max-width: 782px ) { html { margin-top: 0 !important; } * html body { margin-top: 0 !important; } }';
+			var style_zap = document.createElement( 'style' );
+			style_zap.type = 'text/css';
+			style_zap.appendChild( document.createTextNode( css_zap ) );
+			document.body.appendChild( style_zap );
+
+			var e = document.getElementById( 'wpcom_request_access_iframe' );
+			e.parentNode.removeChild( e );
+
+			document.cookie = 'wordpress_com_login_access=denied; path=/; max-age=31536000';
+
+			return;
+		}
+
+		// Safari ITP
+		if ( data.msg === 'REQUEST_ACCESS' ) {
+			console.log( 'request access: safari' );
+
+			// Check ITP iframe enable/disable knob
+			if ( wpcom_remote_login_extra_auth !== 'safari_itp_iframe' ) {
+				return;
+			}
+
+			// If we are in a "private window" there is no ITP.
+			var private_window = false;
+			try {
+				var opendb = window.openDatabase( null, null, null, null );
+			} catch( e ) {
+				private_window = true;
+			}
+
+			if ( private_window ) {
+				console.log( 'private window' );
+				return;
+			}
+
+			var iframe = document.createElement( 'iframe' );
+			iframe.id = 'wpcom_request_access_iframe';
+			iframe.setAttribute( 'scrolling', 'no' );
+			iframe.setAttribute( 'sandbox', 'allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-top-navigation-by-user-activation' );
+			iframe.src = 'https://r-login.wordpress.com/remote-login.php?wpcom_remote_login=request_access&origin=' + encodeURIComponent( data.origin ) + '&wpcomid=' + encodeURIComponent( data.wpcomid );
+
+			var css = 'html { -webkit-transition: margin-top 1s; transition: margin-top 1s; } /* 9001 */ html { margin-top: 46px !important; } * html body { margin-top: 46px !important; } @media screen and ( max-width: 660px ) { html { margin-top: 71px !important; } * html body { margin-top: 71px !important; } #wpcom_request_access_iframe { display: block; height: 71px !important; } } #wpcom_request_access_iframe { border: 0px; height: 46px; position: fixed; top: 0; left: 0; width: 100%; min-width: 100%; z-index: 99999; background: #23282d; } ';
+
+			var style = document.createElement( 'style' );
+			style.type = 'text/css';
+			style.id = 'wpcom_request_access_styles';
+			style.appendChild( document.createTextNode( css ) );
+			document.body.appendChild( style );
+
+			document.body.appendChild( iframe );
+		}
+
+		if ( data.msg === 'DONE' ) {
+			wpcom_remote_login_final_cleanup();
+		}
+	}
+}, false );
+
+// Inject the remote login iframe after the page has had a chance to load
+// more critical resources
+window.addEventListener( "DOMContentLoaded", function( e ) {
+	var iframe = document.createElement( "iframe" );
+	iframe.style.display = "none";
+	iframe.setAttribute( "scrolling", "no" );
+	iframe.setAttribute( "id", "wpcom_remote_login_key" );
+	iframe.src = "https://r-login.wordpress.com/remote-login.php"
+		+ "?wpcom_remote_login=key"
+		+ "&origin=aHR0cHM6Ly9uZWlsamJyb3duLmNvbQ%3D%3D"
+		+ "&wpcomid=31831223"
+		+ "&time=1653575691";
+	document.body.appendChild( iframe );
+}, false );
+</script>
+<link rel='dns-prefetch' href='//s2.wp.com' />
+<link rel='dns-prefetch' href='//s1.wp.com' />
+<link rel='dns-prefetch' href='//neiljbrown.wordpress.com' />
+<link rel='dns-prefetch' href='//s0.wp.com' />
+<link rel='dns-prefetch' href='//fonts.googleapis.com' />
+<link rel='dns-prefetch' href='//s.pubmine.com' />
+<link rel='dns-prefetch' href='//x.bidswitch.net' />
+<link rel='dns-prefetch' href='//static.criteo.net' />
+<link rel='dns-prefetch' href='//ib.adnxs.com' />
+<link rel='dns-prefetch' href='//aax.amazon-adsystem.com' />
+<link rel='dns-prefetch' href='//bidder.criteo.com' />
+<link rel='dns-prefetch' href='//cas.criteo.com' />
+<link rel='dns-prefetch' href='//gum.criteo.com' />
+<link rel='dns-prefetch' href='//ads.pubmatic.com' />
+<link rel='dns-prefetch' href='//gads.pubmatic.com' />
+<link rel='dns-prefetch' href='//tpc.googlesyndication.com' />
+<link rel='dns-prefetch' href='//ad.doubleclick.net' />
+<link rel='dns-prefetch' href='//googleads.g.doubleclick.net' />
+<link rel='dns-prefetch' href='//www.googletagservices.com' />
+<link rel='dns-prefetch' href='//cdn.switchadhub.com' />
+<link rel='dns-prefetch' href='//delivery.g.switchadhub.com' />
+<link rel='dns-prefetch' href='//delivery.swid.switchadhub.com' />
+<link rel='dns-prefetch' href='//a.teads.tv' />
+<link rel='dns-prefetch' href='//prebid.media.net' />
+<link rel='dns-prefetch' href='//adserver-us.adtech.advertising.com' />
+<link rel='dns-prefetch' href='//fastlane.rubiconproject.com' />
+<link rel='dns-prefetch' href='//prebid-server.rubiconproject.com' />
+<link rel='dns-prefetch' href='//hb-api.omnitagjs.com' />
+<link rel='dns-prefetch' href='//mtrx.go.sonobi.com' />
+<link rel='dns-prefetch' href='//apex.go.sonobi.com' />
+<link rel='dns-prefetch' href='//u.openx.net' />
+<link href='https://fonts.gstatic.com' crossorigin rel='preconnect' />
+<link rel="alternate" type="application/rss+xml" title="Neil Brown &raquo; Feed" href="https://neiljbrown.com/feed/" />
+<link rel="alternate" type="application/rss+xml" title="Neil Brown &raquo; Comments Feed" href="https://neiljbrown.com/comments/feed/" />
+<link rel="alternate" type="application/rss+xml" title="Neil Brown &raquo; Evaluating message brokers &#8211; Amazon&nbsp;SQS Comments Feed" href="https://neiljbrown.com/2017/08/26/evaluating-message-brokers-amazon-sqs/feed/" />
+	<script type="text/javascript">
+		/* <![CDATA[ */
+		function addLoadEvent(func) {
+			var oldonload = window.onload;
+			if (typeof window.onload != 'function') {
+				window.onload = func;
+			} else {
+				window.onload = function () {
+					oldonload();
+					func();
+				}
+			}
+		}
+		/* ]]> */
+	</script>
+	<script type="text/javascript">
+window._wpemojiSettings = {"baseUrl":"https:\/\/s0.wp.com\/wp-content\/mu-plugins\/wpcom-smileys\/twemoji\/2\/72x72\/","ext":".png","svgUrl":"https:\/\/s0.wp.com\/wp-content\/mu-plugins\/wpcom-smileys\/twemoji\/2\/svg\/","svgExt":".svg","source":{"concatemoji":"https:\/\/s1.wp.com\/wp-includes\/js\/wp-emoji-release.min.js?m=1652185836h&ver=6.0-RC4-53438"}};
+/*! This file is auto-generated */
+!function(e,a,t){var n,r,o,i=a.createElement("canvas"),p=i.getContext&&i.getContext("2d");function s(e,t){var a=String.fromCharCode,e=(p.clearRect(0,0,i.width,i.height),p.fillText(a.apply(this,e),0,0),i.toDataURL());return p.clearRect(0,0,i.width,i.height),p.fillText(a.apply(this,t),0,0),e===i.toDataURL()}function c(e){var t=a.createElement("script");t.src=e,t.defer=t.type="text/javascript",a.getElementsByTagName("head")[0].appendChild(t)}for(o=Array("flag","emoji"),t.supports={everything:!0,everythingExceptFlag:!0},r=0;r<o.length;r++)t.supports[o[r]]=function(e){if(!p||!p.fillText)return!1;switch(p.textBaseline="top",p.font="600 32px Arial",e){case"flag":return s([127987,65039,8205,9895,65039],[127987,65039,8203,9895,65039])?!1:!s([55356,56826,55356,56819],[55356,56826,8203,55356,56819])&&!s([55356,57332,56128,56423,56128,56418,56128,56421,56128,56430,56128,56423,56128,56447],[55356,57332,8203,56128,56423,8203,56128,56418,8203,56128,56421,8203,56128,56430,8203,56128,56423,8203,56128,56447]);case"emoji":return!s([129777,127995,8205,129778,127999],[129777,127995,8203,129778,127999])}return!1}(o[r]),t.supports.everything=t.supports.everything&&t.supports[o[r]],"flag"!==o[r]&&(t.supports.everythingExceptFlag=t.supports.everythingExceptFlag&&t.supports[o[r]]);t.supports.everythingExceptFlag=t.supports.everythingExceptFlag&&!t.supports.flag,t.DOMReady=!1,t.readyCallback=function(){t.DOMReady=!0},t.supports.everything||(n=function(){t.readyCallback()},a.addEventListener?(a.addEventListener("DOMContentLoaded",n,!1),e.addEventListener("load",n,!1)):(e.attachEvent("onload",n),a.attachEvent("onreadystatechange",function(){"complete"===a.readyState&&t.readyCallback()})),(e=t.source||{}).concatemoji?c(e.concatemoji):e.wpemoji&&e.twemoji&&(c(e.twemoji),c(e.wpemoji)))}(window,document,window._wpemojiSettings);
+</script>
+<style type="text/css">
+img.wp-smiley,
+img.emoji {
+	display: inline !important;
+	border: none !important;
+	box-shadow: none !important;
+	height: 1em !important;
+	width: 1em !important;
+	margin: 0 0.07em !important;
+	vertical-align: -0.1em !important;
+	background: none !important;
+	padding: 0 !important;
+}
+</style>
+	<link rel='stylesheet' id='all-css-0-1' href='https://s1.wp.com/_static/??-eJytkMFuwyAQRH+omMZpnVPVb1lgRUgWsGCxxd8HW2riJmrTQy9Io5k3mkXOo9AxMAaWiqIVIxXrQpZzTAZMlpaiAup0zi/yWZbnZtX20oRi6h8gX65IQgJGI8aY+U79hpE7Y5Yn5BH0WazqIf6VtaVJhck2J6Gcdvuu73qpiiOz7F8LVIJUZeZK+B9FfER/K3JBUzHL4Cw9GgdIzV4u2oiRoGIShBZ07bwLz/HmbfU36Ofx69LN50GNhYVNzvz5/ruKBOyCzTf803/shvf96/B2OAynC8uV4jA=?cssminify=yes' type='text/css' media='all' />
+<style id='wp-block-library-inline-css'>
+.has-text-align-justify {
+	text-align:justify;
+}
+</style>
+<style id='global-styles-inline-css'>
+body{--wp--preset--color--black: #000000;--wp--preset--color--cyan-bluish-gray: #abb8c3;--wp--preset--color--white: #fff;--wp--preset--color--pale-pink: #f78da7;--wp--preset--color--vivid-red: #cf2e2e;--wp--preset--color--luminous-vivid-orange: #ff6900;--wp--preset--color--luminous-vivid-amber: #fcb900;--wp--preset--color--light-green-cyan: #7bdcb5;--wp--preset--color--vivid-green-cyan: #00d084;--wp--preset--color--pale-cyan-blue: #8ed1fc;--wp--preset--color--vivid-cyan-blue: #0693e3;--wp--preset--color--vivid-purple: #9b51e0;--wp--preset--color--blue: #21759b;--wp--preset--color--dark-gray: #444;--wp--preset--color--medium-gray: #9f9f9f;--wp--preset--color--light-gray: #e6e6e6;--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple: linear-gradient(135deg,rgba(6,147,227,1) 0%,rgb(155,81,224) 100%);--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan: linear-gradient(135deg,rgb(122,220,180) 0%,rgb(0,208,130) 100%);--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange: linear-gradient(135deg,rgba(252,185,0,1) 0%,rgba(255,105,0,1) 100%);--wp--preset--gradient--luminous-vivid-orange-to-vivid-red: linear-gradient(135deg,rgba(255,105,0,1) 0%,rgb(207,46,46) 100%);--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray: linear-gradient(135deg,rgb(238,238,238) 0%,rgb(169,184,195) 100%);--wp--preset--gradient--cool-to-warm-spectrum: linear-gradient(135deg,rgb(74,234,220) 0%,rgb(151,120,209) 20%,rgb(207,42,186) 40%,rgb(238,44,130) 60%,rgb(251,105,98) 80%,rgb(254,248,76) 100%);--wp--preset--gradient--blush-light-purple: linear-gradient(135deg,rgb(255,206,236) 0%,rgb(152,150,240) 100%);--wp--preset--gradient--blush-bordeaux: linear-gradient(135deg,rgb(254,205,165) 0%,rgb(254,45,45) 50%,rgb(107,0,62) 100%);--wp--preset--gradient--luminous-dusk: linear-gradient(135deg,rgb(255,203,112) 0%,rgb(199,81,192) 50%,rgb(65,88,208) 100%);--wp--preset--gradient--pale-ocean: linear-gradient(135deg,rgb(255,245,203) 0%,rgb(182,227,212) 50%,rgb(51,167,181) 100%);--wp--preset--gradient--electric-grass: linear-gradient(135deg,rgb(202,248,128) 0%,rgb(113,206,126) 100%);--wp--preset--gradient--midnight: linear-gradient(135deg,rgb(2,3,129) 0%,rgb(40,116,252) 100%);--wp--preset--duotone--dark-grayscale: url('#wp-duotone-dark-grayscale');--wp--preset--duotone--grayscale: url('#wp-duotone-grayscale');--wp--preset--duotone--purple-yellow: url('#wp-duotone-purple-yellow');--wp--preset--duotone--blue-red: url('#wp-duotone-blue-red');--wp--preset--duotone--midnight: url('#wp-duotone-midnight');--wp--preset--duotone--magenta-yellow: url('#wp-duotone-magenta-yellow');--wp--preset--duotone--purple-green: url('#wp-duotone-purple-green');--wp--preset--duotone--blue-orange: url('#wp-duotone-blue-orange');--wp--preset--font-size--small: 13px;--wp--preset--font-size--medium: 20px;--wp--preset--font-size--large: 36px;--wp--preset--font-size--x-large: 42px;}.has-black-color{color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-color{color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-color{color: var(--wp--preset--color--white) !important;}.has-pale-pink-color{color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-color{color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-color{color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-color{color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-color{color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-color{color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-color{color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-color{color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-color{color: var(--wp--preset--color--vivid-purple) !important;}.has-black-background-color{background-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-background-color{background-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-background-color{background-color: var(--wp--preset--color--white) !important;}.has-pale-pink-background-color{background-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-background-color{background-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-background-color{background-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-background-color{background-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-background-color{background-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-background-color{background-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-background-color{background-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-background-color{background-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-background-color{background-color: var(--wp--preset--color--vivid-purple) !important;}.has-black-border-color{border-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-border-color{border-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-border-color{border-color: var(--wp--preset--color--white) !important;}.has-pale-pink-border-color{border-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-border-color{border-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-border-color{border-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-border-color{border-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-border-color{border-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-border-color{border-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-border-color{border-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-border-color{border-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-border-color{border-color: var(--wp--preset--color--vivid-purple) !important;}.has-vivid-cyan-blue-to-vivid-purple-gradient-background{background: var(--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple) !important;}.has-light-green-cyan-to-vivid-green-cyan-gradient-background{background: var(--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan) !important;}.has-luminous-vivid-amber-to-luminous-vivid-orange-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange) !important;}.has-luminous-vivid-orange-to-vivid-red-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-orange-to-vivid-red) !important;}.has-very-light-gray-to-cyan-bluish-gray-gradient-background{background: var(--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray) !important;}.has-cool-to-warm-spectrum-gradient-background{background: var(--wp--preset--gradient--cool-to-warm-spectrum) !important;}.has-blush-light-purple-gradient-background{background: var(--wp--preset--gradient--blush-light-purple) !important;}.has-blush-bordeaux-gradient-background{background: var(--wp--preset--gradient--blush-bordeaux) !important;}.has-luminous-dusk-gradient-background{background: var(--wp--preset--gradient--luminous-dusk) !important;}.has-pale-ocean-gradient-background{background: var(--wp--preset--gradient--pale-ocean) !important;}.has-electric-grass-gradient-background{background: var(--wp--preset--gradient--electric-grass) !important;}.has-midnight-gradient-background{background: var(--wp--preset--gradient--midnight) !important;}.has-small-font-size{font-size: var(--wp--preset--font-size--small) !important;}.has-medium-font-size{font-size: var(--wp--preset--font-size--medium) !important;}.has-large-font-size{font-size: var(--wp--preset--font-size--large) !important;}.has-x-large-font-size{font-size: var(--wp--preset--font-size--x-large) !important;}
+</style>
+<link rel='stylesheet' id='all-css-2-1' href='https://s2.wp.com/_static/??-eJx9jcEKg0AMRH+oaVhorR7Eb9E16IpZg8min2889FZ6GYbhPQYPgbhlo2zIBWQtU8qKcdvJd5be0AmmMfW0Ejv2jKoP/K0daZzIXNdvB6PzvyJ+A8MgO6mCJ6fCYLN/6e113IZXU9WfUL/DcgHSTkDo?cssminify=yes' type='text/css' media='all' />
+<link crossorigin="anonymous" rel='stylesheet' id='twentytwelve-fonts-css'  href='https://fonts.googleapis.com/css?family=Open+Sans%3A400italic%2C700italic%2C400%2C700&#038;subset=latin%2Clatin-ext&#038;display=fallback' media='all' />
+<link rel='stylesheet' id='all-css-4-1' href='https://s0.wp.com/_static/??-eJzTLy/QTc7PK0nNK9EvyUjNTS3WLyhN0i8pBwpUAsmcslT94pLKnFS95OJiHX0iVAPV6Sfl5CdnF4O02OfaGpoZWxhZmBuYmmYBADAHKLQ=?cssminify=yes' type='text/css' media='all' />
+<!--[if lt IE 9]>
+<link rel='stylesheet' id='twentytwelve-ie-css'  href='https://s2.wp.com/wp-content/themes/pub/twentytwelve/css/ie.css?m=1423935238h&#038;ver=20150214' media='all' />
+<![endif]-->
+<link rel='stylesheet' id='all-css-6-1' href='https://s2.wp.com/_static/??-eJx9i0EOwjAMBD+EcUEiggPiLW1k0iAnjmqnUX9PuLUXLqud1Q62Al6yUTa0mRIpljqhtT5sPXklVNuYoBUv6exVT7hzUoXCNcSsGEiAxY8WJR8A3jzG5Z+60MQSeg3YXzv8Sa/0vNyGh3PD1d0/X4zgQdY=?cssminify=yes' type='text/css' media='all' />
+<style id='jetpack-global-styles-frontend-style-inline-css'>
+:root { --font-headings: unset; --font-base: unset; --font-headings-default: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif; --font-base-default: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif;}
+</style>
+<link rel='stylesheet' id='all-css-8-1' href='https://s1.wp.com/_static/??-eJxti0EKgCAQAD+UbVFGHaK3mJgaqyut0vejQ4eo0zAwA2cSmmI2MUMoImGxPjIk4iw2VP4Adurw0T6sNXMF/xeT9goFkqW3fKbsTDAMrgeLtCq8gyXM7dCNUjZy6vcLZTc31Q==?cssminify=yes' type='text/css' media='all' />
+<script id='jetpack_related-posts-js-extra'>
+var related_posts_js_options = {"post_heading":"h4"};
+</script>
+<script id='media-video-jwt-bridge-js-extra'>
+var videopressAjax = {"ajaxUrl":"https:\/\/neiljbrown.wordpress.com\/wp-admin\/admin-ajax.php","bridgeUrl":"https:\/\/s2.wp.com\/wp-content\/mu-plugins\/videopress\/js\/videopress-token-bridge.js","post_id":"390"};
+</script>
+<script id='wpcom-actionbar-placeholder-js-extra'>
+var actionbardata = {"siteID":"31831223","siteURL":"https:\/\/neiljbrown.com","xhrURL":"https:\/\/neiljbrown.com\/wp-admin\/admin-ajax.php","nonce":"da2e64eb2b","isLoggedIn":"","statusMessage":"","subsEmailDefault":"instantly","proxyScriptUrl":"https:\/\/s0.wp.com\/wp-content\/js\/wpcom-proxy-request.js?ver=20211021","shortlink":"https:\/\/wp.me\/p29yKP-6i","i18n":{"followedText":"New posts from this site will now appear in your <a href=\"https:\/\/wordpress.com\/read\">Reader<\/a>","foldBar":"Collapse this bar","unfoldBar":"Expand this bar"}};
+</script>
+<script crossorigin='anonymous' type='text/javascript' src='https://s2.wp.com/_static/??-eJyFTtsOgjAM/SHLgomID8ZvAVaX4bbOdhP5e/FOiIlPzem5qiFCRyFhSKoX5am1DiELcmOmH9hwpKKXlZrpfIbosrFBFKNrEmqIJGmBlq4pnV2CyHQd35wNncsa5U7254w8vk7hbfgrAm8NT4Vz8Y+NF6uRIqM8Er4IEp0wQMtWG1z6W0fmkzAQ60YLdK4ReQ7pfARJuZ18B78vq816uyvruupvJyZ95Q=='></script>
+<script type='text/javascript'>
+	window.addEventListener( 'DOMContentLoaded', function() {
+		rltInitialize( {"token":null,"iframeOrigins":["https:\/\/widgets.wp.com"]} );
+	} );
+</script>
+<link rel='stylesheet' id='all-css-0-2' href='https://s2.wp.com/wp-content/mu-plugins/highlander-comments/style.css?m=1650315457h&cssminify=yes' type='text/css' media='all' />
+<link rel="EditURI" type="application/rsd+xml" title="RSD" href="https://neiljbrown.wordpress.com/xmlrpc.php?rsd" />
+<link rel="wlwmanifest" type="application/wlwmanifest+xml" href="https://s1.wp.com/wp-includes/wlwmanifest.xml" /> 
+<meta name="generator" content="WordPress.com" />
+<link rel="canonical" href="https://neiljbrown.com/2017/08/26/evaluating-message-brokers-amazon-sqs/" />
+<link rel='shortlink' href='https://wp.me/p29yKP-6i' />
+<link rel="alternate" type="application/json+oembed" href="https://public-api.wordpress.com/oembed/?format=json&amp;url=https%3A%2F%2Fneiljbrown.com%2F2017%2F08%2F26%2Fevaluating-message-brokers-amazon-sqs%2F&amp;for=wpcom-auto-discovery" /><link rel="alternate" type="application/xml+oembed" href="https://public-api.wordpress.com/oembed/?format=xml&amp;url=https%3A%2F%2Fneiljbrown.com%2F2017%2F08%2F26%2Fevaluating-message-brokers-amazon-sqs%2F&amp;for=wpcom-auto-discovery" />
+<!-- Jetpack Open Graph Tags -->
+<meta property="og:type" content="article" />
+<meta property="og:title" content="Evaluating message brokers &#8211; Amazon SQS" />
+<meta property="og:url" content="https://neiljbrown.com/2017/08/26/evaluating-message-brokers-amazon-sqs/" />
+<meta property="og:description" content="Message brokers are specialised pieces of enterprise middleware designed to support integrating applications in a decoupled (in both time and location) manner, using messaging channels, implemented…" />
+<meta property="article:published_time" content="2017-08-26T15:10:56+00:00" />
+<meta property="article:modified_time" content="2017-08-26T15:42:54+00:00" />
+<meta property="og:site_name" content="Neil Brown" />
+<meta property="og:image" content="https://neiljbrown.files.wordpress.com/2017/08/which-message-broker-sqs.png" />
+<meta property="og:image:width" content="928" />
+<meta property="og:image:height" content="294" />
+<meta property="og:image:alt" content="" />
+<meta property="og:locale" content="en_US" />
+<meta property="article:publisher" content="https://www.facebook.com/WordPresscom" />
+<meta name="twitter:text:title" content="Evaluating message brokers &#8211; Amazon&nbsp;SQS" />
+<meta name="twitter:image" content="https://neiljbrown.files.wordpress.com/2017/08/which-message-broker-sqs.png?w=640" />
+<meta name="twitter:card" content="summary_large_image" />
+
+<!-- End Jetpack Open Graph Tags -->
+<link rel="shortcut icon" type="image/x-icon" href="https://s1.wp.com/i/favicon.ico" sizes="16x16 24x24 32x32 48x48" />
+<link rel="icon" type="image/x-icon" href="https://s1.wp.com/i/favicon.ico" sizes="16x16 24x24 32x32 48x48" />
+<link rel="apple-touch-icon" href="https://s2.wp.com/i/webclip.png" />
+<link rel='openid.server' href='https://neiljbrown.com/?openidserver=1' />
+<link rel='openid.delegate' href='https://neiljbrown.com/' />
+<link rel="search" type="application/opensearchdescription+xml" href="https://neiljbrown.com/osd.xml" title="Neil Brown" />
+<link rel="search" type="application/opensearchdescription+xml" href="https://s1.wp.com/opensearch.xml" title="WordPress.com" />
+		<style type="text/css">
+			.recentcomments a {
+				display: inline !important;
+				padding: 0 !important;
+				margin: 0 !important;
+			}
+
+			table.recentcommentsavatartop img.avatar, table.recentcommentsavatarend img.avatar {
+				border: 0px;
+				margin: 0;
+			}
+
+			table.recentcommentsavatartop a, table.recentcommentsavatarend a {
+				border: 0px !important;
+				background-color: transparent !important;
+			}
+
+			td.recentcommentsavatarend, td.recentcommentsavatartop {
+				padding: 0px 0px 1px 0px;
+				margin: 0px;
+			}
+
+			td.recentcommentstextend {
+				border: none !important;
+				padding: 0px 0px 2px 10px;
+			}
+
+			.rtl td.recentcommentstextend {
+				padding: 0px 10px 2px 0px;
+			}
+
+			td.recentcommentstexttop {
+				border: none;
+				padding: 0px 0px 0px 10px;
+			}
+
+			.rtl td.recentcommentstexttop {
+				padding: 0px 10px 0px 0px;
+			}
+		</style>
+		<meta name="application-name" content="Neil Brown" /><meta name="msapplication-window" content="width=device-width;height=device-height" /><meta name="msapplication-tooltip" content="Software Engineer" /><meta name="msapplication-task" content="name=Subscribe;action-uri=https://neiljbrown.com/feed/;icon-uri=https://s1.wp.com/i/favicon.ico" /><meta name="msapplication-task" content="name=Sign up for a free blog;action-uri=http://wordpress.com/signup/;icon-uri=https://s1.wp.com/i/favicon.ico" /><meta name="msapplication-task" content="name=WordPress.com Support;action-uri=http://support.wordpress.com/;icon-uri=https://s1.wp.com/i/favicon.ico" /><meta name="msapplication-task" content="name=WordPress.com Forums;action-uri=http://forums.wordpress.com/;icon-uri=https://s1.wp.com/i/favicon.ico" /><meta name="description" content="Message brokers are specialised pieces of enterprise middleware designed to support integrating applications in a decoupled (in both time and location) manner, using messaging channels, implemented as either queues (for single consumer) or topics (for multiple consumers). Whilst deploying and operating a broker has an additional, ongoing cost for a business, if the scale of&hellip;" />
+		<script type="text/javascript">
+
+			window.doNotSellCallback = function() {
+
+				var linkElements = [
+					'a[href="https://wordpress.com/?ref=footer_blog"]',
+					'a[href="https://wordpress.com/?ref=footer_website"]',
+					'a[href="https://wordpress.com/?ref=vertical_footer"]',
+					'a[href^="https://wordpress.com/?ref=footer_segment_"]',
+				].join(',');
+
+				var dnsLink = document.createElement( 'a' );
+				dnsLink.href = 'https://wordpress.com/advertising-program-optout/';
+				dnsLink.classList.add( 'do-not-sell-link' );
+				dnsLink.rel = 'nofollow';
+				dnsLink.style.marginLeft = '0.5em';
+				dnsLink.textContent = 'Do Not Sell My Personal Information';
+
+				var creditLinks = document.querySelectorAll( linkElements );
+
+				if ( 0 === creditLinks.length ) {
+					return false;
+				}
+
+				Array.prototype.forEach.call( creditLinks, function( el ) {
+					el.insertAdjacentElement( 'afterend', dnsLink );
+				});
+
+				return true;
+			};
+
+		</script>
+		<script id="cmp-configuration" type="application/configuration">{"gvlVersion":"144","consentLanguage":"EN","locale":"en","vendorsAll":"BGJrv6__7a_s_3_f_b9ujzGr_v9e__yGccL5tn3gu5f635ei--wnZou_VtXBVyPEl27YJCBto5k6iak2LVEqteY9jUmzlORpRPZckk9jL2zrAw_p8_sofzBTPf_P__7_O6f___v_2_ue__r___7v__3__18b__Pvs_9_r6v_f___________3________-AA","vendorsLegInterest":"BGIAkw1LyALsyxwZNIwihRAjCsJCqBQAUUAwtEVgA4OCnZWAS6ghYAIBUhGBECDEFGDAIABBIAkIiAkALBAIgCIBAACABEAhAARMAgsALAwCAAUA0LEAKAAQJCDIgIjlMCAqRKKCWysQSgr2NMIA6zwAoFEZFQAIkkhBICAkLBzHAEgJeLJA0xQvkAIwQoAA","ajaxNonce":"4c483b501e","modulePath":"https:\/\/s1.wp.com\/wp-content\/blog-plugins\/wordads-classes\/js\/","gvlPath":"https:\/\/public-api.wordpress.com\/wpcom\/v2\/sites\/31831223\/cmp\/vendors\/en\/","_":{"title":"Privacy & Cookies","intro":"We, WordPress.com, and our advertising partners store and\/or access information on your device and also process personal data, like unique identifiers, browsing activity, and other standard information sent by your device including your IP address. This information is collected over time and used for personalised ads, ad measurement, audience insights, and product development specific to our ads program. If this sounds good to you, select \"I Agree!\" below.  Otherwise, you can get more information, customize your consent preferences, or decline consent by selecting \"Learn More\". Note that your preferences apply to all websites in the <a href=\"https:\/\/automattic.com\/cookies\/#user-ads-consent\" target=\"_blank\">WordPress.com network<\/a>, and if you change your mind in the future you can update your preferences anytime by visiting the Privacy link displayed under each ad. One last thing, our partners may process some of your data based on legitimate interests instead of consent but you can object to that by choosing \"Learn More\" and then disabling the Legitimate Interests toggle under any listed Purpose or Partner.","config":"Learn More","accept":"I Agree!","viewPartners":"View Partners","error":"We're sorry but an unexpected error occurred. Please try again later."}}</script>		<script type="text/javascript">
+		function __ATA_CC() {var v = document.cookie.match('(^|;) ?personalized-ads-consent=([^;]*)(;|$)');return v ? 1 : 0;}
+		var __ATA_PP = { 'pt': 1, 'ht': 0, 'tn': 'twentytwelve', 'uloggedin': 0, 'amp': false, 'consent': __ATA_CC(), 'gdpr_applies': true, 'ad': { 'label': { 'text': 'Advertisements' }, 'reportAd': { 'text': 'Report this ad' }, 'privacySettings': { 'text': 'Privacy', 'onClick': function() { window.__tcfapi && window.__tcfapi( 'showUi' ) } } }, 'siteid': 8982, 'blogid': 31831223, 'js_hint': 'tcf2_test' };
+		var __ATA = __ATA || {};
+		__ATA.cmd = __ATA.cmd || [];
+		__ATA.criteo = __ATA.criteo || {};
+		__ATA.criteo.cmd = __ATA.criteo.cmd || [];
+		</script>
+		<script type="text/javascript">
+		(function(){var g=Date.now||function(){return+new Date};function h(a,b){a:{for(var c=a.length,d="string"==typeof a?a.split(""):a,e=0;e<c;e++)if(e in d&&b.call(void 0,d[e],e,a)){b=e;break a}b=-1}return 0>b?null:"string"==typeof a?a.charAt(b):a[b]};function k(a,b,c){c=null!=c?"="+encodeURIComponent(String(c)):"";if(b+=c){c=a.indexOf("#");0>c&&(c=a.length);var d=a.indexOf("?");if(0>d||d>c){d=c;var e=""}else e=a.substring(d+1,c);a=[a.substr(0,d),e,a.substr(c)];c=a[1];a[1]=b?c?c+"&"+b:b:c;a=a[0]+(a[1]?"?"+a[1]:"")+a[2]}return a};var l=0;function m(a,b){var c=document.createElement("script");c.src=a;c.onload=function(){b&&b(void 0)};c.onerror=function(){b&&b("error")};a=document.getElementsByTagName("head");var d;a&&0!==a.length?d=a[0]:d=document.documentElement;d.appendChild(c)}function n(a){var b=void 0===b?document.cookie:b;return(b=h(b.split("; "),function(c){return-1!=c.indexOf(a+"=")}))?b.split("=")[1]:""}function p(a){return"string"==typeof a&&0<a.length}
+		function r(a,b,c){b=void 0===b?"":b;c=void 0===c?".":c;var d=[];Object.keys(a).forEach(function(e){var f=a[e],q=typeof f;"object"==q&&null!=f||"function"==q?d.push(r(f,b+e+c)):null!==f&&void 0!==f&&(e=encodeURIComponent(b+e),d.push(e+"="+encodeURIComponent(f)))});return d.filter(p).join("&")}function t(a,b){a||((window.__ATA||{}).config=b.c,m(b.url))}var u=Math.floor(1E13*Math.random()),v=window.__ATA||{};window.__ATA=v;window.__ATA.cmd=v.cmd||[];v.rid=u;v.createdAt=g();var w=window.__ATA||{},x="s.pubmine.com";
+		w&&w.serverDomain&&(x=w.serverDomain);var y="//"+x+"/conf",z=window.top===window,A=window.__ATA_PP&&window.__ATA_PP.gdpr_applies,B="boolean"===typeof A?Number(A):null,C=window.__ATA_PP||null,D=z?document.referrer?document.referrer:null:null,E=z?window.location.href:document.referrer?document.referrer:null,F,G=n("__ATA_tuuid");F=G?G:null;var H=window.innerWidth+"x"+window.innerHeight,I=n("usprivacy"),J=r({gdpr:B,pp:C,rid:u,src:D,ref:E,tuuid:F,vp:H,us_privacy:I?I:null},"",".");
+		(function(a){var b=void 0===b?"cb":b;l++;var c="callback__"+g().toString(36)+"_"+l.toString(36);a=k(a,b,c);window[c]=function(d){t(void 0,d)};m(a,function(d){d&&t(d)})})(y+"?"+J);}).call(this);
+		</script><link rel="amphtml" href="https://neiljbrown.com/2017/08/26/evaluating-message-brokers-amazon-sqs/amp/"><script type="text/javascript">
+	window.google_analytics_uacct = "UA-52447-2";
+</script>
+
+<script type="text/javascript">
+	var _gaq = _gaq || [];
+	_gaq.push(['_setAccount', 'UA-52447-2']);
+	_gaq.push(['_gat._anonymizeIp']);
+	_gaq.push(['_setDomainName', 'none']);
+	_gaq.push(['_setAllowLinker', true]);
+	_gaq.push(['_initData']);
+	_gaq.push(['_trackPageview']);
+
+	(function() {
+		var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+		ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+		(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ga);
+	})();
+</script>
+</head>
+
+<body class="post-template-default single single-post postid-390 single-format-standard wp-embed-responsive customizer-styles-applied custom-font-enabled single-author highlander-enabled highlander-light">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 0 0" width="0" height="0" focusable="false" role="none" style="visibility: hidden; position: absolute; left: -9999px; overflow: hidden;" ><defs><filter id="wp-duotone-dark-grayscale"><feColorMatrix color-interpolation-filters="sRGB" type="matrix" values=" .299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 " /><feComponentTransfer color-interpolation-filters="sRGB" ><feFuncR type="table" tableValues="0 0.49803921568627" /><feFuncG type="table" tableValues="0 0.49803921568627" /><feFuncB type="table" tableValues="0 0.49803921568627" /><feFuncA type="table" tableValues="1 1" /></feComponentTransfer><feComposite in2="SourceGraphic" operator="in" /></filter></defs></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 0 0" width="0" height="0" focusable="false" role="none" style="visibility: hidden; position: absolute; left: -9999px; overflow: hidden;" ><defs><filter id="wp-duotone-grayscale"><feColorMatrix color-interpolation-filters="sRGB" type="matrix" values=" .299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 " /><feComponentTransfer color-interpolation-filters="sRGB" ><feFuncR type="table" tableValues="0 1" /><feFuncG type="table" tableValues="0 1" /><feFuncB type="table" tableValues="0 1" /><feFuncA type="table" tableValues="1 1" /></feComponentTransfer><feComposite in2="SourceGraphic" operator="in" /></filter></defs></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 0 0" width="0" height="0" focusable="false" role="none" style="visibility: hidden; position: absolute; left: -9999px; overflow: hidden;" ><defs><filter id="wp-duotone-purple-yellow"><feColorMatrix color-interpolation-filters="sRGB" type="matrix" values=" .299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 " /><feComponentTransfer color-interpolation-filters="sRGB" ><feFuncR type="table" tableValues="0.54901960784314 0.98823529411765" /><feFuncG type="table" tableValues="0 1" /><feFuncB type="table" tableValues="0.71764705882353 0.25490196078431" /><feFuncA type="table" tableValues="1 1" /></feComponentTransfer><feComposite in2="SourceGraphic" operator="in" /></filter></defs></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 0 0" width="0" height="0" focusable="false" role="none" style="visibility: hidden; position: absolute; left: -9999px; overflow: hidden;" ><defs><filter id="wp-duotone-blue-red"><feColorMatrix color-interpolation-filters="sRGB" type="matrix" values=" .299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 " /><feComponentTransfer color-interpolation-filters="sRGB" ><feFuncR type="table" tableValues="0 1" /><feFuncG type="table" tableValues="0 0.27843137254902" /><feFuncB type="table" tableValues="0.5921568627451 0.27843137254902" /><feFuncA type="table" tableValues="1 1" /></feComponentTransfer><feComposite in2="SourceGraphic" operator="in" /></filter></defs></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 0 0" width="0" height="0" focusable="false" role="none" style="visibility: hidden; position: absolute; left: -9999px; overflow: hidden;" ><defs><filter id="wp-duotone-midnight"><feColorMatrix color-interpolation-filters="sRGB" type="matrix" values=" .299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 " /><feComponentTransfer color-interpolation-filters="sRGB" ><feFuncR type="table" tableValues="0 0" /><feFuncG type="table" tableValues="0 0.64705882352941" /><feFuncB type="table" tableValues="0 1" /><feFuncA type="table" tableValues="1 1" /></feComponentTransfer><feComposite in2="SourceGraphic" operator="in" /></filter></defs></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 0 0" width="0" height="0" focusable="false" role="none" style="visibility: hidden; position: absolute; left: -9999px; overflow: hidden;" ><defs><filter id="wp-duotone-magenta-yellow"><feColorMatrix color-interpolation-filters="sRGB" type="matrix" values=" .299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 " /><feComponentTransfer color-interpolation-filters="sRGB" ><feFuncR type="table" tableValues="0.78039215686275 1" /><feFuncG type="table" tableValues="0 0.94901960784314" /><feFuncB type="table" tableValues="0.35294117647059 0.47058823529412" /><feFuncA type="table" tableValues="1 1" /></feComponentTransfer><feComposite in2="SourceGraphic" operator="in" /></filter></defs></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 0 0" width="0" height="0" focusable="false" role="none" style="visibility: hidden; position: absolute; left: -9999px; overflow: hidden;" ><defs><filter id="wp-duotone-purple-green"><feColorMatrix color-interpolation-filters="sRGB" type="matrix" values=" .299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 " /><feComponentTransfer color-interpolation-filters="sRGB" ><feFuncR type="table" tableValues="0.65098039215686 0.40392156862745" /><feFuncG type="table" tableValues="0 1" /><feFuncB type="table" tableValues="0.44705882352941 0.4" /><feFuncA type="table" tableValues="1 1" /></feComponentTransfer><feComposite in2="SourceGraphic" operator="in" /></filter></defs></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 0 0" width="0" height="0" focusable="false" role="none" style="visibility: hidden; position: absolute; left: -9999px; overflow: hidden;" ><defs><filter id="wp-duotone-blue-orange"><feColorMatrix color-interpolation-filters="sRGB" type="matrix" values=" .299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 " /><feComponentTransfer color-interpolation-filters="sRGB" ><feFuncR type="table" tableValues="0.098039215686275 1" /><feFuncG type="table" tableValues="0 0.66274509803922" /><feFuncB type="table" tableValues="0.84705882352941 0.41960784313725" /><feFuncA type="table" tableValues="1 1" /></feComponentTransfer><feComposite in2="SourceGraphic" operator="in" /></filter></defs></svg><div id="page" class="hfeed site">
+	<header id="masthead" class="site-header">
+				<hgroup>
+			<h1 class="site-title"><a href="https://neiljbrown.com/" title="Neil Brown" rel="home">Neil Brown</a></h1>
+			<h2 class="site-description">Software Engineer</h2>
+		</hgroup>
+
+		<nav id="site-navigation" class="main-navigation">
+			<button class="menu-toggle">Menu</button>
+			<a class="assistive-text" href="#content" title="Skip to content">Skip to content</a>
+			<div class="menu-primary-navigation-menu-container"><ul id="menu-primary-navigation-menu" class="nav-menu"><li id="menu-item-16" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-16"><a href="https://neiljbrown.wordpress.com/">Blog</a></li>
+<li id="menu-item-17" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-17"><a href="https://neiljbrown.com/about/">About Me</a></li>
+</ul></div>		</nav><!-- #site-navigation -->
+
+			</header><!-- #masthead -->
+
+	<div id="main" class="wrapper">
+	<div id="primary" class="site-content">
+		<div id="content" role="main">
+
+			
+				
+	<article id="post-390" class="post-390 post type-post status-publish format-standard hentry category-uncategorized tag-aws tag-messaging tag-sqs">
+				<header class="entry-header">
+			
+						<h1 class="entry-title">Evaluating message brokers &#8211; Amazon&nbsp;SQS</h1>
+										<div class="comments-link">
+					<a href="https://neiljbrown.com/2017/08/26/evaluating-message-brokers-amazon-sqs/#comments">2 Replies</a>				</div><!-- .comments-link -->
+					</header><!-- .entry-header -->
+
+				<div class="entry-content">
+			<p>Message brokers are specialised pieces of enterprise middleware designed to support integrating applications in a decoupled (in both time and location) manner, using messaging channels, implemented as either queues (for single consumer) or topics (for multiple consumers). Whilst deploying and operating a broker has an additional, ongoing cost for a business, if the scale of integration in your system and the non-functional requirements warrant it, they can can provide a flexible, better performing and more scalable solution than the alternative of implementing message queues in your database, especially, as is often the case, the latter is already overloaded.<a href="https://neiljbrown.files.wordpress.com/2017/08/which-message-broker-sqs.png"><img loading="lazy" data-attachment-id="599" data-permalink="https://neiljbrown.com/2017/08/26/evaluating-message-brokers-amazon-sqs/which-message-broker-sqs/" data-orig-file="https://neiljbrown.files.wordpress.com/2017/08/which-message-broker-sqs.png" data-orig-size="928,294" data-comments-opened="1" data-image-meta="{&quot;aperture&quot;:&quot;0&quot;,&quot;credit&quot;:&quot;&quot;,&quot;camera&quot;:&quot;&quot;,&quot;caption&quot;:&quot;&quot;,&quot;created_timestamp&quot;:&quot;0&quot;,&quot;copyright&quot;:&quot;&quot;,&quot;focal_length&quot;:&quot;0&quot;,&quot;iso&quot;:&quot;0&quot;,&quot;shutter_speed&quot;:&quot;0&quot;,&quot;title&quot;:&quot;&quot;,&quot;orientation&quot;:&quot;0&quot;}" data-image-title="which-message-broker-sqs" data-image-description="" data-image-caption="" data-medium-file="https://neiljbrown.files.wordpress.com/2017/08/which-message-broker-sqs.png?w=300" data-large-file="https://neiljbrown.files.wordpress.com/2017/08/which-message-broker-sqs.png?w=625" class="aligncenter size-medium wp-image-599" src="https://neiljbrown.files.wordpress.com/2017/08/which-message-broker-sqs.png?w=300&#038;h=95" alt="" width="300" height="95" srcset="https://neiljbrown.files.wordpress.com/2017/08/which-message-broker-sqs.png?w=300&amp;h=95 300w, https://neiljbrown.files.wordpress.com/2017/08/which-message-broker-sqs.png?w=600&amp;h=190 600w, https://neiljbrown.files.wordpress.com/2017/08/which-message-broker-sqs.png?w=150&amp;h=48 150w" sizes="(max-width: 300px) 100vw, 300px" /></a>There are a considerable number of proven message brokers available today from a variety of vendors. Before committing to building your integrations on a particular broker, you should give careful consideration to how well it satisfies your requirements. I recently went through such an evaluation exercise, and ended-up choosing Amazon Simple Queue Service (SQS). While we haven’t regretted this decision, I did learn a few things along the way. In this post I’ll share a list of the functional and non-functional (technical) requirements that you should consider as part of evaluating a message broker, and also my opinion on how SQS measures up to other brokers in each case, and the trade-offs.</p>
+<p><span id="more-390"></span></p>
+<h1>Amazon SQS</h1>
+<p>Before we get into message broker evaluation and how SQS fares against others, I’ll briefly recap the major characteristics of SQS (as of 05/2016).</p>
+<p>SQS is a <i>distributed</i><i>, </i><i>queue-based</i>, messaging <i>service</i>. Let’s break that description down and consider what it means.</p>
+<p>SQS is a messaging <i>service</i>. For an ongoing usage fee (see below), Amazon deploy and operate the message broker for you, including monitoring, maintaining (patching, housekeeping, backup etc) and scaling the message broker. This is an alternative to deploying and operating a product-based message broker yourself.</p>
+<p>SQS is <i>queue-based</i><i>. </i>It supports building (loosely coupled) integrations between two applications, in which messages only need be consumed once (by a single app), via a queue of messages.</p>
+<p>A relatively basic set of queue operations are supported including publishing a message (with optional delay), reading a message (with support for exclusive consumption based on a message visibility timeout), and deleting (acknowledging) previously read messages using a read receipt. Given that the broker is operated as a remote service, these operations are exposed as a set of web service APIs (Send Message, Read Message, Delete Message).</p>
+<p>SQS is <i>distributed</i>. Each queue is distributed across multiple Amazon SQS servers, resulting in a copy of each message being stored in multiple locations for redundancy. This is illustrated in the following diagram taken from the <a href="http://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/Welcome.html#ArchitecturalOverview" target="_blank" rel="noopener">SQS Developer Guide</a>, which shows a single queue, containing messages (A-E) &#8211;</p>
+<p style="text-align:justify;"><img loading="lazy" data-attachment-id="412" data-permalink="https://neiljbrown.com/2017/08/26/evaluating-message-brokers-amazon-sqs/amazon-sqs-distributed-queue/" data-orig-file="https://neiljbrown.files.wordpress.com/2017/08/amazon-sqs-distributed-queue.png" data-orig-size="676,496" data-comments-opened="1" data-image-meta="{&quot;aperture&quot;:&quot;0&quot;,&quot;credit&quot;:&quot;&quot;,&quot;camera&quot;:&quot;&quot;,&quot;caption&quot;:&quot;&quot;,&quot;created_timestamp&quot;:&quot;0&quot;,&quot;copyright&quot;:&quot;&quot;,&quot;focal_length&quot;:&quot;0&quot;,&quot;iso&quot;:&quot;0&quot;,&quot;shutter_speed&quot;:&quot;0&quot;,&quot;title&quot;:&quot;&quot;,&quot;orientation&quot;:&quot;0&quot;}" data-image-title="amazon-sqs-distributed-queue" data-image-description="" data-image-caption="" data-medium-file="https://neiljbrown.files.wordpress.com/2017/08/amazon-sqs-distributed-queue.png?w=300" data-large-file="https://neiljbrown.files.wordpress.com/2017/08/amazon-sqs-distributed-queue.png?w=625" class=" wp-image-412 aligncenter" src="https://neiljbrown.files.wordpress.com/2017/08/amazon-sqs-distributed-queue.png?w=371&#038;h=272" alt="amazon-sqs-distributed-queue" width="371" height="272" srcset="https://neiljbrown.files.wordpress.com/2017/08/amazon-sqs-distributed-queue.png?w=371&amp;h=272 371w, https://neiljbrown.files.wordpress.com/2017/08/amazon-sqs-distributed-queue.png?w=150&amp;h=110 150w, https://neiljbrown.files.wordpress.com/2017/08/amazon-sqs-distributed-queue.png?w=300&amp;h=220 300w, https://neiljbrown.files.wordpress.com/2017/08/amazon-sqs-distributed-queue.png 676w" sizes="(max-width: 371px) 100vw, 371px" /></p>
+<p>SQS has been architected this way to achieve high levels of scalability and redundancy. This is essential to meet the requirements of most businesses. However, the technical architecture required to support these requirements comes with trade-offs in terms of limitations in the feature set that’s supported by the message broker, which is the reason for the ‘Simple’ in SQS.  These trade-offs and limitations are discussed in more detail below as part of evaluating individual requirements.</p>
+<p>A suggested list of functional and nonfunctional requirements you should consider when evaluating message brokers include:</p>
+<ul>
+<li><a href="#MessagingStyles">Messaging Styles</a></li>
+<li><a href="#MessagePayload">Message Payload</a></li>
+<li><a href="#Latency">Latency</a></li>
+<li><a href="#Availability">Availability</a></li>
+<li><a href="#Scalability">Scalability</a></li>
+<li><a href="#Redundancy">Redundancy</a></li>
+<li><a href="#MessageDeliveryOrdering">Message Delivery Ordering</a></li>
+<li><a href="#MessageDe-duplication">Message De-duplication</a></li>
+<li><a href="#MessageRetention">Message Retention</a></li>
+<li><a href="#MessageFiltering">Message Filtering</a></li>
+<li><a href="#SecureMessaging">Secure Messaging</a></li>
+<li><a href="#ClientLibrariesSDKs">Client Libraries / SDKs</a></li>
+<li><a href="#MessageErrorHandling">Message Error Handling</a></li>
+<li><a href="#Cost">Cost</a></li>
+<li><a href="#MessageAdmin">Message Admin</a></li>
+</ul>
+<p>Each of these requirements is elaborated below, along with my observations on how well they&#8217;re supported by SQS.</p>
+<h1 id="MessagingStyles">Messaging Styles</h1>
+<p>A primary consideration when evaluating a message broker is how well it supports the styles of messaging (types of message channels) needed to meet your requirements.</p>
+<p>If you want to build (loosely coupled) point-to-point integrations, in which messages are only consumed by one app; and / or  you require a queue of tasks for worker nodes to process asynchronously, then your message broker needs to support message queues.</p>
+<p>If you need to integrate several apps, using multiple message types, and some of those messages needs to be consumed by multiple apps, as might be the cause in an event-driven architecture, then your message broker needs to support the publish-subscribe (pub-sub) style of messaging, typically using topic-based message channels.</p>
+<p>Our immediate requirement was only for queues to support a worker queue for a point-to-point integration, however with one eye on the future we were also interested in pub-sub to reduce the no. of point integrations we were building, and allow integrations to be extended without changing the publishing apps.</p>
+<p>SQS only supports point-to-point messaging via a queue.<i> However, </i>pub-sub messaging can be achieved relatively easily by integrating SQS queues with <a href="https://aws.amazon.com/sns/">Amazon Simple Notification Services (SNS)</a><i>.</i></p>
+<h1 id="MessagePayload">Message Payload</h1>
+<p>Support for the payloads you need to include in messages exchanged between your apps is one of the first criteria to consider when choosing a message broker. What <b>content / media-types</b> do you need to be able to send, and what’s the maximum <b>size of the payload</b> you need to send? For example, do you need to be able to include binary payloads in your messages, or if not, what character set(s) need to be supported?</p>
+<p>Amazon SQS supports ‘text’ (non-binary) message bodies only, including most of the characters in the Unicode character set. (The supported character set is defined by the XML spec, because under the hood SQS uses XML for its data-exchange format). If you need to send binary payloads then your message producers and consumers will need to agree on and apply a binary encoding scheme (e.g. base64) themselves. (Binary SQS Message Attributes are supported by SQS, but these are akin to message headers, and using them instead of the message body to store your payload, whilst feasible, will reduce the efficiency with which messages can be consumed).</p>
+<p>By default, SQS’ max message size is 256KB, including Message Attributes. Is that big enough to support your use-cases? If not, there <i>is</i> support for sending larger payloads of up to 2GB, but it requires using an alternative ‘Extended’ client library, which stores the data ‘out of band’ in S3, which has additional costs. As of now, I don’t currently have a lot of experience of this option, so can’t comment on the trade-offs, such as of latency. For more details see the <a href="http://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-s3-messages.html">Managing Large Amazon SQS Messages Using Amazon S3 section</a> of the SQS Dev Guide.</p>
+<p>In our case, all of the payloads we needed to send were text-based and relatively small (a few KB), so the SQS message payload restrictions were not a showstopper.</p>
+<h1 id="Latency">Latency</h1>
+<p>When integrating your applications via a message broker, rather than directly, you’re adding at least a couple of extra network calls between the apps, as well as some additional processing overhead for the broker to store (assuming durability is required) and route the messages.</p>
+<p>When evaluating message brokers you should therefore measure the latency they introduce and check whether it’s low enough to meet any performance requirements you have. This includes the response time of any synchronous requests for enqueuing the message before returning a response. Also the maximum time for acting on a message, which includes the time it takes for the message to transit end-to-end through the broker and be available for reading from the destination message channel.</p>
+<p>The latency introduced by different message brokers will vary depending on a no. of factors, including whether they’re deployed locally or remotely, and how they’re architected.</p>
+<p>SQS is a remote service with queues accessed by web service calls made over the Net. The latency for sending and reading messages will therefore always be an order of magnitude higher than a product-based message broker that’s deployed in your data-centre, on a node on the same high-speed LAN as your apps. The <a href="https://aws.amazon.com/sqs/faqs/#features-functionality-interfaces">SQS FAQ (Features, Functionality, and Interfaces)</a> states that typical latencies for API requests alone (excluding any transit time in the broker) is “in the tens or low hundreds of milliseconds”. The latency will likely be at its lowest if you deploy your producing and consuming apps to EC2 in the same region and AZ as your SQS queue, as traffic should be routed within the AZ rather than transit the internet.</p>
+<p>In our case, latency <i>was</i> an important consideration in our choice of message broker, as messages needed to be processed in near real-time to support an interactive use-case, and messages were being published by a synchronous API. Prior to adopting SQS we ran some load tests to check the latency.  As with other AWS services, we found the latency was higher when the queue is used sporadically, but improves significantly as you place the queue under constant load. What we found was pretty consistent with the aforementioned statement in the SQS FAQ. In 95% of the cases, new messages were available for processing on the destination queue in 150ms, and in 99% of the cases, 300ms.</p>
+<p>These latency times were acceptable for our “near real-time” use-cases. However, <b>if you have more challenging requirements e.g. latency times in the 10s of ms</b>, then SQS is <i>not </i>the right broker for you.</p>
+<h1 id="Availability">Availability</h1>
+<p>If all or part of your message broker, were to become inaccessible (i.e. you couldn’t publish and/or consume messages from your queues) what impact (cost) would this have on your business, and how would that increase with the length of the outage?</p>
+<p>If the message broker supports a real-time service for end users, as is true in our case, then even a short outage could have a big impact on your business. In such a case you need to check what mitigating high-availability (HA) features your message broker supports. Support for HA is itself a trade-off as it incurs additional complexity and hence cost.</p>
+<p>Amazon SQS has good HA support. The message broker (queues) is deployed across multiple, redundant Availability Zones within the same region, which avoids a failure of a single node, network or even whole data-centre from making messages inaccessible.</p>
+<p>If you choose to deploy a message broker product on-premise, then you’ll need to setup and operate it in an HA configuration. This typically entails clustering instances of the broker running across multiple nodes with redundant (RAID) storage. This is a non-trivial (complex) exercise, which requires operational experience and testing to achieve a reliable solution.</p>
+<p>This should be taken into account when comparing the cost of a self-managed, on-premise message broker with messaging-as-a-service like Amazon SQS or Google PubSub.</p>
+<h1 id="Scalability">Scalability</h1>
+<p>Do you have non-functional requirements for throughput (transactions per second (TPS)) that your system needs to be capable of attaining? What are your (average and peak) message rates? And what is the projected growth in the volume of messages?</p>
+<p>Message brokers are centralised infrastructure components used to integrate multiple apps. As the number of integrated apps and the rate of messages sent between them grows, there is a risk that the message broker will become a bottleneck. You need to be sure that the broker is capable of not only achieving the throughput required today, but also has the potential to scale to support projected future growth in your system. You also need to consider the cost-effectiveness of the broker&#8217;s scalability &#8211; how much you’ll need to continue to spend on more hardware to achieve the increase in TPS you want.</p>
+<p>The ease and effectiveness that you can scale a message broker will depend on how it has been architected. The need to cluster a message broker to achieve high availability may reduce its scalability, since the broker state needs to be maintained across the clustered nodes.</p>
+<p>Amazon claim their message queue service is highly scalable, and capable of scaling up to a throughput of “many thousands of messages per second”.  This is one of the benefits of their decision to use a distributed architecture for SQS. As explained in the <a href="http://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/throughput.html">SQS Developer Guide</a> to achieve these levels of throughput you need to overcome the aforementioned inherent latency in SQS’ remote API calls, by using two techniques in your messaging apps:</p>
+<ol>
+<li><b>Scale the number of message senders and consumers</b> to overcome the maximum throughput that a single thread can achieve given the latency of each API call.</li>
+<li><b>Send, receive and delete messages in batches </b>to reduce the relative overhead of latency per message.</li>
+</ol>
+<p>Before adopting your message broker check its scalability by running a load test that encompasses your message producers and consumers. We did this for SQS and confirmed that by scaling our producers and consumers we were able to easily achieve several hundred of TPS, before we cut the test short.</p>
+<p>We also found that SQS’ scalability latency is very low &#8211; there was no perceptible delay in being able to scale to higher throughputs. This is in contrast to other services like EC2, which take a few minutes to scale-up compute nodes.</p>
+<p>One of the major benefits that a PAYG messaging service like SQS has over deploying and managing your own message broker is how much more cost-effective it is to scale, especially if like us the load on your system is spiky. If you’re operating your own message broker in your own data-centre, then you need to commit to purchasing servers which are capable of scaling to your projected peak throughput at any time of day. But at quieter times of the day, these servers will be underutilised, which is a waste of money.</p>
+<h1 id="Redundancy">Redundancy &#8211; Guaranteed Message Delivery</h1>
+<p>What would be the impact on your system / business if occasionally, in certain failure scenario(s), a message sent by one of your apps was never delivered to the target app(s)?</p>
+<p>This will depend on the nature of your application. There are certain use-cases where loss of messages can be acceptable. For example, an app which used messaging to monitor the reported status of agents or devices might very well be able to cope with a dropped message every now and then, as a subsequent message will contain the latest device status. However, in many systems, mission-critical or not, such (command or) data loss is unacceptable. In which case, you need to check what guarantees your shortlisted message brokers offer for message delivery.</p>
+<p>In our case, guaranteed message delivery was an <i>essential</i> message broker feature.</p>
+<p>For a message broker to guarantee that an acknowledged message will always be delivered to a queue, or topic subscriptions, it typically needs to provide the following features &#8211;</p>
+<ul>
+<li><b>Persistent message channels</b> &#8211; If a broker only holds unprocessed messages in local (node-specific) memory, those messages will be lost if the broker dies or is restarted at any point between messages being accepted and delivered to the consumer. (Delivery could be delayed if the message consumer is offline). A common solution is for brokers to offer persistent message channels, in which every message received for that channel is committed to a persistent data-store <i>before </i>it is acknowledged. This inevitably has a performance overhead (reduces throughput), so it’s useful to be able to disable it for those channels where data-loss is acceptable, if that’s supported by your broker.</li>
+</ul>
+<ul>
+<li><b>Durable subscriptions &#8211; </b>In the case of pub-sub messaging, a message broker needs to offer “durable” subscriptions if it is to guarantee that a message will be delivered to a consumer, even if it is offline when a message is received for a topic to which it is subscribed.</li>
+</ul>
+<p>Amazon SQS <i>does</i> offer guaranteed message delivery. More specifically, it offers “at least once” message delivery. The significance of this is discussed in the following section on Message De duplication.</p>
+<h1 id="MessageDeliveryOrdering">Message Delivery Ordering</h1>
+<p>For many applications it’s imperative that messages are processed (consumed) in the order in which they were sent &#8211; if a message hasn’t been received then later messages either must not (due to business rules), or cannot (for reasons of referential state) be processed.</p>
+<p>Many message brokers guarantee that they’ll deliver messages in the order they were sent, but not all do. Therefore, if you have such a requirement you should check whether your shortlisted message broker(s) supports it, and if not consider the implications on your apps.</p>
+<p>If a message broker does <em>not</em> support delivering messages in the order they’re received then it will be necessary to handle that in your message consumer, which will add some complexity. There are two possible solutions. The feasibility of one of them depends on how strict your ordering requirements are.</p>
+<p>If you only need to satisfy the foreign key constraints of the consuming application’s data schema, which requires that one type of entity, which is created by processing an earlier message, exists before another type of entity, which is created on processing a later message, then you don’t really have strict ordering requirements in a business rules sense. In this case it’s often possible to workaround a message broker which doesn’t provide message delivery order guarantees, by designing your message consumer to support processing messages out of order. You just modify your persistence logic to create the earlier entity in an initialised state, and populate it a later date when the delayed message is received. You just have to be able to accept that your data may be inconsistent for however long a message is delayed, typically a few seconds or minute.</p>
+<p>If you really must not or cannot process a message if an earlier message hasn’t been received then your application will have to assume responsibility for reordering the messages prior to consumption. This requires that your message producer (or broker if it supports it) includes a field in the message that the consumer can use to determine the order in which they were sent. This is typically a sequence number that’s included as a message header. The consuming application will then need to detect a gap in messages and either reject or buffer the processing of later messages. In addition to the extra complexity, the implementation of this additional logic has the potential to reduce the throughput of your message consumers.</p>
+<p>Amazon SQS only makes a “best effort” to deliver messages in the order they were sent, but it does <i>not</i> guarantee it &#8211; it cannot therefore be relied upon. This is one of the trade-offs that arises from SQS using a highly distributed architecture to achieve high scalability and redundancy. As a result, if you have a requirement for processing messages in strict order then SQS may <i>not</i> be the right choice of message broker for you.</p>
+<p>In our case, this limitation in SQS was not ideal, but it wasn’t a showstopper. We didn’t have strict message ordering requirements, and were able to workaround it using the approach described above.</p>
+<p><b><i>Update </i></b><i>&#8211; Amazon <a href="https://aws.amazon.com/blogs/aws/new-for-amazon-simple-queue-service-fifo-queues-with-exactly-once-delivery-deduplication/" target="_blank" rel="noopener">have</a> <a href="https://aws.amazon.com/about-aws/whats-new/2016/11/amazon-sqs-introduces-fifo-queues-with-exactly-once-processing-and-lower-prices-for-standard-queues/" target="_blank" rel="noopener">announced</a> (11/2016) that SQS has been enhanced to support an additional type of FIFO (First-In-First-Out) queue, which does guarantee that messages are delivered in the order they were sent. Use of FIFO queues has some trade-offs (mostly lower throughput) as compared to standard (classic) SQS queues, but the messaging guarantees they offer are compelling for certain use-cases. For more details see the <a href="http://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/Welcome.html?shortFooter=true#sqs-queue-types" target="_blank" rel="noopener">SQS Dev Guide &#8211; What Type of Queue Do I Need?</a><br />
+</i></p>
+<h1 id="MessageDe-duplication">Message De-duplication</h1>
+<p>In distributed systems integrated using messaging there’s a risk of the same message being  delivered to your app more than once. This can occur in certain failure scenarios. For example, if a network error occurs after a message producer sends a message but before it receives the ack from the broker, the producer will resend the message. Processing the same message more than once will typically either lead to an error or inaccuracies in the consuming app. For this reason being able to detect or handle processing of a duplicate message is often essential.</p>
+<p>If your chosen message broker supports detecting and removing duplicate messages it will make life much simpler for you, as it will avoid the need for you to handle them yourself in your consuming app.</p>
+<p>Unfortunately, Amazon SQS does <i>not </i>currently offer any such support. (<em>Note &#8211; T</em><i>his has now changed see update below).</i> One of the trade-offs of SQS being architected for high-availability and scalability means it only offers at-least-once, rather than exactly-once, message delivery guarantees. What this means is that most of the time your app will only receive a message once, but in certain error scenarios, such as the one described above, it could receive a duplicate.</p>
+<p>If you opt for a broker, such as SQS, which only offers at-least-once message delivery guarantees then, even though the risk of receiving duplicate messages may be small, you will need additional logic in your message consumer to handle them. Your message consumers need to be made <b>idempotent</b> &#8211; processing the same message multiple times should have no affect on the state of the app. Broadly speaking there are two possible solutions &#8211;</p>
+<ul>
+<li>Duplicate message interception</li>
+<li>Compensating (business &amp; persistence) logic</li>
+</ul>
+<h3><b>Preemptive duplicate message interception</b></h3>
+<p>This solution relies on your consuming app intercepting received messages and checking whether they match a previously processed (by any other consumer) one <i>before</i> it’s processed.  There are a couple of strategies for matching a previously processed message. If your messages have a unique ID, then the simplest strategy is to store and query the IDs of all processed messages. Your queries will need to perform well to avoid negatively impacting message throughput. Using a distributed cache to store the message IDs will offer better performance but there’s a risk a duplicate won’t be detected if the cache is non-persistent and restarted, or the cache entry expires before the duplicate is received. The latter is unlikely if the cache is sized appropriately, as most duplicates are likely to be received very shortly after the original message. If your messages don’t have a unique ID, then you could generate and store a hash from other select fields (e.g. date/time, type, body) of the message, and match on that instead.</p>
+<p>If you use a dedicated message ID to  classify a duplicate message rather than a hash it has the benefit of allowing you to distinguish system-generated duplicate messages (re-delivery of the same message), from user-generated duplicate messages (different messages with the same content), e.g. double-click submissions.</p>
+<h3><b>Compensating logic</b></h3>
+<p>If you don’t intercept and remove a duplicate message, then you will need to design your message consumer logic so that if it should process the same message more than once it doesn’t change the persistent state of your application. This solution boils down to using information in the message &#8211; whether it be a dedicated message ID, or one or more fields containing business data in the message body &#8211; as a business key to a record that is persisted for each message. When a duplicate message is processed the data-store reports a key constraint violation on inserting the record. Your persistence or business logic needs to catch  the resulting exception, classify it as a duplicate, and handle it appropriate. The handling will vary depending on your requirements. Processing of the duplicate might be skipped, or it might need to be applied as an update. Either way the message will be acknowledged to remove it from the system.</p>
+<p>The duplicate message interception solution is pessimistic in nature, adding the overhead of dealing with duplicates applied to every message processed, but it can be implemented as a cross-cutting concern, avoiding complicating your consumer logic. In contrast the compensating logic solution is optimistic in nature, only coming into play when a duplicate is detected. It requires slightly more complicated consumer logic, but is overall less complex, as there are less moving parts.</p>
+<p><b><i>Update </i></b><i>&#8211; Amazon <a href="https://aws.amazon.com/blogs/aws/new-for-amazon-simple-queue-service-fifo-queues-with-exactly-once-delivery-deduplication/" target="_blank" rel="noopener">have</a> <a href="https://aws.amazon.com/about-aws/whats-new/2016/11/amazon-sqs-introduces-fifo-queues-with-exactly-once-processing-and-lower-prices-for-standard-queues/" target="_blank" rel="noopener">announced</a> (11/2016) that SQS has been enhanced to support an additional type of FIFO (First-In-First-Out) queue, which does guarantee a message will be delivered exactly once (duplicates will be detected and removed by the broker). Use of FIFO queues has some trade-offs (mostly lower throughput) as compared to standard (classic) SQS queues, but the messaging guarantees they offer are compelling for certain use-cases. For more details see the <a href="http://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/Welcome.html?shortFooter=true#sqs-queue-types" target="_blank" rel="noopener">SQS Dev Guide &#8211; What Type of Queue Do I Need?</a></i></p>
+<h1 id="MessageRetention">Message Retention</h1>
+<h3><b>Undelivered Messages</b></h3>
+<p>How long do you need the broker to be able to hold undelivered messages in a given message channel (queue and topic) with one or more durable subscriptions? And are  any limits on the size (no. of messages) in a queue big enough for your needs? This will depend on the volume of messages you need to receive and the rate you can process them, both during normal operations and outages.</p>
+<p>A message might remain undelivered (age) for an extended period during the upgrade of your message consumer, or in error scenarios: an issue with the consumer; an issue with the broker; a communications error preventing the consumer being able to access the broker.</p>
+<p>Amazon SQS has <i>no limit </i>on the number of messages that can be stored on a queue. It’s default retention period is 4 days, which can be increased to a maximum of 14 days. This is generous and affords you a lot of leeway for handling outages and processing any resulting backlog of messages.</p>
+<h3><b>Indefinite Storage &amp; Replay of Messages</b></h3>
+<p>Do you require your message broker to permanently store your message <i>after </i>it has been delivered, and allow consumers to replay the delivery of messages from any point in time?</p>
+<p>Traditionally, enterprise message brokers have <i>not </i>offered this feature. The majority of mature message broker products and services (including Amazon SQS) operate merely as messaging pipelines. Once a message has been delivered it is deleted from the broker and no longer accessible.</p>
+<p>If you need this feature then you’ll need to focus on a very specific class of message broker. Support for this feature comes with another set of trade-offs to consider, beyond the scope of this post.</p>
+<h1 id="MessageFiltering">Message Filtering</h1>
+<p>Do you need your message broker to support the <a href="http://www.enterpriseintegrationpatterns.com/patterns/messaging/MessageSelector.html" target="_blank" rel="noopener">Selective Consumer</a> pattern? This pattern allows your message consumers to filter the messages they receive from the message channel by instructing the broker to apply a set of selection criteria (typically to message headers). Where filtering is required, having the message broker perform it rather than consumer is far more efficient.</p>
+<p>Support for message filtering can be useful if you have an existing Topic that’s coarse-grained (broad) and one or more consuming applications are only interested in a subset of the topic’s messages. We had our own requirement for a point-to-point integration where support for message filtering would help. Certain messages delivered to a queue were deemed higher priority and needed to be processed more quickly than other messages.</p>
+<p>All JMS compliant message brokers support the Selective Consumer pattern. The <a href="http://docs.oracle.com/javaee/7/api/javax/jms/Session.html#createConsumer-javax.jms.Destination-java.lang.String-">JMS API</a> allows a message selector to be specified when a message consumer is created.</p>
+<p>Amazon SQS does <i>not </i>support message filtering. Your message consumers cannot use the message broker to filter the messages. When you receive a message from a queue, SQS will deliver any message it wishes. This is an example of where the ‘simple’ in SQS applies, in terms of lacking some features of more sophisticated message brokers.</p>
+<p>If your preferred message broker doesn’t support message filtering then often the most efficient alternative solution is to remove the need for filtering by redesigning your message channels, and putting enhanced routing logic in either your message sender or message broker. For example, to solve our own requirement we enhanced our message sender to route messages to different queues, using the <a href="http://www.enterpriseintegrationpatterns.com/patterns/messaging/ContentBasedRouter.html" target="_blank" rel="noopener">Content Based Router pattern</a>.</p>
+<h1 id="SecureMessaging">Secure Messaging</h1>
+<p>When sending and receiving messages between apps you will undoubtedly have some security requirements that need to be satisfied. Consider the extent to which your shortlisted brokers support those requirements. Common requirements for secure messaging include the following.</p>
+<h2><b>Secure network communications</b></h2>
+<p>It is typically advisable that all communications between your messaging apps and a remote message broker are encrypted in order to verify the identify of the broker and prevent man-in-the-middle-attacks such as eavesdropping. This requires that your broker, and its client libraries / SDK, support running its application messaging protocol over a secure (TLS/SSL) connection.</p>
+<h2><b>Restrict access to messaging channels</b></h2>
+<p>It’s normally essential that access to messages be restricted to authenticated applications, both to prevent unauthorised access to data in the messages, and sometimes to maintain an audit trail of messaging operations (what operation was performed, on which message, when).  To support this requirement your message broker must be capable of mandating that applications authenticate themselves. In addition, the message broker should have an access control mechanism that allows you to restrict the operations an authenticated app is authorised to perform per message channel.</p>
+<h2><b>Secure undelivered messages</b></h2>
+<p>The two previous items are common, typically essential secure messaging requirements. In addition, if you’re exchanging particularly sensitive data via messages, you may additionally have a requirement to ensure that undelivered messages stored in the broker (memory or on-disk for a persistent channel) should not be readable by any unauthorised persons or apps which may have access to the nodes on which the broker is running or to which it persists its messages. If this is the case then a message broker that supports encryption of message payloads could be a valuable feature. (Ideally the broker’s support for encryption would be configurable, on a per channel basis, to avoid the overhead of encryption on those channels for which it isn’t needed). Were your chosen broker <i>not </i>to support this feature then your messaging apps would need to assume responsibility for encrypting and decrypting message payloads for selective channels, which adds complexity.</p>
+<p>Amazon SQS has strong support for such secure messaging requirements.</p>
+<ul>
+<li><b>Secure network communications &#8211;</b> All communications with SQS are over HTTPS.</li>
+<li><b>Restrict access to messaging channels &#8211; </b>SQS integrates with AWS Identity &amp; Access Management (IAM) to support authenticating client apps and access control. Client apps not running on EC2 use a set of access keys associated with a created IAM User as their credentials. (Apps which run on EC2 can instead use an IAM Instance Profile granted to the instance, avoiding the need for the user and credentials). In both cases the IAM User or Instance Profile is granted access rights on a per queue basis. In common with all other AWS APIs, SQS requests are signed using the private key, which not only serves to authenticate the request but also guarantee its integrity.</li>
+<li><b>Secure undelivered messages </b>&#8211; Amazon <a href="https://aws.amazon.com/blogs/aws/new-server-side-encryption-for-amazon-simple-queue-service-sqs/" target="_blank" rel="noopener">announced (04/2017)</a> support for encrypting undelivered messages stored on SQS queues. See the <a href="https://aws.amazon.com/sqs/faqs/#sse">SQS FAQ</a> for more details.</li>
+</ul>
+<h1 id="ClientLibrariesSDKs">Client Libraries / SDKs</h1>
+<p>To participate in a messaging system your apps need to integrate with the broker using its APIs. You should therefore consider how well each of your shortlisted message broker(s) support your app development platforms / languages. Does the broker provide client libraries (SDKs) for each of your dev platforms, and  how simple is it to use to access the remote broker?</p>
+<p>Amazon provide client libraries (SDKs) for a wide range for most of the popular enterprise dev platforms (Java, .NET, PHP, etc), and the SDK includes support for Amazon SQS. This has a no. of compelling benefits, reducing the effort of integrating with SQS, making use of the SDK a ‘no-brainer’ &#8211;</p>
+<ul>
+<li>Provision of a higher-level object-based API for processing message queues using your chosen programming language, that is far simpler than invoking the web APIs directly and having to deal with lower level concerns, such as HTTP, data serialisation/marshalling etc.</li>
+</ul>
+<ul>
+<li>Transparent handling of authenticating your app with AWS when accessing the service. You configure the SDK with your public (access) and private (secret) key and the SDK takes care of digitally signing your API requests.</li>
+</ul>
+<ul>
+<li>Features to increase the fault tolerance of your app and to help you meet your performance SLAs, such as configurable connection and request timeouts, with retry counts.</li>
+</ul>
+<ul>
+<li>Recording of client-side metrics for SQS related metrics including e.g. request count, latency, errors, throughput, etc.</li>
+</ul>
+<h1 id="MessageErrorHandling">Message Error Handling</h1>
+<p>When implementing message consumers you’ll need to handle the various errors that inevitably occur during message processing. To do so efficiently requires a level of support from your message broker. Essential broker support includes:</p>
+<ul>
+<li>Handling transient errors &#8211; a temporary failure in a consumer’s ability to process a message caused by e.g. unplanned outages of services on which it depends, etc. This requires the broker to redeliver messages which fail to be acknowledged by consumers.</li>
+<li>Resolving permanent errors &#8211; This type of error is caused by messages which consumers will never be able to process, no matter how many times they’re retried. This typically entails the broker supporting the configuration of a Dead Letter Queue (DLQ) for a message channel, along with a max no. of message delivery attempts. The consumer should be implemented with its own error handler that classifies a permanent error early and removes the causal bad apple message efficiently without the need for retry. However, if such a custom error handler doesn’t exist then the message broker should remove the bad apple from the messaging system itself, when the max no. of delivery attempts is exceeded.</li>
+</ul>
+<p>Most popular message brokers do provide such error handling support, so it’s unlikely to be a major differentiator in your choice, but you should consider it in your evaluation nevertheless.</p>
+<p>Amazon SQS provides the aforementioned support for handling transient and permanent errors. For more information, including an overview of how to write a custom error handler for efficient handling of permanent errors see one of my earlier blog posts &#8211; <a href="https://neiljbrown.com/2016/11/25/designing-message-consumer-error-handler-for-amazon-sqs/" target="_blank" rel="noopener">Designing message consumer error handler for Amazon SQS</a>.</p>
+<h1 id="Cost">Cost</h1>
+<p>You’ll also want to consider the costs of running different message brokers before choosing one.</p>
+<h3><b>Operating Costs</b></h3>
+<p>The costs involved will vary significantly depending on whether you operate the message broker yourself, or get somebody else to do it for you by using a messaging service (SaaS) instead of a messaging product. This choice between product or SaaS is therefore a key decision to make early on, ideally before you even begin your evaluation.</p>
+<p>Operating a message broker entails provisioning and maintaining the data-centre and hardware on which the broker runs; installing and patching the supporting systems and applications software; scaling the broker when needed; monitoring; housekeeping tasks such as backups, etc.</p>
+<p>Before committing to operating a message broker yourself, you should review whether your existing infrastructure (data-centre) and staff (ops team) is capable of meeting your non-functional requirements, and if not what it would cost to achieve. Building and operating a highly-available and scalable message broker is a non-trivial task. Total costs include fault tolerant systems (redundant hardware), and the time of experienced operations staff.</p>
+<h3><b>Usage Costs</b></h3>
+<p>Having decided whether to operate the message broker yourself, and in doing-so making the choice between a messaging product or a managed messaging service, you’re then in a position to consider other costs.</p>
+<p>A message broker may have recurring license fees to be paid. Open-source message broker products (e.g. RabbitMQ) typically don’t, but other message brokers, whether operated yourself or delivered using a SaaS model, may charge a fee. This may be based on the no. and size of servers on which the broker runs. Other vendors may charge solely on usage, such as the no. of messages sent or received.</p>
+<h3><b>Support and Maintenance Costs</b></h3>
+<p>Do you need additional support to operate the message broker to satisfy the SLAs (e.g. availability) of your system? For example, specialist technical support in the event that the broker is not operating correctly (erring) or fails and cannot be restarted.</p>
+<p>If you choose an open-source broker, do you need to pay someone to ensure that bugs you encounter are fixed in acceptable timescales?</p>
+<p>If the answer to either of above questions is yes, is this support available for your chosen message broker, and how much does it cost?</p>
+<h3><b>Amazon SQS</b></h3>
+<p>Let’s consider the costs of using SQS as your message broker.</p>
+<p><b>Operating Costs &#8211; </b>As previously noted, SQS is a fully-managed messaging service. Like other AWS services there are no upfront costs, you only pay for what you use, and there is no minimum charge. Your operating costs are therefore zero. Instead, as part of the usage fee (see below), Amazon deploy and operate the message broker for you, including monitoring and maintenance (patching, housekeeping, backup etc). You get a highly available, elastically scaling, redundant message broker. For most small to medium enterprises this is major benefit, as it provides access to a very high quality service which would not be affordable to design, build and operate.</p>
+<p><b>Usage Costs </b>&#8211; SQS usage is billed based on two metrics:</p>
+<ul>
+<li>the no. of requests you make to perform message operations (e.g. send, receive, delete)</li>
+<li>the amount of data you transfer out of SQS (a factor of the no. and size of messages). (This charge is zero if your deploy your message consumers to EC2, in the same region).</li>
+</ul>
+<p>Currently, SQS has a free-tier of 1 million requests, for which you’ll only be charged for the data you transfer out. After which, you’re tcharged a fraction of a dollar for each additional million requests you make. The free-tier also currently includes 1GB / month free data. After which, you’re then charged for additional data, the cost of which varies per region. For more details, and the latest costs see <a href="https://aws.amazon.com/sqs/pricing/" target="_blank" rel="noopener">Amazon SQS Pricing</a>.</p>
+<p>The existence of the free tier offers many SME fantastic value. They can often use SQS for nothing or a small monthly cost of a dollar or so. As an example, if you were to publish and consume 1.5 million messages per month using SQS, all with a 10KB payload, using a sub-optimal batch size of 1 message per batch, then based on current (08/2017) prices you’d be billed as follows:</p>
+<ul>
+<li>Total requests = 1.5M Send Message requests + 1.5M Receive Message requests + 1.5M Delete Message requests = 4.5M</li>
+<li>Total data transferred out = 1.5M Receive Message requests x 10KB = ~14.3GB</li>
+<li>Billable requests = Total requests &#8211; AWS free-tier discount of 1M requests = 3.5M.</li>
+<li>Billable data transferred out = Total data transferred out &#8211; AWS free-tier discount of 1 GB / month = 13.3GB. (Note &#8211; This assumes the worse case of your message consumers not being deployed to EC2).</li>
+<li>Cost of billable requests = 3.5M * $0.40c per million = $1.40</li>
+<li>Cost of billable data transferred out = 13.3GB * $0.09/GB up to 10TB/month = $1.20</li>
+<li><b>Estimated bill = $2.60 / month</b></li>
+</ul>
+<p>To estimate your own costs using the latest prices use the <a href="http://calculator.s3.amazonaws.com/index.html" target="_blank" rel="noopener">AWS Simple Monthly Calculator</a>.</p>
+<p>The general downside of most SaaS services is that whilst there are no upfront fees / capital costs, like any ‘rental’ service you risk paying more over the long term. However with SQS the current pricing is so low that this doesn’t currently apply.</p>
+<h1 id="MessageAdmin">Message Admin</h1>
+<p>Whether in dev or production, sometimes you need to need to browse queues, inspect the contents of a message, move one or more message from one queue to another (e.g. to or from the DLQ), or in rare cases delete a message. Whilst it may not be a big differentiator when evaluating different message brokers you need to at least be sure that the tools you need to perform such admin tasks are available and easy to use.</p>
+<p>Like all other AWS services, Amazon SQS has its own web console. This supports managing your queues, browsing the messages on a queue, viewing message details and deleting them.</p>
+<p style="text-align:justify;"><img loading="lazy" data-attachment-id="545" data-permalink="https://neiljbrown.com/2017/08/26/evaluating-message-brokers-amazon-sqs/amazon-sqs-web-console/" data-orig-file="https://neiljbrown.files.wordpress.com/2017/08/amazon-sqs-web-console.png" data-orig-size="1600,683" data-comments-opened="1" data-image-meta="{&quot;aperture&quot;:&quot;0&quot;,&quot;credit&quot;:&quot;&quot;,&quot;camera&quot;:&quot;&quot;,&quot;caption&quot;:&quot;&quot;,&quot;created_timestamp&quot;:&quot;0&quot;,&quot;copyright&quot;:&quot;&quot;,&quot;focal_length&quot;:&quot;0&quot;,&quot;iso&quot;:&quot;0&quot;,&quot;shutter_speed&quot;:&quot;0&quot;,&quot;title&quot;:&quot;&quot;,&quot;orientation&quot;:&quot;0&quot;}" data-image-title="amazon-sqs-web-console" data-image-description="" data-image-caption="" data-medium-file="https://neiljbrown.files.wordpress.com/2017/08/amazon-sqs-web-console.png?w=300" data-large-file="https://neiljbrown.files.wordpress.com/2017/08/amazon-sqs-web-console.png?w=625" class=" wp-image-545 aligncenter" src="https://neiljbrown.files.wordpress.com/2017/08/amazon-sqs-web-console.png?w=584&#038;h=249" alt="amazon-sqs-web-console" width="584" height="249" srcset="https://neiljbrown.files.wordpress.com/2017/08/amazon-sqs-web-console.png?w=584&amp;h=249 584w, https://neiljbrown.files.wordpress.com/2017/08/amazon-sqs-web-console.png?w=1168&amp;h=498 1168w, https://neiljbrown.files.wordpress.com/2017/08/amazon-sqs-web-console.png?w=150&amp;h=64 150w, https://neiljbrown.files.wordpress.com/2017/08/amazon-sqs-web-console.png?w=300&amp;h=128 300w, https://neiljbrown.files.wordpress.com/2017/08/amazon-sqs-web-console.png?w=768&amp;h=328 768w, https://neiljbrown.files.wordpress.com/2017/08/amazon-sqs-web-console.png?w=1024&amp;h=437 1024w" sizes="(max-width: 584px) 100vw, 584px" /></p>
+<p>One of the things that surprised me when I first started using SQS was that it does not support moving messages. If you do need to transfer messages between queues you&#8217;ll have to write a program which performs a copy and delete, or more specifically receives the (source) message, creates a new message from the source message’s attributes and payload / body, sends the new message to the new queue, and deletes the original message from its queue. Although you can receive and process messages in batches (of up to 10) this is very inefficient in terms of API calls and bandwidth usage. Being non-atomic it can also fail leaving messages on both queues, and both the original and copied message existing on both queues.</p>
+<h1>Summary</h1>
+<p>Before adopting a message broker think about which of the above requirements are important to you, and evaluate how well a broker supports them.</p>
+<p>An important early decision to make is whether you’ll deploy and operate the broker on-premise, or use a (SaaS) messaging service externally hosted and operated by a third-party.  Key factors in this decision relate to performance and cost. Can you accept the higher latency of a SaaS messaging service, and, if you need a highly available setup, do  you have the in-house expertise or budget to create and operate it. Additionally, a message broker is often a critical part of your system architecture, so before opting for a SaaS messaging service you need to be confident that the people operating it are capable of  meeting your needs.</p>
+<p>Amazon SQS is a fully-managed, distributed messaging service. It was <a href="https://aws.amazon.com/blogs/aws/amazon_simple_q/" target="_blank" rel="noopener">launched back in July 2006</a>. As a messaging service, its operation and feature set are therefore well proven (battle-tested). Its main strengths include:</p>
+<ul>
+<li><a href="#Availability"><strong>Availability</strong></a>.</li>
+<li><a href="#Scalability"><strong>Scalability</strong></a> (dynamic, responsive and cost-effective) &#8211; with no stated limit on the no. of messages stored on any given queue.</li>
+<li><a href="#Redundancy"><strong>Redundancy</strong></a> &#8211; The fact that a copy of each queued message is stored on multiple SQS servers in different locations means that SQS is very unlikely to ever lose a message. This is one of the reasons it can offer Guaranteed Message Delivery.</li>
+<li><strong><a href="#Cost">Cost </a>/ Value for Money</strong> &#8211; Zero operating cost for a highly available, highly redundant service that reliably processes many millions of messages a day. A low pay per use charge, with a generous free tier &#8211; typically one or two dollars for several millions of messages.</li>
+<li><strong>Simple to use</strong> &#8211; SQS is simple to use &#8211; having an API which largely boils down to providing 3 messaging operations &#8211; Send Message, Receive Message, Delete Message. Ease of use is improved further by the <a href="#ClientLibrariesSDKs">Client Libraries / SDKs</a> which are available for many dev platforms.</li>
+</ul>
+<p>SQS’ major weaknesses mostly stem from the design trade-offs which have been made to offer unlimited scalability and redundancy. The most notable limitations are &#8211;</p>
+<ul>
+<li><strong><a href="#MessagingStyles">Messaging Styles</a></strong> (lack of support for pub-sub).</li>
+<li><strong><a href="#Latency">Latency</a></strong>.</li>
+<li><strong>Messaging Feature Set</strong> &#8211; For example, lack of support for <a href="#MessageFiltering">Message Filtering</a>.</li>
+<li><del><a href="#MessageDeliveryOrdering">Message Delivery Ordering</a> &#8211; Messages are not guaranteed to always be delivered in order they were sent, only best effort.</del> <i>Update &#8211; As noted above, SQS has since been enhanced to support this.<br />
+</i></li>
+<li><del><a href="#MessageDe-duplication">Message De-duplication</a> &#8211; Messages not guaranteed to only be received once, only best effort.</del> <i>Update &#8211; As noted above, SQS has since been enhanced to support this. </i></li>
+</ul>
+<p>The recent addition of support for FIFO queues is an indication that Amazon are still investing in the service, benefiting existing customers.</p>
+<p>If it’s appropriate for your messaging use-cases (e.g. application integration, persistent work/task queue), and you can live with the above weaknesses, then SQS’ benefits are compelling, and you should seriously consider adopting it rather than deploying and operating your own message broker. We’ve been using SQS in production for around a year now, and our experience has been very good &#8211; we’ve successfully processed many millions of messages without any issues. We’re planning to use SQS more extensively in the future, including trialing its integration with SNS to add support for pub-sub messaging.</p>
+<p>I hope you found this article useful. Best of luck with your future messaging projects.</p>
+<div id="atatags-370373-628f900b56db5">
+        <script type="text/javascript">
+            __ATA.cmd.push(function() {
+                __ATA.initVideoSlot('atatags-370373-628f900b56db5', {
+                    sectionId: '370373',
+                    format: 'inread'
+                });
+            });
+        </script>
+    </div>			<div id="atatags-26942-628f900b56f01"></div>
+			
+			<script>
+				__ATA.cmd.push(function() {
+					__ATA.initDynamicSlot({
+						id: 'atatags-26942-628f900b56f01',
+						location: 120,
+						formFactor: '001',
+						label: {
+							text: 'Advertisements',
+						},
+						creative: {
+							reportAd: {
+								text: 'Report this ad',
+							},
+							privacySettings: {
+								text: 'Privacy',
+								onClick: function() { window.__tcfapi && window.__tcfapi( 'showUi' ); },
+							}
+						}
+					});
+				});
+			</script><div id="jp-post-flair" class="sharedaddy sd-like-enabled sd-sharing-enabled"><div class="sharedaddy sd-sharing-enabled"><div class="robots-nocontent sd-block sd-social sd-social-official sd-sharing"><h3 class="sd-title">Share this:</h3><div class="sd-content"><ul><li class="share-twitter"><a href="https://twitter.com/share" class="twitter-share-button" data-url="https://neiljbrown.com/2017/08/26/evaluating-message-brokers-amazon-sqs/" data-text="Evaluating message brokers - Amazon SQS"  data-related="wordpressdotcom">Tweet</a></li><li class="share-end"></li></ul></div></div></div><div class='sharedaddy sd-block sd-like jetpack-likes-widget-wrapper jetpack-likes-widget-unloaded' id='like-post-wrapper-31831223-390-628f900b57b04' data-src='//widgets.wp.com/likes/index.html?ver=20220105#blog_id=31831223&amp;post_id=390&amp;origin=neiljbrown.wordpress.com&amp;obj_id=31831223-390-628f900b57b04&amp;domain=neiljbrown.com' data-name='like-post-frame-31831223-390-628f900b57b04' data-title='Like or Reblog'><h3 class='sd-title'>Like this:</h3><div class='likes-widget-placeholder post-likes-widget-placeholder' style='height: 55px;'><span class='button'><span>Like</span></span> <span class="loading">Loading...</span></div><span class='sd-text-color'></span><a class='sd-link-color'></a></div>
+<div id='jp-relatedposts' class='jp-relatedposts' >
+	<h3 class="jp-relatedposts-headline"><em>Related</em></h3>
+</div></div>					</div><!-- .entry-content -->
+		
+		<footer class="entry-meta">
+			This entry was posted in <a href="https://neiljbrown.com/category/uncategorized/" rel="category tag">Uncategorized</a> and tagged <a href="https://neiljbrown.com/tag/aws/" rel="tag">aws</a>, <a href="https://neiljbrown.com/tag/messaging/" rel="tag">messaging</a>, <a href="https://neiljbrown.com/tag/sqs/" rel="tag">sqs</a> on <a href="https://neiljbrown.com/2017/08/26/evaluating-message-brokers-amazon-sqs/" title="16:10" rel="bookmark"><time class="entry-date" datetime="2017-08-26T16:10:56+01:00">26 August, 2017</time></a><span class="by-author"> by <span class="author vcard"><a class="url fn n" href="https://neiljbrown.com/author/neiljbrown/" title="View all posts by neiljbrown" rel="author">neiljbrown</a></span></span>.								</footer><!-- .entry-meta -->
+	</article><!-- #post -->
+
+				<nav class="nav-single">
+					<h3 class="assistive-text">Post navigation</h3>
+					<span class="nav-previous"><a href="https://neiljbrown.com/2017/05/13/message-broker-or-bus-whats-the-difference/" rel="prev"><span class="meta-nav">&larr;</span> Message Broker or Bus &#8211; what&#8217;s the&nbsp;difference?</a></span>
+					<span class="nav-next"><a href="https://neiljbrown.com/2017/10/23/java-9-features-examples-upgrade-planning/" rel="next">Java 9 &#8211; Features, examples &amp; upgrade&nbsp;planning <span class="meta-nav">&rarr;</span></a></span>
+				</nav><!-- .nav-single -->
+
+				
+<div id="comments" class="comments-area">
+
+	
+			<h2 class="comments-title">
+			2 thoughts on &ldquo;<span>Evaluating message brokers &#8211; Amazon&nbsp;SQS</span>&rdquo;		</h2>
+
+		<ol class="commentlist">
+				<li class="comment byuser comment-author-amitstechblog even thread-even depth-1 highlander-comment" id="li-comment-224">
+		<article id="comment-224" class="comment">
+			<header class="comment-meta comment-author vcard">
+				<img alt='' src='https://1.gravatar.com/avatar/74b320743aa89bafb58a43cc5e08123b?s=44&#038;d=https%3A%2F%2Fs0.wp.com%2Fi%2Fmu.gif&#038;r=G' class='avatar avatar-44' height='44' width='44' /><cite><b class="fn"><a href='http://amitstechblog.wordpress.com' rel='external nofollow ugc' class='url'>Amit</a></b> </cite><a href="https://neiljbrown.com/2017/08/26/evaluating-message-brokers-amazon-sqs/#comment-224"><time datetime="2018-08-20T07:41:32+01:00">20 August, 2018 at 07:41</time></a>			</header><!-- .comment-meta -->
+
+				
+				
+			<section class="comment-content comment">
+				<p>A very thoughtful research and well written post.</p>
+							</section><!-- .comment-content -->
+
+				<div class="reply">
+								</div><!-- .reply -->
+			</article><!-- #comment-## -->
+				</li><!-- #comment-## -->
+	<li class="comment byuser comment-author-neiljbrown bypostauthor odd alt thread-odd thread-alt depth-1 highlander-comment" id="li-comment-225">
+		<article id="comment-225" class="comment">
+			<header class="comment-meta comment-author vcard">
+				<img alt='' src='https://1.gravatar.com/avatar/7e414560625c4051f8ee6aa0dbd4027b?s=44&#038;d=https%3A%2F%2Fs0.wp.com%2Fi%2Fmu.gif&#038;r=G' class='avatar avatar-44' height='44' width='44' /><cite><b class="fn"><a href='https://neiljbrown.wordpress.com' rel='external nofollow ugc' class='url'>neiljbrown</a></b> <span>Post author</span></cite><a href="https://neiljbrown.com/2017/08/26/evaluating-message-brokers-amazon-sqs/#comment-225"><time datetime="2018-08-20T15:57:36+01:00">20 August, 2018 at 15:57</time></a>			</header><!-- .comment-meta -->
+
+				
+				
+			<section class="comment-content comment">
+				<p>Hi Amit, thanks for the positive comment.</p>
+							</section><!-- .comment-content -->
+
+				<div class="reply">
+								</div><!-- .reply -->
+			</article><!-- #comment-## -->
+				</li><!-- #comment-## -->
+		</ol><!-- .commentlist -->
+
+		
+		
+	
+		<div id="respond" class="comment-respond">
+		<h3 id="reply-title" class="comment-reply-title">Leave a comment</h3><form action="https://neiljbrown.com/wp-comments-post.php" method="post" id="commentform" class="comment-form"><input type="hidden" id="highlander_comment_nonce" name="highlander_comment_nonce" value="aa0d79de25" /><input type="hidden" name="_wp_http_referer" value="/2017/08/26/evaluating-message-brokers-amazon-sqs/" />
+<input type="hidden" name="hc_post_as" id="hc_post_as" value="guest" />
+
+<div class="comment-form-field comment-textarea">
+	<label for="comment">Enter your comment here...</label>
+	<div id="comment-form-comment"><textarea id="comment" name="comment" title="Enter your comment here..."></textarea></div>
+</div>
+
+<div id="comment-form-identity">
+	<div id="comment-form-nascar">
+		<p>Fill in your details below or click an icon to log in:</p>
+		<ul>
+			<li class="selected" style="display:none;">
+				<a href="#comment-form-guest" id="postas-guest" class="nascar-signin-link"
+				 title="Login via Guest" 				>
+									</a>
+			</li>
+			<li>
+				<a href="#comment-form-load-service:WordPress.com" id="postas-wordpress" class="nascar-signin-link"
+				 title="Login via WordPress.com" 				>
+					<svg xmlns="http://www.w3.org/2000/svg" role="presentation" viewBox="0 0 24 24" ><rect x="0" fill="none" width="24" height="24"/><g><path fill="#0087be" d="M12.158 12.786l-2.698 7.84c.806.236 1.657.365 2.54.365 1.047 0 2.05-.18 2.986-.51-.024-.037-.046-.078-.065-.123l-2.762-7.57zM3.008 12c0 3.56 2.07 6.634 5.068 8.092L3.788 8.342c-.5 1.117-.78 2.354-.78 3.658zm15.06-.454c0-1.112-.398-1.88-.74-2.48-.456-.74-.883-1.368-.883-2.11 0-.825.627-1.595 1.51-1.595.04 0 .078.006.116.008-1.598-1.464-3.73-2.36-6.07-2.36-3.14 0-5.904 1.613-7.512 4.053.21.008.41.012.58.012.94 0 2.395-.114 2.395-.114.484-.028.54.684.057.74 0 0-.487.058-1.03.086l3.275 9.74 1.968-5.902-1.4-3.838c-.485-.028-.944-.085-.944-.085-.486-.03-.43-.77.056-.742 0 0 1.484.114 2.368.114.94 0 2.397-.114 2.397-.114.486-.028.543.684.058.74 0 0-.488.058-1.03.086l3.25 9.665.897-2.997c.456-1.17.684-2.137.684-2.907zm1.82-3.86c.04.286.06.593.06.924 0 .912-.17 1.938-.683 3.22l-2.746 7.94c2.672-1.558 4.47-4.454 4.47-7.77 0-1.564-.4-3.033-1.1-4.314zM12 22C6.486 22 2 17.514 2 12S6.486 2 12 2s10 4.486 10 10-4.486 10-10 10z"/></g></svg>				</a>
+			</li>
+			<li>
+				<a href="#comment-form-load-service:Twitter" id="postas-twitter" class="nascar-signin-link"
+				 title="Login via Twitter" 				>
+					<svg xmlns="http://www.w3.org/2000/svg" role="presentation" viewBox="0 0 24 24" ><rect x="0" fill="none" width="24" height="24"/><g><path fill="#1DA1F2" d="M22.23 5.924c-.736.326-1.527.547-2.357.646.847-.508 1.498-1.312 1.804-2.27-.793.47-1.67.812-2.606.996C18.325 4.498 17.258 4 16.078 4c-2.266 0-4.103 1.837-4.103 4.103 0 .322.036.635.106.935-3.41-.17-6.433-1.804-8.457-4.287-.353.607-.556 1.312-.556 2.064 0 1.424.724 2.68 1.825 3.415-.673-.022-1.305-.207-1.86-.514v.052c0 1.988 1.415 3.647 3.293 4.023-.344.095-.707.145-1.08.145-.265 0-.522-.026-.773-.074.522 1.63 2.038 2.817 3.833 2.85-1.404 1.1-3.174 1.757-5.096 1.757-.332 0-.66-.02-.98-.057 1.816 1.164 3.973 1.843 6.29 1.843 7.547 0 11.675-6.252 11.675-11.675 0-.178-.004-.355-.012-.53.802-.578 1.497-1.3 2.047-2.124z"/></g></svg>				</a>
+			</li>
+			<li>
+				<a href="#comment-form-load-service:Facebook" id="postas-facebook" class="nascar-signin-link"
+				 title="Login via Facebook" 				>
+					<svg xmlns="http://www.w3.org/2000/svg" role="presentation" viewBox="0 0 24 24" ><rect x="0" fill="none" width="24" height="24"/><g><path fill="#3B5998" d="M20.007 3H3.993C3.445 3 3 3.445 3 3.993v16.013c0 .55.445.994.993.994h8.62v-6.97H10.27V11.31h2.346V9.31c0-2.325 1.42-3.59 3.494-3.59.993 0 1.847.073 2.096.106v2.43h-1.438c-1.128 0-1.346.537-1.346 1.324v1.734h2.69l-.35 2.717h-2.34V21h4.587c.548 0 .993-.445.993-.993V3.993c0-.548-.445-.993-.993-.993z"/></g></svg>				</a>
+			</li>
+		</ul>
+	</div>
+
+	<div id="comment-form-guest" class="comment-form-service selected">
+		<div class="comment-form-padder">
+			<div class="comment-form-avatar">
+<a href="https://gravatar.com/site/signup/" target="_blank">				<img src="https://s0.wp.com/i/mu.gif" alt="Gravatar" width="25" class="no-grav" />
+</a>			</div>
+
+				<div class="comment-form-fields">
+				<div class="comment-form-field comment-form-email">
+					<label for="email">Email <span class="required">(required)</span> <span class="nopublish">(Address never made public)</span></label>
+					<div class="comment-form-input"><input id="email" name="email" type="email" value="" /></div>
+				</div>
+				<div class="comment-form-field comment-form-author">
+					<label for="author">Name <span class="required">(required)</span></label>
+					<div class="comment-form-input"><input id="author" name="author" type="text" value="" /></div>
+				</div>
+				<div class="comment-form-field comment-form-url">
+					<label for="url">Website</label>
+					<div class="comment-form-input"><input id="url" name="url" type="url" value="" /></div>
+				</div>
+			</div>
+			
+		</div>
+	</div>
+
+	<div id="comment-form-wordpress" class="comment-form-service">
+		<div class="comment-form-padder">
+			<div class="comment-form-avatar">
+				<img src="https://s0.wp.com/i/mu.gif" alt="WordPress.com Logo" width="25" class="no-grav" />
+			</div>
+
+				<div class="comment-form-fields">
+				<input type="hidden" name="wp_avatar" id="wordpress-avatar" class="comment-meta-wordpress" value="" />
+				<input type="hidden" name="wp_user_id" id="wordpress-user_id" class="comment-meta-wordpress" value="" />
+				<input type="hidden" name="wp_access_token" id="wordpress-access_token" class="comment-meta-wordpress" value="" />
+						<p class="comment-form-posting-as pa-wordpress">
+			<strong></strong>
+			You are commenting using your WordPress.com account.			<span class="comment-form-log-out">
+				(&nbsp;<a href="javascript:HighlanderComments.doExternalLogout( 'wordpress' );">Log&nbsp;Out</a>&nbsp;/&nbsp;
+				<a href="#" onclick="javascript:HighlanderComments.switchAccount();return false;">Change</a>&nbsp;)
+			</span>
+			<span class="pa-icon"><svg xmlns="http://www.w3.org/2000/svg" role="presentation" viewBox="0 0 24 24" ><rect x="0" fill="none" width="24" height="24"/><g><path fill="#0087be" d="M12.158 12.786l-2.698 7.84c.806.236 1.657.365 2.54.365 1.047 0 2.05-.18 2.986-.51-.024-.037-.046-.078-.065-.123l-2.762-7.57zM3.008 12c0 3.56 2.07 6.634 5.068 8.092L3.788 8.342c-.5 1.117-.78 2.354-.78 3.658zm15.06-.454c0-1.112-.398-1.88-.74-2.48-.456-.74-.883-1.368-.883-2.11 0-.825.627-1.595 1.51-1.595.04 0 .078.006.116.008-1.598-1.464-3.73-2.36-6.07-2.36-3.14 0-5.904 1.613-7.512 4.053.21.008.41.012.58.012.94 0 2.395-.114 2.395-.114.484-.028.54.684.057.74 0 0-.487.058-1.03.086l3.275 9.74 1.968-5.902-1.4-3.838c-.485-.028-.944-.085-.944-.085-.486-.03-.43-.77.056-.742 0 0 1.484.114 2.368.114.94 0 2.397-.114 2.397-.114.486-.028.543.684.058.74 0 0-.488.058-1.03.086l3.25 9.665.897-2.997c.456-1.17.684-2.137.684-2.907zm1.82-3.86c.04.286.06.593.06.924 0 .912-.17 1.938-.683 3.22l-2.746 7.94c2.672-1.558 4.47-4.454 4.47-7.77 0-1.564-.4-3.033-1.1-4.314zM12 22C6.486 22 2 17.514 2 12S6.486 2 12 2s10 4.486 10 10-4.486 10-10 10z"/></g></svg></span>
+		</p>
+					</div>
+	
+		</div>
+	</div>
+
+	<div id="comment-form-twitter" class="comment-form-service">
+		<div class="comment-form-padder">
+			<div class="comment-form-avatar">
+				<img src="https://s0.wp.com/i/mu.gif" alt="Twitter picture" width="25" class="no-grav" />
+			</div>
+
+				<div class="comment-form-fields">
+				<input type="hidden" name="twitter_avatar" id="twitter-avatar" class="comment-meta-twitter" value="" />
+				<input type="hidden" name="twitter_user_id" id="twitter-user_id" class="comment-meta-twitter" value="" />
+				<input type="hidden" name="twitter_access_token" id="twitter-access_token" class="comment-meta-twitter" value="" />
+						<p class="comment-form-posting-as pa-twitter">
+			<strong></strong>
+			You are commenting using your Twitter account.			<span class="comment-form-log-out">
+				(&nbsp;<a href="javascript:HighlanderComments.doExternalLogout( 'twitter' );">Log&nbsp;Out</a>&nbsp;/&nbsp;
+				<a href="#" onclick="javascript:HighlanderComments.switchAccount();return false;">Change</a>&nbsp;)
+			</span>
+			<span class="pa-icon"><svg xmlns="http://www.w3.org/2000/svg" role="presentation" viewBox="0 0 24 24" ><rect x="0" fill="none" width="24" height="24"/><g><path fill="#1DA1F2" d="M22.23 5.924c-.736.326-1.527.547-2.357.646.847-.508 1.498-1.312 1.804-2.27-.793.47-1.67.812-2.606.996C18.325 4.498 17.258 4 16.078 4c-2.266 0-4.103 1.837-4.103 4.103 0 .322.036.635.106.935-3.41-.17-6.433-1.804-8.457-4.287-.353.607-.556 1.312-.556 2.064 0 1.424.724 2.68 1.825 3.415-.673-.022-1.305-.207-1.86-.514v.052c0 1.988 1.415 3.647 3.293 4.023-.344.095-.707.145-1.08.145-.265 0-.522-.026-.773-.074.522 1.63 2.038 2.817 3.833 2.85-1.404 1.1-3.174 1.757-5.096 1.757-.332 0-.66-.02-.98-.057 1.816 1.164 3.973 1.843 6.29 1.843 7.547 0 11.675-6.252 11.675-11.675 0-.178-.004-.355-.012-.53.802-.578 1.497-1.3 2.047-2.124z"/></g></svg></span>
+		</p>
+					</div>
+	
+		</div>
+	</div>
+
+	<div id="comment-form-facebook" class="comment-form-service">
+		<div class="comment-form-padder">
+			<div class="comment-form-avatar">
+				<img src="" alt="Facebook photo" width="25" class="no-grav" />
+			</div>
+
+				<div class="comment-form-fields">
+				<input type="hidden" name="fb_avatar" id="facebook-avatar" class="comment-meta-facebook" value="" />
+				<input type="hidden" name="fb_user_id" id="facebook-user_id" class="comment-meta-facebook" value="" />
+				<input type="hidden" name="fb_access_token" id="facebook-access_token" class="comment-meta-facebook" value="" />
+						<p class="comment-form-posting-as pa-facebook">
+			<strong></strong>
+			You are commenting using your Facebook account.			<span class="comment-form-log-out">
+				(&nbsp;<a href="javascript:HighlanderComments.doExternalLogout( 'facebook' );">Log&nbsp;Out</a>&nbsp;/&nbsp;
+				<a href="#" onclick="javascript:HighlanderComments.switchAccount();return false;">Change</a>&nbsp;)
+			</span>
+			<span class="pa-icon"><svg xmlns="http://www.w3.org/2000/svg" role="presentation" viewBox="0 0 24 24" ><rect x="0" fill="none" width="24" height="24"/><g><path fill="#3B5998" d="M20.007 3H3.993C3.445 3 3 3.445 3 3.993v16.013c0 .55.445.994.993.994h8.62v-6.97H10.27V11.31h2.346V9.31c0-2.325 1.42-3.59 3.494-3.59.993 0 1.847.073 2.096.106v2.43h-1.438c-1.128 0-1.346.537-1.346 1.324v1.734h2.69l-.35 2.717h-2.34V21h4.587c.548 0 .993-.445.993-.993V3.993c0-.548-.445-.993-.993-.993z"/></g></svg></span>
+		</p>
+					</div>
+	
+		</div>
+	</div>
+
+
+	<div id="comment-form-load-service" class="comment-form-service">
+		<div class="comment-form-posting-as-cancel"><a href="javascript:HighlanderComments.cancelExternalWindow();">Cancel</a></div>
+		<p>Connecting to %s</p>
+	</div>
+
+</div>
+
+<script type="text/javascript">
+var highlander_expando_javascript = function () {
+
+	function hide( sel ) {
+		var el = document.querySelector( sel );
+		if ( el ) {
+			el.style.setProperty( 'display', 'none' );
+		}
+	}
+
+	function show( sel ) {
+		var el = document.querySelector( sel );
+		if ( el ) {
+			el.style.removeProperty( 'display' );
+		}
+	}
+
+	var input = document.createElement( 'input' );
+	var comment = document.querySelector( '#comment' );
+
+	if ( input && comment && 'placeholder' in input ) {
+		var label = document.querySelector( '.comment-textarea label' );
+		if ( label ) {
+			var text = label.textContent;
+			label.parentNode.removeChild( label );
+			comment.setAttribute( 'placeholder', text );
+		}
+	}
+
+	// Expando Mode: start small, then auto-resize on first click + text length
+	hide( '#comment-form-identity' );
+	hide( '#comment-form-subscribe' );
+	hide( '#commentform .form-submit' );
+
+	if ( comment ) {
+		comment.style.height = '10px';
+
+		var handler = function () {
+			comment.style.height = HighlanderComments.initialHeight + 'px';
+			show( '#comment-form-identity' );
+			show( '#comment-form-subscribe' );
+			show( '#commentform .form-submit' );
+			HighlanderComments.resizeCallback();
+
+			comment.removeEventListener( 'focus', handler );
+		};
+
+		comment.addEventListener( 'focus', handler );
+	}
+}
+
+if ( document.readyState !== 'loading' ) {
+	highlander_expando_javascript();
+} else {
+	document.addEventListener( 'DOMContentLoaded', highlander_expando_javascript );
+}
+
+</script>
+
+<div id="comment-form-subscribe">
+	<p class="comment-subscription-form"><input type="checkbox" name="subscribe" id="subscribe" value="subscribe" style="width: auto;"/> <label class="subscribe-label" id="subscribe-label" for="subscribe" style="display: inline;">Notify me of new comments via email.</label></p></div>
+
+
+
+
+<p class="form-submit"><input name="submit" type="submit" id="comment-submit" class="submit" value="Post Comment" /> <input type='hidden' name='comment_post_ID' value='390' id='comment_post_ID' />
+<input type='hidden' name='comment_parent' id='comment_parent' value='0' />
+</p><p style="display: none;"><input type="hidden" id="akismet_comment_nonce" name="akismet_comment_nonce" value="5fa278b567" /></p>
+<input type="hidden" name="genseq" value="1653575691" />
+<p style="display: none !important;"><label>&#916;<textarea name="ak_hp_textarea" cols="45" rows="8" maxlength="100"></textarea></label><input type="hidden" id="ak_js_1" name="ak_js" value="37"/><script>document.getElementById( "ak_js_1" ).setAttribute( "value", ( new Date() ).getTime() );</script></p></form>	</div><!-- #respond -->
+	<div style="clear: both"></div>
+</div><!-- #comments .comments-area -->
+
+			
+		</div><!-- #content -->
+	</div><!-- #primary -->
+
+
+			<div id="secondary" class="widget-area" role="complementary">
+						<aside id="rss_links-2" class="widget widget_rss_links"><h3 class="widget-title">Subscribe to my blog</h3><p class="size-small"><a class="feed-image-link" href="https://neiljbrown.com/feed/" title="Subscribe to Posts"><img src="https://neiljbrown.com/i/rss/orange-small.png" alt="RSS Feed" /></a>&nbsp;<a href="https://neiljbrown.com/feed/" title="Subscribe to Posts">RSS - Posts</a></p>
+</aside><aside id="text-2" class="widget widget_text"><h3 class="widget-title">Get My Code</h3>			<div class="textwidget"><ul>
+<li><a href="https://github.com/neiljbrown">Follow me on GitHub</a></li>
+<li><a href="https://bitbucket.org/neilbrown">Follow me on BitBucket</a></li>
+</ul></div>
+		</aside><aside id="twitter_timeline-2" class="widget widget_twitter_timeline"><h3 class="widget-title">Follow me on Twitter</h3><a class="twitter-timeline" data-width="225" data-height="600" data-theme="light" data-border-color="#e8e8e8" data-tweet-limit="4" data-lang="EN" data-partner="jetpack" data-chrome="noscrollbar transparent" data-widget-id="371312004239073280" href="https://twitter.com/371312004239073280">My Tweets</a></aside><aside id="archives-3" class="widget widget_archive"><h3 class="widget-title">Archives</h3>
+			<ul>
+					<li><a href='https://neiljbrown.com/2021/11/'>November 2021</a></li>
+	<li><a href='https://neiljbrown.com/2020/10/'>October 2020</a></li>
+	<li><a href='https://neiljbrown.com/2019/04/'>April 2019</a></li>
+	<li><a href='https://neiljbrown.com/2018/11/'>November 2018</a></li>
+	<li><a href='https://neiljbrown.com/2018/10/'>October 2018</a></li>
+	<li><a href='https://neiljbrown.com/2018/08/'>August 2018</a></li>
+	<li><a href='https://neiljbrown.com/2018/07/'>July 2018</a></li>
+	<li><a href='https://neiljbrown.com/2017/10/'>October 2017</a></li>
+	<li><a href='https://neiljbrown.com/2017/08/'>August 2017</a></li>
+	<li><a href='https://neiljbrown.com/2017/05/'>May 2017</a></li>
+	<li><a href='https://neiljbrown.com/2016/12/'>December 2016</a></li>
+	<li><a href='https://neiljbrown.com/2016/11/'>November 2016</a></li>
+	<li><a href='https://neiljbrown.com/2016/09/'>September 2016</a></li>
+	<li><a href='https://neiljbrown.com/2016/08/'>August 2016</a></li>
+	<li><a href='https://neiljbrown.com/2016/06/'>June 2016</a></li>
+	<li><a href='https://neiljbrown.com/2016/02/'>February 2016</a></li>
+	<li><a href='https://neiljbrown.com/2015/12/'>December 2015</a></li>
+	<li><a href='https://neiljbrown.com/2015/10/'>October 2015</a></li>
+	<li><a href='https://neiljbrown.com/2015/01/'>January 2015</a></li>
+	<li><a href='https://neiljbrown.com/2014/08/'>August 2014</a></li>
+	<li><a href='https://neiljbrown.com/2013/11/'>November 2013</a></li>
+	<li><a href='https://neiljbrown.com/2013/08/'>August 2013</a></li>
+	<li><a href='https://neiljbrown.com/2012/12/'>December 2012</a></li>
+			</ul>
+
+			</aside><aside id="wp_tag_cloud-2" class="widget wp_widget_tag_cloud"><h3 class="widget-title">Article categories</h3><ul class='wp-tag-cloud' role='list'>
+	<li><a href="https://neiljbrown.com/tag/api/" class="tag-cloud-link tag-link-4276 tag-link-position-1" style="font-size: 17.081081081081pt;" aria-label="api (5 items)">api</a></li>
+	<li><a href="https://neiljbrown.com/tag/architecture/" class="tag-cloud-link tag-link-2290 tag-link-position-2" style="font-size: 11.405405405405pt;" aria-label="architecture (2 items)">architecture</a></li>
+	<li><a href="https://neiljbrown.com/tag/aws/" class="tag-cloud-link tag-link-144203 tag-link-position-3" style="font-size: 15.567567567568pt;" aria-label="aws (4 items)">aws</a></li>
+	<li><a href="https://neiljbrown.com/tag/cloudformation/" class="tag-cloud-link tag-link-52025535 tag-link-position-4" style="font-size: 8pt;" aria-label="cloudformation (1 item)">cloudformation</a></li>
+	<li><a href="https://neiljbrown.com/tag/git/" class="tag-cloud-link tag-link-209196 tag-link-position-5" style="font-size: 8pt;" aria-label="git (1 item)">git</a></li>
+	<li><a href="https://neiljbrown.com/tag/github/" class="tag-cloud-link tag-link-5603054 tag-link-position-6" style="font-size: 8pt;" aria-label="github (1 item)">github</a></li>
+	<li><a href="https://neiljbrown.com/tag/gradle/" class="tag-cloud-link tag-link-8644597 tag-link-position-7" style="font-size: 8pt;" aria-label="gradle (1 item)">gradle</a></li>
+	<li><a href="https://neiljbrown.com/tag/hamcrest/" class="tag-cloud-link tag-link-3080729 tag-link-position-8" style="font-size: 8pt;" aria-label="hamcrest (1 item)">hamcrest</a></li>
+	<li><a href="https://neiljbrown.com/tag/infrastructure/" class="tag-cloud-link tag-link-32 tag-link-position-9" style="font-size: 8pt;" aria-label="infrastructure (1 item)">infrastructure</a></li>
+	<li><a href="https://neiljbrown.com/tag/integration/" class="tag-cloud-link tag-link-11929 tag-link-position-10" style="font-size: 8pt;" aria-label="integration (1 item)">integration</a></li>
+	<li><a href="https://neiljbrown.com/tag/java/" class="tag-cloud-link tag-link-1017 tag-link-position-11" style="font-size: 22pt;" aria-label="java (10 items)">java</a></li>
+	<li><a href="https://neiljbrown.com/tag/jmeter/" class="tag-cloud-link tag-link-1546279 tag-link-position-12" style="font-size: 11.405405405405pt;" aria-label="jmeter (2 items)">jmeter</a></li>
+	<li><a href="https://neiljbrown.com/tag/json/" class="tag-cloud-link tag-link-72721 tag-link-position-13" style="font-size: 11.405405405405pt;" aria-label="json (2 items)">json</a></li>
+	<li><a href="https://neiljbrown.com/tag/lambda/" class="tag-cloud-link tag-link-172054 tag-link-position-14" style="font-size: 8pt;" aria-label="lambda (1 item)">lambda</a></li>
+	<li><a href="https://neiljbrown.com/tag/logging/" class="tag-cloud-link tag-link-62087 tag-link-position-15" style="font-size: 8pt;" aria-label="logging (1 item)">logging</a></li>
+	<li><a href="https://neiljbrown.com/tag/maven/" class="tag-cloud-link tag-link-47862 tag-link-position-16" style="font-size: 8pt;" aria-label="maven (1 item)">maven</a></li>
+	<li><a href="https://neiljbrown.com/tag/messaging/" class="tag-cloud-link tag-link-108919 tag-link-position-17" style="font-size: 13.675675675676pt;" aria-label="messaging (3 items)">messaging</a></li>
+	<li><a href="https://neiljbrown.com/tag/microservices/" class="tag-cloud-link tag-link-17060625 tag-link-position-18" style="font-size: 8pt;" aria-label="microservices (1 item)">microservices</a></li>
+	<li><a href="https://neiljbrown.com/tag/observability/" class="tag-cloud-link tag-link-16279507 tag-link-position-19" style="font-size: 8pt;" aria-label="observability (1 item)">observability</a></li>
+	<li><a href="https://neiljbrown.com/tag/open-source/" class="tag-cloud-link tag-link-25 tag-link-position-20" style="font-size: 8pt;" aria-label="open source (1 item)">open source</a></li>
+	<li><a href="https://neiljbrown.com/tag/performance/" class="tag-cloud-link tag-link-1930 tag-link-position-21" style="font-size: 11.405405405405pt;" aria-label="performance (2 items)">performance</a></li>
+	<li><a href="https://neiljbrown.com/tag/quality/" class="tag-cloud-link tag-link-16525 tag-link-position-22" style="font-size: 8pt;" aria-label="quality (1 item)">quality</a></li>
+	<li><a href="https://neiljbrown.com/tag/rest/" class="tag-cloud-link tag-link-15314 tag-link-position-23" style="font-size: 15.567567567568pt;" aria-label="rest (4 items)">rest</a></li>
+	<li><a href="https://neiljbrown.com/tag/scala/" class="tag-cloud-link tag-link-312256 tag-link-position-24" style="font-size: 11.405405405405pt;" aria-label="scala (2 items)">scala</a></li>
+	<li><a href="https://neiljbrown.com/tag/spring/" class="tag-cloud-link tag-link-9486 tag-link-position-25" style="font-size: 11.405405405405pt;" aria-label="spring (2 items)">spring</a></li>
+	<li><a href="https://neiljbrown.com/tag/spring-boot/" class="tag-cloud-link tag-link-91482705 tag-link-position-26" style="font-size: 8pt;" aria-label="spring boot (1 item)">spring boot</a></li>
+	<li><a href="https://neiljbrown.com/tag/sqs/" class="tag-cloud-link tag-link-836135 tag-link-position-27" style="font-size: 11.405405405405pt;" aria-label="sqs (2 items)">sqs</a></li>
+	<li><a href="https://neiljbrown.com/tag/testing/" class="tag-cloud-link tag-link-12 tag-link-position-28" style="font-size: 8pt;" aria-label="testing (1 item)">testing</a></li>
+	<li><a href="https://neiljbrown.com/tag/travisci/" class="tag-cloud-link tag-link-77458018 tag-link-position-29" style="font-size: 8pt;" aria-label="travisci (1 item)">travisci</a></li>
+	<li><a href="https://neiljbrown.com/tag/wiremock/" class="tag-cloud-link tag-link-212860489 tag-link-position-30" style="font-size: 8pt;" aria-label="wiremock (1 item)">wiremock</a></li>
+</ul>
+</aside><aside id="nav_menu-2" class="widget widget_nav_menu"><div class="menu-disclaimer-menu-container"><ul id="menu-disclaimer-menu" class="menu"><li id="menu-item-68" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-68"><a href="https://neiljbrown.com/legal-disclaimer/">Disclaimer</a></li>
+</ul></div></aside>			<div id="atatags-286348-628f900b5e51b"></div>
+			
+			<script>
+				__ATA.cmd.push(function() {
+					__ATA.initDynamicSlot({
+						id: 'atatags-286348-628f900b5e51b',
+						location: 140,
+						formFactor: '003',
+						label: {
+							text: 'Advertisements',
+						},
+						creative: {
+							reportAd: {
+								text: 'Report this ad',
+							},
+							privacySettings: {
+								text: 'Privacy',
+								onClick: function() { window.__tcfapi && window.__tcfapi( 'showUi' ); },
+							}
+						}
+					});
+				});
+			</script>		</div><!-- #secondary -->
+		</div><!-- #main .wrapper -->
+	<footer id="colophon" role="contentinfo">
+		<div class="site-info">
+									<a href="https://wordpress.com/?ref=footer_blog" rel="nofollow">Blog at WordPress.com.</a>
+		</div><!-- .site-info -->
+	</footer><!-- #colophon -->
+</div><!-- #page -->
+
+<!--  -->
+<script src='//0.gravatar.com/js/gprofiles.js?ver=202221z' id='grofiles-cards-js'></script>
+<script id='wpgroho-js-extra'>
+var WPGroHo = {"my_hash":""};
+</script>
+<script crossorigin='anonymous' type='text/javascript' src='https://s1.wp.com/wp-content/mu-plugins/gravatar-hovercards/wpgroho.js?m=1610363240h'></script>
+
+	<script>
+		// Initialize and attach hovercards to all gravatars
+		( function() {
+			function init() {
+				if ( typeof Gravatar === 'undefined' ) {
+					return;
+				}
+
+				if ( typeof Gravatar.init !== 'function' ) {
+					return;
+				}
+
+				Gravatar.profile_cb = function ( hash, id ) {
+					WPGroHo.syncProfileData( hash, id );
+				};
+
+				Gravatar.my_hash = WPGroHo.my_hash;
+				Gravatar.init( 'body', '#wp-admin-bar-my-account' );
+			}
+
+			if ( document.readyState !== 'loading' ) {
+				init();
+			} else {
+				document.addEventListener( 'DOMContentLoaded', init );
+			}
+		} )();
+	</script>
+
+		<div style="display:none">
+	<div class="grofile-hash-map-74b320743aa89bafb58a43cc5e08123b">
+	</div>
+	<div class="grofile-hash-map-7e414560625c4051f8ee6aa0dbd4027b">
+	</div>
+	</div>
+<script id='highlander-comments-js-extra'>
+var HighlanderComments = {"loggingInText":"Logging In\u2026","submittingText":"Posting Comment\u2026","postCommentText":"Post Comment","connectingToText":"Connecting to %s","commentingAsText":"%1$s: You are commenting using your %2$s account.","logoutText":"Log Out","loginText":"Log In","connectURL":"https:\/\/neiljbrown.wordpress.com\/public.api\/connect\/?action=request&domain=neiljbrown.com","logoutURL":"https:\/\/neiljbrown.wordpress.com\/wp-login.php?action=logout&_wpnonce=94aac3774c","homeURL":"https:\/\/neiljbrown.com\/","postID":"390","gravDefault":"blank","enterACommentError":"Please enter a comment","enterEmailError":"Please enter your email address here","invalidEmailError":"Invalid email address","enterAuthorError":"Please enter your name here","gravatarFromEmail":"This picture will show whenever you leave a comment. Click to customize it.","logInToExternalAccount":"Log in to use details from one of these accounts.","change":"Change","changeAccount":"Change Account","comment_registration":"","userIsLoggedIn":"","isJetpack":"","text_direction":"ltr"};
+</script>
+<script crossorigin='anonymous' type='text/javascript' src='https://s0.wp.com/_static/??/wp-content/js/textarea-autosize.min.js,/wp-content/mu-plugins/highlander-comments/script.js?m=1649873911j'></script>
+		<!-- CCPA [start] -->
+		<script type="text/javascript">
+			( function () {
+
+				var setupPrivacy = function() {
+
+					// Minimal Mozilla Cookie library
+					// https://developer.mozilla.org/en-US/docs/Web/API/Document/cookie/Simple_document.cookie_framework
+					var cookieLib = window.cookieLib = {getItem:function(e){return e&&decodeURIComponent(document.cookie.replace(new RegExp("(?:(?:^|.*;)\\s*"+encodeURIComponent(e).replace(/[\-\.\+\*]/g,"\\$&")+"\\s*\\=\\s*([^;]*).*$)|^.*$"),"$1"))||null},setItem:function(e,o,n,t,r,i){if(!e||/^(?:expires|max\-age|path|domain|secure)$/i.test(e))return!1;var c="";if(n)switch(n.constructor){case Number:c=n===1/0?"; expires=Fri, 31 Dec 9999 23:59:59 GMT":"; max-age="+n;break;case String:c="; expires="+n;break;case Date:c="; expires="+n.toUTCString()}return"rootDomain"!==r&&".rootDomain"!==r||(r=(".rootDomain"===r?".":"")+document.location.hostname.split(".").slice(-2).join(".")),document.cookie=encodeURIComponent(e)+"="+encodeURIComponent(o)+c+(r?"; domain="+r:"")+(t?"; path="+t:"")+(i?"; secure":""),!0}};
+
+					// Implement IAB USP API.
+					window.__uspapi = function( command, version, callback ) {
+
+						// Validate callback.
+						if ( typeof callback !== 'function' ) {
+							return;
+						}
+
+						// Validate the given command.
+						if ( command !== 'getUSPData' || version !== 1 ) {
+							callback( null, false );
+							return;
+						}
+
+						// Check for GPC. If set, override any stored cookie.
+						if ( navigator.globalPrivacyControl ) {
+							callback( { version: 1, uspString: '1YYN' }, true );
+							return;
+						}
+
+						// Check for cookie.
+						var consent = cookieLib.getItem( 'usprivacy' );
+
+						// Invalid cookie.
+						if ( null === consent ) {
+							callback( null, false );
+							return;
+						}
+
+						// Everything checks out. Fire the provided callback with the consent data.
+						callback( { version: 1, uspString: consent }, true );
+					};
+
+					// Initialization.
+					document.addEventListener( 'DOMContentLoaded', function() {
+
+						// Internal functions.
+						var setDefaultOptInCookie = function() {
+							var value = '1YNN';
+							var domain = '.wordpress.com' === location.hostname.slice( -14 ) ? '.rootDomain' : location.hostname;
+							cookieLib.setItem( 'usprivacy', value, 365 * 24 * 60 * 60, '/', domain );
+						};
+
+						var setDefaultOptOutCookie = function() {
+							var value = '1YYN';
+							var domain = '.wordpress.com' === location.hostname.slice( -14 ) ? '.rootDomain' : location.hostname;
+							cookieLib.setItem( 'usprivacy', value, 24 * 60 * 60, '/', domain );
+						};
+
+						var setDefaultNotApplicableCookie = function() {
+							var value = '1---';
+							var domain = '.wordpress.com' === location.hostname.slice( -14 ) ? '.rootDomain' : location.hostname;
+							cookieLib.setItem( 'usprivacy', value, 24 * 60 * 60, '/', domain );
+						};
+
+						var setCcpaAppliesCookie = function( applies ) {
+							var domain = '.wordpress.com' === location.hostname.slice( -14 ) ? '.rootDomain' : location.hostname;
+							cookieLib.setItem( 'ccpa_applies', applies, 24 * 60 * 60, '/', domain );
+						}
+
+						var maybeCallDoNotSellCallback = function() {
+							if ( 'function' === typeof window.doNotSellCallback ) {
+								return window.doNotSellCallback();
+							}
+
+							return false;
+						}
+
+						// Look for usprivacy cookie first.
+						var usprivacyCookie = cookieLib.getItem( 'usprivacy' );
+
+						// Found a usprivacy cookie.
+						if ( null !== usprivacyCookie ) {
+
+							// If the cookie indicates that CCPA does not apply, then bail.
+							if ( '1---' === usprivacyCookie ) {
+								return;
+							}
+
+							// CCPA applies, so call our callback to add Do Not Sell link to the page.
+							maybeCallDoNotSellCallback();
+
+							// We're all done, no more processing needed.
+							return;
+						}
+
+						// We don't have a usprivacy cookie, so check to see if we have a CCPA applies cookie.
+						var ccpaCookie = cookieLib.getItem( 'ccpa_applies' );
+
+						// No CCPA applies cookie found, so we'll need to geolocate if this visitor is from California.
+						// This needs to happen client side because we do not have region geo data in our $SERVER headers,
+						// only country data -- therefore we can't vary cache on the region.
+						if ( null === ccpaCookie ) {
+
+							var request = new XMLHttpRequest();
+							request.open( 'GET', 'https://public-api.wordpress.com/geo/', true );
+
+							request.onreadystatechange = function () {
+								if ( 4 === this.readyState ) {
+									if ( 200 === this.status ) {
+
+										// Got a geo response. Parse out the region data.
+										var data = JSON.parse( this.response );
+										var ccpa_applies = data['region'] && data['region'].toLowerCase() === 'california';
+
+										// Set CCPA applies cookie. This keeps us from having to make a geo request too frequently.
+										setCcpaAppliesCookie( ccpa_applies );
+
+										// Check if CCPA applies to set the proper usprivacy cookie.
+										if ( ccpa_applies ) {
+											if ( maybeCallDoNotSellCallback() ) {
+												// Do Not Sell link added, so set default opt-in.
+												setDefaultOptInCookie();
+											} else {
+												// Failed showing Do Not Sell link as required, so default to opt-OUT just to be safe.
+												setDefaultOptOutCookie();
+											}
+										} else {
+											// CCPA does not apply.
+											setDefaultNotApplicableCookie();
+										}
+									} else {
+										// Could not geo, so let's assume for now that CCPA applies to be safe.
+										setCcpaAppliesCookie( true );
+										if ( maybeCallDoNotSellCallback() ) {
+											// Do Not Sell link added, so set default opt-in.
+											setDefaultOptInCookie();
+										} else {
+											// Failed showing Do Not Sell link as required, so default to opt-OUT just to be safe.
+											setDefaultOptOutCookie();
+										}
+									}
+								}
+							};
+
+							// Send the geo request.
+							request.send();
+						} else {
+							// We found a CCPA applies cookie.
+							if ( ccpaCookie === 'true' ) {
+								if ( maybeCallDoNotSellCallback() ) {
+									// Do Not Sell link added, so set default opt-in.
+									setDefaultOptInCookie();
+								} else {
+									// Failed showing Do Not Sell link as required, so default to opt-OUT just to be safe.
+									setDefaultOptOutCookie();
+								}
+							} else {
+								// CCPA does not apply.
+								setDefaultNotApplicableCookie();
+							}
+						}
+					} );
+				};
+
+				// Kickoff initialization.
+				if ( window.defQueue && defQueue.isLOHP && defQueue.isLOHP === 2020 ) {
+					defQueue.items.push( setupPrivacy );
+				} else {
+					setupPrivacy();
+				}
+
+			} )();
+		</script>
+
+		<!-- CCPA [end] -->
+				<script type="text/javascript">
+		( function() {
+			function init() {
+				document.body.addEventListener( 'is.post-load', function() {
+					if ( typeof __ATA.insertInlineAds === 'function' ) {
+						__ATA.insertInlineAds();
+					}
+				} );
+			}
+
+			if ( document.readyState !== 'loading' ) {
+				init();
+			} else {
+				document.addEventListener( 'DOMContentLoaded', init );
+			}
+		} )();
+		</script>	<div id="actionbar" style="display: none;"
+			class="actnbr-pub-twentytwelve actnbr-has-follow">
+		<ul>
+								<li class="actnbr-btn actnbr-hidden">
+								<a class="actnbr-action actnbr-actn-follow " href="">
+			<svg class="gridicon gridicons-reader-follow" height="24" width="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g><path d="M23 16v2h-3v3h-2v-3h-3v-2h3v-3h2v3h3zM20 2v9h-4v3h-3v4H4c-1.1 0-2-.9-2-2V2h18zM8 13v-1H4v1h4zm3-3H4v1h7v-1zm0-2H4v1h7V8zm7-4H4v2h14V4z"/></g></svg><span>Follow</span>
+		</a>
+		<a class="actnbr-action actnbr-actn-following  no-display" href="">
+			<svg class="gridicon gridicons-reader-following" height="24" width="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g><path d="M23 13.482L15.508 21 12 17.4l1.412-1.388 2.106 2.188 6.094-6.094L23 13.482zm-7.455 1.862L20 10.89V2H2v14c0 1.1.9 2 2 2h4.538l4.913-4.832 2.095 2.176zM8 13H4v-1h4v1zm3-2H4v-1h7v1zm0-2H4V8h7v1zm7-3H4V4h14v2z"/></g></svg><span>Following</span>
+		</a>
+							<div class="actnbr-popover tip tip-top-left actnbr-notice" id="follow-bubble">
+							<div class="tip-arrow"></div>
+							<div class="tip-inner actnbr-follow-bubble">
+															<ul>
+											<li class="actnbr-sitename">
+			<a href="https://neiljbrown.com">
+				<img alt='' src='https://s2.wp.com/i/logo/wpcom-gray-white.png' class='avatar avatar-50' height='50' width='50' />				Neil Brown			</a>
+		</li>
+										<form method="post" action="https://subscribe.wordpress.com" accept-charset="utf-8" style="display: none;">
+																				<div>
+										<input type="email" name="email" placeholder="Enter your email address" class="actnbr-email-field" aria-label="Enter your email address" />
+										</div>
+										<input type="hidden" name="action" value="subscribe" />
+										<input type="hidden" name="blog_id" value="31831223" />
+										<input type="hidden" name="source" value="https://neiljbrown.com/2017/08/26/evaluating-message-brokers-amazon-sqs/" />
+										<input type="hidden" name="sub-type" value="actionbar-follow" />
+										<input type="hidden" id="_wpnonce" name="_wpnonce" value="f1e8c5cfb2" />										<div class="actnbr-button-wrap">
+											<button type="submit" value="Sign me up">
+												Sign me up											</button>
+										</div>
+									</form>
+									<li class="actnbr-login-nudge">
+										<div>
+											Already have a WordPress.com account? <a href="https://wordpress.com/log-in?redirect_to=https%3A%2F%2Fr-login.wordpress.com%2Fremote-login.php%3Faction%3Dlink%26back%3Dhttps%253A%252F%252Fneiljbrown.com%252F2017%252F08%252F26%252Fevaluating-message-brokers-amazon-sqs%252F">Log in now.</a>										</div>
+									</li>
+								</ul>
+															</div>
+						</div>
+					</li>
+							<li class="actnbr-ellipsis actnbr-hidden">
+				<svg class="gridicon gridicons-ellipsis" height="24" width="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g><path d="M7 12c0 1.104-.896 2-2 2s-2-.896-2-2 .896-2 2-2 2 .896 2 2zm12-2c-1.104 0-2 .896-2 2s.896 2 2 2 2-.896 2-2-.896-2-2-2zm-7 0c-1.104 0-2 .896-2 2s.896 2 2 2 2-.896 2-2-.896-2-2-2z"/></g></svg>				<div class="actnbr-popover tip tip-top-left actnbr-more">
+					<div class="tip-arrow"></div>
+					<div class="tip-inner">
+						<ul>
+									<li class="actnbr-sitename">
+			<a href="https://neiljbrown.com">
+				<img alt='' src='https://s2.wp.com/i/logo/wpcom-gray-white.png' class='avatar avatar-50' height='50' width='50' />				Neil Brown			</a>
+		</li>
+								<li class="actnbr-folded-customize">
+								<a href="https://neiljbrown.wordpress.com/wp-admin/customize.php?url=https%3A%2F%2Fneiljbrown.wordpress.com%2F2017%2F08%2F26%2Fevaluating-message-brokers-amazon-sqs%2F">
+									<svg class="gridicon gridicons-customize" height="20" width="20" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g><path d="M2 6c0-1.505.78-3.08 2-4 0 .845.69 2 2 2 1.657 0 3 1.343 3 3 0 .386-.08.752-.212 1.09.74.594 1.476 1.19 2.19 1.81L8.9 11.98c-.62-.716-1.214-1.454-1.807-2.192C6.753 9.92 6.387 10 6 10c-2.21 0-4-1.79-4-4zm12.152 6.848l1.34-1.34c.607.304 1.283.492 2.008.492 2.485 0 4.5-2.015 4.5-4.5 0-.725-.188-1.4-.493-2.007L18 9l-2-2 3.507-3.507C18.9 3.188 18.225 3 17.5 3 15.015 3 13 5.015 13 7.5c0 .725.188 1.4.493 2.007L3 20l2 2 6.848-6.848c1.885 1.928 3.874 3.753 5.977 5.45l1.425 1.148 1.5-1.5-1.15-1.425c-1.695-2.103-3.52-4.092-5.448-5.977z"/></g></svg>									<span>Customize</span>
+								</a>
+							</li>
+																<li class="actnbr-folded-follow">
+												<a class="actnbr-action actnbr-actn-follow " href="">
+			<svg class="gridicon gridicons-reader-follow" height="24" width="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g><path d="M23 16v2h-3v3h-2v-3h-3v-2h3v-3h2v3h3zM20 2v9h-4v3h-3v4H4c-1.1 0-2-.9-2-2V2h18zM8 13v-1H4v1h4zm3-3H4v1h7v-1zm0-2H4v1h7V8zm7-4H4v2h14V4z"/></g></svg><span>Follow</span>
+		</a>
+		<a class="actnbr-action actnbr-actn-following  no-display" href="">
+			<svg class="gridicon gridicons-reader-following" height="24" width="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g><path d="M23 13.482L15.508 21 12 17.4l1.412-1.388 2.106 2.188 6.094-6.094L23 13.482zm-7.455 1.862L20 10.89V2H2v14c0 1.1.9 2 2 2h4.538l4.913-4.832 2.095 2.176zM8 13H4v-1h4v1zm3-2H4v-1h7v1zm0-2H4V8h7v1zm7-3H4V4h14v2z"/></g></svg><span>Following</span>
+		</a>
+										</li>
+																	<li class="actnbr-signup"><a href="https://wordpress.com/start/">Sign up</a></li>
+									<li class="actnbr-login"><a href="https://wordpress.com/log-in?redirect_to=https%3A%2F%2Fr-login.wordpress.com%2Fremote-login.php%3Faction%3Dlink%26back%3Dhttps%253A%252F%252Fneiljbrown.com%252F2017%252F08%252F26%252Fevaluating-message-brokers-amazon-sqs%252F">Log in</a></li>
+																	<li class="actnbr-shortlink"><a href="https://wp.me/p29yKP-6i">Copy shortlink</a></li>
+																	<li class="flb-report"><a href="http://en.wordpress.com/abuse/">Report this content</a></li>
+																	<li class="actnbr-reader">
+										<a href="https://wordpress.com/read/blogs/31831223/posts/390">
+											View post in Reader										</a>
+									</li>
+																	<li class="actnbr-subs">
+										<a href="https://subscribe.wordpress.com/">Manage subscriptions</a>
+									</li>
+																		<li class="actnbr-fold"><a href="">Collapse this bar</a></li>
+															</ul>
+					</div>
+				</div>
+			</li>
+		</ul>
+	</div>
+	
+<script>
+window.addEventListener( "load", function( event ) {
+	var link = document.createElement( "link" );
+	link.href = "https://s0.wp.com/wp-content/mu-plugins/actionbar/actionbar.css?v=20210915";
+	link.type = "text/css";
+	link.rel = "stylesheet";
+	document.head.appendChild( link );
+
+	var script = document.createElement( "script" );
+	script.src = "https://s0.wp.com/wp-content/mu-plugins/actionbar/actionbar.js?v=20220329";
+	script.defer = true;
+	document.body.appendChild( script );
+} );
+</script>
+
+			<div id="jp-carousel-loading-overlay">
+			<div id="jp-carousel-loading-wrapper">
+				<span id="jp-carousel-library-loading">&nbsp;</span>
+			</div>
+		</div>
+		<div class="jp-carousel-overlay" style="display: none;">
+
+		<div class="jp-carousel-container">
+			<!-- The Carousel Swiper -->
+			<div
+				class="jp-carousel-wrap swiper-container jp-carousel-swiper-container jp-carousel-transitions"
+				itemscope
+				itemtype="https://schema.org/ImageGallery">
+				<div class="jp-carousel swiper-wrapper"></div>
+				<div class="jp-swiper-button-prev swiper-button-prev">
+					<svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<mask id="maskPrev" mask-type="alpha" maskUnits="userSpaceOnUse" x="8" y="6" width="9" height="12">
+							<path d="M16.2072 16.59L11.6496 12L16.2072 7.41L14.8041 6L8.8335 12L14.8041 18L16.2072 16.59Z" fill="white"/>
+						</mask>
+						<g mask="url(#maskPrev)">
+							<rect x="0.579102" width="23.8823" height="24" fill="#FFFFFF"/>
+						</g>
+					</svg>
+				</div>
+				<div class="jp-swiper-button-next swiper-button-next">
+					<svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<mask id="maskNext" mask-type="alpha" maskUnits="userSpaceOnUse" x="8" y="6" width="8" height="12">
+							<path d="M8.59814 16.59L13.1557 12L8.59814 7.41L10.0012 6L15.9718 12L10.0012 18L8.59814 16.59Z" fill="white"/>
+						</mask>
+						<g mask="url(#maskNext)">
+							<rect x="0.34375" width="23.8822" height="24" fill="#FFFFFF"/>
+						</g>
+					</svg>
+				</div>
+			</div>
+			<!-- The main close buton -->
+			<div class="jp-carousel-close-hint">
+				<svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+					<mask id="maskClose" mask-type="alpha" maskUnits="userSpaceOnUse" x="5" y="5" width="15" height="14">
+						<path d="M19.3166 6.41L17.9135 5L12.3509 10.59L6.78834 5L5.38525 6.41L10.9478 12L5.38525 17.59L6.78834 19L12.3509 13.41L17.9135 19L19.3166 17.59L13.754 12L19.3166 6.41Z" fill="white"/>
+					</mask>
+					<g mask="url(#maskClose)">
+						<rect x="0.409668" width="23.8823" height="24" fill="#FFFFFF"/>
+					</g>
+				</svg>
+			</div>
+			<!-- Image info, comments and meta -->
+			<div class="jp-carousel-info">
+				<div class="jp-carousel-info-footer">
+					<div class="jp-carousel-pagination-container">
+						<div class="jp-swiper-pagination swiper-pagination"></div>
+						<div class="jp-carousel-pagination"></div>
+					</div>
+					<div class="jp-carousel-photo-title-container">
+						<h2 class="jp-carousel-photo-caption"></h2>
+					</div>
+					<div class="jp-carousel-photo-icons-container">
+						<a href="#" class="jp-carousel-icon-btn jp-carousel-icon-info" aria-label="Toggle photo metadata visibility">
+							<span class="jp-carousel-icon">
+								<svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+									<mask id="maskInfo" mask-type="alpha" maskUnits="userSpaceOnUse" x="2" y="2" width="21" height="20">
+										<path fill-rule="evenodd" clip-rule="evenodd" d="M12.7537 2C7.26076 2 2.80273 6.48 2.80273 12C2.80273 17.52 7.26076 22 12.7537 22C18.2466 22 22.7046 17.52 22.7046 12C22.7046 6.48 18.2466 2 12.7537 2ZM11.7586 7V9H13.7488V7H11.7586ZM11.7586 11V17H13.7488V11H11.7586ZM4.79292 12C4.79292 16.41 8.36531 20 12.7537 20C17.142 20 20.7144 16.41 20.7144 12C20.7144 7.59 17.142 4 12.7537 4C8.36531 4 4.79292 7.59 4.79292 12Z" fill="white"/>
+									</mask>
+									<g mask="url(#maskInfo)">
+										<rect x="0.8125" width="23.8823" height="24" fill="#FFFFFF"/>
+									</g>
+								</svg>
+							</span>
+						</a>
+												<a href="#" class="jp-carousel-icon-btn jp-carousel-icon-comments" aria-label="Toggle photo comments visibility">
+							<span class="jp-carousel-icon">
+								<svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+									<mask id="maskComments" mask-type="alpha" maskUnits="userSpaceOnUse" x="2" y="2" width="21" height="20">
+										<path fill-rule="evenodd" clip-rule="evenodd" d="M4.3271 2H20.2486C21.3432 2 22.2388 2.9 22.2388 4V16C22.2388 17.1 21.3432 18 20.2486 18H6.31729L2.33691 22V4C2.33691 2.9 3.2325 2 4.3271 2ZM6.31729 16H20.2486V4H4.3271V18L6.31729 16Z" fill="white"/>
+									</mask>
+									<g mask="url(#maskComments)">
+										<rect x="0.34668" width="23.8823" height="24" fill="#FFFFFF"/>
+									</g>
+								</svg>
+
+								<span class="jp-carousel-has-comments-indicator" aria-label="This image has comments."></span>
+							</span>
+						</a>
+											</div>
+				</div>
+				<div class="jp-carousel-info-extra">
+					<div class="jp-carousel-info-content-wrapper">
+						<div class="jp-carousel-photo-title-container">
+							<h2 class="jp-carousel-photo-title"></h2>
+						</div>
+						<div class="jp-carousel-comments-wrapper">
+															<div id="jp-carousel-comments-loading">
+									<span>Loading Comments...</span>
+								</div>
+								<div class="jp-carousel-comments"></div>
+								<div id="jp-carousel-comment-form-container">
+									<span id="jp-carousel-comment-form-spinner">&nbsp;</span>
+									<div id="jp-carousel-comment-post-results"></div>
+																														<form id="jp-carousel-comment-form">
+												<label for="jp-carousel-comment-form-comment-field" class="screen-reader-text">Write a Comment...</label>
+												<textarea
+													name="comment"
+													class="jp-carousel-comment-form-field jp-carousel-comment-form-textarea"
+													id="jp-carousel-comment-form-comment-field"
+													placeholder="Write a Comment..."
+												></textarea>
+												<div id="jp-carousel-comment-form-submit-and-info-wrapper">
+													<div id="jp-carousel-comment-form-commenting-as">
+																													<fieldset>
+																<label for="jp-carousel-comment-form-email-field">Email (Required)</label>
+																<input type="text" name="email" class="jp-carousel-comment-form-field jp-carousel-comment-form-text-field" id="jp-carousel-comment-form-email-field" />
+															</fieldset>
+															<fieldset>
+																<label for="jp-carousel-comment-form-author-field">Name (Required)</label>
+																<input type="text" name="author" class="jp-carousel-comment-form-field jp-carousel-comment-form-text-field" id="jp-carousel-comment-form-author-field" />
+															</fieldset>
+															<fieldset>
+																<label for="jp-carousel-comment-form-url-field">Website</label>
+																<input type="text" name="url" class="jp-carousel-comment-form-field jp-carousel-comment-form-text-field" id="jp-carousel-comment-form-url-field" />
+															</fieldset>
+																											</div>
+													<input
+														type="submit"
+														name="submit"
+														class="jp-carousel-comment-form-button"
+														id="jp-carousel-comment-form-button-submit"
+														value="Post Comment" />
+												</div>
+											</form>
+																											</div>
+													</div>
+						<div class="jp-carousel-image-meta">
+							<div class="jp-carousel-title-and-caption">
+								<div class="jp-carousel-photo-info">
+									<h3 class="jp-carousel-caption" itemprop="caption description"></h3>
+								</div>
+
+								<div class="jp-carousel-photo-description"></div>
+							</div>
+							<ul class="jp-carousel-image-exif" style="display: none;"></ul>
+							<a class="jp-carousel-image-download" target="_blank" style="display: none;">
+								<svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+									<mask id="mask0" mask-type="alpha" maskUnits="userSpaceOnUse" x="3" y="3" width="19" height="18">
+										<path fill-rule="evenodd" clip-rule="evenodd" d="M5.84615 5V19H19.7775V12H21.7677V19C21.7677 20.1 20.8721 21 19.7775 21H5.84615C4.74159 21 3.85596 20.1 3.85596 19V5C3.85596 3.9 4.74159 3 5.84615 3H12.8118V5H5.84615ZM14.802 5V3H21.7677V10H19.7775V6.41L9.99569 16.24L8.59261 14.83L18.3744 5H14.802Z" fill="white"/>
+									</mask>
+									<g mask="url(#mask0)">
+										<rect x="0.870605" width="23.8823" height="24" fill="#FFFFFF"/>
+									</g>
+								</svg>
+								<span class="jp-carousel-download-text"></span>
+							</a>
+							<div class="jp-carousel-image-map" style="display: none;"></div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		</div>
+					<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+			<link rel='stylesheet' id='all-css-0-3' href='https://s0.wp.com/_static/??/wp-content/mu-plugins/carousel/swiper-bundle.css,/wp-content/mu-plugins/carousel/jetpack-carousel.css?m=1630955947j&cssminify=yes' type='text/css' media='all' />
+<script id='jetpack-carousel-js-extra'>
+var jetpackSwiperLibraryPath = {"url":"\/wp-content\/mu-plugins\/carousel\/swiper-bundle.js"};
+var jetpackCarouselStrings = {"widths":[370,700,1000,1200,1400,2000],"is_logged_in":"","lang":"en","ajaxurl":"https:\/\/neiljbrown.com\/wp-admin\/admin-ajax.php","nonce":"c241372b51","display_exif":"1","display_comments":"1","single_image_gallery":"1","single_image_gallery_media_file":"","background_color":"black","comment":"Comment","post_comment":"Post Comment","write_comment":"Write a Comment...","loading_comments":"Loading Comments...","download_original":"View full size <span class=\"photo-size\">{0}<span class=\"photo-size-times\">\u00d7<\/span>{1}<\/span>","no_comment_text":"Please be sure to submit some text with your comment.","no_comment_email":"Please provide an email address to comment.","no_comment_author":"Please provide your name to comment.","comment_post_error":"Sorry, but there was an error posting your comment. Please try again later.","comment_approved":"Your comment was approved.","comment_unapproved":"Your comment is in moderation.","camera":"Camera","aperture":"Aperture","shutter_speed":"Shutter Speed","focal_length":"Focal Length","copyright":"Copyright","comment_registration":"0","require_name_email":"1","login_url":"https:\/\/neiljbrown.wordpress.com\/wp-login.php?redirect_to=https%3A%2F%2Fneiljbrown.com%2F2017%2F08%2F26%2Fevaluating-message-brokers-amazon-sqs%2F","blog_id":"31831223","meta_data":["camera","aperture","shutter_speed","focal_length","copyright"],"stats_query_args":"blog=31831223&v=wpcom&tz=1&user_id=0&subd=neiljbrown","is_public":"1"};
+</script>
+<script id='sharing-js-js-extra'>
+var sharing_js_options = {"lang":"en","counts":"1","is_stats_active":"1"};
+</script>
+<script crossorigin='anonymous' type='text/javascript' src='https://s2.wp.com/_static/??-eJyNj0tSxDAMRC+Ex0ACO4qjUIotEiX+YcnJcHs0UKGoLFJs/Gmr+7XtVozLSTCJndl6XMlhuV5mvrN/nmIzJbSREttAC7L9aNhwguQD1uOwTBh1pLTByqbCp65hxVt+gpVGEMrphDCjFHCLfaPkNIFEsBqhiIESHn1DyOOvc8vVg2fjAjBrBSW6WC5Du/U8IYKPlMwA1UZgpenJSNUOfGJyUHNjDHtfswtnoIU4opjucv/zvV14r9/D/h88sxWX4+F64iuZNT8AVcsTVErjvqvpNb48PD91XffY9/38BWCYxW0='></script>
+<script type="text/javascript">
+// <![CDATA[
+(function() {
+try{
+  if ( window.external &&'msIsSiteMode' in window.external) {
+    if (window.external.msIsSiteMode()) {
+      var jl = document.createElement('script');
+      jl.type='text/javascript';
+      jl.async=true;
+      jl.src='/wp-content/plugins/ie-sitemode/custom-jumplist.php';
+      var s = document.getElementsByTagName('script')[0];
+      s.parentNode.insertBefore(jl, s);
+    }
+  }
+}catch(e){}
+})();
+// ]]>
+</script>	<iframe src='https://widgets.wp.com/likes/master.html?ver=20220105#ver=20220105&amp;origin=https://neiljbrown.com' scrolling='no' id='likes-master' name='likes-master' style='display:none;'></iframe>
+	<div id='likes-other-gravatars'>
+		<div class="likes-text">
+			<span>%d</span> bloggers like this:		</div>
+		<ul class="wpl-avatars sd-like-gravatars"></ul>
+	</div>
+
+		<script src="//stats.wp.com/w.js?63" defer></script> <script type="text/javascript">
+_tkq = window._tkq || [];
+_stq = window._stq || [];
+_tkq.push(['storeContext', {'blog_id':'31831223','blog_tz':'1','user_lang':'en','blog_lang':'en','user_id':'0'}]);
+_stq.push(['view', {'blog':'31831223','v':'wpcom','tz':'1','user_id':'0','post':'390','subd':'neiljbrown'}]);
+_stq.push(['extra', {'crypt':'UE5XaGUuOTlwaD85flAmcm1mcmZsaDhkV11YdWtpP0NsWnVkPS9sL0ViLndld3BmSkpSVUctWTNGWWpwMlAlUzdnamtVfDArSyxmbj9mV35yZFpofj9JZ084Zy1DZHpxeCt1STU9aTBwSXNpRl9MR2pjQ3RLSitMUCZzJVdzRH42LWkzY1VHRWhScD1vOE9fbURGZlRSTiZvbGd1RWQ5PUNHT2k2OE9FdURXanNmMn4tUXQ0LlE2Q1kmRzRBb0Z8bllzaUZNLG1PJlt4dVN+WFJCTGxBW2UlSUxHWUF6dDRVeHpIdSVxLS52VGNVVHBRXTBbfEo/RiV+VDF3W1hqL211RVQ9SzZsM3Z5NlpQRS5HNDZnX1JhfCUtLERmWGpyUUhTQzIweVRjLUwyQlZ6Wg=='}]);
+_stq.push([ 'clickTrackerInit', '31831223', '390' ]);
+	</script>
+<noscript><img src="https://pixel.wp.com/b.gif?v=noscript" style="height:1px;width:1px;overflow:hidden;position:absolute;bottom:1px;" alt="" /></noscript>
+<script>
+if ( 'object' === typeof wpcom_mobile_user_agent_info ) {
+
+	wpcom_mobile_user_agent_info.init();
+	var mobileStatsQueryString = "";
+	
+	if( false !== wpcom_mobile_user_agent_info.matchedPlatformName )
+		mobileStatsQueryString += "&x_" + 'mobile_platforms' + '=' + wpcom_mobile_user_agent_info.matchedPlatformName;
+	
+	if( false !== wpcom_mobile_user_agent_info.matchedUserAgentName )
+		mobileStatsQueryString += "&x_" + 'mobile_devices' + '=' + wpcom_mobile_user_agent_info.matchedUserAgentName;
+	
+	if( wpcom_mobile_user_agent_info.isIPad() )
+		mobileStatsQueryString += "&x_" + 'ipad_views' + '=' + 'views';
+
+	if( "" != mobileStatsQueryString ) {
+		new Image().src = document.location.protocol + '//pixel.wp.com/g.gif?v=wpcom-no-pv' + mobileStatsQueryString + '&baba=' + Math.random();
+	}
+	
+}
+</script></body>
+</html>

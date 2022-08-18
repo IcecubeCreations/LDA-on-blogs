@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Realtime Django Part 5: Build a Chat application RabbitMQ and uWSGI websockets (uWSGI WebSockets)</title>
+    <meta name="description" content="Osaetin Daniel's blog">
+    <link rel="alternate" type="application/atom+xml" title="Osaetin Daniel" href="/feed.xml" />
+
+    <script data-ad-client="ca-pub-8618431079416074" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+    <!--script src="https://use.typekit.net/axu2jbv.js"></script>
+    <script>try{Typekit.load({ async: true });}catch(e){}</script-->
+    <!--link href="https://fonts.googleapis.com/css?family=Cabin" rel="stylesheet"-->
+    <link href="https://fonts.googleapis.com/css?family=Josefin+Sans" rel="stylesheet">
+    <script src="https://use.fontawesome.com/5bbf16a3a0.js"></script>
+
+    <style>
+    /*!
+ * end2end - jekyll theme free
+ * https://github.com/nandomoreirame/end2end
+ * MIT License
+ */@import url("//fonts.googleapis.com/css?family=Open+Sans:400,300,700");html{box-sizing:border-box}*,*::after,*::before{box-sizing:inherit}html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td,article,aside,canvas,details,embed,figure,figcaption,footer,header,hgroup,menu,nav,output,ruby,section,summary,time,mark,audio,video{margin:0;padding:0;border:0;font-size:100%;font:inherit;vertical-align:baseline}article,aside,details,figcaption,figure,footer,header,hgroup,menu,nav,section{display:block}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}table{border-collapse:collapse;border-spacing:0}.btn,.sliding-panel-button{appearance:none;background-color:#337ab7;border:0;border-radius:3px;color:#fff;cursor:pointer;display:inline-block;font-family:"Open Sans","Helvetica Neue","Helvetica","Roboto","Arial",sans-serif;font-size:1em;-webkit-font-smoothing:antialiased;font-weight:600;line-height:1;padding:.75em 1.5em;text-decoration:none;transition:background-color .2s ease;user-select:none;vertical-align:middle;white-space:nowrap}.btn:hover,.sliding-panel-button:hover,.btn:focus,.sliding-panel-button:focus{background-color:#296292;color:#fff}.btn:disabled,.sliding-panel-button:disabled{cursor:not-allowed;opacity:0.5}.btn:disabled:hover,.sliding-panel-button:disabled:hover{background-color:#337ab7}fieldset{background-color:#f7f7f7;border:1px solid #dedede;margin:0 0 .75em;padding:1.5em}input,label,select{display:block;font-family:"Open Sans","Helvetica Neue","Helvetica","Roboto","Arial",sans-serif;font-size:1em}label{font-weight:600;margin-bottom:.375em}label.required::after{content:"*"}label abbr{display:none}input[type="color"],input[type="date"],input[type="datetime"],input[type="datetime-local"],input[type="email"],input[type="month"],input[type="number"],input[type="password"],input[type="search"],input[type="tel"],input[type="text"],input[type="time"],input[type="url"],input[type="week"],input:not([type]),textarea,select[multiple=multiple]{background-color:#fff;border:1px solid #dedede;border-radius:3px;box-shadow:inset 0 1px 3px rgba(0,0,0,0.06);box-sizing:border-box;font-family:"Open Sans","Helvetica Neue","Helvetica","Roboto","Arial",sans-serif;font-size:1em;margin-bottom:.75em;padding:.5em;transition:border-color .2s ease;width:100%}input[type="color"]:hover,input[type="date"]:hover,input[type="datetime"]:hover,input[type="datetime-local"]:hover,input[type="email"]:hover,input[type="month"]:hover,input[type="number"]:hover,input[type="password"]:hover,input[type="search"]:hover,input[type="tel"]:hover,input[type="text"]:hover,input[type="time"]:hover,input[type="url"]:hover,input[type="week"]:hover,input:not([type]):hover,textarea:hover,select[multiple=multiple]:hover{border-color:#b2b2b2}input[type="color"]:focus,input[type="date"]:focus,input[type="datetime"]:focus,input[type="datetime-local"]:focus,input[type="email"]:focus,input[type="month"]:focus,input[type="number"]:focus,input[type="password"]:focus,input[type="search"]:focus,input[type="tel"]:focus,input[type="text"]:focus,input[type="time"]:focus,input[type="url"]:focus,input[type="week"]:focus,input:not([type]):focus,textarea:focus,select[multiple=multiple]:focus{border-color:#337ab7;box-shadow:inset 0 1px 3px rgba(0,0,0,0.06),0 0 5px rgba(45,109,163,0.7);outline:none}input[type="color"]:disabled,input[type="date"]:disabled,input[type="datetime"]:disabled,input[type="datetime-local"]:disabled,input[type="email"]:disabled,input[type="month"]:disabled,input[type="number"]:disabled,input[type="password"]:disabled,input[type="search"]:disabled,input[type="tel"]:disabled,input[type="text"]:disabled,input[type="time"]:disabled,input[type="url"]:disabled,input[type="week"]:disabled,input:not([type]):disabled,textarea:disabled,select[multiple=multiple]:disabled{background-color:#f2f2f2;cursor:not-allowed}input[type="color"]:disabled:hover,input[type="date"]:disabled:hover,input[type="datetime"]:disabled:hover,input[type="datetime-local"]:disabled:hover,input[type="email"]:disabled:hover,input[type="month"]:disabled:hover,input[type="number"]:disabled:hover,input[type="password"]:disabled:hover,input[type="search"]:disabled:hover,input[type="tel"]:disabled:hover,input[type="text"]:disabled:hover,input[type="time"]:disabled:hover,input[type="url"]:disabled:hover,input[type="week"]:disabled:hover,input:not([type]):disabled:hover,textarea:disabled:hover,select[multiple=multiple]:disabled:hover{border:1px solid #dedede}textarea{resize:vertical}input[type="search"]{appearance:none}input[type="checkbox"],input[type="radio"]{display:inline;margin-right:.375em}input[type="checkbox"]+label,input[type="radio"]+label{display:inline-block}input[type="file"]{margin-bottom:.75em;width:100%}select{margin-bottom:1.5em;max-width:100%;width:auto}ul,ol{margin:0;padding:0;list-style-position:inside;padding-left:25px}dl{margin-bottom:.75em}dl dt{font-weight:bold;margin-top:.75em}dl dd{margin:0}table{border-collapse:collapse;font-feature-settings:"kern", "liga", "tnum";margin:.75em 0;table-layout:fixed;width:100%}th{border-bottom:1px solid #a7a7a7;font-weight:600;padding:.75em 0;text-align:left}td{border-bottom:1px solid #dedede;padding:.75em 0}tr,td,th{vertical-align:middle}body{color:#000000;font-size:18px;font-weight:400;line-height:1.5}h1,h2,h3,h4,h5,h6{font-family:"Open Sans","Helvetica Neue","Helvetica","Roboto","Arial",sans-serif;font-size:1em;line-height:1.2;font-weight:700;margin:0 0 .75em}h1{font-size:35px; color: #337ab7;}h2{font-size:1.625rem}h3{font-size:1.5rem}h4{font-size:1.25rem}h5,h6{font-size:1rem}p{margin:0 0 .75em;font-weight:300}em{font-style:italic}small{font-size:80%}a{color:#337ab7;text-decoration:none;-webkit-transition:color .2s ease;-moz-transition:color .2s ease;transition:color .2s ease}a:active,a:focus,a:hover{color:#265c89}hr{border-bottom:1px solid #dedede;border-left:0;border-right:0;border-top:0;margin:1.5em 0}img,picture{margin:0;max-width:100%}code{background:none;border-radius:0;border:none;font-family:"Courier New", monospace;font-size:0.9em;margin:0;padding:0 5px;background-color:#ededed}pre{-webkit-overflow-scrolling:touch;font-family:"Courier New", monospace;font-size:0.9em;margin:0}pre code{line-height:1.75em}.txt-primary{color:#337ab7}.txt-white{color:#fff}.txt-black{color:#000}.txt-blue{color:#477dca}.txt-dark-gray{color:#232323}.txt-medium-gray{color:#9a9a9a}.txt-light-gray{color:#dedede}.txt-left{text-align:left}.txt-right{text-align:right}.txt-center{text-align:center}.txt-justify{text-align:justify}.word-wrap{overflow-wrap:break-word;word-wrap:break-word;word-break:break-all}.dot{border-radius:50%}blockquote{background:#f9f9f9;border-left:10px solid #ccc;margin:1.5em 10px;padding:0.5em 10px;quotes:"“" "”" "‘" "’"}blockquote:before{color:#ccc;content:open-quote;font-size:4em;line-height:0.1em;margin-right:0.25em;vertical-align:-0.4em}blockquote p{display:inline}.site-header::after,.social::after,.pagination::after,.highlight::after{clear:both;content:"";display:table}html,body{min-height:100%;height:100%}body{border-top:5px solid #337ab7;background:#ccc;}.container{max-width:800px;margin-left:auto;margin-right:auto;padding-left:.75em;padding-right:.75em}.container::after{clear:both;content:"";display:table}.card,.post-list .post{background-color:#fff;box-shadow:0 2px 1px rgba(0,0,0,0.1);margin:0 0 1.5em;padding:1.5em .75em}@media screen and (min-width: 480px){.card,.post-list .post{padding:1.5em}}.site-header{background-color:#fff;padding:0.3em 0;margin-bottom:1.5em;border-bottom:1px solid rgba(222,222,222,0.5)}.site-header h1{margin:0;padding:5px 0;float:left;font-weight:400;font-size:1.25rem}.site-header h1 span{color:#337ab7}.site-header h1,.site-header a{text-transform:lowercase}.site-header .navbar{float:right}.site-header a{color:#9a9a9a}.site-header a:hover,.site-header a:focus,.site-header a:active{color:#232323}@media screen and (max-width: 480px){.site-header .container{padding-left:1.5em;padding-right:1.5em}}.sliding-panel-button{float:right;padding:5px;margin:0 3.75em 0 0}.sliding-panel-button span{width:30px;display:block;height:3px;border-radius:2px;background:#fff;margin:3px 0}@media screen and (min-width: 480px){.sliding-panel-button{display:none}}@media screen and (max-width: 480px){.sliding-panel-content{border-top:5px solid #337ab7;position:fixed;top:0;right:auto;bottom:0;left:0;height:100%;width:220px;-webkit-transform:translateX(-100%);-moz-transform:translateX(-100%);-ms-transform:translateX(-100%);-o-transform:translateX(-100%);transform:translateX(-100%);-webkit-transition:all 0.25s linear;-moz-transition:all 0.25s linear;transition:all 0.25s linear;background:#fff;-webkit-overflow-scrolling:touch;overflow-y:auto;z-index:999999}.sliding-panel-content.is-visible{-webkit-transform:translateX(0);-moz-transform:translateX(0);-ms-transform:translateX(0);-o-transform:translateX(0);transform:translateX(0)}.sliding-panel-fade-screen{position:fixed;top:0;right:0;bottom:0;left:0;-webkit-transition:all 0.15s ease-out 0s;-moz-transition:all 0.15s ease-out 0s;transition:all 0.15s ease-out 0s;background:#000;opacity:0;visibility:hidden;z-index:9999}.sliding-panel-fade-screen.is-visible{opacity:0.4;visibility:visible}.sliding-panel-close{cursor:pointer}}.navbar li,.navbar a{display:inline-block}.navbar a{padding:5px 15px}@media screen and (max-width: 600px){.navbar a{padding:5px 10px}}@media screen and (max-width: 480px){.navbar li,.navbar a{display:block;text-align:center}.navbar li{border-bottom:1px solid #f2f2f2}.navbar a{padding:15px 0}}.btn.btn-ghost,.btn-ghost.sliding-panel-button{background-color:transparent;border:2px solid #337ab7;color:#337ab7;margin-bottom:2px}.btn.disabled,.disabled.sliding-panel-button,.btn[disabled],[disabled].sliding-panel-button,fieldset[disabled] .btn,fieldset[disabled] .sliding-panel-button{cursor:not-allowed;filter:alpha(opacity=65);-webkit-box-shadow:none;box-shadow:none;opacity:.65}body.home{width:100%;display:table}.hero{text-align:center;display:table-cell;vertical-align:middle}.hero-inner{text-align:center;display:inline-block;padding:1.5em}.hero-inner .dot{padding:5px;border:1px solid #dedede}.hero-inner h1{margin-top:.7em;font-size:2.5rem}.hero-inner h3{font-size:1.25rem;margin:.8em 0 1.2em}@media screen and (min-width: 600px){.hero-inner h3{font-size:1.5rem}}.hero-inner h3,.hero-inner em{font-weight:300}.hero-inner em{color:#337ab7}.hero-inner strong{font-weight:700}.post{padding:1.5em 0}.post-header{margin-bottom:1.5em; padding-bottom: 5px; border-bottom: 1px solid #999;}.post-title{font-size:1.625rem;margin-bottom:0;line-height:1.5em}.post-list .post a{color:#636363}.post-list .post a:hover,.post-list .post a:active,.post-list .post a:focus{color:#337ab7}.social{padding:1.5em 0}.social li{display:inline-block;padding:0 .6em}.social a{color:#9a9a9a}.social a:hover,.social a:active,.social a:focus{color:#337ab7}.social i{font-size:1.2em}.pagination{text-align:center;margin:2em 0}.pagination li{padding:0 .4em}.pagination li,.pagination a,.pagination span{display:inline-block}.pagination a,.pagination span{line-height:1.2em;font-size:.75rem}.pagination .btn,.pagination .sliding-panel-button{color:#636363;border-color:rgba(222,222,222,0.8)}.pagination span{color:#aaa;font-style:italic}.site-footer{background-color:#fff;border-top:1px solid rgba(222,222,222,0.5);padding:1.5em;text-align:center}.site-footer p{margin:0}.github-corner:hover .octo-arm{animation:octocat-wave 560ms ease-in-out}@keyframes octocat-wave{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(-25deg)}40%,80%{transform:rotate(10deg)}}@media (max-width: 500px){.github-corner:hover .octo-arm{animation:none}.github-corner .octo-arm{animation:octocat-wave 560ms ease-in-out}}@font-face{font-family:"end2end-icons";src:url("../fonts/end2end-icons.eot?vs69d0");src:url("../fonts/end2end-icons.eot?vs69d0#iefix") format("embedded-opentype"),url("../fonts/end2end-icons.ttf?vs69d0") format("truetype"),url("../fonts/end2end-icons.woff?vs69d0") format("woff"),url("../fonts/end2end-icons.svg?vs69d0#end2end-icons") format("svg");font-weight:normal;font-style:normal}.icon{font-family:"end2end-icons" !important;speak:none;font-style:normal;font-weight:normal;font-variant:normal;text-transform:none;line-height:1;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}.icon-home:before{content:""}.icon-comments:before{content:""}.icon-comment-o:before{content:""}.icon-comments-o:before{content:""}.icon-search:before{content:""}.icon-share:before{content:""}.icon-google-plus:before{content:""}.icon-facebook:before{content:""}.icon-facebook-rounded:before{content:""}.icon-twitter:before{content:""}.icon-twitter-rounded:before{content:""}.icon-feed:before{content:""}.icon-github:before{content:""}.icon-linkedin:before{content:""}.highlight{padding:0;margin-top:1.2em;margin-bottom:1.2em}.highlight,.highlight .hll,.highlight pre,.highlight code{background-color:#272822 !important;border:none}.highlight pre{margin:0;padding:1.3em;white-space:pre;line-height:23px;overflow-x:auto;margin-bottom:0;word-break:inherit;word-wrap:inherit}.highlight pre,.highlight pre code{color:#eeffdd}.highlight pre code{white-space:pre;padding:0 !important}.highlight pre code *{white-space:nowrap}.highlight .c{color:#75715e}.highlight .err{color:#f2f1f2}.highlight .k{color:#66d9ef}.highlight .l{color:#ae81ff}.highlight .n{color:#f8f8f2}.highlight .o{color:#f92672}.highlight .p{color:#f8f8f2}.highlight .cm{color:#75715e}.highlight .cp{color:#75715e}.highlight .c1{color:#75715e}.highlight .cs{color:#75715e}.highlight .ge{font-style:italic}.highlight .gs{font-weight:bold}.highlight .kc{color:#66d9ef}.highlight .kd{color:#66d9ef}.highlight .kn{color:#f92672}.highlight .kp{color:#66d9ef}.highlight .kr{color:#66d9ef}.highlight .kt{color:#66d9ef}.highlight .ld{color:#e6db74}.highlight .m{color:#ae81ff}.highlight .s{color:#e6db74}.highlight .na{color:#a6e22e}.highlight .nb{color:#f8f8f2}.highlight .nc{color:#a6e22e}.highlight .no{color:#66d9ef}.highlight .nd{color:#a6e22e}.highlight .ni{color:#f8f8f2}.highlight .ne{color:#a6e22e}.highlight .nf{color:#a6e22e}.highlight .nl{color:#f8f8f2}.highlight .nn{color:#f8f8f2}.highlight .nx{color:#a6e22e}.highlight .py{color:#f8f8f2}.highlight .nt{color:#f92672}.highlight .nv{color:#f8f8f2}.highlight .ow{color:#f92672}.highlight .w{color:#f8f8f2}.highlight .mf{color:#ae81ff}.highlight .mh{color:#ae81ff}.highlight .mi{color:#ae81ff}.highlight .mo{color:#ae81ff}.highlight .sb{color:#e6db74}.highlight .sc{color:#e6db74}.highlight .sd{color:#e6db74}.highlight .s2{color:#e6db74}.highlight .se{color:#ae81ff}.highlight .sh{color:#e6db74}.highlight .si{color:#e6db74}.highlight .sx{color:#e6db74}.highlight .sr{color:#e6db74}.highlight .s1{color:#e6db74}.highlight .ss{color:#e6db74}.highlight .bp{color:#f8f8f2}.highlight .vc{color:#f8f8f2}.highlight .vg{color:#f8f8f2}.highlight .vi{color:#f8f8f2}.highlight .il{color:#ae81ff}.highlight .gu{color:#75715e}.highlight .gd{color:#f92672}.highlight .gi{color:#a6e22e}
+
+@font-face {
+   font-family: 'Verlag';
+   src: url('/fonts/BrandonGrotesque-Regular.ttf');
+ }
+
+@font-face {
+   font-family: 'Fira Code';
+   src: url('/fonts/FiraCode-Regular.ttf');
+ }
+
+body {
+  font-family: 'Verlag', sans-serif;
+  font-size: 18.5px;
+  background-color: #fff;
+}
+
+.post-content h1, .post-content h2, .post-content, .post-content h3, 
+.post-content h4, .post-content h5, .post-content h6 {
+  margin-top: 50px;
+}
+
+.container {
+  max-width: 950px;
+}
+
+.post-meta {
+  font-style: italic;
+  font-size: 16px;
+}
+
+strong {
+  font-weight: bold;
+}
+
+a {
+  font-weight: bold;
+}
+
+ul {
+  list-style-type: initial;
+}
+
+li{
+  margin: 10px 0;
+}
+
+li p {
+  display: inline;
+}
+
+code {
+  font-family: 'Fira Code';
+  font-weight: bold;
+  font-size: 13px;
+}
+
+figcaption {
+  color: #999;
+  text-align: center;
+  font-size: 17px;
+  margin-top: 10px;
+}
+
+.logo {
+  display: block;
+  margin-top: 10px;
+}
+
+.postlist {
+  list-style: inside;
+  font-style: italic;
+}
+
+.highlight pre, .highlight pre code {
+  font-family: 'Fira Code';
+  font-weight: normal;
+  white-space: pre-wrap;       /* css-3 */
+  white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
+  white-space: -pre-wrap;      /* Opera 4-6 */
+  white-space: -o-pre-wrap;    /* Opera 7 */
+  word-wrap: break-word; 
+}
+
+.highlight {
+  border-left: 7px solid tomato;
+  margin: 0;
+  padding: 5px;
+  margin-bottom: 15px;
+}
+
+.post-content img {
+  display: block;
+  margin: 0 auto;
+}
+
+.post-content {
+  text-align: justify;
+}
+
+    </style>
+
+    <link rel="canonical" href="https://danidee10.github.io/2018/01/13/realtime-django-5.html">
+
+    <!-- Hotjar Tracking Code for https://danidee10.github.io -->
+    <script>
+        (function(h,o,t,j,a,r){
+            h.hj=h.hj||function(){(h.hj.q=h.hj.q||[]).push(arguments)};
+            h._hjSettings={hjid:379398,hjsv:5};
+            a=o.getElementsByTagName('head')[0];
+            r=o.createElement('script');r.async=1;
+            r.src=t+h._hjSettings.hjid+j+h._hjSettings.hjsv;
+            a.appendChild(r);
+        })(window,document,'//static.hotjar.com/c/hotjar-','.js?sv=');
+    </script>
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-83888894-1', 'auto');
+      ga('send', 'pageview');
+
+    </script>
+
+  </head>
+
+
+<main>
+  <header class="site-header">
+  <div class="container">
+    <h1><a class="logo" href="/">>_Osaetin<span>Daniel</span></a></h1>
+
+    <button type="button" class="sliding-panel-button">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <nav class="navbar sliding-panel-content">
+      <ul>
+
+          <li><a href="/about" title="About">About</a></li>
+
+          <li><a href="/blog" title="Blog">Blog</a></li>
+
+        <!--rssfeed li><a href="/end2end/feed.xml" target="_blank"><i class="icon icon-feed"></i></a></li-->
+      </ul>
+    </nav>
+  </div>
+</header>
+
+
+  <div class="sliding-panel-fade-screen"></div>
+  <div class="container">
+
+    <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+    <!-- Banner ad in articles -->
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-8618431079416074" data-ad-slot="3289069591"
+      data-ad-format="auto" data-full-width-responsive="true"></ins>
+    <script>
+      (adsbygoogle = window.adsbygoogle || []).push({});
+    </script>
+
+    <article role="article" class="post">
+      <div class="card">
+        <header class="post-header">
+          <h1 class="post-title">Realtime Django Part 5: Build a Chat application RabbitMQ and uWSGI websockets (uWSGI WebSockets)</h1>
+          <p class="post-meta">January 13, 2018 | <i>Tags:  <a href="https://danidee10.github.io/tags/api">api,</a>  <a href="https://danidee10.github.io/tags/vue">vue,</a>  <a href="https://danidee10.github.io/tags/django">django,</a>  <a href="https://danidee10.github.io/tags/websockets">websockets,</a>  <a href="https://danidee10.github.io/tags/rabbitmq">rabbitmq,</a> </i>
+        </header>
+
+        <div class="post-content">
+          <p>Welcome to the penultimate part of this tutorial. I’ve really learnt a lot writing this tutorial and i hope you have too.</p>
+
+<p>In part 4, we were able to acheive our main goal of the tutorial which was to build a web based chat application with django and Vue. But we faced a major issue with scaling the application.</p>
+
+<h3 id="websockets">WebSockets</h3>
+
+<p>From the last tutorial, we went through a little primer on WebSockets. we know they’re bi-directional connections that stay open and allow the server to communicate instantly with the client and vice-versa.</p>
+
+<p>Django itself was developed at a different time in our internet history. Back then Websites/Web applications weren’t as sophisticated as they are today. It was basically “Hey i want the articles from the 1st of January 2005” and then the server goes “Don’t worry bro I got you” and does some work fetching the articles and then responds “Here are the articles you asked for” and then it goes back to sleep or attend to other users (Closes the socket). You couldn’t receive information without asking for it. For example the Web Server couldn’t say “Someone in Lagos sent you a message here is the message”. You’ll need to ask the Web server. “Please let me see all my unread messages”.</p>
+
+<p>Don’t mind these stupid examples :-). what we can draw from this is that the communication could only be initiated from one person (The client).</p>
+
+<p>This was really a problem for Django and a lot of python web frameworks because the underlying protocol that governs how python applications should run (<code class="language-plaintext highlighter-rouge">WSGI</code>) was tied down to this <code class="language-plaintext highlighter-rouge">request-response</code> pattern of communication.</p>
+
+<p>So many people approached the problem from different angles</p>
+
+<ul>
+  <li>By new frameworks/web servers (E.g Twisted, Tornado).</li>
+  <li>Async engines with websocket servers (E.g gevent)</li>
+  <li>By Adding support to existing WSGI Servers (<code class="language-plaintext highlighter-rouge">uWSGI</code>)</li>
+</ul>
+
+<p>modifying django directly was going to be difficult because it was going to require some drastic changes in the core of django due to it’s synchronous nature and the <code class="language-plaintext highlighter-rouge">WSGI</code> protocol itself.</p>
+
+<script async="" src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+<p><ins class="adsbygoogle" style="display:block; text-align:center;" data-ad-layout="in-article" data-ad-format="fluid" data-ad-client="ca-pub-8618431079416074" data-ad-slot="8239403128">
+</ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script></p>
+
+<h3 id="django-channels">django channels</h3>
+
+<p>Andrew Godwin brought websockets to django natively with <code class="language-plaintext highlighter-rouge">django-channels</code>. At the time this tutorial was written it’s currently an official project of the django software foundation. Meaning it’s not going anywhere soon.</p>
+
+<p><code class="language-plaintext highlighter-rouge">django-channels</code> introduces a new protocol called <code class="language-plaintext highlighter-rouge">ASGI</code> that’s distinctly different from <code class="language-plaintext highlighter-rouge">WSGI</code>. django-channels comes with it’s own web server called <code class="language-plaintext highlighter-rouge">Daphne</code>. <code class="language-plaintext highlighter-rouge">Daphne</code> can handle regular http connections and WebSocket connections.</p>
+
+<p>If you decide to go with <code class="language-plaintext highlighter-rouge">django-channels</code> you have to learn it’s API and methods, You’ll also need to change your deployment process.</p>
+
+<p>To scale to horizontally to multiple machines you’ll still need to make use of a what <code class="language-plaintext highlighter-rouge">django-channels</code> call Channel layers. The recommended layer is the <code class="language-plaintext highlighter-rouge">Redis</code> layer. There’s also a <code class="language-plaintext highlighter-rouge">RabbitMQ</code> channel layer and an IPC (Inter pocess Communication) Layer. These Channel layers are the glue between django and the <code class="language-plaintext highlighter-rouge">Daphne</code> server. The <code class="language-plaintext highlighter-rouge">Redis</code> and <code class="language-plaintext highlighter-rouge">RabbitMQ</code> in particular are used to scale channels horizontally. The IPC channel layer is quicker but it’s only suitable for a single server because all the processes use a shared memory for communication.</p>
+
+<p>There’s also some downsides to using the Redis channel. Redis doesn’t have TLS Support <a href="https://redis.io/topics/encryption">natively</a> and it’s support for Persistent queues isn’t that great compared to RabbitMQ.</p>
+
+<p>Also, Due to the ASGI Specification, <code class="language-plaintext highlighter-rouge">django-channels</code> emulates <code class="language-plaintext highlighter-rouge">Pub/Sub</code> (It doesn’t actually use the Pub/Sub capabilities of Redis or RabbitMQ) which isn’t great if you need to listen directly on a channel.</p>
+
+<p>At the end of the day, we’re going to build a similar system to <code class="language-plaintext highlighter-rouge">django-channels</code>. More like a “poor man’s” <code class="language-plaintext highlighter-rouge">django-channels</code> but on a lower level. We’re going to read from <code class="language-plaintext highlighter-rouge">RabbitMQ</code> queues directly. (<code class="language-plaintext highlighter-rouge">django-channels</code> abstracts this into <code class="language-plaintext highlighter-rouge">Groups</code>). <code class="language-plaintext highlighter-rouge">uWSGI</code> would take a similar role as the <code class="language-plaintext highlighter-rouge">Daphne</code> server.</p>
+
+<p>The Difference is our approach doesn’t limit us to a single WebSocket server like <code class="language-plaintext highlighter-rouge">django-channels</code>. You can easily replace <code class="language-plaintext highlighter-rouge">uWSGI</code> with another WebSocket server with minimal work.</p>
+
+<p><em>There are ongoing plans for django-channels to support other “Interface” aside Daphne.</em></p>
+
+<h3 id="uwsgi-websockets">uWSGI WebSockets</h3>
+
+<p>unbit (The developers of uWSGI) took a different approach, they decided to integrate WebSockets into the uWSGI Core itslf. uWSGI is a very performant WSGI Web server for python. It’s Arguably the most popular python WSGI Server. It also supports several programming languages like <code class="language-plaintext highlighter-rouge">Perl</code>, <code class="language-plaintext highlighter-rouge">Ruby</code> even <code class="language-plaintext highlighter-rouge">Go</code>.</p>
+
+<p>If you currently use <code class="language-plaintext highlighter-rouge">uWSGI</code> in your stack and you need WebSockets, you don’t need to change anything. Even if you use a different <code class="language-plaintext highlighter-rouge">WSGI</code> Server like <code class="language-plaintext highlighter-rouge">gunicorn</code> you just need to <code class="language-plaintext highlighter-rouge">pip install uwsgi</code> it’s that simple.</p>
+
+<p>If you remember the discussion we had earlier in part 3 about RabbitMQ. Remember i told you RabbitMQ is the glue between <code class="language-plaintext highlighter-rouge">uWSGI</code> and <code class="language-plaintext highlighter-rouge">django</code>.</p>
+
+<p>We need to create notifications and put them on the RabbitMQ Queue and then through the websockets this messages can be broadcasted directly to multiple users.</p>
+
+<p>To ease the process of creating notifications and sending them to RabbitMQ, i created a third party django library called <a href="https://github.com/danidee10/django-notifs">django-notifs</a>.</p>
+
+<p>It’s available on Pypi.</p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="n">pip</span> <span class="n">install</span> <span class="n">django</span><span class="o">-</span><span class="n">notifs</span></code></pre></figure>
+
+<p>Make sure you add to your <code class="language-plaintext highlighter-rouge">INSTALLED_APPS</code>:</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash">INSTALLED_APPS <span class="o">=</span> <span class="o">(</span>
+    <span class="s1">'django.contrib.auth'</span>,
+    ...,
+    <span class="s1">'rest_framework'</span>,
+    <span class="s1">'rest_framework.authtoken'</span>,
+    <span class="s1">'djoser'</span>,
+
+    <span class="c"># Our apps</span>
+    <span class="s1">'chat'</span>,
+    <span class="s1">'notifications'</span>
+<span class="o">)</span></code></pre></figure>
+
+<p>Installing <code class="language-plaintext highlighter-rouge">django-notifs</code> also installs <code class="language-plaintext highlighter-rouge">pika</code> which is a python library for connecting to RabbitMQ.</p>
+
+<p>Run the migrations with <code class="language-plaintext highlighter-rouge">python manage.py migrate</code></p>
+
+<p>Finally install <code class="language-plaintext highlighter-rouge">RabbitMQ</code> The instructions vary for different operating systems, so head on to the <a href="https://www.rabbitmq.com/download.html">installation guide</a> to get the installation instructions for your Operating system.</p>
+
+<p>Before you continue, Make sure the <code class="language-plaintext highlighter-rouge">RabbitMQ</code> server is running, if not you’ll get errors when you try to connect to it from <code class="language-plaintext highlighter-rouge">pika</code>.</p>
+
+<p>open <code class="language-plaintext highlighter-rouge">views.py</code> and update the <code class="language-plaintext highlighter-rouge">ChatSessionMessageView</code> view:</p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="kn">from</span> <span class="nn">notifications.signals</span> <span class="kn">import</span> <span class="n">notify</span>
+
+
+<span class="k">class</span> <span class="nc">ChatSessionMessageView</span><span class="p">(</span><span class="n">APIView</span><span class="p">):</span>
+    <span class="p">...</span>
+
+    <span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="s">"""create a new message in a chat session."""</span>
+        <span class="n">uri</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s">'uri'</span><span class="p">]</span>
+        <span class="n">message</span> <span class="o">=</span> <span class="n">request</span><span class="p">.</span><span class="n">data</span><span class="p">[</span><span class="s">'message'</span><span class="p">]</span>
+
+        <span class="n">user</span> <span class="o">=</span> <span class="n">request</span><span class="p">.</span><span class="n">user</span>
+        <span class="n">chat_session</span> <span class="o">=</span> <span class="n">ChatSession</span><span class="p">.</span><span class="n">objects</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="n">uri</span><span class="o">=</span><span class="n">uri</span><span class="p">)</span>
+
+        <span class="n">chat_session_message</span> <span class="o">=</span> <span class="n">ChatSessionMessage</span><span class="p">.</span><span class="n">objects</span><span class="p">.</span><span class="n">create</span><span class="p">(</span>
+            <span class="n">user</span><span class="o">=</span><span class="n">user</span><span class="p">,</span> <span class="n">chat_session</span><span class="o">=</span><span class="n">chat_session</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="n">message</span>
+        <span class="p">)</span>
+
+        <span class="n">notif_args</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s">'source'</span><span class="p">:</span> <span class="n">user</span><span class="p">,</span>
+            <span class="s">'source_display_name'</span><span class="p">:</span> <span class="n">user</span><span class="p">.</span><span class="n">get_full_name</span><span class="p">(),</span>
+            <span class="s">'category'</span><span class="p">:</span> <span class="s">'chat'</span><span class="p">,</span> <span class="s">'action'</span><span class="p">:</span> <span class="s">'Sent'</span><span class="p">,</span>
+            <span class="s">'obj'</span><span class="p">:</span> <span class="n">chat_session_message</span><span class="p">.</span><span class="nb">id</span><span class="p">,</span>
+            <span class="s">'short_description'</span><span class="p">:</span> <span class="s">'You a new message'</span><span class="p">,</span> <span class="s">'silent'</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>
+            <span class="s">'extra_data'</span><span class="p">:</span> <span class="p">{</span><span class="s">'uri'</span><span class="p">:</span> <span class="n">chat_session</span><span class="p">.</span><span class="n">uri</span><span class="p">}</span>
+        <span class="p">}</span>
+        <span class="n">notify</span><span class="p">.</span><span class="n">send</span><span class="p">(</span>
+            <span class="n">sender</span><span class="o">=</span><span class="bp">self</span><span class="p">.</span><span class="n">__class__</span><span class="p">,</span> <span class="o">**</span><span class="n">notif_args</span><span class="p">,</span> <span class="n">channels</span><span class="o">=</span><span class="p">[</span><span class="s">'websocket'</span><span class="p">]</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">Response</span> <span class="p">({</span>
+            <span class="s">'status'</span><span class="p">:</span> <span class="s">'SUCCESS'</span><span class="p">,</span> <span class="s">'uri'</span><span class="p">:</span> <span class="n">chat_session</span><span class="p">.</span><span class="n">uri</span><span class="p">,</span> <span class="s">'message'</span><span class="p">:</span> <span class="n">message</span><span class="p">,</span>
+            <span class="s">'user'</span><span class="p">:</span> <span class="n">deserialize_user</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+        <span class="p">})</span></code></pre></figure>
+
+<p>Just before we return a response to the user, we send the notify signal with arguments, Most of the arguments are self explanatory.</p>
+
+<p>The <code class="language-plaintext highlighter-rouge">silent</code> parameter means the notification won’t be persisted to the database. In other words, we’re using <code class="language-plaintext highlighter-rouge">django-notifs</code> like event emitter. You can also pass arbitrary notification data in the <code class="language-plaintext highlighter-rouge">extra_data</code> argument as a dictionary.</p>
+
+<h3 id="notification-channels">Notification channels</h3>
+
+<p>django-notifs makes use of <code class="language-plaintext highlighter-rouge">channels</code> to deliver messages. This means that you can write your own custom channel to deliver messages via emails, SMS, Slack and anything you can think of. It even comes with an inbuilt websocket channel but that won’t suffice for our case because it’s a user to user channel.</p>
+
+<p>We want to broadcast messages to multiple clients at the same. This pattern of communication is called Pub/Sub (Publish Subscribe) and RabbitMQ has support for this as <code class="language-plaintext highlighter-rouge">exchanges</code>.</p>
+
+<p>An <code class="language-plaintext highlighter-rouge">exchange</code> is a channel that receives messages from a producer (Our application) and then broadcasts it to multiple queues. There are four different types of <code class="language-plaintext highlighter-rouge">exchanges</code> namely direct, topic, headers and fanout. We’ll make use of the <code class="language-plaintext highlighter-rouge">fanout</code> exchange it’s the simplest to understand and fits our use case perfectly.</p>
+
+<p>This is an illustration from the RabbitMQ docs on how the fanout exchange works:</p>
+
+<p><img src="https://www.rabbitmq.com/img/tutorials/python-three-overall.png" alt="RabbitMQ Fanout" /></p>
+
+<p>Before a queue can receive a message it has to be bound to the exchange.</p>
+
+<p>To implement the Pub/Sub pattern we’ll need to write our own delivery channel.</p>
+
+<p>It’s quite simple. Create a new file called <code class="language-plaintext highlighter-rouge">channels.py</code></p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="s">"""Notification channels for django-notifs."""</span>
+
+<span class="kn">from</span> <span class="nn">json</span> <span class="kn">import</span> <span class="n">dumps</span>
+
+<span class="kn">import</span> <span class="nn">pika</span>
+
+<span class="kn">from</span> <span class="nn">notifications.channels</span> <span class="kn">import</span> <span class="n">BaseNotificationChannel</span>
+
+
+<span class="k">class</span> <span class="nc">BroadCastWebSocketChannel</span><span class="p">(</span><span class="n">BaseNotificationChannel</span><span class="p">):</span>
+    <span class="s">"""Fanout notification channel with RabbitMQ."""</span>
+
+    <span class="k">def</span> <span class="nf">_connect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s">"""Connect to the RabbitMQ server."""</span>
+        <span class="n">connection</span> <span class="o">=</span> <span class="n">pika</span><span class="p">.</span><span class="n">BlockingConnection</span><span class="p">(</span>
+            <span class="n">pika</span><span class="p">.</span><span class="n">ConnectionParameters</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s">'localhost'</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">channel</span> <span class="o">=</span> <span class="n">connection</span><span class="p">.</span><span class="n">channel</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">connection</span><span class="p">,</span> <span class="n">channel</span>
+
+    <span class="k">def</span> <span class="nf">construct_message</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s">"""Construct the message to be sent."""</span>
+        <span class="n">extra_data</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">notification_kwargs</span><span class="p">[</span><span class="s">'extra_data'</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">dumps</span><span class="p">(</span><span class="n">extra_data</span><span class="p">[</span><span class="s">'message'</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">notify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+        <span class="s">"""put the message of the RabbitMQ queue."""</span>
+        <span class="n">connection</span><span class="p">,</span> <span class="n">channel</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">_connect</span><span class="p">()</span>
+
+        <span class="n">uri</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">notification_kwargs</span><span class="p">[</span><span class="s">'extra_data'</span><span class="p">][</span><span class="s">'uri'</span><span class="p">]</span>
+
+        <span class="n">channel</span><span class="p">.</span><span class="n">exchange_declare</span><span class="p">(</span><span class="n">exchange</span><span class="o">=</span><span class="n">uri</span><span class="p">,</span> <span class="n">exchange_type</span><span class="o">=</span><span class="s">'fanout'</span><span class="p">)</span>
+        <span class="n">channel</span><span class="p">.</span><span class="n">basic_publish</span><span class="p">(</span><span class="n">exchange</span><span class="o">=</span><span class="n">uri</span><span class="p">,</span> <span class="n">routing_key</span><span class="o">=</span><span class="s">''</span><span class="p">,</span> <span class="n">body</span><span class="o">=</span><span class="n">message</span><span class="p">)</span>
+
+        <span class="n">connection</span><span class="p">.</span><span class="n">close</span><span class="p">()</span></code></pre></figure>
+
+<p>We set the exchange name as the <code class="language-plaintext highlighter-rouge">uri</code> of the chat session.</p>
+
+<p>We also dumped the chat message as a dictionary. We’ll need all the details about the message on the client side not just the actual message.</p>
+
+<p>You need to tell <code class="language-plaintext highlighter-rouge">django-notifs</code> about the new channel you just created. In your application settings include the following:</p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="c1"># Celery settings
+</span><span class="n">CELERY_TASK_ALWAYS_EAGER</span> <span class="o">=</span> <span class="bp">True</span>
+
+<span class="c1"># notifications settings
+</span><span class="n">NOTIFICATIONS_CHANNELS</span> <span class="o">=</span> <span class="p">{</span>
+   <span class="s">'websocket'</span><span class="p">:</span> <span class="s">'chat.channels.BroadCastWebSocketChannel'</span>
+<span class="p">}</span></code></pre></figure>
+
+<p>This tells it to use forward notifications to our websocket channel which handles the logic for sending messages to <code class="language-plaintext highlighter-rouge">RabbitMQ</code>.</p>
+
+<p>django-notifs uses Celery to process notifications asynchronously so long running notification tasks (Like sending emails) don’t block the user’s request.</p>
+
+<p>Inside the <code class="language-plaintext highlighter-rouge">chatire</code> folder, create a new file called <code class="language-plaintext highlighter-rouge">celery.py</code> and include the following:</p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="s">"""Celery init."""</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">absolute_import</span><span class="p">,</span> <span class="n">unicode_literals</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="kn">from</span> <span class="nn">celery</span> <span class="kn">import</span> <span class="n">Celery</span>
+
+
+<span class="c1"># set the default Django settings module for the 'celery' program.
+</span><span class="n">os</span><span class="p">.</span><span class="n">environ</span><span class="p">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s">'DJANGO_SETTINGS_MODULE'</span><span class="p">,</span> <span class="s">'chatire.settings'</span><span class="p">)</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">Celery</span><span class="p">(</span><span class="s">'chatire'</span><span class="p">)</span>
+<span class="n">app</span><span class="p">.</span><span class="n">config_from_object</span><span class="p">(</span><span class="s">'django.conf:settings'</span><span class="p">,</span> <span class="n">namespace</span><span class="o">=</span><span class="s">'CELERY'</span><span class="p">)</span>
+
+<span class="n">app</span><span class="p">.</span><span class="n">autodiscover_tasks</span><span class="p">()</span></code></pre></figure>
+
+<p>The <code class="language-plaintext highlighter-rouge">app.autodiscover_tasks()</code> line is very important. It automatically locates and imports the celery tasks defined in <code class="language-plaintext highlighter-rouge">django-notifs</code> without it, you’ll have to import the task manually.</p>
+
+<p>In <code class="language-plaintext highlighter-rouge">__init__.py</code> include this:</p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="s">"""Initialize celery."""</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">absolute_import</span><span class="p">,</span> <span class="n">unicode_literals</span>
+
+<span class="kn">from</span> <span class="nn">.celery</span> <span class="kn">import</span> <span class="n">app</span> <span class="k">as</span> <span class="n">celery_app</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s">'celery_app'</span><span class="p">]</span></code></pre></figure>
+
+<p>This imports the <code class="language-plaintext highlighter-rouge">app</code> object we created in <code class="language-plaintext highlighter-rouge">celery.py</code> as <code class="language-plaintext highlighter-rouge">celery_app</code> once the app is loaded.</p>
+
+<p>Because we set <code class="language-plaintext highlighter-rouge">CELERY_TASK_ALWAYS_EAGER</code> to <code class="language-plaintext highlighter-rouge">True</code> in <code class="language-plaintext highlighter-rouge">settings.py</code> we should be able to send messages <em>Synchronously</em> without a Celery worker. If you want the asynchronous behaviour (Which i highly recommend) set <code class="language-plaintext highlighter-rouge">CELERY_TASK_ALWAYS_EAGER</code> to <code class="language-plaintext highlighter-rouge">False</code> or Omit it entirely and start a celery worker with:</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash">celery <span class="nt">-A</span> chatire worker <span class="nt">-l</span> info</code></pre></figure>
+
+<p>Make sure you see the task from <code class="language-plaintext highlighter-rouge">django-notifs</code> listed under <code class="language-plaintext highlighter-rouge">[tasks]</code></p>
+
+<p><img src="../../../images/django/realtime-django/realtime-django-5.1.png" alt="realtime-django-5.1" /></p>
+
+<p>Try and send a message through the Chat UI. A new RabbitMQ exhange based on the uri for the chat session should be created.</p>
+
+<p>To see the list of exchanges we have (for *nix systems) run this in the terminal:</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash">rabbitmqctl list_exchanges
+Listing exchanges
+amq.match	headers
+amq.direct	direct
+amq.rabbitmq.log	topic
+amq.rabbitmq.trace	topic
+amq.topic	topic
+	direct
+amq.fanout	fanout
+amq.headers	headers
+fe662fd9de834fc	fanout  <span class="c"># our Exchange</span></code></pre></figure>
+
+<p>You can also see some inbuilt exchanges.</p>
+
+<p>Now we’re going to dynamically create queues and bind them to the exchange we created earlier so they can receive messages.</p>
+
+<p>Create a new file called <code class="language-plaintext highlighter-rouge">websocket.py</code>.</p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="s">"""Receive messages over from RabbitMQ and send them over the websocket."""</span>
+
+<span class="kn">import</span> <span class="nn">pika</span>
+
+
+<span class="n">connection</span> <span class="o">=</span> <span class="n">pika</span><span class="p">.</span><span class="n">BlockingConnection</span><span class="p">(</span>
+    <span class="n">pika</span><span class="p">.</span><span class="n">ConnectionParameters</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s">'localhost'</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="n">channel</span> <span class="o">=</span> <span class="n">connection</span><span class="p">.</span><span class="n">channel</span><span class="p">()</span>
+
+<span class="n">channel</span><span class="p">.</span><span class="n">exchange_declare</span><span class="p">(</span>
+    <span class="n">exchange</span><span class="o">=</span><span class="s">'fe662fd9de834fc'</span><span class="p">,</span> <span class="n">exchange_type</span><span class="o">=</span><span class="s">'fanout'</span>
+<span class="p">)</span>
+
+<span class="c1"># exclusive means the queue should be deleted once the connection is closed
+</span><span class="n">result</span> <span class="o">=</span> <span class="n">channel</span><span class="p">.</span><span class="n">queue_declare</span><span class="p">(</span><span class="n">exclusive</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">queue_name</span> <span class="o">=</span> <span class="n">result</span><span class="p">.</span><span class="n">method</span><span class="p">.</span><span class="n">queue</span>  <span class="c1"># random queue name generated by RabbitMQ
+</span>
+<span class="n">channel</span><span class="p">.</span><span class="n">queue_bind</span><span class="p">(</span><span class="n">exchange</span><span class="o">=</span><span class="s">'fe662fd9de834fc'</span><span class="p">,</span> <span class="n">queue</span><span class="o">=</span><span class="n">queue_name</span><span class="p">)</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s">'listening for messages...'</span><span class="p">)</span>
+
+<span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">method_frame</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">body</span> <span class="ow">in</span> <span class="n">channel</span><span class="p">.</span><span class="n">consume</span><span class="p">(</span><span class="n">queue_name</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">body</span><span class="p">)</span>
+        <span class="k">except</span> <span class="nb">OSError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># acknowledge the message
+</span>            <span class="n">channel</span><span class="p">.</span><span class="n">basic_ack</span><span class="p">(</span><span class="n">method_frame</span><span class="p">.</span><span class="n">delivery_tag</span><span class="p">)</span></code></pre></figure>
+
+<p>Once again, after connecting to <code class="language-plaintext highlighter-rouge">RabbitMQ</code> using <code class="language-plaintext highlighter-rouge">pika</code> we declared the exchange.</p>
+
+<p>Declaring an exchange (or queue) multiple times has no adverse effects, If the exchange didn’t exist beforehand <code class="language-plaintext highlighter-rouge">RabbitMQ</code> creates it else it does nothing.</p>
+
+<p>Let’s take a closer look at this line:</p>
+
+<p><code class="language-plaintext highlighter-rouge">channel.queue_bind(exchange='fe662fd9de834fc', queue=queue_name)</code></p>
+
+<p>This binds the queue to the exchange. It’s more like “Hey exchange, i’m interested in the messages you receive. Please send them to me.”</p>
+
+<p>The <code class="language-plaintext highlighter-rouge">queue_name</code> is generated randomly by <code class="language-plaintext highlighter-rouge">RabbitMQ</code> because we called <code class="language-plaintext highlighter-rouge">queue_declare</code> without passing in a name.</p>
+
+<p>There are different ways of consuming messages off a channel. You can use callbacks or consume manually with a <code class="language-plaintext highlighter-rouge">for loop</code>. we went with the second option so we can gracefully handle exceptions that might occur when we try to send the message down to the client. This will make more sense when we finally implement the WebSocket.</p>
+
+<p><code class="language-plaintext highlighter-rouge">channel.basic_ack(method_frame.delivery_tag)</code> acknowledges that the client succesfully received the message and it can be removed from the queue. If a message is not acknowledged it would remain on the queue until the queue itself is deleted.</p>
+
+<p>For more info about method frames and the different types of frames check out the RabbitMQ docs.</p>
+
+<p>Go ahead and start the run the <code class="language-plaintext highlighter-rouge">websocket</code> file with:</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span>python websocket.py
+listening <span class="k">for </span>messages...</code></pre></figure>
+
+<p>Now go back to the chat UI and send some messages. I sent <code class="language-plaintext highlighter-rouge">"hello world"</code> and <code class="language-plaintext highlighter-rouge">"how are you doing"</code> and this was the output.</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash">listening <span class="k">for </span>messages...
+b<span class="s1">'{"user": {"id": 1, "username": "danidee", "email": "", "first_name": "", "last_name": ""}, "message": "Hello world"}'</span>
+b<span class="s1">'{"user": {"id": 12, "username": "daniel", "email": "", "first_name": "", "last_name": ""}, "message": "How are you doing"}'</span></code></pre></figure>
+
+<p>Open up a new terminal, run the websocket file and send more messages from the chat UI. You should still be able to see the new messages.</p>
+
+<p>Nice work! Now there’s only one thing left and that’s sending the messages directly to the user.</p>
+
+<h3 id="where-is-the-websocket">Where is the websocket?</h3>
+
+<p>The websockets are included in the core <code class="language-plaintext highlighter-rouge">uwsgi</code> python object. First of all install <code class="language-plaintext highlighter-rouge">uWSGI</code> if you haven’t already.</p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="err">$</span> <span class="n">pip</span> <span class="n">install</span> <span class="n">uwsgi</span></code></pre></figure>
+
+<p>We’re going to make some modifications to the <code class="language-plaintext highlighter-rouge">websocket.py</code> file</p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="s">"""Receive messages over from RabbitMQ and send them over the websocket."""</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="kn">import</span> <span class="nn">pika</span>
+<span class="kn">import</span> <span class="nn">uwsgi</span>
+
+
+<span class="k">def</span> <span class="nf">application</span><span class="p">(</span><span class="n">env</span><span class="p">,</span> <span class="n">start_response</span><span class="p">):</span>
+    <span class="s">"""Setup the Websocket Server and read messages off the queue."""</span>
+    <span class="n">connection</span> <span class="o">=</span> <span class="n">pika</span><span class="p">.</span><span class="n">BlockingConnection</span><span class="p">(</span>
+    <span class="n">pika</span><span class="p">.</span><span class="n">ConnectionParameters</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s">'localhost'</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">channel</span> <span class="o">=</span> <span class="n">connection</span><span class="p">.</span><span class="n">channel</span><span class="p">()</span>
+
+    <span class="n">exchange</span> <span class="o">=</span> <span class="n">env</span><span class="p">[</span><span class="s">'PATH_INFO'</span><span class="p">].</span><span class="n">replace</span><span class="p">(</span><span class="s">'/'</span><span class="p">,</span> <span class="s">''</span><span class="p">)</span>
+
+    <span class="n">channel</span><span class="p">.</span><span class="n">exchange_declare</span><span class="p">(</span>
+        <span class="n">exchange</span><span class="o">=</span><span class="n">exchange</span><span class="p">,</span> <span class="n">exchange_type</span><span class="o">=</span><span class="s">'fanout'</span>
+    <span class="p">)</span>
+
+    <span class="c1"># exclusive means the queue should be deleted once the connection is closed
+</span>    <span class="n">result</span> <span class="o">=</span> <span class="n">channel</span><span class="p">.</span><span class="n">queue_declare</span><span class="p">(</span><span class="n">exclusive</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">queue_name</span> <span class="o">=</span> <span class="n">result</span><span class="p">.</span><span class="n">method</span><span class="p">.</span><span class="n">queue</span>  <span class="c1"># random queue name generated by RabbitMQ
+</span>
+    <span class="n">channel</span><span class="p">.</span><span class="n">queue_bind</span><span class="p">(</span><span class="n">exchange</span><span class="o">=</span><span class="n">exchange</span><span class="p">,</span> <span class="n">queue</span><span class="o">=</span><span class="n">queue_name</span><span class="p">)</span>
+
+    <span class="n">uwsgi</span><span class="p">.</span><span class="n">websocket_handshake</span><span class="p">(</span>
+        <span class="n">env</span><span class="p">[</span><span class="s">'HTTP_SEC_WEBSOCKET_KEY'</span><span class="p">],</span>
+        <span class="n">env</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="s">'HTTP_ORIGIN'</span><span class="p">,</span> <span class="s">''</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">keepalive</span><span class="p">():</span>
+        <span class="s">"""Keep the websocket connection alive (called every 30 seconds)."""</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">'PING/PONG...'</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">uwsgi</span><span class="p">.</span><span class="n">websocket_recv_nb</span><span class="p">()</span>
+            <span class="n">connection</span><span class="p">.</span><span class="n">add_timeout</span><span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="n">keepalive</span><span class="p">)</span>
+        <span class="k">except</span> <span class="nb">OSError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+            <span class="n">connection</span><span class="p">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+            <span class="n">sys</span><span class="p">.</span><span class="nb">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># Kill process and force uWSGI to Respawn
+</span>
+    <span class="n">keepalive</span><span class="p">()</span>
+
+    <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">method_frame</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">body</span> <span class="ow">in</span> <span class="n">channel</span><span class="p">.</span><span class="n">consume</span><span class="p">(</span><span class="n">queue_name</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">uwsgi</span><span class="p">.</span><span class="n">websocket_send</span><span class="p">(</span><span class="n">body</span><span class="p">)</span>
+            <span class="k">except</span> <span class="nb">OSError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+                <span class="k">print</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+                <span class="n">sys</span><span class="p">.</span><span class="nb">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># Force uWSGI to Respawn
+</span>            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># acknowledge the message
+</span>                <span class="n">channel</span><span class="p">.</span><span class="n">basic_ack</span><span class="p">(</span><span class="n">method_frame</span><span class="p">.</span><span class="n">delivery_tag</span><span class="p">)</span></code></pre></figure>
+
+<p>The <code class="language-plaintext highlighter-rouge">uwsgi</code> websocket api is very simple. We’re using just three methods:</p>
+
+<ul>
+  <li>
+    <p><strong>uwsgi.websocket_handshake:</strong> The handshake is the bridge from HTTP to WS protocol. This method           establishes tries to connect the client and the server together, if it fails for any reason an exception   would be raised.</p>
+  </li>
+  <li>
+    <p><strong>uwsgi.websocket_recv_nb:</strong> This method is actually deceptive and misleading (Really i’m serious)         because even though the full name is <code class="language-plaintext highlighter-rouge">websocket receive non blocking</code> it doesn’t only receive              messages in a non-blocking  manner it also helps to maintain the connection with the client by sending     a <code class="language-plaintext highlighter-rouge">pong</code> to the browser. (heartbeat mechanicsm to check if the client is still alive)</p>
+
+    <p>The keep alive function calls this method every 30 seconds, without that the client might disconnect the connection (Typically after a minute of inactivity) if it doesn’t hear from the server.</p>
+  </li>
+  <li>
+    <p><strong>uwsgi.websocket_send:</strong> You don’t need a sooth-sayer to tell you about this one :-) Though the reason    we need the error handler, is in case the connection is closed and we try to send a message                <code class="language-plaintext highlighter-rouge">uwsgi.websocket_send</code> would raise an <code class="language-plaintext highlighter-rouge">OSError</code>. We’ll close the connection to RabbitMQ and kill the       process. <code class="language-plaintext highlighter-rouge">uWSGI</code> will take care of restarting it for us. Also, the <code class="language-plaintext highlighter-rouge">else</code> block would never run            which means we won’t acknowledge the message and it would stay on the queue.</p>
+
+    <p>The next time we enter the for loop and call <code class="language-plaintext highlighter-rouge">channel.consume</code> would send the unacknowledged message plus any new messages in the queue. Which means we’ll never miss any message due to network connectivity.</p>
+  </li>
+</ul>
+
+<p><br /></p>
+
+<p>Did you notice that the exchange <code class="language-plaintext highlighter-rouge">uri</code> is no longer hardcoded? Instead we get the exchange name from the connection URL which would require our clients to connect to a URL like this:</p>
+
+<p><code class="language-plaintext highlighter-rouge">http://websocket-server/&lt;uri&gt;</code></p>
+
+<p>Don’t worry if this doesn’t make any sense to you when we finally connect our Vue frontend to the WebSocket server it’ll clear a lot of things up.</p>
+
+<h3 id="connecting-to-the-websocket-with-javascript">Connecting to the WebSocket with JavaScript</h3>
+
+<p>It’s impossible to talk about WebSockets in the context of a web application without JavaScript. Most modern browsers already support WebSockets so we don’t need to install any polyfill.</p>
+
+<p>Let’s update the <code class="language-plaintext highlighter-rouge">Chat</code> component</p>
+
+<figure class="highlight"><pre><code class="language-html" data-lang="html"><span class="nt">&lt;script&gt;</span>
+<span class="kd">const</span> <span class="nx">$</span> <span class="o">=</span> <span class="nb">window</span><span class="p">.</span><span class="nx">jQuery</span>
+
+<span class="k">export</span> <span class="k">default</span> <span class="p">{</span>
+  <span class="p">...</span>
+
+  <span class="nx">created</span> <span class="p">()</span> <span class="p">{</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">username</span> <span class="o">=</span> <span class="nx">sessionStorage</span><span class="p">.</span><span class="nx">getItem</span><span class="p">(</span><span class="dl">'</span><span class="s1">username</span><span class="dl">'</span><span class="p">)</span>
+
+    <span class="c1">// Setup headers for all requests</span>
+    <span class="nx">$</span><span class="p">.</span><span class="nx">ajaxSetup</span><span class="p">({</span>
+      <span class="na">beforeSend</span><span class="p">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">xhr</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">xhr</span><span class="p">.</span><span class="nx">setRequestHeader</span><span class="p">(</span><span class="dl">'</span><span class="s1">Authorization</span><span class="dl">'</span><span class="p">,</span> <span class="s2">`JWT </span><span class="p">${</span><span class="nx">sessionStorage</span><span class="p">.</span><span class="nx">getItem</span><span class="p">(</span><span class="dl">'</span><span class="s1">authToken</span><span class="dl">'</span><span class="p">)}</span><span class="s2">`</span><span class="p">)</span>
+      <span class="p">}</span>
+    <span class="p">})</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">$route</span><span class="p">.</span><span class="nx">params</span><span class="p">.</span><span class="nx">uri</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">this</span><span class="p">.</span><span class="nx">joinChatSession</span><span class="p">()</span>
+    <span class="p">}</span>
+
+    <span class="k">this</span><span class="p">.</span><span class="nx">connectToWebSocket</span><span class="p">()</span>
+  <span class="p">},</span>
+
+  <span class="na">methods</span><span class="p">:</span> <span class="p">{</span>
+    <span class="p">...</span>
+
+    <span class="nx">postMessage</span> <span class="p">(</span><span class="nx">event</span><span class="p">)</span> <span class="p">{</span>
+      <span class="kd">const</span> <span class="nx">data</span> <span class="o">=</span> <span class="p">{</span><span class="na">message</span><span class="p">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">message</span><span class="p">}</span>
+
+      <span class="nx">$</span><span class="p">.</span><span class="nx">post</span><span class="p">(</span><span class="s2">`http://localhost:8000/api/chats/</span><span class="p">${</span><span class="k">this</span><span class="p">.</span><span class="nx">$route</span><span class="p">.</span><span class="nx">params</span><span class="p">.</span><span class="nx">uri</span><span class="p">}</span><span class="s2">/messages/`</span><span class="p">,</span> <span class="nx">data</span><span class="p">,</span> <span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">message</span> <span class="o">=</span> <span class="dl">''</span> <span class="c1">// clear the message after sending</span>
+      <span class="p">})</span>
+      <span class="p">.</span><span class="nx">fail</span><span class="p">((</span><span class="nx">response</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+        <span class="nx">alert</span><span class="p">(</span><span class="nx">response</span><span class="p">.</span><span class="nx">responseText</span><span class="p">)</span>
+      <span class="p">})</span>
+    <span class="p">},</span>
+
+    <span class="nx">joinChatSession</span> <span class="p">()</span> <span class="p">{</span>
+      <span class="p">...</span>
+    <span class="p">},</span>
+
+    <span class="nx">fetchChatSessionHistory</span> <span class="p">()</span> <span class="p">{</span>
+     <span class="p">...</span>
+    <span class="p">},</span>
+
+    <span class="nx">connectToWebSocket</span> <span class="p">()</span> <span class="p">{</span>
+      <span class="kd">const</span> <span class="nx">websocket</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">WebSocket</span><span class="p">(</span><span class="s2">`ws://localhost:8081/</span><span class="p">${</span><span class="k">this</span><span class="p">.</span><span class="nx">$route</span><span class="p">.</span><span class="nx">params</span><span class="p">.</span><span class="nx">uri</span><span class="p">}</span><span class="s2">`</span><span class="p">)</span>
+      <span class="nx">websocket</span><span class="p">.</span><span class="nx">onopen</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">onOpen</span>
+      <span class="nx">websocket</span><span class="p">.</span><span class="nx">onclose</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">onClose</span>
+      <span class="nx">websocket</span><span class="p">.</span><span class="nx">onmessage</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">onMessage</span>
+      <span class="nx">websocket</span><span class="p">.</span><span class="nx">onerror</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">onError</span>
+    <span class="p">},</span>
+
+    <span class="nx">onOpen</span> <span class="p">(</span><span class="nx">event</span><span class="p">)</span> <span class="p">{</span>
+      <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">'</span><span class="s1">Connection opened.</span><span class="dl">'</span><span class="p">,</span> <span class="nx">event</span><span class="p">.</span><span class="nx">data</span><span class="p">)</span>
+    <span class="p">},</span>
+
+    <span class="nx">onClose</span> <span class="p">(</span><span class="nx">event</span><span class="p">)</span> <span class="p">{</span>
+      <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">'</span><span class="s1">Connection closed.</span><span class="dl">'</span><span class="p">,</span> <span class="nx">event</span><span class="p">.</span><span class="nx">data</span><span class="p">)</span>
+
+      <span class="c1">// Try and Reconnect after five seconds</span>
+      <span class="nx">setTimeout</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">connectToWebSocket</span><span class="p">,</span> <span class="mi">5000</span><span class="p">)</span>
+    <span class="p">},</span>
+
+    <span class="nx">onMessage</span> <span class="p">(</span><span class="nx">event</span><span class="p">)</span> <span class="p">{</span>
+      <span class="kd">const</span> <span class="nx">message</span> <span class="o">=</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">parse</span><span class="p">(</span><span class="nx">event</span><span class="p">.</span><span class="nx">data</span><span class="p">)</span>
+      <span class="k">this</span><span class="p">.</span><span class="nx">messages</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">message</span><span class="p">)</span>
+    <span class="p">},</span>
+
+    <span class="nx">onError</span> <span class="p">(</span><span class="nx">event</span><span class="p">)</span> <span class="p">{</span>
+      <span class="nx">alert</span><span class="p">(</span><span class="dl">'</span><span class="s1">An error occured:</span><span class="dl">'</span><span class="p">,</span> <span class="nx">event</span><span class="p">.</span><span class="nx">data</span><span class="p">)</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+<span class="nt">&lt;/script&gt;</span></code></pre></figure>
+
+<p>Now start the <code class="language-plaintext highlighter-rouge">uWSGI</code> WebSocket Server on port 8081 and reload the browser.</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span>uwsgi <span class="nt">--http</span> :8081 <span class="nt">--module</span> websocket <span class="nt">--master</span> <span class="nt">--processes</span> 4</code></pre></figure>
+
+<p>Hooray!</p>
+
+<p>You should be able to send messages and see them appear in realtime.</p>
+
+<p><br /></p>
+
+<p><img src="https://i.imgflip.com/mqw5p.jpg" alt="Websockets for everyone" /></p>
+<figcaption>Hooray!</figcaption>
+
+<p>There’s still a problem. open 3 more tabs (5 active clients). The last client wouldn’t be able to connect because the 4 processes we specified are tied down by other clients.</p>
+
+<p><strong><em>NOTE: That’s a reason why we need to kill stuck processes immediately with <code class="language-plaintext highlighter-rouge">sys.exit(1)</code> because the process may not really be stuck, the user might have intentionally left the chat room and it would take uWSGI sometime to figure out that the client has disconnected before closing the connection on the server.</em></strong></p>
+
+<p><strong><em>The –master option invokes the master process which monitors dead processes and restarts them without this, the process would die and never be restarted and it would continue until the last process dies and uWSGI exits.</em></strong></p>
+
+<p>so why is this happening?</p>
+
+<h3 id="i-thought-you-said-websockets-scale">I thought you said WebSockets Scale</h3>
+
+<p>Yes I said that. The reason our current setup won’t scale is simply because of the way we’re running <code class="language-plaintext highlighter-rouge">uWSGI</code>; with processes and threads like a normal python <code class="language-plaintext highlighter-rouge">WSGI</code> server runs.</p>
+
+<p>An Easy solution would be to increase the processes but that can only take us to probably a few hundred users or less depending on your server’s resources.</p>
+
+<h3 id="asynchronous-io-and-concurrency">Asynchronous IO and Concurrency</h3>
+
+<p>Asynchronous IO deserves an entire article on it’s own. If you don’t have the slightest idea about what it is i’ll advice you to go crazy on google and read every article you can find.</p>
+
+<p>Basically the idea behind <code class="language-plaintext highlighter-rouge">AsyncIO</code> or simply <code class="language-plaintext highlighter-rouge">async</code> is when we have multiple IO bound tasks that we need to run. During the said IO operation (In our case, sending and receiving messages), instead of the process sitting idle waiting for the new messages, it can quickly switch to another IO bound task and run it.</p>
+
+<p>This Simple concept (high level explanation) is what makes <code class="language-plaintext highlighter-rouge">NodeJS</code> excel so much for IO bound applications.</p>
+
+<p>For python and <code class="language-plaintext highlighter-rouge">uWSGI</code> things are a little different because they are not asynchronous by design. There are several async libraries for python. The Official asyncio, gevent, curio etc. <code class="language-plaintext highlighter-rouge">uWSGI</code> itself supports some of these libraries <code class="language-plaintext highlighter-rouge">asyncio</code> being one of them but we’re going to use <code class="language-plaintext highlighter-rouge">gevent</code>.</p>
+
+<p>From my experience, I found <code class="language-plaintext highlighter-rouge">gevent</code> works better compared to <code class="language-plaintext highlighter-rouge">asyncio</code> and <code class="language-plaintext highlighter-rouge">uGreen</code>. <code class="language-plaintext highlighter-rouge">Gevent</code> also has a lot of useful methods. For example <code class="language-plaintext highlighter-rouge">monkey.patch_all</code> which replaces most of the standard library with gevent’s libraries and allows you write synchronous code that’s executes asynchronously.</p>
+
+<p>Install gevent with pip.</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span>pip <span class="nb">install </span>gevent</code></pre></figure>
+
+<p>Now you just need to start the <code class="language-plaintext highlighter-rouge">uWSGI</code> WebSocket Server like this:</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span>uwsgi <span class="nt">--http</span> :8081 <span class="nt">--gevent</span> 2 <span class="nt">--module</span> websocket <span class="nt">--gevent-monkey-patch</span> <span class="nt">--master</span></code></pre></figure>
+
+<p>First we’re starting with 2 gevent threads and a single process, that means we can only handle two clients reasonably (it flunctuates between 3 and 4 clients randomly but most times only 2 clients receive messages reliably), when more clients try to join in you’ll get a warning in the <code class="language-plaintext highlighter-rouge">uWSGI</code> saying:</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash">async queue is full <span class="o">!!!</span></code></pre></figure>
+
+<p>There are two ways you can scale up, the easiest way is to increase the number of gevent threads (Actually greenlets) that are run. If we change the <code class="language-plaintext highlighter-rouge">uWSGI</code> startup code to this</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span>uwsgi <span class="nt">--http</span> :8081 <span class="nt">--gevent</span> 100 <span class="nt">--module</span> websocket <span class="nt">--gevent-monkey-patch</span> <span class="nt">--master</span></code></pre></figure>
+
+<p>Boom! just like that we can handle 100 concurrent users.</p>
+
+<p>What about having multiple processes?</p>
+
+<p>That’s the second way of scaling up, you can have multiple processes let’s start the <code class="language-plaintext highlighter-rouge">uWSGI</code> server with 4 processes</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span>uwsgi <span class="nt">--http</span> :8081 <span class="nt">--gevent</span> 100 <span class="nt">--module</span> websocket <span class="nt">--gevent-monkey-patch</span> <span class="nt">--master</span> <span class="nt">--processes</span> 4</code></pre></figure>
+
+<p>4 processes * 100 –gevent threads that’s 400 Concurrent users already!</p>
+
+<p>Depending on your server’s specs and configuration you can increase the number of processes and gevent threads but before doing this make sure you profile and monitor your application’s performance because at a certain stage increasing numbers will cause degraded performance.</p>
+
+<p><code class="language-plaintext highlighter-rouge">uWSGI</code> features a python package (installable from pip) called <code class="language-plaintext highlighter-rouge">uwsgitop</code> that can be used for monitoring it. But that’s out of the scope of this tutorial. Maybe i’ll write about it in the future.</p>
+
+<h3 id="scaling-out-to-multiple-servers">Scaling out to multiple servers</h3>
+
+<p>At a certain point, we’ll max out our server’s resources and we’ll need to scale out to multiple servers. Since our websocket server isn’t coupled to our main django application. That’s fairly easy because we can load balance multiple servers (Each running multiple <code class="language-plaintext highlighter-rouge">uWSGI</code> processes and gevent threads) behind Nginx.</p>
+
+<p>And before you know it, you’ll be handling thousands of connections easily.</p>
+
+<p>You can also apply the same clustering and loadbalancing technique to RabbitMQ when you need to scale out (though not with Nginx since RabbitMQ doesn’t use HTTP). Take a look at the documentation https://www.rabbitmq.com/ha.html</p>
+
+<p><br /></p>
+
+<p>Well well well…that’s all for this tutorial i hope you’ve accquired some new skills as you tagged along.</p>
+
+<p>As a bonus, i’m going to make one last part containing a lot of improvements to chatire. Most of this improvements and features would have been added without derailing the tutorial.</p>
+
+<p>Below are the things i’ll cover in the next part:</p>
+
+<h4 id="frontend">Frontend</h4>
+
+<p>Implementing a loading screen. Before we determine if we should join a chat session or not.</p>
+
+<p>Automatically scrolling to the bottom of the screen when messages exceed the window height.</p>
+
+<p>Play sounds when the notification window is not focused.</p>
+
+<h4 id="backend">Backend</h4>
+
+<p><code class="language-plaintext highlighter-rouge">JSON</code> tokens with <code class="language-plaintext highlighter-rouge">djsoer</code>.</p>
+
+<p><br /></p>
+
+<p>Thanks for reading If you’ve enjoyed this tutorial please acknowledge it starring the <a href="https://github.com/danidee10/Chatire">repo</a>, dropping a comment or following me on twitter <a href="https://twitter.com/osaetindaniel">twitter</a></p>
+
+<p>You can also <a href="mailto:osaetindaniel@gmail.com">send a mail</a></p>
+
+<p>The Feedback really means a lot to me.</p>
+
+<p><a href="/2018/03/12/realtime-django-6.html">Continue reading Realtime Django Part 6: Extras</a></p>
+
+        </div>
+
+        <br />
+
+        <hr>
+
+        <div class="share-page">
+          Share this post on &rarr;
+          <a href="https://twitter.com/intent/tweet?text=Realtime Django Part 5: Build a Chat application RabbitMQ and uWSGI websockets (uWSGI WebSockets)&url=https://danidee10.github.io/2018/01/13/realtime-django-5.html&via=osaetindaniel&related=osaetindaniel"
+            rel="nofollow" target="_blank" title="Share on Twitter">Twitter</a> |
+          <a href="https://facebook.com/sharer.php?u=https://danidee10.github.io/2018/01/13/realtime-django-5.html" rel="nofollow" target="_blank" title="Share on Facebook">Facebook</a>
+          |
+          <a href="https://plus.google.com/share?url=https://danidee10.github.io/2018/01/13/realtime-django-5.html" rel="nofollow" target="_blank" title="Share on Google+">Google+</a>
+        </div>
+
+        <hr>
+
+        <aside id="comments" class="disqus">
+          <div class="container">
+            <h3><i class="fa fa-comments-o"></i> Comments</h3>
+            <div id="disqus_thread"></div>
+            <script>
+
+
+
+              var disqus_config = function () {
+                this.page.url = 'https://danidee10.github.io/2018/01/13/realtime-django-5.html'; //shouldn't hardoce this
+                this.page.identifier = 'Realtime Django Part 5: Build a Chat application RabbitMQ and uWSGI websockets (uWSGI WebSockets)';
+              };
+              (function () {
+                var d = document,
+                  s = d.createElement('script');
+                s.src = '//osaetin-daniel.disqus.com/embed.js';
+                s.setAttribute('data-timestamp', +new Date());
+                (d.head || d.body).appendChild(s);
+              })();
+            </script>
+            <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments
+                powered by Disqus.</a></noscript>
+          </div>
+        </aside>
+
+      </div>
+
+    </article>
+
+  </div>
+
+  <footer class="site-footer">
+  <div class="container">
+    <ul class="social">
+      <li><a href="http://github.com/danidee10" target="_blank"><i class="fa fa-github"></i></a></li>
+      <li><a href="http://twitter.com/osaetindaniel" target="_blank"><i class="fa fa-twitter" aria-hidden="true"></i></a></li>
+      <li><a href="https://www.facebook.com/osaetin.daniel" target="_blank"><i class="fa fa-facebook"></i></a></li>
+      <li><a href="https://www.linkedin.com/in/osaetin-daniel-87604098" target="_blank"><i class="fa fa-linkedin"></i></a></li>
+    </ul>
+    <p class="txt-medium-gray">
+      <small>&copy;2016 All rights reserved. Made with <a href="http://jekyllrb.com/" target="_blank">Jekyll</a> and ♥</small>
+    </p>
+  </div>
+</footer>
+
+
+<a href="https://github.com/danidee10" target="_blank" class="github-corner"><svg width="50" height="50" viewBox="0 0 250 250" style="fill:#337ab7; color:#fff; position: absolute; top: 0; border: 0; right: 0;"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+<script>
+$(document).ready(function() {
+  $('.sliding-panel-button,.sliding-panel-fade-screen,.sliding-panel-close').on('click touchstart',function (e) {
+    $('.sliding-panel-content,.sliding-panel-fade-screen').toggleClass('is-visible');
+    e.preventDefault();
+  });
+});
+</script>
+
+</main>
+</body>
+
+</html>

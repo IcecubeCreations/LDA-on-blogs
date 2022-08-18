@@ -1,0 +1,1293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Comparing Apache Spark, Storm, Flink and Samza stream processing engines - Part 1</title>
+    <meta name="description" content="Distributed stream processing engines have been on the rise in the last few years, first Hadoop became popular as a batch processing engine, then focus shifted towards stream processing engines. Stream processing engines can make the job of processing data that comes in via a stream easier than ever before." />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="alternate" type="application/atom+xml" href="https://blog.scottlogic.com/atom.xml" title="Scott Logic Blog">
+    <link rel="alternate" type="application/rss+xml" href="https://blog.scottlogic.com/feed.xml" title="Scott Logic Blog">
+    
+        <link rel="canonical" href="https://blog.scottlogic.com/2018/07/06/comparing-streaming-frameworks-pt1.html">
+    
+    
+    <script async type="text/javascript" src="//use.typekit.net/zhk0dtj.js"></script>
+    <script type="text/javascript">try{Typekit.load();}catch(e){}</script>
+    <script type="text/javascript">siteGithubOwnerName = 'ScottLogic'</script>
+
+    
+    <meta property="og:title" content="Comparing Apache Spark, Storm, Flink and Samza stream processing engines - Part 1" />
+    <meta property="og:description" content="Distributed stream processing engines have been on the rise in the last few years, first Hadoop became popular as a batch processing engine, then focus shifted towards stream processing engines. Stream processing engines can make the job of processing data that comes in via a stream easier than ever before."/>
+    
+    <meta property="og:image" content="https://blog.scottlogic.com/aaspellc/assets/stream-processing.jpeg" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="Scott Logic"/>
+    <meta property="og:url" content="https://blog.scottlogic.com/2018/07/06/comparing-streaming-frameworks-pt1.html" />
+    
+    <meta name="twitter:card" content="summary_large_image"/>
+    <meta name="twitter:site" content="@Scott_Logic"/>
+    <meta name="twitter:image" content="https://blog.scottlogic.com/aaspellc/assets/stream-processing.jpeg"/>
+    
+    <meta name="twitter:creator" content="@">
+    
+
+    <link rel="stylesheet" href="/style.css" type="text/css">
+    <link rel="icon" type="image/png" href="https://www.scottlogic.com/sites/default/files/scott-logic-favicon.jpg" />
+
+    
+    
+    <script>
+        (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+        })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+        
+        ga('create', 'UA-262131-1', 'auto');
+        ga('send', 'pageview');
+    </script>
+    
+    <script>
+   (function(d) {
+     var config = {
+       kitId: 'iig6jdr',
+       scriptTimeout: 3000,
+       async: true
+     },
+     h=d.documentElement,t=setTimeout(function(){h.className=h.className.replace(/\bwf-loading\b/g,"")+" wf-inactive";},config.scriptTimeout),tk=d.createElement("script"),f=false,s=d.getElementsByTagName("script")[0],a;h.className+=" wf-loading";tk.src='https://use.typekit.net/'+config.kitId+'.js';tk.async=true;tk.onload=tk.onreadystatechange=function(){a=this.readyState;if(f||a&&a!="complete"&&a!="loaded")return;f=true;clearTimeout(t);try{Typekit.load(config)}catch(e){}};s.parentNode.insertBefore(tk,s)
+   })(document);
+   </script>
+</head>
+<body>
+<div id="off-canvas-wrapper" style="">
+    <nav id="mobileMenu" aria-hidden="true">
+    <div class="mm-panels">
+        <div class="menu-mobile-menu-container mm-panel mm-hasnavbar mm-opened" id="mm-0">
+            <div class="mm-navbar">
+                <a class="mm-title">Menu</a>
+            </div>
+            <ul id="mobile-menu" class="menu mm-listview">
+                <li ><a href="https://www.scottlogic.com">Home</a></li>
+                <li ><a href="https://www.scottlogic.com/what-we-do/">What we do</a></li>
+                <li ><a href="https://www.scottlogic.com/our-work/">Our work</a></li>
+                <li ><a href="https://www.scottlogic.com/who-we-are/">Who we are</a></li>
+                <li ><a href="https://www.scottlogic.com/careers/">Careers</a></li>
+                <li ><a href="https://www.scottlogic.com/events/">Events</a></li>
+                <li ><a href="https://www.scottlogic.com/news/">News</a></li>
+                <li ><a href="https://www.scottlogic.com/blog">Blog</a></li>
+                <li ><a href="https://www.scottlogic.com/who-we-are/#contact-us">Contact Us</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<header>
+    <div class="mobile-nav-trigger">
+        <div id="nav-icon">
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </div>
+    <div class="mobile-search"></div>
+
+    <div class="grid-container">
+        <div class="grid-x grid-padding-x">
+            <div class="large-6 medium-6 cell">
+                <h1 class="brand"><a href="https://www.scottlogic.com">Scott Logic / Altogether Smarter</a></h1>
+            </div>
+            <div class="large-6 medium-6 cell">
+                <div class="header-nav_top">
+                    <nav aria-label="upper-nav">
+                        <div class="menu-secondary-container">
+                            <ul id="secondary-menu" class="menu">
+                                <li><a href="https://www.scottlogic.com/careers/">Careers</a></li>
+                                <li><a href="https://www.scottlogic.com/events/">Events</a></li>
+                                <li><a href="https://www.scottlogic.com/news/">News</a></li>
+                                <li><a href="https://www.scottlogic.com/who-we-are/#contact-us">Contact</a></li>
+                            </ul>
+                        </div>
+                    </nav>
+                </div>
+                <div class="header-nav_bottom">
+                    <nav aria-label="main-nav">
+                        <div class="menu-primary-container">
+                            <ul id="primary-menu" class="menu">
+                                <li><a href="https://www.scottlogic.com/what-we-do/">What we do</a></li>
+                                <li><a href="https://www.scottlogic.com/our-work/">Our work</a></li>
+                                <li><a href="https://www.scottlogic.com/who-we-are/">Who we are</a></li>
+                                <li><a href="https://www.scottlogic.com/blog">Blog</a></li>
+                            </ul>
+                        </div>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+    
+
+<div class="default-post 
+  
+  orange
+    
+
+ grid-container">
+  <div class="hero grid-x">
+    <div class="content cell large-7 medium-9 small-11 grid-y grid-padding-y">
+      <div class="cell large-offset-2 medium-offset-1 small-offset-1">
+        
+
+
+<span class="category">
+    
+        
+        
+        
+        
+    
+        
+        
+        
+        
+    
+        
+        
+        
+        
+    
+        
+        
+        
+        
+    
+        
+        
+        
+        
+    
+        
+        
+        
+        
+    
+        
+        
+        
+        
+    
+        
+        
+        
+            <a href="/category/data-engineering.html">
+                
+                    Data Engineering
+                
+            </a>
+            
+    
+</span>
+
+        <span>&middot;</span>
+        <span>06 July 2018</span>
+        <span>&middot;</span>
+        <span>
+
+
+
+
+  18 min read
+
+</span>
+      </div>
+      <div class="cell large-offset-2 medium-offset-1 small-offset-1">
+        <h1 class="title">Comparing Apache Spark, Storm, Flink and Samza stream processing engines - Part 1</h1>
+      </div>
+      
+      
+        <link rel="canonical" href="https://blog.scottlogic.com/2018/07/06/comparing-streaming-frameworks-pt1.html">
+      
+    </div>
+    <div class="shape cell large-5 medium-3 small-1 grid-y">
+      
+      
+      
+        <svg class="bg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 650 465" preserveAspectRatio="none">
+          <polygon points="0 0 650 132.977 499.388 465 0 465"/>
+        </svg>
+        <svg class="fg show-for-large" xmlns="http://www.w3.org/2000/svg" width="650" height="465" viewBox="0 0 650 465">
+          <path d="M355.5 158.5C341.140597 158.5 329.5 146.859403 329.5 132.5 329.5 118.140597 341.140597 106.5 355.5 106.5 369.859403 106.5 381.5 118.140597 381.5 132.5 381.5 146.859403 369.859403 158.5 355.5 158.5zM355.5 146.5C363.231986 146.5 369.5 140.231986 369.5 132.5 369.5 124.768014 363.231986 118.5 355.5 118.5 347.768014 118.5 341.5 124.768014 341.5 132.5 341.5 140.231986 347.768014 146.5 355.5 146.5zM355.5 188C324.848196 188 300 163.151804 300 132.5 300 101.848196 324.848196 77 355.5 77 386.151804 77 411 101.848196 411 132.5 411 163.151804 386.151804 188 355.5 188zM355.5 173C377.867532 173 396 154.867532 396 132.5 396 110.132468 377.867532 92 355.5 92 333.132468 92 315 110.132468 315 132.5 315 154.867532 333.132468 173 355.5 173zM567 342C533.31063 342 506 314.68937 506 281 506 247.31063 533.31063 220 567 220 600.68937 220 628 247.31063 628 281 628 314.68937 600.68937 342 567 342zM567 334C596.271092 334 620 310.271092 620 281 620 251.728908 596.271092 228 567 228 537.728908 228 514 251.728908 514 281 514 310.271092 537.728908 334 567 334z"/>
+          <path class="inverse" d="M320,243 C313.372583,243 308,237.627417 308,231 C308,224.372583 313.372583,219 320,219 C326.627417,219 332,224.372583 332,231 C332,237.627417 326.627417,243 320,243 Z M320,295 C313.372583,295 308,289.627417 308,283 C308,276.372583 313.372583,271 320,271 C326.627417,271 332,276.372583 332,283 C332,289.627417 326.627417,295 320,295 Z M320,347 C313.372583,347 308,341.627417 308,335 C308,328.372583 313.372583,323 320,323 C326.627417,323 332,328.372583 332,335 C332,341.627417 326.627417,347 320,347 Z M364,243 C357.372583,243 352,237.627417 352,231 C352,224.372583 357.372583,219 364,219 C370.627417,219 376,224.372583 376,231 C376,237.627417 370.627417,243 364,243 Z M364,295 C357.372583,295 352,289.627417 352,283 C352,276.372583 357.372583,271 364,271 C370.627417,271 376,276.372583 376,283 C376,289.627417 370.627417,295 364,295 Z M364,347 C357.372583,347 352,341.627417 352,335 C352,328.372583 357.372583,323 364,323 C370.627417,323 376,328.372583 376,335 C376,341.627417 370.627417,347 364,347 Z M408,243 C401.372583,243 396,237.627417 396,231 C396,224.372583 401.372583,219 408,219 C414.627417,219 420,224.372583 420,231 C420,237.627417 414.627417,243 408,243 Z M408,295 C401.372583,295 396,289.627417 396,283 C396,276.372583 401.372583,271 408,271 C414.627417,271 420,276.372583 420,283 C420,289.627417 414.627417,295 408,295 Z M408,347 C401.372583,347 396,341.627417 396,335 C396,328.372583 401.372583,323 408,323 C414.627417,323 420,328.372583 420,335 C420,341.627417 414.627417,347 408,347 Z M452,243 C445.372583,243 440,237.627417 440,231 C440,224.372583 445.372583,219 452,219 C458.627417,219 464,224.372583 464,231 C464,237.627417 458.627417,243 452,243 Z M452,295 C445.372583,295 440,289.627417 440,283 C440,276.372583 445.372583,271 452,271 C458.627417,271 464,276.372583 464,283 C464,289.627417 458.627417,295 452,295 Z M452,347 C445.372583,347 440,341.627417 440,335 C440,328.372583 445.372583,323 452,323 C458.627417,323 464,328.372583 464,335 C464,341.627417 458.627417,347 452,347 Z"/>
+        </svg>
+        
+    </div>
+  </div>
+
+  <div class="grid-x grid-margin-x grid-padding-y">
+    <div class="cell primary-meta-data large-1 large-offset-1 grid-x">
+      <div class="author-information cell medium-10 small-9 hide-for-large">
+        
+  
+  <img src="/acarr/picture.jpg" alt="Andrew Carr"/>
+  
+
+
+        <a rel="author" href="/acarr">Andrew Carr</a>
+         
+             
+             
+            , <a rel="author" href="/aaspellc">Andy Aspell-Clark</a>
+         
+      </div>
+      
+<div class="social">
+  <applause-button color="
+  
+  #ef8547
+    
+
+"
+    url="https://blog.scottlogic.com/2018/07/06/comparing-streaming-frameworks-pt1.html"
+    multiclap="true"/>
+</div>
+
+    </div>
+    <div class="cell large-6">
+      <div class="cell post-content">
+        
+<h2 id="the-rise-of-stream-processing-engines">The rise of stream processing engines</h2>
+<p>Distributed stream processing engines have been on the rise in the last few years, first Hadoop became popular
+as a batch processing engine, then focus shifted towards stream processing engines. Stream processing engines
+can make the job of processing data that comes in via a stream easier than ever before and by using clustering
+can enable processing data in larger sets in a timely manner. Handling error scenarios, providing common
+processing functions, and making data manipulation easier - a great example is the SQL like syntax that is
+becoming common to process streams such as <a href="https://www.confluent.io/blog/tag/ksql/">KSQL</a> for Kafka and
+<a href="https://spark.apache.org/sql/">Spark SQL</a> for Apache Spark. I’ll look at the SQL like manipulation
+technologies in another blog as they are a large use case in themselves.</p>
+
+<p>In part 1 we will show example code for a simple wordcount stream processor in four different stream
+processing systems and will demonstrate why coding in Apache Spark or Flink is so much faster and easier than
+in Apache Storm or Samza.
+In part 2 we will look at how these systems handle checkpointing, issues and
+failures.</p>
+
+<p>Apache Spark is the most popular engine which supports stream processing<sup><a href="#footnote1">[1]</a></sup> - with
+an increase of 40% more jobs asking for Apache Spark skills than the same time last year according to IT Jobs
+watch. This compares to only a 7% increase in jobs looking for Hadoop skills in the same period.</p>
+
+<p><a name="footnote1"><sup>[1]</sup></a> : <font size="1">Technically Apache Spark previously only supported
+pseudo stream processing - which was more accurately called Micro batching, but in Spark 2.3 has introduced <a href="https://databricks.com/blog/2018/03/20/low-latency-continuous-processing-mode-in-structured-streaming-in-apache-spark-2-3-0.html">
+Continuous Processing Execution</a> mode which has very low latency like a true stream processing
+engine.</font></p>
+
+<h2 id="what-are-they">What are they?</h2>
+<p>What really is a stream processing engine? Well they are libraries and run-time engines, which
+enable the developer to write code to do some form of processing on data which comes in as a stream
+without having to worry about all the lower level mechanics of the stream itself. Some of them also
+have lots of standard algorithms out of the box to enable different types of processing, such as the
+MLLib Machine Learning algorithms in Apache Spark.</p>
+
+<p>Processing engines in general typically consider the process pipeline, the functions that the
+processes goes through, in terms of a <a href="https://en.wikipedia.org/wiki/Directed_acyclic_graph">Directed Acyclic
+Graph</a> or DAG. This is where the processing
+can go through functions in a particular order, where the functions can be chained together, but the
+processing must never go back to an earlier point in the graph as in the diagram below.</p>
+
+<p><img src="https://blog.scottlogic.com/aaspellc/assets/directed-acyclic-graph.jpeg" alt="Directed Acyclic Graph" title="Directed Acyclic Graph" /></p>
+
+<h3 id="types-of-processing-engines">Types of processing engines</h3>
+
+<p>There are two main types of processing engines</p>
+
+<ul>
+  <li><strong>Declarative</strong> - where you simply chain functions together, and the engine works out the correct DAG, and then pumps the data through</li>
+  <li><strong>Compositional</strong> - where the developer explicitly defines the DAG, and then pumps the data through</li>
+</ul>
+
+<p>In <strong>Declarative</strong> engines such as Apache Spark and Flink the coding will look very functional, as
+is shown in the examples below. Plus the user may imply a DAG through their coding, which could be
+optimised by the engine.</p>
+
+<p>In <strong>Compositional</strong> engines such as Apache Storm, Samza, Apex the coding is at a lower level, as
+the user is explicitly defining the DAG, and could easily write a piece of inefficient code, but
+<em>the code is at complete control of the developer</em>.</p>
+
+<p>To see the two types in action, let’s consider a simple piece of processing, a word count on a
+stream of data coming in. The word count is the processing engine equivalent to printing “<code class="language-plaintext highlighter-rouge">hello
+world</code>”. So we are looking to stream in some fixed sentences and then count the words coming out. To
+compare the two approaches let’s consider solutions in frameworks that implement each type of engine.</p>
+
+<h3 id="apache-storm-architecture-and-example-word-count">Apache Storm Architecture and example Word Count</h3>
+<p>The Apache Storm Architecture is based on the concept of Spouts and Bolts. Spouts are sources of
+information and push information to one or more Bolts, which can then be chained to other Bolts and
+the whole topology becomes a DAG. The topology - how the Spouts and Bolts are connected together is
+explicitly defined by the developer.</p>
+
+<p>Once the topology is up, it stays up processing data pushed into the network via a Spout until the
+network is stopped.</p>
+
+<p><img src="https://blog.scottlogic.com/aaspellc/assets/apache-storm-architecture.jpeg" alt="Apache Storm Architecture" title="Apache Storm Architecture" /></p>
+
+<p>To do a Word Count example in Apache Storm, we need to create a simple Spout which generates
+sentences to be streamed to a Bolt which breaks up the sentences into words, and then another Bolt
+which counts word as they flow through.</p>
+
+<p>The output at each stage is shown in the diagram below.</p>
+
+<p><img src="https://blog.scottlogic.com/aaspellc/assets/apache-storm-stage-output.jpeg" alt="Apache Storm Stage Output" title="Apache Storm Stage Output" /></p>
+
+<p>The following example is taken from the <a href="http://admicloud.github.io/www/storm.html">ADMI Workshop Apache Storm Word Count</a>.</p>
+
+<p>The first piece of code is a Random Sentence Spout to generate the sentences.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">RandomSentenceSpout</span> <span class="kd">extends</span> <span class="nc">BaseRichSpout</span> <span class="o">{</span>
+  <span class="nc">SpoutOutputCollector</span> <span class="n">_collector</span><span class="o">;</span>
+  <span class="nc">Random</span> <span class="n">_rand</span><span class="o">;</span>
+
+
+  <span class="nd">@Override</span>
+  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">open</span><span class="o">(</span><span class="nc">Map</span> <span class="n">conf</span><span class="o">,</span> <span class="nc">TopologyContext</span> <span class="n">context</span><span class="o">,</span> <span class="nc">SpoutOutputCollector</span> <span class="n">collector</span><span class="o">)</span> <span class="o">{</span>
+    <span class="n">_collector</span> <span class="o">=</span> <span class="n">collector</span><span class="o">;</span>
+    <span class="n">_rand</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Random</span><span class="o">();</span>
+  <span class="o">}</span>
+
+  <span class="nd">@Override</span>
+  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">nextTuple</span><span class="o">()</span> <span class="o">{</span>
+    <span class="nc">Utils</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="mi">100</span><span class="o">);</span>
+    <span class="nc">String</span><span class="o">[]</span> <span class="n">sentences</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">String</span><span class="o">[]{</span> <span class="s">"the cow jumped over the moon"</span><span class="o">,</span> <span class="s">"an apple a day keeps the doctor away"</span><span class="o">,</span>
+        <span class="s">"four score and seven years ago"</span><span class="o">,</span> <span class="s">"snow white and the seven dwarfs"</span><span class="o">,</span> <span class="s">"i am at two with nature"</span> <span class="o">};</span>
+    <span class="nc">String</span> <span class="n">sentence</span> <span class="o">=</span> <span class="n">sentences</span><span class="o">[</span><span class="n">_rand</span><span class="o">.</span><span class="na">nextInt</span><span class="o">(</span><span class="n">sentences</span><span class="o">.</span><span class="na">length</span><span class="o">)];</span>
+    <span class="n">_collector</span><span class="o">.</span><span class="na">emit</span><span class="o">(</span><span class="k">new</span> <span class="nc">Values</span><span class="o">(</span><span class="n">sentence</span><span class="o">));</span>
+  <span class="o">}</span>
+
+  <span class="nd">@Override</span>
+  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">ack</span><span class="o">(</span><span class="nc">Object</span> <span class="n">id</span><span class="o">)</span> <span class="o">{</span>
+  <span class="o">}</span>
+
+  <span class="nd">@Override</span>
+  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">fail</span><span class="o">(</span><span class="nc">Object</span> <span class="n">id</span><span class="o">)</span> <span class="o">{</span>
+  <span class="o">}</span>
+
+  <span class="nd">@Override</span>
+  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">declareOutputFields</span><span class="o">(</span><span class="nc">OutputFieldsDeclarer</span> <span class="n">declarer</span><span class="o">)</span> <span class="o">{</span>
+    <span class="n">declarer</span><span class="o">.</span><span class="na">declare</span><span class="o">(</span><span class="k">new</span> <span class="nc">Fields</span><span class="o">(</span><span class="s">"word"</span><span class="o">));</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>Then you need a Bolt to split the sentences into words.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">static</span> <span class="kd">class</span> <span class="nc">SplitSentence</span> <span class="kd">extends</span> <span class="nc">BaseBasicBolt</span> <span class="o">{</span>
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">declareOutputFields</span><span class="o">(</span><span class="nc">OutputFieldsDeclarer</span> <span class="n">declarer</span><span class="o">)</span> <span class="o">{</span>
+      <span class="n">declarer</span><span class="o">.</span><span class="na">declare</span><span class="o">(</span><span class="k">new</span> <span class="nc">Fields</span><span class="o">(</span><span class="s">"word"</span><span class="o">));</span>
+    <span class="o">}</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">Object</span><span class="o">&gt;</span> <span class="nf">getComponentConfiguration</span><span class="o">()</span> <span class="o">{</span>
+      <span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">execute</span><span class="o">(</span><span class="nc">Tuple</span> <span class="n">tuple</span><span class="o">,</span> <span class="nc">BasicOutputCollector</span> <span class="n">basicOutputCollector</span><span class="o">)</span> <span class="o">{</span>
+      <span class="nc">String</span> <span class="n">sentence</span> <span class="o">=</span> <span class="n">tuple</span><span class="o">.</span><span class="na">getStringByField</span><span class="o">(</span><span class="s">"sentence"</span><span class="o">);</span>
+      <span class="nc">String</span> <span class="n">words</span><span class="o">[]</span> <span class="o">=</span> <span class="n">sentence</span><span class="o">.</span><span class="na">split</span><span class="o">(</span><span class="s">"\\s+"</span><span class="o">);</span>
+      <span class="k">for</span> <span class="o">(</span><span class="nc">String</span> <span class="n">w</span> <span class="o">:</span> <span class="n">words</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">basicOutputCollector</span><span class="o">.</span><span class="na">emit</span><span class="o">(</span><span class="k">new</span> <span class="nc">Values</span><span class="o">(</span><span class="n">w</span><span class="o">));</span>
+      <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+
+</code></pre></div></div>
+
+<p>Then you need a Bolt which counts the words</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">static</span> <span class="kd">class</span> <span class="nc">WordCount</span> <span class="kd">extends</span> <span class="nc">BaseBasicBolt</span> <span class="o">{</span>
+    <span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">Integer</span><span class="o">&gt;</span> <span class="n">counts</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">HashMap</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">Integer</span><span class="o">&gt;();</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">execute</span><span class="o">(</span><span class="nc">Tuple</span> <span class="n">tuple</span><span class="o">,</span> <span class="nc">BasicOutputCollector</span> <span class="n">collector</span><span class="o">)</span> <span class="o">{</span>
+      <span class="nc">String</span> <span class="n">word</span> <span class="o">=</span> <span class="n">tuple</span><span class="o">.</span><span class="na">getString</span><span class="o">(</span><span class="mi">0</span><span class="o">);</span>
+      <span class="nc">Integer</span> <span class="n">count</span> <span class="o">=</span> <span class="n">counts</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">word</span><span class="o">);</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">count</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span>
+        <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+      <span class="n">count</span><span class="o">++;</span>
+      <span class="n">counts</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">word</span><span class="o">,</span> <span class="n">count</span><span class="o">);</span>
+      <span class="n">collector</span><span class="o">.</span><span class="na">emit</span><span class="o">(</span><span class="k">new</span> <span class="nc">Values</span><span class="o">(</span><span class="n">word</span><span class="o">,</span> <span class="n">count</span><span class="o">));</span>
+    <span class="o">}</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">declareOutputFields</span><span class="o">(</span><span class="nc">OutputFieldsDeclarer</span> <span class="n">declarer</span><span class="o">)</span> <span class="o">{</span>
+      <span class="n">declarer</span><span class="o">.</span><span class="na">declare</span><span class="o">(</span><span class="k">new</span> <span class="nc">Fields</span><span class="o">(</span><span class="s">"word"</span><span class="o">,</span> <span class="s">"count"</span><span class="o">));</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>Lastly you need to build the topology, which is how the DAG gets defined.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
+    <span class="nc">TopologyBuilder</span> <span class="n">builder</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">TopologyBuilder</span><span class="o">();</span>
+    <span class="n">builder</span><span class="o">.</span><span class="na">setSpout</span><span class="o">(</span><span class="s">"spout"</span><span class="o">,</span> <span class="k">new</span> <span class="nc">RandomSentenceSpout</span><span class="o">(),</span> <span class="mi">5</span><span class="o">);</span>
+    <span class="n">builder</span><span class="o">.</span><span class="na">setBolt</span><span class="o">(</span><span class="s">"split"</span><span class="o">,</span> <span class="k">new</span> <span class="nc">SplitSentence</span><span class="o">(),</span> <span class="mi">8</span><span class="o">).</span><span class="na">shuffleGrouping</span><span class="o">(</span><span class="s">"spout"</span><span class="o">);</span>
+    <span class="n">builder</span><span class="o">.</span><span class="na">setBolt</span><span class="o">(</span><span class="s">"count"</span><span class="o">,</span> <span class="k">new</span> <span class="nc">WordCount</span><span class="o">(),</span> <span class="mi">12</span><span class="o">).</span><span class="na">fieldsGrouping</span><span class="o">(</span><span class="s">"split"</span><span class="o">,</span> <span class="k">new</span> <span class="nc">Fields</span><span class="o">(</span><span class="s">"word"</span><span class="o">));</span>
+
+    <span class="nc">Config</span> <span class="n">conf</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Config</span><span class="o">();</span>
+    <span class="n">conf</span><span class="o">.</span><span class="na">setDebug</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+
+    <span class="k">if</span> <span class="o">(</span><span class="n">args</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">args</span><span class="o">.</span><span class="na">length</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+      <span class="n">conf</span><span class="o">.</span><span class="na">setNumWorkers</span><span class="o">(</span><span class="mi">3</span><span class="o">);</span>
+
+      <span class="nc">StormSubmitter</span><span class="o">.</span><span class="na">submitTopologyWithProgressBar</span><span class="o">(</span><span class="n">args</span><span class="o">[</span><span class="mi">0</span><span class="o">],</span> <span class="n">conf</span><span class="o">,</span> <span class="n">builder</span><span class="o">.</span><span class="na">createTopology</span><span class="o">());</span>
+    <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+      <span class="n">conf</span><span class="o">.</span><span class="na">setMaxTaskParallelism</span><span class="o">(</span><span class="mi">3</span><span class="o">);</span>
+      <span class="nc">LocalCluster</span> <span class="n">cluster</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">LocalCluster</span><span class="o">();</span>
+      <span class="n">cluster</span><span class="o">.</span><span class="na">submitTopology</span><span class="o">(</span><span class="s">"word-count"</span><span class="o">,</span> <span class="n">conf</span><span class="o">,</span> <span class="n">builder</span><span class="o">.</span><span class="na">createTopology</span><span class="o">());</span>
+      <span class="nc">Thread</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="mi">10000</span><span class="o">);</span>
+      <span class="n">cluster</span><span class="o">.</span><span class="na">shutdown</span><span class="o">();</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>This is a <a href="#types-of-processing-engines">compositional engine</a> and as can be seen from this example, there is
+quite a lot of code to get the basic topology up and running and a word count working. This is in clear
+contrast to Apache Spark.</p>
+
+<h3 id="apache-spark-architecture-and-example-word-count">Apache Spark Architecture and example Word Count</h3>
+
+<p>The Apache Spark Architecture is based on the concept of
+<a href="https://spark.apache.org/docs/latest/rdd-programming-guide.html">RDDs</a> or Resilient Distributed
+Datasets, or essentially distributed immutable tables of data, which are split up and sent to
+Workers to be executed by their Executors. It is very similar to the
+<a href="https://en.wikipedia.org/wiki/MapReduce">MapReduce</a> concept of having a controlling process and
+delegate processing to multiple nodes, which each do their own piece of processing and then combine
+the results to make a complete final result.
+For Apache Spark the RDD being immutable,
+so no worker node can modify it;
+only process it and output some results,
+lends itself well to the
+Functional and Set theory based programming models (such as SQL).</p>
+
+<p><img src="https://blog.scottlogic.com/aaspellc/assets/apache-spark-architecture.jpeg" alt="Apache Spark Architecture" title="Apache Spark Architecture" /></p>
+
+<p>The Apache Spark word count example (taken from
+<a href="https://spark.apache.org/examples.html">https://spark.apache.org/examples.html</a> ) can be seen as
+follows</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">JavaRDD</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="n">textFile</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="na">textFile</span><span class="o">(</span><span class="s">"hdfs://..."</span><span class="o">);</span>
+<span class="nc">JavaPairRDD</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">Integer</span><span class="o">&gt;</span> <span class="n">counts</span> <span class="o">=</span> <span class="n">textFile</span>
+    <span class="o">.</span><span class="na">flatMap</span><span class="o">(</span><span class="n">s</span> <span class="o">-&gt;</span> <span class="nc">Arrays</span><span class="o">.</span><span class="na">asList</span><span class="o">(</span><span class="n">s</span><span class="o">.</span><span class="na">split</span><span class="o">(</span><span class="s">"\\s+"</span><span class="o">)).</span><span class="na">iterator</span><span class="o">())</span>
+    <span class="o">.</span><span class="na">mapToPair</span><span class="o">(</span><span class="n">word</span> <span class="o">-&gt;</span> <span class="k">new</span> <span class="nc">Tuple2</span><span class="o">&lt;&gt;(</span><span class="n">word</span><span class="o">,</span> <span class="mi">1</span><span class="o">))</span>
+    <span class="o">.</span><span class="na">reduceByKey</span><span class="o">((</span><span class="n">a</span><span class="o">,</span> <span class="n">b</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span><span class="o">);</span>
+<span class="n">counts</span><span class="o">.</span><span class="na">saveAsTextFile</span><span class="o">(</span><span class="s">"hdfs://..."</span><span class="o">);</span>
+</code></pre></div></div>
+
+<p>This code is essentially just reading from a file, splitting the words by a space, creating
+a Tuple which includes each word and a number (1 to start with), and then bringing them all
+together and adding the counts up.</p>
+
+<p>None of the code is concerned explicitly with the DAG itself, as Spark uses a <a href="#types-of-processing-engines">declarative
+engine</a>, the code defines just the functions that need to be performed on the
+data. The Spark framework implies the DAG from the functions called.</p>
+
+<h3 id="apache-flink-architecture-and-example-word-count">Apache Flink Architecture and example Word Count</h3>
+
+<p>Apache Flink uses the concept of Streams and Transformations which make up a flow of data through
+its system. Data enters the system via a “Source” and exits via a “Sink”</p>
+
+<p><img src="https://blog.scottlogic.com/aaspellc/assets/flink-data-flow.jpeg" alt="Flink Data Flow" title="Flink Data Flow" /></p>
+
+<p>To create a Flink job maven is used to create a skeleton project that has all of the dependencies
+and packaging requirements setup ready for custom code to be added.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>mvn archetype:generate <span class="nt">-DarchetypeGroupId</span><span class="o">=</span>org.apache.flink <span class="nt">-DarchetypeArtifactId</span><span class="o">=</span>flink-quickstart-java <span class="nt">-DarchetypeVersion</span><span class="o">=</span>1.5.0
+</code></pre></div></div>
+
+<p>Maven will ask for a group and artifact id. for our example wordcount we used <code class="language-plaintext highlighter-rouge">uk.co.scottlogic</code> as
+the groupId and <code class="language-plaintext highlighter-rouge">wc-flink</code> as the artifactId.</p>
+
+<p>Once maven has finished creating the skeleton project we can edit the <code class="language-plaintext highlighter-rouge">StreamingJob.java</code> file and
+change the main function in line with the <a href="https://github.com/apache/flink/blob/master/flink-examples/flink-examples-streaming/src/main/java/org/apache/flink/streaming/examples/wordcount/WordCount.java">Flink wordcount example on
+github</a>:</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
+    <span class="c1">// set up the streaming execution environment</span>
+    <span class="kd">final</span> <span class="nc">StreamExecutionEnvironment</span> <span class="n">env</span> <span class="o">=</span> <span class="nc">StreamExecutionEnvironment</span><span class="o">.</span><span class="na">getExecutionEnvironment</span><span class="o">();</span>
+    <span class="nc">String</span> <span class="n">textPath</span> <span class="o">=</span> <span class="s">"&lt;text file name&gt;"</span><span class="o">;</span>
+    <span class="nc">DataStreamSource</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="n">text</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="na">readTextFile</span><span class="o">(</span><span class="n">textPath</span><span class="o">);</span>
+    <span class="nc">DataStream</span><span class="o">&lt;</span><span class="nc">Tuple2</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">Integer</span><span class="o">&gt;&gt;</span> <span class="n">counts</span> <span class="o">=</span>
+            <span class="c1">// split up the lines into pairs (2-tuples) containing: (word,1)</span>
+            <span class="n">text</span><span class="o">.</span><span class="na">flatMap</span><span class="o">(</span><span class="k">new</span> <span class="nc">Tokenizer</span><span class="o">())</span>
+                    <span class="c1">// group by the tuple field "0" and sum up tuple field "1"</span>
+                    <span class="o">.</span><span class="na">keyBy</span><span class="o">(</span><span class="mi">0</span><span class="o">).</span><span class="na">sum</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
+
+    <span class="n">counts</span><span class="o">.</span><span class="na">writeAsText</span><span class="o">(</span><span class="s">"&lt;output directory&gt;/wcflink.results"</span><span class="o">);</span>
+    <span class="n">env</span><span class="o">.</span><span class="na">execute</span><span class="o">(</span><span class="s">"Streaming WordCount"</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>We also added the <code class="language-plaintext highlighter-rouge">Tokenizer</code> class from the example:</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kd">class</span> <span class="nc">Tokenizer</span> <span class="kd">implements</span> <span class="nc">FlatMapFunction</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">Tuple2</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">Integer</span><span class="o">&gt;&gt;</span> <span class="o">{</span>
+   <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">long</span> <span class="n">serialVersionUID</span> <span class="o">=</span> <span class="mi">1L</span><span class="o">;</span>
+   <span class="nd">@Override</span>
+   <span class="kd">public</span> <span class="kt">void</span> <span class="nf">flatMap</span><span class="o">(</span><span class="nc">String</span> <span class="n">value</span><span class="o">,</span> <span class="nc">Collector</span><span class="o">&lt;</span><span class="nc">Tuple2</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">Integer</span><span class="o">&gt;&gt;</span> <span class="n">out</span><span class="o">)</span>
+           <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
+       <span class="nc">String</span><span class="o">[]</span> <span class="n">tokens</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="na">toLowerCase</span><span class="o">().</span><span class="na">split</span><span class="o">(</span><span class="s">"\\s+"</span><span class="o">);</span>
+       <span class="k">for</span> <span class="o">(</span><span class="nc">String</span> <span class="n">token</span> <span class="o">:</span> <span class="n">tokens</span><span class="o">)</span> <span class="o">{</span>
+           <span class="k">if</span> <span class="o">(</span><span class="n">token</span><span class="o">.</span><span class="na">length</span><span class="o">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+               <span class="n">out</span><span class="o">.</span><span class="na">collect</span><span class="o">(</span><span class="k">new</span> <span class="nc">Tuple2</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">Integer</span><span class="o">&gt;(</span><span class="n">token</span><span class="o">,</span> <span class="mi">1</span><span class="o">));</span>
+           <span class="o">}</span>
+       <span class="o">}</span>
+   <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>We can now compile the project and execute it</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>mvn clean package
+&lt;fLink root <span class="nb">dir</span><span class="o">&gt;</span>/bin/flink-1.5.0/bin/flink run ./target/wc-flink-1.0-SNAPSHOT.jar
+</code></pre></div></div>
+
+<p>The results of the wordcount operations will be saved in the file <code class="language-plaintext highlighter-rouge">wcflink.results</code> in the output
+directory specified.</p>
+
+<p>Flink also uses a <a href="#types-of-processing-engines">declarative engine</a> and the DAG is implied by the ordering of
+the transformations (flatmap -&gt; keyby -&gt; sum). If the engine detects that a transformation does not depend on
+the output from a previous transformation, then it can reorder the transformations.</p>
+
+<h3 id="apache-samza-architecture-and-example-word-count">Apache Samza Architecture and example Word Count</h3>
+
+<p>Apache Samza is based on the concept of a Publish/Subscribe Task that listens to a data stream,
+processes messages as they arrive and outputs its result to another stream. A stream can be
+broken into multiple partitions and a copy of the task will be spawned for each partition.</p>
+
+<p>Apache Samza relies on third party systems to handle :</p>
+
+<ul>
+  <li>The streaming of data between tasks (Apache Kafka, <em>which has a dependency on Apache zookeeper</em>)</li>
+  <li>The distribution of tasks among nodes in a cluster (Apache Hadoop YARN)</li>
+</ul>
+
+<p>Streams of data in Kafka are made up of multiple partitions (based on a key value). A Samza Task
+consumes a Stream of data and multiple tasks can be executed in parallel to consume all of the
+partitions in a stream simultaneously.</p>
+
+<p>Samza tasks execute in YARN containers. YARN will distribute the containers over a multiple nodes
+in a cluster and will evenly distribute tasks over containers.</p>
+
+<p>The following diagram shows how the parts of the Samza word count example system fit together.
+ Data enters the system via a Kafka topic. Samza tasks are executed in YARN containers and
+ listen for data from a Kafka topic. When data arrives on the Kafka topic the Samza task
+ executes and performs its processing. The Samza task then sends its output to another Kafka
+ topic (which will also store the topic messages using zookeeper).</p>
+
+<p>At the end of the word count pipeline, we use a console to view the Kafka topic that the word
+ count is sending it’s output to.</p>
+
+<p><img src="https://blog.scottlogic.com/aaspellc/assets/apache-samza-architecture.jpeg" alt="Apache Samza Architecture" title="Apache Samza Architecture" /></p>
+
+<p>To define a streaming topology in Samza you must explicitly define the inputs and outputs of
+the Samza tasks before compilation. Once the application has been compiled the topology is
+fixed as the definition is embedded into the application package which is distributed to YARN.</p>
+
+<p>An update to the topology would entail:</p>
+
+<ul>
+  <li>Stopping the existing tasks in YARN.</li>
+  <li>Recompiling the application package.</li>
+  <li>Distributing the new application package to YARN.</li>
+</ul>
+
+<p>To create a word count Samza application we first need to get a feed of lines into the system. We
+do this by creating a file reader that reads in a text file publishing it’s lines to a Kafka topic.</p>
+
+<p><em>ReadFile.java</em></p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">package</span> <span class="nn">uk.co.scottlogic.wordcount</span><span class="o">;</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">ReadFile</span> <span class="o">{</span>
+    <span class="kd">private</span> <span class="kd">final</span> <span class="kd">static</span> <span class="nc">String</span> <span class="no">TOPIC</span> <span class="o">=</span> <span class="s">"sl-lines"</span><span class="o">;</span>
+    <span class="kd">private</span> <span class="kd">final</span> <span class="kd">static</span> <span class="nc">String</span> <span class="no">BOOTSTRAP_SERVERS</span> <span class="o">=</span> <span class="s">"localhost:9092,localhost:9093,localhost:9094"</span><span class="o">;</span>
+    <span class="kd">private</span> <span class="kt">long</span> <span class="n">index</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+
+    <span class="kd">private</span> <span class="kd">static</span> <span class="nc">Producer</span><span class="o">&lt;</span><span class="nc">Long</span><span class="o">,</span> <span class="nc">String</span><span class="o">&gt;</span> <span class="nf">createProducer</span><span class="o">()</span> <span class="o">{</span>
+        <span class="nc">Properties</span> <span class="n">props</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Properties</span><span class="o">();</span>
+        <span class="n">props</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="nc">ProducerConfig</span><span class="o">.</span><span class="na">BOOTSTRAP_SERVERS_CONFIG</span><span class="o">,</span> <span class="no">BOOTSTRAP_SERVERS</span><span class="o">);</span>
+        <span class="n">props</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="nc">ProducerConfig</span><span class="o">.</span><span class="na">CLIENT_ID_CONFIG</span><span class="o">,</span> <span class="s">"kafka"</span><span class="o">);</span>
+        <span class="n">props</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="nc">ProducerConfig</span><span class="o">.</span><span class="na">KEY_SERIALIZER_CLASS_CONFIG</span><span class="o">,</span> <span class="nc">LongSerializer</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">getName</span><span class="o">());</span>
+        <span class="n">props</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="nc">ProducerConfig</span><span class="o">.</span><span class="na">VALUE_SERIALIZER_CLASS_CONFIG</span><span class="o">,</span> <span class="nc">StringSerializer</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">getName</span><span class="o">());</span>
+        <span class="k">return</span> <span class="k">new</span> <span class="nc">KafkaProducer</span><span class="o">&lt;&gt;(</span><span class="n">props</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="kt">void</span> <span class="nf">runProducer</span><span class="o">(</span><span class="kd">final</span> <span class="nc">String</span> <span class="n">filename</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
+        <span class="kd">final</span> <span class="nc">Producer</span><span class="o">&lt;</span><span class="nc">Long</span><span class="o">,</span> <span class="nc">String</span><span class="o">&gt;</span> <span class="n">producer</span> <span class="o">=</span> <span class="n">createProducer</span><span class="o">();</span>
+        <span class="kt">long</span> <span class="n">time</span> <span class="o">=</span> <span class="nc">System</span><span class="o">.</span><span class="na">currentTimeMillis</span><span class="o">();</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+
+        <span class="k">try</span> <span class="o">(</span><span class="nc">Stream</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="n">stream</span> <span class="o">=</span> <span class="nc">Files</span><span class="o">.</span><span class="na">lines</span><span class="o">(</span><span class="nc">Paths</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">filename</span><span class="o">)))</span> <span class="o">{</span>
+            <span class="nc">Consumer</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="n">consumerNames</span> <span class="o">=</span> <span class="n">line</span> <span class="o">-&gt;</span> <span class="o">{</span>
+                <span class="k">try</span> <span class="o">{</span>
+                    <span class="nc">RecordMetadata</span> <span class="n">metadata</span> <span class="o">=</span> <span class="n">producer</span><span class="o">.</span><span class="na">send</span><span class="o">(</span><span class="k">new</span> <span class="nc">ProducerRecord</span><span class="o">&lt;&gt;(</span><span class="no">TOPIC</span><span class="o">,</span> <span class="n">index</span><span class="o">++,</span> <span class="n">line</span><span class="o">.</span><span class="na">trim</span><span class="o">())).</span><span class="na">get</span><span class="o">();</span>
+                <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+                <span class="o">}</span>
+            <span class="o">};</span>
+            <span class="n">stream</span><span class="o">.</span><span class="na">forEach</span><span class="o">(</span><span class="n">consumerNames</span><span class="o">);</span>
+
+        <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+            <span class="n">producer</span><span class="o">.</span><span class="na">close</span><span class="o">();</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">args</span><span class="o">.</span><span class="na">length</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+            <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Please specify a filename"</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+            <span class="k">try</span> <span class="o">{</span>
+                <span class="k">new</span> <span class="nf">ReadFile</span><span class="o">().</span><span class="na">runProducer</span><span class="o">(</span><span class="n">args</span><span class="o">[</span><span class="mi">0</span><span class="o">]);</span>
+            <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>The next step is to define the first Samza task. This Samza task will split the incoming lines into
+words and output the words onto another Kafka topic. To do this we create a java class that
+implements the <code class="language-plaintext highlighter-rouge">org.apache.samza.task.StreamTask</code> interface.</p>
+
+<p><em>SplitLineTask.java</em></p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">package</span> <span class="nn">uk.co.scottlogic.wordcount</span><span class="o">;</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">SplitLineTask</span> <span class="kd">implements</span> <span class="nc">StreamTask</span> <span class="o">{</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="nc">SystemStream</span> <span class="no">OUTPUT_STREAM</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">SystemStream</span><span class="o">(</span><span class="s">"kafka"</span><span class="o">,</span> <span class="s">"sl-words"</span><span class="o">);</span>
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">process</span><span class="o">(</span><span class="nc">IncomingMessageEnvelope</span> <span class="n">envelope</span><span class="o">,</span> <span class="nc">MessageCollector</span> <span class="n">collector</span><span class="o">,</span> <span class="nc">TaskCoordinator</span> <span class="n">coordinator</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">String</span> <span class="n">message</span> <span class="o">=</span> <span class="o">(</span><span class="nc">String</span><span class="o">)</span> <span class="n">envelope</span><span class="o">.</span><span class="na">getMessage</span><span class="o">();</span>
+        <span class="nc">String</span><span class="o">[]</span> <span class="n">words</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="na">split</span><span class="o">(</span><span class="s">"\\s+"</span><span class="o">);</span> <span class="c1">// split line on one or more whitespace</span>
+        <span class="k">for</span> <span class="o">(</span><span class="nc">String</span> <span class="n">word</span> <span class="o">:</span> <span class="n">words</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">try</span> <span class="o">{</span>
+                <span class="n">collector</span><span class="o">.</span><span class="na">send</span><span class="o">(</span><span class="k">new</span> <span class="nc">OutgoingMessageEnvelope</span><span class="o">(</span><span class="no">OUTPUT_STREAM</span><span class="o">,</span> <span class="n">word</span><span class="o">,</span> <span class="n">word</span><span class="o">));</span>
+            <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">process()</code> function will be executed every time a message is available on the Kafka stream it
+is listening to. To define the stream that this task listens to we create a configuration file.
+This file defines what the job will be called in YARN, where YARN can find the package that the
+executable class is included in. it also defines the Kafka topic that this task will listen to and
+how the messages on the incoming and outgoing topics are formatted.</p>
+
+<p><em>sl-splittask.properties</em></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># Job
+job.factory.class=org.apache.samza.job.yarn.YarnJobFactory
+job.name=sl-splittask
+
+# YARN
+yarn.package.path=file://${basedir}/target/${project.artifactId}-${pom.version}-dist.tar.gz
+
+# Task
+task.class=uk.co.scottlogic.wordcount.SplitLineTask
+task.inputs=kafka.sl-lines
+
+# Serializers
+serializers.registry.string.class=org.apache.samza.serializers.StringSerdeFactory
+serializers.registry.long.class=org.apache.samza.serializers.LongSerdeFactory
+
+# Systems
+systems.kafka.samza.factory=org.apache.samza.system.kafka.KafkaSystemFactory
+systems.kafka.samza.key.serde=string
+systems.kafka.samza.msg.serde=string
+systems.kafka.consumer.zookeeper.connect=localhost:2181/
+systems.kafka.consumer.auto.offset.reset=largest
+systems.kafka.producer.bootstrap.servers=localhost:9092
+
+systems.kafka.streams.sl-words.samza.key.serde=string
+systems.kafka.streams.sl-words.samza.msg.serde=string
+
+streams.sl-words.samza.key.serde=string
+streams.sl-words.samza.msg.serde=string
+</code></pre></div></div>
+
+<p>We now need a task to count the words. For this we create another class that implements
+the <code class="language-plaintext highlighter-rouge">org.apache.samza.task.StreamTask</code> interface.</p>
+
+<p><em>WordCountTask.java</em></p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">package</span> <span class="nn">uk.co.scottlogic.wordcount</span><span class="o">;</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">WordCountTask</span> <span class="kd">implements</span> <span class="nc">StreamTask</span><span class="o">,</span> <span class="nc">WindowableTask</span> <span class="o">{</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="nc">SystemStream</span> <span class="no">OUTPUT_STREAM</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">SystemStream</span><span class="o">(</span><span class="s">"kafka"</span><span class="o">,</span> <span class="s">"sl-wordtotals"</span><span class="o">);</span>
+    <span class="kd">private</span> <span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">Integer</span><span class="o">&gt;</span> <span class="n">wordCountsWindowed</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">HashMap</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">Integer</span><span class="o">&gt;();</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">process</span><span class="o">(</span><span class="nc">IncomingMessageEnvelope</span> <span class="n">envelope</span><span class="o">,</span> <span class="nc">MessageCollector</span> <span class="n">collector</span><span class="o">,</span> <span class="nc">TaskCoordinator</span> <span class="n">coordinator</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">String</span> <span class="n">word</span> <span class="o">=</span> <span class="o">(</span><span class="nc">String</span><span class="o">)</span> <span class="n">envelope</span><span class="o">.</span><span class="na">getMessage</span><span class="o">();</span>
+        <span class="nc">Integer</span> <span class="n">count</span> <span class="o">=</span> <span class="n">wordCountsWindwd</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">word</span><span class="o">.</span><span class="na">toLowerCase</span><span class="o">());</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">count</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+        <span class="n">count</span><span class="o">++;</span>
+        <span class="n">wordCountsWindowed</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">word</span><span class="o">.</span><span class="na">toLowerCase</span><span class="o">(),</span> <span class="n">count</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">window</span><span class="o">(</span><span class="n">org</span><span class="o">.</span><span class="na">apache</span><span class="o">.</span><span class="na">samza</span><span class="o">.</span><span class="na">task</span><span class="o">.</span><span class="na">MessageCollector</span> <span class="n">collector</span><span class="o">,</span> <span class="n">org</span><span class="o">.</span><span class="na">apache</span><span class="o">.</span><span class="na">samza</span><span class="o">.</span><span class="na">task</span><span class="o">.</span><span class="na">TaskCoordinator</span> <span class="n">coordinator</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
+        <span class="c1">// send wordcounts to stream</span>
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="k">for</span> <span class="o">(</span><span class="nc">String</span> <span class="n">key</span> <span class="o">:</span> <span class="n">wordCountsWindowed</span><span class="o">.</span><span class="na">keySet</span><span class="o">())</span> <span class="o">{</span>
+                <span class="n">collector</span><span class="o">.</span><span class="na">send</span><span class="o">(</span><span class="k">new</span> <span class="nc">OutgoingMessageEnvelope</span><span class="o">(</span><span class="no">OUTPUT_STREAM</span><span class="o">,</span>
+                        <span class="n">key</span><span class="o">,</span>
+                        <span class="n">key</span> <span class="o">+</span> <span class="s">":"</span> <span class="o">+</span> <span class="n">wordCountsWindowed</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">key</span><span class="o">)));</span>
+            <span class="o">}</span>
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+        <span class="o">}</span>
+
+        <span class="c1">// Reset wordcounts after windowing.</span>
+        <span class="n">wordCountsWindowed</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">HashMap</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">Integer</span><span class="o">&gt;();</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>This task also implements the <code class="language-plaintext highlighter-rouge">org.apache.samza.task.WindowableTask</code> interface to allow it to handle a continuous stream
+of words and output the total number of words that it has processed during a specified time window.
+This task also needs a configuration file.</p>
+
+<p><em>sl-wordcount.properties</em></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># Job
+job.factory.class=org.apache.samza.job.yarn.YarnJobFactory
+job.name=sl-wordcount
+
+# YARN
+yarn.package.path=file://${basedir}/target/${project.artifactId}-${pom.version}-dist.tar.gz
+
+# Task
+task.class=uk.co.scottlogic.wordcount.WordCountTask
+task.inputs=kafka.sl-words
+task.window.ms=10000
+# Serializers
+
+serializers.registry.string.class=org.apache.samza.serializers.StringSerdeFactory
+serializers.registry.integer.class=org.apache.samza.serializers.IntegerSerdeFactory
+
+# Kafka System
+systems.kafka.samza.factory=org.apache.samza.system.kafka.KafkaSystemFactory
+systems.kafka.samza.key.serde=string
+systems.kafka.samza.msg.serde=string
+systems.kafka.consumer.zookeeper.connect=localhost:2181/
+systems.kafka.producer.bootstrap.servers=localhost:9092
+
+systems.kafka.streams.sl-words.samza.key.serde=string
+systems.kafka.streams.sl-words.samza.msg.serde=string
+
+streams.sl-words.samza.key.serde=string
+streams.sl-words.samza.msg.serde=string
+
+
+systems.kafka.streams.sl-wordtotals.samza.key.serde=string
+systems.kafka.streams.sl-wordtotals.samza.msg.serde=string
+
+streams.sl-wordtotals.samza.key.serde=string
+streams.sl-wordtotals.samza.msg.serde=string
+</code></pre></div></div>
+
+<p>This configuration file also specifies the name of the task in YARN and where YARN can find the
+Samza package. It also specifies the input and output stream formats and the input stream to listen
+to. This configuration file also specifies the time window that the <code class="language-plaintext highlighter-rouge">WordCount</code> task will use
+(<code class="language-plaintext highlighter-rouge">task.window.ms</code>).</p>
+
+<p>When these files are compiled and packaged up into a Samza Job archive file, we can execute the
+Samza tasks. First, we need to make sure that YARN, Zookeeper and Kafka are running.
+Once the systems that Samza uses are running we can extract the Samza package archive and then
+execute the tasks by using a Samza supplied script as below:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$PRJ_ROOT</span>/tmp/bin/run-job.sh <span class="nt">--config-factory</span><span class="o">=</span>org.apache.samza.config.factories.PropertiesConfigFactory <span class="nt">--config-path</span><span class="o">=</span>file://<span class="nv">$PRJ_ROOT</span>/tmp/config/sl-splittask.properties
+</code></pre></div></div>
+
+<p>In this snippet <code class="language-plaintext highlighter-rouge">$PRJ_ROOT</code> will be the directory that the Samza package was extracted into. The
+Samza supplied run-job.sh executes the <code class="language-plaintext highlighter-rouge">org.apache.samza.job.JobRunner</code> class and passes it the
+configuration file for our line splitter class <code class="language-plaintext highlighter-rouge">SplitTask</code>. Samza then starts the task specified in
+the configuration file in a YARN container. We can then execute the word counter task</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$PRJ_ROOT</span>/tmp/bin/run-job.sh <span class="nt">--config-factory</span><span class="o">=</span>org.apache.samza.config.factories.PropertiesConfigFactory <span class="nt">--config-path</span><span class="o">=</span>file://<span class="nv">$PRJ_ROOT</span>/tmp/config/sl-wordcount.properties
+</code></pre></div></div>
+
+<p>To be able to see the word counts being produced we will start a new console window and run the
+Kafka command line topic consumer</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$KAFKA_DIR</span>/bin/kafka-console-consumer.sh <span class="nt">--zookeeper</span> localhost:2181 <span class="nt">--topic</span> sl-wordtotals
+</code></pre></div></div>
+
+<p>We can now publish data into the system and see the word counts being displayed in the console window</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$PRJ_ROOT</span>/tmp/bin/run-class.sh uk.co.scottlogic.wordcount.ReadFile &lt;filename&gt;
+</code></pre></div></div>
+
+<p>We should now see wordcounts being emitted from the Samza task stream at intervals of 10 seconds
+(as specified in the <code class="language-plaintext highlighter-rouge">sl-wordtotals.properties</code> file).</p>
+
+<p>As well as the code examples above, the creation of a Samza package file needs a Maven pom build
+file and an xml file to define the contents of the Samza package file. These build files need to be
+correct as they create the Samza job package by extracting some files (<em>such as the <code class="language-plaintext highlighter-rouge">run-job.sh</code>
+script</em>) from the Samza archives and creating the tar.gz archive in the correct format. To conserve
+space these essential files have not been shown above.</p>
+
+<p>Apache Samza uses a <a href="#types-of-processing-engines">compositional engine</a> with the topology of the Samza job
+explicitly defined in the codebase, but not in one place, it is spread out over several files with input
+streams being specified in the configuration files for each task and output streams being specified in each
+task’s code.</p>
+
+<p>The stream names are text string and if any of the specified streams do not match (output of one task to the
+input of the next) then the system will not process data. To deploy a Samza system would require extensive
+testing to make sure that the topology is correct.</p>
+
+<p>This makes creating a Samza application error prone and difficult to change at a later date.</p>
+
+<h2 id="what-are-stream-processing-engines-good-for">What are stream processing engines good for?</h2>
+
+<p>Why use a stream processing engine at all? When does it beat writing your own code to process a stream?</p>
+
+<p>Stream processing engines allow manipulations on a data set to be broken down into small steps. Each
+step can be run on multiple parts of the data in parallel which allows the processing to scale: as
+more data enters the system, more tasks can be spawned to consume it.</p>
+
+<p>From the above examples we can see that the ease of coding the wordcount example in Apache Spark and Flink is
+an order of magnitude easier than coding a similar example in Apache Storm and Samza, so if implementation
+speed is a priority then Spark or Flink would be the obvious choice. If you need complete
+control over how the DAG is formed then Storm or Samza would be the choice.</p>
+
+<p>Apache Spark also offers several libraries that could make it the choice of engine if, for example,  you need
+to access an SQL database (Spark SQL) or machine learning (MLlib).</p>
+
+<p>Given all this, in the vast majority of cases Apache Spark is the correct choice due to its extensive out of the box features and ease of coding.</p>
+
+<p>In financial services there is a huge drive in moving from batch processing where data is sent between systems
+by batch to stream processing. A typical use case is therefore
+<a href="https://en.wikipedia.org/wiki/Extract,_transform,_load">ETL</a> between systems. Apache Spark is a good example
+of a streaming tool that is being used in many ETL situations. But as well as ETL, processing things in real
+or pseudo real time is a common application. Another example is processing a live price feed monitoring for
+prices to hit a high or a low and then trigger off some processing is a good example. Risk calculations are
+another and are typically moving from daily batch processing to real time live processing, as companies want
+to understand their exposure as and when it happens.</p>
+
+<p>Each of these frameworks has it’s own pros and cons, but using any of them frees developers from having to
+implement complex multiprocessing and data synchronisation architectures.</p>
+
+<p>In this post we looked at implementing a simple wordcount example in the frameworks. in Part 2
+we will look at how these systems handle checkpointing, issues and failures.</p>
+
+      </div>
+
+      
+
+
+
+
+<div class="grid-x grid-margin-y grid-padding-y">
+    <div class="cell grid-x grid-margin-y grid-padding-y">
+        <div class="read-more cell large-6 small-10 grid-margin-y">
+            <svg class="show-for-large" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 252 252">
+                <path d="M0 69.5L69.5 0h42.4L0 111.9V69.5zm0 70.7L140.2 0h.9l20.7 20.7L0 182.6v-42.4zm0 70.7l176-176 21.2 21.2L1.3 252H0v-41.1zM29.6 252L211.4 70.2l21.2 21.2L72 252H29.6zm70.7 0l146.4-146.4 5.3 5.3v31.9L142.7 252h-42.4z"/>
+            </svg>
+
+
+
+            <h2>Read more</h2>
+        </div>
+        <div class="small-2 cell hide-for-large">
+            
+<div class="social">
+  <applause-button color="
+  
+  #ef8547
+    
+
+"
+    url="https://blog.scottlogic.com/2018/07/06/comparing-streaming-frameworks-pt1.html"
+    multiclap="true"/>
+</div>
+
+        </div>
+    </div>
+</div>
+
+      
+        
+        
+        
+
+
+<div class="post-summary-list">
+    
+    <div class="content">
+        
+        
+
+
+<div class="post-summary grid-margin-y grid-padding-y 
+  
+  yellow
+  
+
+">
+    <div class="post-summary cell grid-margin-y">
+        
+        <div class="title">
+            <a href="/2018/01/29/2018-01-29-apache-storm-taster.html">Apache Storm Taster</a>
+            
+<span class="post-summary-social">
+  <span class="clap" data-url="https://blog.scottlogic.com/2018/01/29/2018-01-29-apache-storm-taster.html" style="display: none">
+    <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 60 60" >
+      <g class="flat">
+        <path d="M37.1910045 6.68944619C37.7313574 6.14566353 38.4431784 5.8737722 39.155207 5.8737722 39.967916 5.8737722 40.7808327 6.22800418 41.3380002 6.93667712 42.2214969 8.06039707 42.0666359 9.69111808 41.0600392 10.7042842L39.777765 11.9949843C39.5801407 12.1276907 39.3877061 12.2695925 39.2075193 12.430303 39.0619998 11.5985371 38.7167801 10.7954023 38.1668781 10.0961338 37.4907623 9.23636364 36.588375 8.62424242 35.5772114 8.31410658L37.1910045 6.68944619zM28.5289586 3.66394984C29.0691039 3.12016719 29.7811325 2.84827586 30.4931611 2.84827586 31.3060777 2.84848485 32.1187868 3.20271682 32.6759543 3.91138976 33.559451 5.03510972 33.40459 6.66562173 32.3979933 7.67878788L17.6760235 22.3467085 17.6276554 20.6499478C17.6149925 19.014629 16.8595779 17.554441 15.6854573 16.5945664L28.5289586 3.66394984zM.624996757 36.9889537C.491717597 36.554099.508245877 35.7327064.906400646 35.2666667L3.45579518 32.2829676C3.45662553 32.2819923 4.33763118 25.8376176 6.09881213 12.9498433 6.09881213 11.4271682 7.33624726 10.1814002 8.84873717 10.1814002 10.3612271 10.1814002 11.5988698 11.4271682 11.5988698 12.9498433L11.6704878 15.4649948C9.18191673 15.8089864 7.24428555 17.9170324 7.14921001 20.492581L4.62804751 38.9475444 3.8946373 39.8060606C3.04504924 39.4926018 2.3776139 39.1458968 1.89233128 38.7659456 1.16440735 38.1960189.758275917 37.4238085.624996757 36.9889537z"/>
+        <path d="M49.6070811,36.8942529 L42.4182909,44.1316614 C36.2784454,50.3128527 29.8604313,55.2743992 24.2225349,56.5113898 C24.0512744,56.5492163 23.8901857,56.6217346 23.7511014,56.7293626 L20.5013032,59.2417973 C20.2908084,59.4045977 20.1673015,59.6181154 19.5026647,59.6181154 C18.8380279,59.6181154 13.0160695,55.8303982 10.3595306,53.2846814 C7.96626306,50.9912532 3.77432047,43.9549368 4.44453927,43.0079415 L6.99372621,40.0244514 C6.99469496,40.0233368 7.87570061,33.578962 9.63674317,20.6913271 C9.63674317,19.168652 10.8743859,17.922675 12.3868758,17.922675 C13.8993657,17.922675 15.1368008,19.168652 15.1368008,20.6913271 L15.2667512,25.2522466 C15.2883404,26.0100313 15.907577,26.5034483 16.5519317,26.5034483 C16.8662207,26.5034483 17.1867374,26.3857889 17.4464306,26.1245559 L32.0670972,11.4054336 C32.6074501,10.861442 33.3190635,10.5897597 34.0312997,10.5897597 C34.8440088,10.5897597 35.6569254,10.9439916 36.214093,11.6526646 C37.0975897,12.7763845 36.942521,14.4071055 35.9359243,15.4202717 L25.8641449,25.5598746 C25.3412294,26.0865204 25.3412294,26.9398119 25.8641449,27.4660397 C26.1288202,27.7324974 26.4757006,27.8658307 26.822581,27.8658307 C27.1694614,27.8658307 27.5165494,27.7324974 27.7810172,27.4660397 L40.7291431,14.43093 C41.2692884,13.8869383 41.9811094,13.615256 42.6933456,13.615256 C43.5060547,13.615465 44.3189713,13.969697 44.8761389,14.6783699 C45.7596356,15.8018809 45.6045669,17.4326019 44.5979702,18.445768 L31.7106677,31.4198537 C31.1806943,31.953605 31.1806943,32.8183908 31.7106677,33.3521421 C31.9718141,33.615047 32.31392,33.7464995 32.656441,33.7464995 C32.9985469,33.7464995 33.3408603,33.615047 33.6020067,33.3521421 L43.7346096,23.1515152 C44.2749625,22.6075235 44.9867835,22.3358412 45.6988121,22.3358412 C46.5115212,22.3358412 47.3244378,22.6900731 47.8816054,23.3989551 C48.7651021,24.522466 48.6100334,26.153187 47.6034367,27.1663532 L37.5667397,37.2708464 C37.0245185,37.8165099 37.0245185,38.7017764 37.5667397,39.2474399 C37.8334909,39.5161964 38.161896,39.6422153 38.4900934,39.6422153 C38.8184984,39.6422153 39.1469035,39.5161964 39.3972552,39.2639498 L45.6195133,32.999791 C46.1802099,32.4353187 46.93085,32.1368861 47.678999,32.1368861 C48.2741552,32.1368861 48.8676508,32.3258098 49.361919,32.7197492 C50.682182,33.7717868 50.7639719,35.7297806 49.6070811,36.8942529 Z"/>
+      </g>
+    </svg>
+    <span class="count"></span>
+  </span>
+</span>
+
+        </div>
+        <div class="cell">
+            
+            A quick look at Apache Storm with a short word count walk-through example using a Redis Database.
+            
+        </div>
+        <div class="avatar-metadata cell">
+            
+  
+  <img src="/dogle/picture.jpg" alt="Dave Ogle"/>
+  
+
+
+            
+
+<div>
+  <span>
+    
+      
+      <a href="/dogle">Dave Ogle</a>
+    
+    <span> &middot;</span>
+  </span>
+  <span class="timestamp" date-published="2018-01-29 00:00:00 +0000">
+    
+
+29<sup>th</sup>&nbsp;
+
+
+
+
+  Jan 2018
+
+
+  </span>
+  
+  <span>&middot;</span>
+  <span>
+
+
+
+
+  18 min read
+
+</span>
+  
+</div>
+
+        </div>
+    </div>
+</div>
+
+        
+
+        
+    </div>
+</div>
+
+        
+        
+
+
+<div class="post-summary-list">
+    
+    <div class="content">
+        
+        
+
+
+<div class="post-summary grid-margin-y grid-padding-y 
+  
+  yellow
+  
+
+">
+    <div class="post-summary cell grid-margin-y">
+        
+        <div class="title">
+            <a href="/2013/07/29/spark-stream-analysis.html">Real-time data analysis using Spark</a>
+            
+<span class="post-summary-social">
+  <span class="clap" data-url="https://blog.scottlogic.com/2013/07/29/spark-stream-analysis.html" style="display: none">
+    <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 60 60" >
+      <g class="flat">
+        <path d="M37.1910045 6.68944619C37.7313574 6.14566353 38.4431784 5.8737722 39.155207 5.8737722 39.967916 5.8737722 40.7808327 6.22800418 41.3380002 6.93667712 42.2214969 8.06039707 42.0666359 9.69111808 41.0600392 10.7042842L39.777765 11.9949843C39.5801407 12.1276907 39.3877061 12.2695925 39.2075193 12.430303 39.0619998 11.5985371 38.7167801 10.7954023 38.1668781 10.0961338 37.4907623 9.23636364 36.588375 8.62424242 35.5772114 8.31410658L37.1910045 6.68944619zM28.5289586 3.66394984C29.0691039 3.12016719 29.7811325 2.84827586 30.4931611 2.84827586 31.3060777 2.84848485 32.1187868 3.20271682 32.6759543 3.91138976 33.559451 5.03510972 33.40459 6.66562173 32.3979933 7.67878788L17.6760235 22.3467085 17.6276554 20.6499478C17.6149925 19.014629 16.8595779 17.554441 15.6854573 16.5945664L28.5289586 3.66394984zM.624996757 36.9889537C.491717597 36.554099.508245877 35.7327064.906400646 35.2666667L3.45579518 32.2829676C3.45662553 32.2819923 4.33763118 25.8376176 6.09881213 12.9498433 6.09881213 11.4271682 7.33624726 10.1814002 8.84873717 10.1814002 10.3612271 10.1814002 11.5988698 11.4271682 11.5988698 12.9498433L11.6704878 15.4649948C9.18191673 15.8089864 7.24428555 17.9170324 7.14921001 20.492581L4.62804751 38.9475444 3.8946373 39.8060606C3.04504924 39.4926018 2.3776139 39.1458968 1.89233128 38.7659456 1.16440735 38.1960189.758275917 37.4238085.624996757 36.9889537z"/>
+        <path d="M49.6070811,36.8942529 L42.4182909,44.1316614 C36.2784454,50.3128527 29.8604313,55.2743992 24.2225349,56.5113898 C24.0512744,56.5492163 23.8901857,56.6217346 23.7511014,56.7293626 L20.5013032,59.2417973 C20.2908084,59.4045977 20.1673015,59.6181154 19.5026647,59.6181154 C18.8380279,59.6181154 13.0160695,55.8303982 10.3595306,53.2846814 C7.96626306,50.9912532 3.77432047,43.9549368 4.44453927,43.0079415 L6.99372621,40.0244514 C6.99469496,40.0233368 7.87570061,33.578962 9.63674317,20.6913271 C9.63674317,19.168652 10.8743859,17.922675 12.3868758,17.922675 C13.8993657,17.922675 15.1368008,19.168652 15.1368008,20.6913271 L15.2667512,25.2522466 C15.2883404,26.0100313 15.907577,26.5034483 16.5519317,26.5034483 C16.8662207,26.5034483 17.1867374,26.3857889 17.4464306,26.1245559 L32.0670972,11.4054336 C32.6074501,10.861442 33.3190635,10.5897597 34.0312997,10.5897597 C34.8440088,10.5897597 35.6569254,10.9439916 36.214093,11.6526646 C37.0975897,12.7763845 36.942521,14.4071055 35.9359243,15.4202717 L25.8641449,25.5598746 C25.3412294,26.0865204 25.3412294,26.9398119 25.8641449,27.4660397 C26.1288202,27.7324974 26.4757006,27.8658307 26.822581,27.8658307 C27.1694614,27.8658307 27.5165494,27.7324974 27.7810172,27.4660397 L40.7291431,14.43093 C41.2692884,13.8869383 41.9811094,13.615256 42.6933456,13.615256 C43.5060547,13.615465 44.3189713,13.969697 44.8761389,14.6783699 C45.7596356,15.8018809 45.6045669,17.4326019 44.5979702,18.445768 L31.7106677,31.4198537 C31.1806943,31.953605 31.1806943,32.8183908 31.7106677,33.3521421 C31.9718141,33.615047 32.31392,33.7464995 32.656441,33.7464995 C32.9985469,33.7464995 33.3408603,33.615047 33.6020067,33.3521421 L43.7346096,23.1515152 C44.2749625,22.6075235 44.9867835,22.3358412 45.6988121,22.3358412 C46.5115212,22.3358412 47.3244378,22.6900731 47.8816054,23.3989551 C48.7651021,24.522466 48.6100334,26.153187 47.6034367,27.1663532 L37.5667397,37.2708464 C37.0245185,37.8165099 37.0245185,38.7017764 37.5667397,39.2474399 C37.8334909,39.5161964 38.161896,39.6422153 38.4900934,39.6422153 C38.8184984,39.6422153 39.1469035,39.5161964 39.3972552,39.2639498 L45.6195133,32.999791 C46.1802099,32.4353187 46.93085,32.1368861 47.678999,32.1368861 C48.2741552,32.1368861 48.8676508,32.3258098 49.361919,32.7197492 C50.682182,33.7717868 50.7639719,35.7297806 49.6070811,36.8942529 Z"/>
+      </g>
+    </svg>
+    <span class="count"></span>
+  </span>
+</span>
+
+        </div>
+        <div class="cell">
+            
+            Big Data is a hot topic these days, and one aspect of that problem space is
+processing streams of high velocity data in near-real time. Here we're going 
+to look at using Big Data-style techniques in Scala on a stream of data from 
+a WebSocket.
+
+            
+        </div>
+        <div class="avatar-metadata cell">
+            
+  
+  <img src="/jphillpotts/picture.jpg" alt="James Phillpotts"/>
+  
+
+
+            
+
+<div>
+  <span>
+    
+      
+      <a href="/jphillpotts">James Phillpotts</a>
+    
+    <span> &middot;</span>
+  </span>
+  <span class="timestamp" date-published="2013-07-29 00:00:00 +0000">
+    
+
+29<sup>th</sup>&nbsp;
+
+
+
+
+  Jul 2013
+
+
+  </span>
+  
+  <span>&middot;</span>
+  <span>
+
+
+
+
+  6 min read
+
+</span>
+  
+</div>
+
+        </div>
+    </div>
+</div>
+
+        
+
+        
+    </div>
+</div>
+
+      
+      
+      
+
+
+
+
+
+
+<div class="cell grid-margin-y grid-padding-y grid-x">
+    <div class="cell grid-margin-y grid-padding-y grid-x">
+        <h2>Thinking of joining us?</h2>
+        If you enjoyed this blog post and are interested in working with smart Developers on challenging software projects,
+        <a href="https://www.scottlogic.com/careers/job-family-development">check out our current vacancies</a>.
+    </div>
+</div>
+    </div>
+    <div class="side-lists cell large-3 large-offset-1 show-for-large grid-padding-y">
+      
+      
+      <div class="author-information cell">
+  <img src="/acarr/picture.jpg" alt="Andrew Carr"/>
+  <a rel="author" href="/acarr">Andrew Carr</a>
+</div>
+<div class="cell">
+  <p>I lead the Data Engineering Practice within Scott Logic. I have a strong interest and expertise in low latency Front Office trading systems, software managing very large networks and the technologies involved in processing large volumes of data.</p>
+  
+</div>
+      
+        
+        
+        <div class="author-information cell">
+  <img src="/aaspellc/picture.jpg" alt="Andy Aspell-Clark"/>
+  <a rel="author" href="/aaspellc">Andy Aspell-Clark</a>
+</div>
+<div class="cell">
+  <p>I am a Senior Developer at Scott Logic. I am interested in all programming topics from how a computer goes from power on to displaying windows on the screen or how a CPU handles branch prediction to how to write a mobile UI using kotlin or cordova.</p>
+  
+      
+      <div class="author-social-media-link">
+          <a rel="author" href="http://www.twitter.com/aspellclark">@aspellclark</a>
+      </div>
+  
+</div>
+      
+      
+<div class="category-list cell">
+    <h4>Categories</h4>
+    <ul>
+        
+            <li>
+                <a href="/index.html">
+                    <span class="active ">Latest Articles</span>
+                </a>
+            </li>
+        
+            <li>
+                <a href="/category/resources.html">
+                    <span class="">Resources</span>
+                </a>
+            </li>
+        
+            <li>
+                <a href="/category/cloud.html">
+                    <span class="">Cloud</span>
+                </a>
+            </li>
+        
+            <li>
+                <a href="/category/tech.html">
+                    <span class="">Tech</span>
+                </a>
+            </li>
+        
+            <li>
+                <a href="/category/ux.html">
+                    <span class="">UX Design</span>
+                </a>
+            </li>
+        
+            <li>
+                <a href="/category/delivery.html">
+                    <span class="">Delivery</span>
+                </a>
+            </li>
+        
+            <li>
+                <a href="/category/test.html">
+                    <span class="">Testing</span>
+                </a>
+            </li>
+        
+            <li>
+                <a href="/category/data-engineering.html">
+                    <span class="">Data Engineering</span>
+                </a>
+            </li>
+        
+            <li>
+                <a href="/category/people.html">
+                    <span class="">People</span>
+                </a>
+            </li>
+        
+            <li>
+                <a href="/category/videos.html">
+                    <span class="">Videos</span>
+                </a>
+            </li>
+        
+            <li>
+                <a href="/category/open-source.html">
+                    <span class="">Open Source</span>
+                </a>
+            </li>
+        
+            <li>
+                <a href="/category/podcast.html">
+                    <span class="">Podcast</span>
+                </a>
+            </li>
+        
+    </ul>
+</div>
+
+      <div class="back cell">
+        <a href="/index.html">Back to all posts</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="
+  
+  orange
+    
+
+ grid-container">
+  <div class="footer_top-layer">
+    <div class="footer-logo"><a href="https://www.scottlogic.com">Scott Logic</a></div>
+    <div class="footer-links">
+      <a href="https://www.scottlogic.com/who-we-are/#contact-us">Contact Us</a>
+      <a class="footer-links_twitter" href="https://twitter.com/Scott_Logic" aria-label="Visit our Twitter">
+        <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 49.3 40" style="enable-background:new 0 0 49.3 40;" xml:space="preserve">
+          <path d="M49.3,4.7c-1.8,0.8-3.8,1.3-5.8,1.6c2.1-1.2,3.7-3.2,4.4-5.6c-2,1.2-4.1,2-6.4,2.5C39.6,1.2,37,0,34.1,0
+            C28.5,0,24,4.5,24,10.1c0,0.8,0.1,1.6,0.3,2.3C15.9,12,8.4,8,3.4,1.8C2.6,3.3,2.1,5.1,2.1,6.9c0,3.5,1.8,6.6,4.5,8.4
+            c-1.7-0.1-3.2-0.5-4.6-1.3c0,0,0,0.1,0,0.1c0,4.9,3.5,9,8.1,9.9c-0.8,0.2-1.7,0.4-2.7,0.4c-0.7,0-1.3-0.1-1.9-0.2c1.3,4,5,6.9,9.4,7
+            c-3.5,2.7-7.8,4.3-12.6,4.3c-0.8,0-1.6,0-2.4-0.1C4.5,38.4,9.8,40,15.5,40c18.6,0,28.8-15.4,28.8-28.8c0-0.4,0-0.9,0-1.3
+            C46.2,8.5,47.9,6.8,49.3,4.7z"></path>
+        </svg>
+      </a>
+      <a class="footer-links_linkedin" href="https://www.linkedin.com/company/scott-logic-limited/" aria-label="Visit our LinkedIn">
+        <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 14.1 14" style="enable-background:new 0 0 14.1 14;" xml:space="preserve">
+          <g>
+            <path d="M3.1,14h-3V4h3V14z M14.1,14h-3V8.7c0-1.4-0.5-2.1-1.5-2.1C8.8,6.6,8.3,7,8.1,7.7c0,1.3,0,6.3,0,6.3h-3c0,0,0-9,0-10h2.4
+              l0.2,2h0.1c0.6-1,1.6-1.7,2.9-1.7c1,0,1.9,0.3,2.5,1c0.6,0.7,1,1.7,1,3V14z"></path>
+          </g>
+          <g>
+            <ellipse cx="1.6" cy="1.5" rx="1.6" ry="1.5"></ellipse>
+          </g>
+        </svg>
+      </a>
+    </div>
+  </div>
+  <div class="footer_bottom-layer">
+    <ul>
+      <li>© Copyright Scott Logic 2020.</li>
+      <li><a href="https://www.scottlogic.com/privacy/">Privacy</a></li>
+    </ul>
+  </div>
+</footer>
+
+
+</div>
+
+<script src="/script.js" type="text/javascript"></script>
+<script type="text/javascript">jQuery.noConflict();</script>
+<script>
+initialiseMenu();
+loadClapCount();
+loadGTM();
+</script>
+
+
+</body>
+</html>

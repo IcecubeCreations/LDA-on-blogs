@@ -1,0 +1,1877 @@
+
+
+
+
+
+
+
+
+Collecting Time Series Data for Stock Market with SQL Server
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Menu
+
+
+
+Join
+Beginner
+
+What is SQL Server?
+SQL Server 101
+SQL Server Concepts
+SQL Server Download Links
+My First BI Project 
+SQL Server Career Plan
+Webinars
+All Categories
+
+
+Tutorials
+
+SQL Server 101
+Stored Procedures
+Performance Tuning
+Indexing
+Integration Services
+Reporting Services
+All Tutorials
+
+
+DBA
+
+Database Administration
+Performance Tuning
+Monitoring
+Extended Events
+PowerShell
+SQL Server Agent
+Management Studio
+Backup
+Restore
+Availability Groups
+Webinars
+All Categories
+
+
+
+T-SQL
+
+Stored Procedure Tutorial
+SQL Server Join Example
+CROSS APPLY + OUTER APPLY
+Cursor in SQL Server
+Rolling up multiple rows
+Execute Dynamic SQL
+Date and Time Conversions
+Format SQL Server Dates
+Calendar Table
+Add and Subtract Dates
+Date and Time Functions
+Webinars
+All Categories
+
+
+
+Analytics
+
+Power BI
+Integration Services
+Azure Data Factory
+Reporting Services
+Analysis Services
+Python
+R
+Webinars
+All Categories
+
+
+
+Cloud
+
+AWS
+Azure
+All Categories
+
+
+
+Tools
+
+Data Quality Tools
+Database Performance Analyzer
+Foglight for SQL Server
+SQL Diagnostic Manager for SQL Server
+SolarWinds SQL Sentry
+DBI Web Performance Suite
+
+
+Search
+
+
+
+
+
+ Collecting Time Series Data for Stock Market with SQL Server
+
+By: Rick Dobson   |   Updated: 2020-02-10   |   Comments (6)   |   Related: More > TSQL
+
+
+   Free MSSQLTips webinar - "Efficient Monitoring and Management of SQL Server" (click to register)
+
+
+Problem
+Collecting stock symbol data over multiple years can allow you do to time series
+analysis on stock prices.  In this tip we look at how to download stock
+prices for all stocks over a set period of time and load the data into SQL
+Server for analysis.
+   Solution
+One of the most common questions among data professionals in the finance industry
+is how do I collect historical price and volume data for a lot of security symbols
+from Yahoo Finance (https://finance.yahoo.com/). 
+The Yahoo Finance site is interesting because it provides free time series data
+on tens of thousands of securities from multiple markets across the globe.
+This tip demonstrates how to import Yahoo Finance time series data into a SQL
+Server table.
+
+The data are collected via a script that takes advantage of a special Python
+programmatic interface for collecting time series from Yahoo Finance and other
+internet resources.
+The output from the Python program is a csv file that a T-SQL script imports
+into a SQL Server table.
+
+Some sources for collecting ticker symbols
+Yahoo Finance maintains an immense amount of historical time series data about
+symbols for securities, but it is not straightforward to know all the symbols tracked. 
+
+Stackoverflow.com offers several
+
+alternative answers to the question of how to get a complete list of ticker
+symbols from Yahoo Finance for one or more stock market exchanges.
+
+Investexel.net published
+
+an Excel workbook file with many security symbols.  The
+data for their symbol list was gathered in September 2017.  To my knowledge,
+the web site has not updated its free, publicly available list since then.
+The eoddata company
+provides daily as well as historical end-of-day price and volume data for ticker
+symbols from major exchanges across the globe.  This tip demonstrates a process
+for collecting ticker symbols from eoddata, and then downloading time series data
+from Yahoo Finance for the symbols.  You will learn how to collect time series
+data for slightly more than 8,000 symbols from the AMEX, NASDAQ, and NYSE exchanges
+tracked by eoddata.
+Here’s a screen shot from the eoddata site from which you can download
+its list of ticker symbols for an exchange.  The Exchange selection box allows
+you to pick from many international exchanges, including the three exchanges used
+in this tip (NASDAQ Stock Exchange, New York Stock Exchange, and American Stock
+Exchange).  Clicking the DOWNLOAD SYMBOL LIST link downloads a txt file with
+Symbol and Description columns for ticker symbols in the selected exchange.
+
+
+
+Here’s an excerpt from the symbol list from within Windows Notepad. 
+The preceding screen shot and the one below shows the first ten symbols in alphabetical
+order from the NASDAQ Stock Exchange, but a complete list of symbols for an exchange
+downloads.  You must have a standard membership to perform the download, but
+there is no charge for a standard membership.
+
+
+
+After I downloaded the results from eoddata, I added another column to indicate
+the exchange from which the symbol was selected.  The rows of symbol data were
+arranged alphabetically by symbol within exchange.  The downloads available
+with this tip include a csv file named ExhangeSymbols.csv.  You can use your
+preferred technique for parsing the download data columns and loading the results
+into a SQL Server table.  This tip references a SQL Server table named ExchangeSymbols
+that is populated from the file.  Within the context of this tip’s code,
+the table resides in the dbo schema of the for_csv_from_python database.
+Here’s an excerpt of two sets of ten rows from SQL Server table for the
+downloaded symbols.  As of the time the download was performed, there were
+8856 symbols tracked by eoddata across the three exchanges.
+
+The list of symbols in the screen shot below extends over the first 2000
+rows in the ExchangeSymbols table.  The symbols start with AABA and run
+through KZIA on the NASDAQ Stock Exchange. This is the first set of symbols.
+
+The second list of symbols from eoddata (not excerpted below) to match against
+Yahoo Finance time series data start with KZR on the NASDAQ Stock Exchange and
+extend through HCI on the New York Stock exchange.
+The third list of symbols from eoddata (not excerpted below) to match against
+Yahoo Finance starts with HCP on the New York Stock Exchange and extends through
+UWM on the Amex Stock Exchange.
+
+
+
+
+A Python script to create a csv file with Yahoo Finance historical price and
+volume data
+This section presents and describes a Python script for extracting historical
+price and volume data from Yahoo Finance for each of the three sets of symbols referenced
+in the previous section.  The enhancements in this tip relative to a
+prior
+tip are primarily to handle
+symbol mismatches between eoddata and Yahoo Finance and inappropriate data in one
+or more columns of time series data values.  This section also displays excerpts
+from the script output to clarify how the code interacts with its data sources.
+
+The pull of Yahoo Finance time series data starts on the first trading date in
+2009 and runs through October 7, 2019.  Each row of time series data consists
+of a symbol, a trading date, price values (open, high, low, and close), and a volume
+value.  The Yahoo Finance data pull across all three symbol sets exceeds 15
+million rows!  Yet, the overall process for collecting the time series data
+is relatively quick to run and easy to implement.
+The bullets below walk you through the script.
+
+The script starts with a couple of comment lines (they start with #). 
+In general, each code block within the script is preceded by one or more comment
+lines that summarize the code’s functionality.
+
+The import statement for pandas_datareader.data links to an add-on application
+for Python that is especially convenient for processing tabular data, such
+as that displayed within the preceding screen shot.  The datareader
+offers a means of importing data from various pubic web data sources, including
+Yahoo Finance.  The import statement assigns an alias of web to the
+datareader.
+The second import statement references the built-in Python datetime
+module, which offers techniques for processing date and time values.
+
+
+
+The line that starts with "#read ticker symbols…" is
+a comment line that heads a short code block for reading symbols from a txt
+file.  The txt file is populated by symbol column values of one of the
+three sets of symbols from the ExchangeSymbols table.  The code updates
+the contents of an object named symbol with the contents of the txt file.
+
+The start variable is specified with a date (1/1/2009) in Gregorian format.
+
+The end variable is also specified with a date (10/7/2019) in Gregorian
+format.
+The path_out and file_out strings specify the destination of the csv file
+prepared by the script.
+
+The file_out name is the string constant 'yahoo_prices_volumes_for_ExchangeSymbols_from_01012009_07102019.csv’.
+
+After the csv file is populated by the script, the file name is manually
+re-named for the source set of symbols.  For example, the file name
+for the first set of symbols is modified to ‘yahoo_prices_volumes_for_ExchangeSymbols_from_01012009_07102019_aaba_kzia.csv’.
+
+
+
+The script concludes with a while loop that passes through sequential ticker
+values in symbol.
+
+A try…except statement is at the outmost code structure within
+the loop.
+
+Within the try block, the following kinds of operations are attempted.
+
+A datareader call tries to read a block of time series values
+for the current ticker symbol.
+If the read is successful, the code next inserts the return
+values into a dataframe object.
+Additional processing is performed before the returned values
+are inserted into a csv file.
+The to_csv method for the dataframe populates a csv file with
+the contents of the dataframe.  The mode value for the symbol
+ticker determines if there is a header row before the first row
+of time series values for a symbol.
+
+The header row contains column names for time series data. 
+The header row appears immediately before the first row of time
+series data for the first symbol in a set of symbols.
+Other symbols after the first symbol do not display a header
+row before their time series values.
+The path_out+file_out expression defines the path and file
+name for the csv file.
+
+
+If there is no exception in a try block, a print statement logs
+the success of the try block.
+
+
+Within the except block, errors from within the try block are handled.
+
+A failure anywhere within the try block causes the try block
+code not to complete and transfers control to the except block.
+
+The following rules define error processing rules.
+
+The occurrence of an exception is printed to a log at the
+top of the except clause.
+If the failure to read a block of time series values for
+a ticker symbol is eligible for another read attempt, then this
+special outcome is logged and control transfers to the try block.
+
+If the failure is for the tenth read attempt, then the value
+of j is reset to 0.  Control also transfers to the top
+of the while loop for an attempt to read data for the next ticker
+symbol.
+
+
+
+
+
+
+The while loop iterates based on values for two variables named i and
+j.
+
+These two variables are initialized in two assignment statements
+just before the while statement.
+The i value points at successive sequential ticker values in symbol. 
+The value of i is 0 for the first symbol and it ends with a value of
+one less than the number of ticker values in symbol.  The value
+of i increases by 1 for each successful try pass through the while loop.
+
+The j value tracks successive tries to save a successfully read
+and processed time series set for a symbol.
+
+Values of j permitting a retry for a read and output attempt
+for a symbol start at 0 and run through 9.  The value of j
+increases by one for each retry.
+A value of 10 for j signifies that no further retries are permitted. 
+This value of j results in a reset of j to a value of 0 and an increment
+of i by a value of 1 to point at the next sequential ticker symbol. 
+Control passes to the top of the while loop for processing the next
+symbol.
+
+
+
+
+
+
+
+
+
+
+#settings for importing built-in datetime and date libraries
+
+#and external pandas_datareader libraries
+
+ 
+
+import pandas_datareader.data as web
+
+import datetime
+
+ 
+
+#read ticker symbols from a file to python list object named symbol
+
+symbol = []
+
+with open('C:\python_programs\ExchangeSymbols.txt') as f:
+
+    for line in f:
+
+        symbol.append(line.strip())
+
+f.close
+
+ 
+
+ 
+
+#datetime is a Python module
+
+#datetime.date is a data type within the datetime module
+
+ 
+
+#the start expression is for January 1, 2009
+
+start = datetime.date(2009,1,1)
+
+ 
+
+#the end expression is for October 7, 2019
+
+end = datetime.date(2019,10,7)
+
+ 
+
+#set path for csv file
+
+path_out = 'c:/python_programs_output/'
+
+file_out = 'yahoo_prices_volumes_for_ExchangeSymbols_from_01012009_07102019.csv'
+
+ 
+
+#loop through tickers in symbol list with i values of 0 through
+
+#index for last list item
+
+ 
+
+#if no historical data returned on any pass, try to get the ticker data again
+
+#if destination file is open in Excel, close Excel and continue data collection
+
+#quit retries to get historical data for a symbol after tenth retry
+
+ 
+
+i=0  #pointer for symbol
+
+j=0  #count for loop within symbol
+
+while i<len(symbol):
+
+    try:
+
+        df = web.DataReader(symbol[i], 'yahoo', start, end)
+
+        df.insert(0,'Symbol',symbol[i])
+
+        df = df.drop(['Adj Close'], axis=1)
+
+        print ("from after dr", i,j, symbol[i])
+
+ 
+
+        if i == 0:
+
+            df.to_csv(path_out+file_out)
+
+        else:
+
+            df.to_csv(path_out+file_out,mode = 'a',header=False)
+
+        j=0    
+
+    except:
+
+        print ("from except", i,j, symbol[i])
+
+        if j <=9:
+
+            print(i, symbol[i], j,"Eligible for retry")
+
+            j = j+1
+
+            continue
+
+        if j == 10:
+
+            j=0
+
+            i=i+1
+
+            continue
+
+    i=i+1
+
+
+
+The next screen shot shows the log for the first thirteen symbols from the first
+set of symbols.  This log prints by default in an output window from the IDLE
+application that ships with Python 3.
+
+Log records for symbols are manually assigned a background color to signify
+the type of outcome for a symbol.
+
+Green is for successful reads and outputs of time series values in a
+single try.
+Yellow is for rows depicting symbols with more than 1 try to get to
+a successful output of its time series values.
+Red is for rows depicting no successful read and write through ten consecutive
+tries.
+
+
+The two numbers on each log record denote the value of i followed by the
+value of j.  These values indicate the attempts made to retrieve time series
+data from Yahoo Finance for the ticker values in ExchangeSymbols.txt.
+The five symbols from AABA through AAON each had their time series data
+successfully read from Yahoo Finance and copied to a csv file in a single try.
+
+The AAPL and AAWW symbols each had their time series data successfully read
+and copied to a file, but more than 1 try was required for success.
+The ABEOW symbol did not have its data successfully read and copied in any
+of 10 tries.
+Other symbols in the log are not explicitly discussed, but the background
+color for their log records along with the values of i and j indicate how many
+tries were made for each symbol.
+
+
+
+
+After the conclusion of a run for the preceding Python script for a set of symbols,
+the csv file was renamed manually.  The Python script was run for each of the
+three sets of symbols.
+
+The csv file for the first set of symbols was renamed from yahoo_prices_volumes_for_ExchangeSymbols_from_01012009_07102019.csv
+to yahoo_prices_volumes_for_ExchangeSymbols_from_01012009_07102019_aaba_kzia.csv.
+
+The csv file for the second set of symbols was renamed to yahoo_prices_volumes_for_ExchangeSymbols_from_01012009_07102019_kzr_hci.csv.
+
+The csv file for the third set of symbols was renamed to yahoo_prices_volumes_for_ExchangeSymbols_from_01012009_07102019_hcp_uwm.csv.
+
+
+The next pair of screen shots shows from a Notepad++ session the first and last
+ten data rows for the csv file created by the preceding Python script for the first
+set of symbols.
+
+The image for the first ten data rows has a row of column headers immediately
+preceding the first ten data rows.
+The ten data rows in the top screen shot is for the AABA symbol, which is
+the first symbol in the first set of symbols.
+
+These rows start with the first trading date in 2009, which is Friday
+January 2, 2009.
+Date values progress through successive trading dates; recall that there
+is no trading on weekend dates, such as 2009-01-03 and 2009-01-04.
+
+
+The ten rows in the bottom screen shot is for the KZIA symbol, which is
+the last symbol in the first set of symbols.  These Date values are for
+the last ten trading days in the time series dataset.
+
+
+
+
+
+
+
+The csv files for the second and third sets of symbols follow the same layout
+as for the preceding two screen shots.
+T-SQL script and process for migrating csv file contents to a SQL Server table
+
+This section describes a two-step process for importing and transforming the
+csv files with price and volume data.
+
+The first step imports the csv field values into a SQL Server with six columns
+of string values and one column of date values.  Using sting input fields
+for selected csv file contents helps to eliminate the possibility of inappropriate
+data for a more narrowly defined data type aborting the input of csv file rows
+to SLQ Server table rows.
+The second step transforms the string values to money and integer values
+except for the symbol field which is natively a string data type.
+
+The T-SQL code for inputting the csv files for each of the three symbol sets
+appears below.
+
+First, the script creates two tables for receiving the csv file contents.
+
+The yahoo_prices_volumes_for_MSSQLTips_nvarchar table declares a string
+data type for all columns except the Date column which has a data type of
+date.
+The yahoo_prices_volumes_for_MSSQLTips table has column data types based
+on the type of data in a column.
+
+
+Next, the script invokes three steps to convert the csv file contents for
+the first set of symbols to rows in the yahoo_prices_volumes_for_MSSQLTips table.
+
+First, the rows of the yahoo_prices_volumes_for_MSSQLTips_nvarchar table
+are truncated in preparation for inserting a fresh set of rows.
+Second, a bulk insert statement transfers the contents of the yahoo_prices_volumes_for_ExchangeSymbols_from_01012009_07102019_aaba_kzia.csv
+file to the dbo.yahoo_prices_volumes_for_MSSQLTips_nvarchar
+table.
+Third, the contents of the dbo.yahoo_prices_volumes_for_MSSQLTips_nvarchar
+table are inserted into the dbo.yahoo_prices_volumes_for_MSSQLTips
+table.  Notice a cast table transforms the volume contents from the
+yahoo_prices_volumes_for_MSSQLTips_nvarchar table.  This transformation
+handles a data glitch in Yahoo Finance where volume column values are typed
+as floating-point numbers instead of integers for the volume values associated
+with some symbols.
+
+
+The script applies the same three operations as in the preceding step for
+adding csv file rows for the second and third symbol sets to the yahoo_prices_volumes_for_MSSQLTips
+table.
+
+
+
+
+-- drop table for nvarchar watchlist if it exists
+
+if(select(object_id('dbo.yahoo_prices_volumes_for_MSSQLTips_nvarchar'))) is not null
+
+drop table dbo.yahoo_prices_volumes_for_MSSQLTips_nvarchar
+
+ 
+
+-- create table for watchlist
+
+CREATE TABLE dbo.yahoo_prices_volumes_for_MSSQLTips_nvarchar(
+
+   [Date] date,
+
+   [Symbol] nvarchar(10),
+
+   [Open] nvarchar(50) NULL,
+
+   [High] nvarchar(50) NULL,
+
+   [Low] nvarchar(50) NULL,
+
+   [Close] nvarchar(50) NULL,
+
+   [Volume] nvarchar(50) NULL
+
+) 
+
+GO
+
+ 
+
+-- drop table for data typed watchlist if it exists
+
+if(select(object_id('dbo.yahoo_prices_volumes_for_MSSQLTips'))) is not null
+
+drop table dbo.yahoo_prices_volumes_for_MSSQLTips
+
+CREATE TABLE [dbo].[yahoo_prices_volumes_for_MSSQLTips](
+
+   [Date] [date] NULL,
+
+   [Symbol] [nvarchar](10) NULL,
+
+   [Open] [money] NULL,
+
+   [High] [money] NULL,
+
+   [Low] [money] NULL,
+
+   [Close] [money] NULL,
+
+   [Volume] [bigint] NULL
+
+)
+
+GO
+
+ 
+
+---------------------------------------------------------------------------------------------------
+
+ 
+
+-- for first symbol set
+
+ 
+
+-- migrate csv file to nvarchar watchlist
+
+truncate table dbo.yahoo_prices_volumes_for_MSSQLTips_nvarchar
+
+bulk insert dbo.yahoo_prices_volumes_for_MSSQLTips_nvarchar
+
+from 'C:\python_programs_output\yahoo_prices_volumes_for_ExchangeSymbols_from_01012009_07102019_aaba_kzia.csv'
+
+with
+
+(
+
+    firstrow = 2,
+
+    fieldterminator = ',',  --CSV field delimiter
+
+    rowterminator = '\n'
+
+)
+
+ 
+
+-- insert dbo.yahoo_prices_volumes_for_MSSQLTips_nvarchar into dbo.yahoo_prices_volumes_for_MSSQLTips
+
+insert into dbo.yahoo_prices_volumes_for_MSSQLTips
+
+select 
+
+   [Date],
+
+   [Symbol],
+
+   [Open],
+
+   [High],
+
+   [Low],
+
+   [Close],
+
+   cast([Volume] as float) 
+
+from dbo.yahoo_prices_volumes_for_MSSQLTips_nvarchar
+
+ 
+
+---------------------------------------------------------------------------------------------------
+
+ 
+
+-- for second symbol set
+
+ 
+
+-- migrate csv file to nvarchar watchlist
+
+truncate table dbo.yahoo_prices_volumes_for_MSSQLTips_nvarchar
+
+bulk insert dbo.yahoo_prices_volumes_for_MSSQLTips_nvarchar
+
+from 'C:\python_programs_output\yahoo_prices_volumes_for_ExchangeSymbols_from_01012009_07102019_kzr_hci.csv'
+
+with
+
+(
+
+    firstrow = 2,
+
+    fieldterminator = ',',  --CSV field delimiter
+
+    rowterminator = '\n'
+
+) 
+
+ 
+
+--select count(*) from dbo.yahoo_prices_volumes_for_MSSQLTips_nvarchar ;select * from dbo.yahoo_prices_volumes_for_MSSQLTips_nvarchar
+
+ 
+
+-- insert dbo.yahoo_prices_volumes_for_MSSQLTips_nvarchar into -- dbo.yahoo_prices_volumes_for_MSSQLTips
+
+insert into dbo.yahoo_prices_volumes_for_MSSQLTips
+
+select 
+
+   [Date],
+
+   [Symbol],
+
+   [Open],
+
+   [High],
+
+   [Low],
+
+   [Close],
+
+   cast([Volume] as float) 
+
+from dbo.yahoo_prices_volumes_for_MSSQLTips_nvarchar
+
+ 
+
+---------------------------------------------------------------------------------------------------
+
+ 
+
+-- for third symbol set
+
+ 
+
+-- migrate csv file to nvarchar watchlist
+
+truncate table dbo.yahoo_prices_volumes_for_MSSQLTips_nvarchar
+
+bulk insert dbo.yahoo_prices_volumes_for_MSSQLTips_nvarchar
+
+from 'C:\python_programs_output\yahoo_prices_volumes_for_ExchangeSymbols_from_01012009_07102019_hcp_uwm.csv'
+
+with
+
+(
+
+    firstrow = 2,
+
+    fieldterminator = ',',  --CSV field delimiter
+
+    rowterminator = '\n'
+
+)
+
+ 
+
+-- insert  dbo.yahoo_prices_volumes_for_MSSQLTips_nvarchar into dbo.yahoo_prices_volumes_for_MSSQLTips
+
+insert into dbo.yahoo_prices_volumes_for_MSSQLTips
+
+select 
+
+   [Date],
+
+   [Symbol],
+
+   [Open],
+
+   [High],
+
+   [Low],
+
+   [Close],
+
+   cast([Volume] as float) 
+
+from dbo.yahoo_prices_volumes_for_MSSQLTips_nvarchar
+
+
+
+Verifying the time series values
+Future tips will drill down on the data in the yahoo_prices_volumes_for_MSSQLTips
+table within the for_csv_from_python database.  However, it may be helpful
+to present in this tip some queries for the table to give you a feel for what was
+downloaded from the Yahoo Finance and eoddata websites in this tip.  You will
+generally want to confirm a data load of millions of rows with some validation queries
+that confirm the data you inserted into SQL Server.
+The following screen shot shows three simple queries that explore the downloaded
+data in some basic ways.
+
+The first query counts the total number of rows in the yahoo_prices_volumes_for_MSSQLTips
+table.  As you can see, over 15 million rows were downloaded from Yahoo
+Finance.
+The second query counts the number of distinct symbols in the downloaded
+data.  Just 8,089 distinct symbols are in the table.  As you will
+learn in subsequent tips, not all symbols have the same number of data rows. 
+This results from some symbols being listed on an exchange before others and
+from not all symbols trading on each trade date after they initially traded.
+
+The third query counts the number of distinct dates in the table. 
+Not all dates from 1/1/2009 through 10/7/2019 are in the table.  For example,
+securities do not trade on weekend days as well as around ten holidays per year.
+
+
+
+
+
+The following screen shot shows of an excerpt of the first 13 symbols in alphabetical
+order from the downloaded ExchangeSymbols table from the eoddata site.  As
+you can see, the table contains 8,856 symbols from three different exchanges (NYSE,
+AMEX, and NASDAQ).
+
+
+
+The next screen shot shows a query and an excerpt of the first thirteen rows
+from its results set.  This query returns the eoddata symbols (ExchangeSymbols)
+that are also in Yahoo Finance (yahoo_prices_volumes_for_MSSQLTips).  Notice
+that the total count of rows is 8,089; this value matches the result from the initial
+set of three queries with the title of count_of_total_returned_distinct_symbols.
+
+
+
+
+The last screen shot in this tip shows another query and an excerpt of the first
+thirteen rows from its results set.  This query returns the eoddata symbols
+that do not match any symbols in the Yahoo Finance web site interface for Python. 
+There are 767 total rows in the results set.  The sum of 767 rows from the
+following query and 8,089 rows from the preceding query matches the total number
+of symbols returned for the three exchanges from the eoddata web site as of the
+time this tip was prepared.
+
+
+
+Next Steps
+You can try out the code examples for this tip.  All the referenced scripts
+along with a csv file having all the symbols referenced from eoddata are available
+in this tip’s download file.
+
+Try to duplicate the results in this tip with the same symbols as in this
+tip.
+If you are not interested in three major US exchanges, try using symbols
+from other exchanges available from eoddata.
+You can also try to use the approach described here for security data to
+other kinds of data, such as readings from weather stations, or your company’s
+internal sales and production data by product over time.
+Finally, leave a comment about your success in adapting this tip for your
+business as well as any related issues you want covered in future tips.
+
+
+
+
+
+Get Started Now - Click here to get your free 14 day trial of SolarWinds Database Insights
+
+
+
+
+
+Related Articles
+
+
+Delete duplicate rows with no primary key on a SQL Server table
+
+
+Calculating Mathematical Values in SQL Server
+
+
+SQL Server Cursor Example
+
+
+Using MERGE in SQL Server to insert, update and delete at the same time
+
+
+Rolling up multiple rows into a single row and column for SQL Server data
+
+
+Find MAX value from multiple columns in a SQL Server table
+
+
+CREATE OR ALTER statement in SQL Server
+
+
+SQL Server CTE vs Temp Table vs Table Variable Performance Test
+
+
+SQL Server IN vs EXISTS
+
+
+How to use @@ROWCOUNT in SQL Server
+
+
+SQL Server Loop through Table Rows without Cursor
+
+
+Split Delimited String into Columns in SQL Server with PARSENAME
+
+
+SQL Server SUBSTRING Examples
+
+
+SQL Server DROP TABLE IF EXISTS Examples
+
+
+Drop All Tables in a SQL Server Database
+
+
+SQL SELECT DISTINCT Examples
+
+
+SQL Server T-SQL CASE Statement Examples
+
+
+SQL NOT IN Operator
+
+
+Learning the SQL GROUP BY Clause
+
+
+Learn how to convert data with SQL CAST and SQL CONVERT
+
+
+
+
+Popular Articles
+
+
+Date and Time Conversions Using SQL Server
+
+
+Format SQL Server Dates with FORMAT Function
+
+
+SQL Server CROSS APPLY and OUTER APPLY
+
+
+SQL Server Cursor Example
+
+
+SQL Server DROP TABLE IF EXISTS Examples
+
+
+Rolling up multiple rows into a single row and column for SQL Server data
+
+
+SQL NOT IN Operator
+
+
+How to tell what SQL Server versions you are running
+
+
+Add and Subtract Dates using DATEADD in SQL Server
+
+
+SQL Convert Date to YYYYMMDD
+
+
+SQL Server Loop through Table Rows without Cursor
+
+
+Resolving could not open a connection to SQL Server errors
+
+
+How to Get Current Date in SQL Server
+
+
+SQL Server Row Count for all Tables in a Database
+
+
+Using MERGE in SQL Server to insert, update and delete at the same time
+
+
+SQL Server Download Quick Links
+
+
+Concatenate SQL Server Columns into a String with CONCAT()
+
+
+SQL Server Database Stuck in Restoring State
+
+
+Searching and finding a string value in all columns in a SQL Server table
+
+
+Ways to compare and find differences for SQL Server tables and data
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+About the author
+
+
+
+Rick Dobson is a Microsoft Certified Technical Specialist and well accomplished SQL Server and Access author.
+View all my tips
+
+
+
+Article Last Updated: 2020-02-10
+
+
+
+
+
+
+Comments For This Article
+Add Comment
+
+
+
+
+
+
+
+Friday, June 12, 2020 - 9:28:54 AM - Rick Dobson
+
+
+Back To Top (85989)
+
+
+
+
+Hi Salam,
+Glad to hear that you got the script to work after correcting a configuration glitch.  I was thinking that might be your problem because I have been running variations of that Python script for years with different input and output settings.
+Cheers,
+Rick Dobson
+
+
+
+
+
+
+
+Friday, June 12, 2020 - 8:15:53 AM - Salam
+
+
+Back To Top (85984)
+
+
+
+
+Hi Rick,
+I switched to another machine where I had VS 2K19 with Python support and needed to add the path to of python 3.7 to the env variables. Also, when trying to install pandas_datareader, I got an issue
+*** ERROR: Could not install packages due to an Environment Error [WinError 5] Access is denied: 
+C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\Python37_64\\Lib\\site-packages\\pytz
+Consider using the `--user` option or check the permissions. *** -
+so I added --user and was able to run the script which worked like a charm
+Thanks for your help
+
+
+
+
+
+
+
+Tuesday, June 9, 2020 - 4:03:39 PM - Rick Dobson
+
+
+Back To Top (85889)
+
+
+
+
+Hi Salam,
+I am not a Python expert either.  I figured out how to load Python and get
+this program to work for me.  In this message, I change the program to conform
+generally to your changes.  I hope that this example helps.  If not, I
+suggest you try consulting a Python programming expert for help with Python installation
+or configuration.
+I created a file with the thirteen symbols that you sent me.  I saved the
+file in this location: E:\TEMP\CollectingTimeSeriesData.  The file's name was
+ExchangeSymbols_short_test_2.txt.  It was a simple txt file with one symbol
+per line.
+Next, I modified my Python script to point at the file of symbols; see the modification
+below.  Notice particularly, the format is: e:\\temp\CollectingTimeSeriesData\ExchangeSymbols_short_test_2.txt.
+#settings for importing built-in datetime and date libraries
+#and external pandas_datareader libraries
+import pandas_datareader.data as web
+import datetime
+#read ticker symbols from a file to python list object named symbol
+symbol = []
+with open('e:\\temp\CollectingTimeSeriesData\ExchangeSymbols_short_test_2.txt')
+as f:
+    for line in f:
+        symbol.append(line.strip())
+f.close
+#datetime is a Python module
+#datetime.date is a data type within the datetime module
+#the start expression is for January 1, 2009
+start = datetime.date(2009,1,1)
+#the end expression is for October 7, 2019
+end = datetime.date(2019,10,7)
+#set path for csv file
+path_out = 'c:/python_programs_output/'
+file_out = 'yahoo_prices_volumes_for_ExchangeSymbols_from_01012009_07102019.csv'
+#loop through tickers in symbol list with i values of 0 through
+#index for last list item
+#if no historical data returned on any pass, try to get the ticker data again
+#if destination file is open in Excel, close Excel and continue data collection
+#quit retries to get historical data for a symbol after tenth retry
+i=0  #pointer for symbol
+j=0  #count for loop within symbol
+while i<len(symbol):
+    try:
+        df = web.DataReader(symbol[i], 'yahoo', start, end)
+        df.insert(0,'Symbol',symbol[i])
+        df = df.drop(['Adj Close'], axis=1)
+        print ("from after dr", i,j, symbol[i])
+        
+        if i == 0:
+            df.to_csv(path_out+file_out)
+        else:
+            df.to_csv(path_out+file_out,mode =
+'a',header=False)
+        j=0    
+    except:
+        print ("from except", i,j, symbol[i])
+        if j <=9:
+            print(i, symbol[i], j,"Eligible for
+retry")
+            j = j+1
+            continue
+        if j == 10:
+            j=0
+            i=i+1
+            continue
+    i=i+1
+Finally, I ran the modified script.  I show the log written below. 
+It appears to be successful.
+from after dr 0 0 AABA
+from after dr 1 0 AAL
+from after dr 2 0 AAME
+from after dr 3 0 AAOI
+from after dr 4 0 AAON
+from after dr 5 0 AAPL
+from after dr 6 0 AAWW
+from after dr 7 0 AAXJ
+from after dr 8 0 AAXN
+from after dr 9 0 ABCB
+from after dr 10 0 ABDC
+from after dr 11 0 ABEO
+from except 12 0 ABEOW
+12 ABEOW 0 Eligible for retry
+from except 12 1 ABEOW
+12 ABEOW 1 Eligible for retry
+from except 12 2 ABEOW
+12 ABEOW 2 Eligible for retry
+from except 12 3 ABEOW
+12 ABEOW 3 Eligible for retry
+from except 12 4 ABEOW
+12 ABEOW 4 Eligible for retry
+from except 12 5 ABEOW
+12 ABEOW 5 Eligible for retry
+from except 12 6 ABEOW
+12 ABEOW 6 Eligible for retry
+from except 12 7 ABEOW
+12 ABEOW 7 Eligible for retry
+from except 12 8 ABEOW
+12 ABEOW 8 Eligible for retry
+from except 12 9 ABEOW
+12 ABEOW 9 Eligible for retry
+from except 12 10 ABEOW
+I hope this helps.  In any event, I am not sure how to help you beyond this
+second reply to you.
+Good fortune in getting a modified version of the Pyhon script to work either
+based on the example in this reply or with some additional modifications that you
+are able to devise on your own.  When you do get it going, it would be great
+if you can post your successful modification as a reply to this message.
+Cheers,
+Rick Dobson
+
+
+
+
+
+
+
+Tuesday, June 9, 2020 - 11:10:36 AM - Salam
+
+
+Back To Top (85877)
+
+
+
+
+Rick, I am not sure I understnad what you mean by 3 files distinct. Anyway, I also created a file with 13 symbols as follows
+AABA
+AAL
+AAME
+AAOI
+AAON
+AAPL
+AAWW
+AAXJ
+AAXN
+ABCB
+ABDC
+ABEO
+ABEOW
+Named "ExhangeSymbols13.txt", then updated the python file to use this file but stil 
+with open('E:\\temp\\CollectingTimeSeriesData\\ExhangeSymbols13.txt', 'r') as f:
+    for line in f:
+        symbol.append(line.strip())
+f.close
+still no record is getting written to output file as you can see
+E:\temp\CollectingTimeSeriesData>python E:\temp\CollectingTimeSeriesData\read_ExchangeSymbols_for_export_via_csv.py
+('from except', 0, 0, 'AABA')
+(0, 'AABA', 0, 'Eligible for retry')
+('from after dr', 0, 1, 'AABA')
+('from except', 0, 1, 'AABA')
+(0, 'AABA', 1, 'Eligible for retry')
+('from after dr', 0, 2, 'AABA')
+('from except', 0, 2, 'AABA')
+(0, 'AABA', 2, 'Eligible for retry')
+('from after dr', 0, 3, 'AABA')
+('from except', 0, 3, 'AABA')
+(0, 'AABA', 3, 'Eligible for retry')
+('from after dr', 0, 4, 'AABA')
+('from except', 0, 4, 'AABA')
+(0, 'AABA', 4, 'Eligible for retry')
+('from after dr', 0, 5, 'AABA')
+('from except', 0, 5, 'AABA')
+(0, 'AABA', 5, 'Eligible for retry')
+('from after dr', 0, 6, 'AABA')
+('from except', 0, 6, 'AABA')
+(0, 'AABA', 6, 'Eligible for retry')
+('from after dr', 0, 7, 'AABA')
+('from except', 0, 7, 'AABA')
+(0, 'AABA', 7, 'Eligible for retry')
+('from after dr', 0, 8, 'AABA')
+('from except', 0, 8, 'AABA')
+(0, 'AABA', 8, 'Eligible for retry')
+('from after dr', 0, 9, 'AABA')
+('from except', 0, 9, 'AABA')
+(0, 'AABA', 9, 'Eligible for retry')
+('from except', 0, 10, 'AABA')
+('from after dr', 1, 0, 'AAL')
+('from except', 1, 0, 'AAL')
+(1, 'AAL', 0, 'Eligible for retry')
+('from after dr', 1, 1, 'AAL')
+('from except', 1, 1, 'AAL')
+(1, 'AAL', 1, 'Eligible for retry')
+('from after dr', 1, 2, 'AAL')
+('from except', 1, 2, 'AAL')
+(1, 'AAL', 2, 'Eligible for retry')
+('from after dr', 1, 3, 'AAL')
+('from except', 1, 3, 'AAL')
+(1, 'AAL', 3, 'Eligible for retry')
+('from after dr', 1, 4, 'AAL')
+('from except', 1, 4, 'AAL')
+(1, 'AAL', 4, 'Eligible for retry')
+('from after dr', 1, 5, 'AAL')
+('from except', 1, 5, 'AAL')
+(1, 'AAL', 5, 'Eligible for retry')
+('from after dr', 1, 6, 'AAL')
+('from except', 1, 6, 'AAL')
+(1, 'AAL', 6, 'Eligible for retry')
+('from after dr', 1, 7, 'AAL')
+('from except', 1, 7, 'AAL')
+(1, 'AAL', 7, 'Eligible for retry')
+('from after dr', 1, 8, 'AAL')
+('from except', 1, 8, 'AAL')
+(1, 'AAL', 8, 'Eligible for retry')
+('from after dr', 1, 9, 'AAL')
+('from except', 1, 9, 'AAL')
+(1, 'AAL', 9, 'Eligible for retry')
+('from after dr', 1, 10, 'AAL')
+('from except', 1, 10, 'AAL')
+('from after dr', 2, 0, 'AAME')
+('from except', 2, 0, 'AAME')
+(2, 'AAME', 0, 'Eligible for retry')
+('from after dr', 2, 1, 'AAME')
+('from except', 2, 1, 'AAME')
+(2, 'AAME', 1, 'Eligible for retry')
+('from after dr', 2, 2, 'AAME')
+('from except', 2, 2, 'AAME')
+(2, 'AAME', 2, 'Eligible for retry')
+('from after dr', 2, 3, 'AAME')
+('from except', 2, 3, 'AAME')
+(2, 'AAME', 3, 'Eligible for retry')
+('from after dr', 2, 4, 'AAME')
+('from except', 2, 4, 'AAME')
+(2, 'AAME', 4, 'Eligible for retry')
+('from after dr', 2, 5, 'AAME')
+('from except', 2, 5, 'AAME')
+(2, 'AAME', 5, 'Eligible for retry')
+('from after dr', 2, 6, 'AAME')
+('from except', 2, 6, 'AAME')
+(2, 'AAME', 6, 'Eligible for retry')
+('from after dr', 2, 7, 'AAME')
+('from except', 2, 7, 'AAME')
+(2, 'AAME', 7, 'Eligible for retry')
+('from after dr', 2, 8, 'AAME')
+('from except', 2, 8, 'AAME')
+(2, 'AAME', 8, 'Eligible for retry')
+('from after dr', 2, 9, 'AAME')
+('from except', 2, 9, 'AAME')
+(2, 'AAME', 9, 'Eligible for retry')
+('from after dr', 2, 10, 'AAME')
+('from except', 2, 10, 'AAME')
+('from after dr', 3, 0, 'AAOI')
+('from except', 3, 0, 'AAOI')
+(3, 'AAOI', 0, 'Eligible for retry')
+('from after dr', 3, 1, 'AAOI')
+('from except', 3, 1, 'AAOI')
+(3, 'AAOI', 1, 'Eligible for retry')
+('from after dr', 3, 2, 'AAOI')
+('from except', 3, 2, 'AAOI')
+(3, 'AAOI', 2, 'Eligible for retry')
+('from after dr', 3, 3, 'AAOI')
+('from except', 3, 3, 'AAOI')
+(3, 'AAOI', 3, 'Eligible for retry')
+('from after dr', 3, 4, 'AAOI')
+('from except', 3, 4, 'AAOI')
+(3, 'AAOI', 4, 'Eligible for retry')
+('from after dr', 3, 5, 'AAOI')
+('from except', 3, 5, 'AAOI')
+(3, 'AAOI', 5, 'Eligible for retry')
+('from after dr', 3, 6, 'AAOI')
+('from except', 3, 6, 'AAOI')
+(3, 'AAOI', 6, 'Eligible for retry')
+('from after dr', 3, 7, 'AAOI')
+('from except', 3, 7, 'AAOI')
+(3, 'AAOI', 7, 'Eligible for retry')
+('from after dr', 3, 8, 'AAOI')
+('from except', 3, 8, 'AAOI')
+(3, 'AAOI', 8, 'Eligible for retry')
+('from after dr', 3, 9, 'AAOI')
+('from except', 3, 9, 'AAOI')
+(3, 'AAOI', 9, 'Eligible for retry')
+('from after dr', 3, 10, 'AAOI')
+('from except', 3, 10, 'AAOI')
+('from after dr', 4, 0, 'AAON')
+('from except', 4, 0, 'AAON')
+(4, 'AAON', 0, 'Eligible for retry')
+('from after dr', 4, 1, 'AAON')
+('from except', 4, 1, 'AAON')
+(4, 'AAON', 1, 'Eligible for retry')
+('from after dr', 4, 2, 'AAON')
+('from except', 4, 2, 'AAON')
+(4, 'AAON', 2, 'Eligible for retry')
+('from after dr', 4, 3, 'AAON')
+('from except', 4, 3, 'AAON')
+(4, 'AAON', 3, 'Eligible for retry')
+('from after dr', 4, 4, 'AAON')
+('from except', 4, 4, 'AAON')
+(4, 'AAON', 4, 'Eligible for retry')
+('from after dr', 4, 5, 'AAON')
+('from except', 4, 5, 'AAON')
+(4, 'AAON', 5, 'Eligible for retry')
+('from after dr', 4, 6, 'AAON')
+('from except', 4, 6, 'AAON')
+(4, 'AAON', 6, 'Eligible for retry')
+('from after dr', 4, 7, 'AAON')
+('from except', 4, 7, 'AAON')
+(4, 'AAON', 7, 'Eligible for retry')
+('from after dr', 4, 8, 'AAON')
+('from except', 4, 8, 'AAON')
+(4, 'AAON', 8, 'Eligible for retry')
+('from after dr', 4, 9, 'AAON')
+('from except', 4, 9, 'AAON')
+(4, 'AAON', 9, 'Eligible for retry')
+('from after dr', 4, 10, 'AAON')
+('from except', 4, 10, 'AAON')
+('from after dr', 5, 0, 'AAPL')
+('from except', 5, 0, 'AAPL')
+(5, 'AAPL', 0, 'Eligible for retry')
+('from after dr', 5, 1, 'AAPL')
+('from except', 5, 1, 'AAPL')
+(5, 'AAPL', 1, 'Eligible for retry')
+('from after dr', 5, 2, 'AAPL')
+('from except', 5, 2, 'AAPL')
+(5, 'AAPL', 2, 'Eligible for retry')
+('from after dr', 5, 3, 'AAPL')
+('from except', 5, 3, 'AAPL')
+(5, 'AAPL', 3, 'Eligible for retry')
+('from after dr', 5, 4, 'AAPL')
+('from except', 5, 4, 'AAPL')
+(5, 'AAPL', 4, 'Eligible for retry')
+('from after dr', 5, 5, 'AAPL')
+('from except', 5, 5, 'AAPL')
+(5, 'AAPL', 5, 'Eligible for retry')
+('from after dr', 5, 6, 'AAPL')
+('from except', 5, 6, 'AAPL')
+(5, 'AAPL', 6, 'Eligible for retry')
+('from after dr', 5, 7, 'AAPL')
+('from except', 5, 7, 'AAPL')
+(5, 'AAPL', 7, 'Eligible for retry')
+('from after dr', 5, 8, 'AAPL')
+('from except', 5, 8, 'AAPL')
+(5, 'AAPL', 8, 'Eligible for retry')
+('from after dr', 5, 9, 'AAPL')
+('from except', 5, 9, 'AAPL')
+(5, 'AAPL', 9, 'Eligible for retry')
+('from after dr', 5, 10, 'AAPL')
+('from except', 5, 10, 'AAPL')
+('from after dr', 6, 0, 'AAWW')
+('from except', 6, 0, 'AAWW')
+(6, 'AAWW', 0, 'Eligible for retry')
+('from after dr', 6, 1, 'AAWW')
+('from except', 6, 1, 'AAWW')
+(6, 'AAWW', 1, 'Eligible for retry')
+('from after dr', 6, 2, 'AAWW')
+('from except', 6, 2, 'AAWW')
+(6, 'AAWW', 2, 'Eligible for retry')
+('from after dr', 6, 3, 'AAWW')
+('from except', 6, 3, 'AAWW')
+(6, 'AAWW', 3, 'Eligible for retry')
+('from after dr', 6, 4, 'AAWW')
+('from except', 6, 4, 'AAWW')
+(6, 'AAWW', 4, 'Eligible for retry')
+('from after dr', 6, 5, 'AAWW')
+('from except', 6, 5, 'AAWW')
+(6, 'AAWW', 5, 'Eligible for retry')
+('from after dr', 6, 6, 'AAWW')
+('from except', 6, 6, 'AAWW')
+(6, 'AAWW', 6, 'Eligible for retry')
+('from after dr', 6, 7, 'AAWW')
+('from except', 6, 7, 'AAWW')
+(6, 'AAWW', 7, 'Eligible for retry')
+('from after dr', 6, 8, 'AAWW')
+('from except', 6, 8, 'AAWW')
+(6, 'AAWW', 8, 'Eligible for retry')
+('from after dr', 6, 9, 'AAWW')
+('from except', 6, 9, 'AAWW')
+(6, 'AAWW', 9, 'Eligible for retry')
+('from after dr', 6, 10, 'AAWW')
+('from except', 6, 10, 'AAWW')
+('from after dr', 7, 0, 'AAXJ')
+('from except', 7, 0, 'AAXJ')
+(7, 'AAXJ', 0, 'Eligible for retry')
+('from after dr', 7, 1, 'AAXJ')
+('from except', 7, 1, 'AAXJ')
+(7, 'AAXJ', 1, 'Eligible for retry')
+('from after dr', 7, 2, 'AAXJ')
+('from except', 7, 2, 'AAXJ')
+(7, 'AAXJ', 2, 'Eligible for retry')
+('from after dr', 7, 3, 'AAXJ')
+('from except', 7, 3, 'AAXJ')
+(7, 'AAXJ', 3, 'Eligible for retry')
+('from after dr', 7, 4, 'AAXJ')
+('from except', 7, 4, 'AAXJ')
+(7, 'AAXJ', 4, 'Eligible for retry')
+('from after dr', 7, 5, 'AAXJ')
+('from except', 7, 5, 'AAXJ')
+(7, 'AAXJ', 5, 'Eligible for retry')
+('from after dr', 7, 6, 'AAXJ')
+('from except', 7, 6, 'AAXJ')
+(7, 'AAXJ', 6, 'Eligible for retry')
+('from after dr', 7, 7, 'AAXJ')
+('from except', 7, 7, 'AAXJ')
+(7, 'AAXJ', 7, 'Eligible for retry')
+('from after dr', 7, 8, 'AAXJ')
+('from except', 7, 8, 'AAXJ')
+(7, 'AAXJ', 8, 'Eligible for retry')
+('from after dr', 7, 9, 'AAXJ')
+('from except', 7, 9, 'AAXJ')
+(7, 'AAXJ', 9, 'Eligible for retry')
+('from after dr', 7, 10, 'AAXJ')
+('from except', 7, 10, 'AAXJ')
+('from after dr', 8, 0, 'AAXN')
+('from except', 8, 0, 'AAXN')
+
+
+
+
+
+
+
+Monday, June 8, 2020 - 10:47:23 PM - Rick Dobson
+
+
+Back To Top (85859)
+
+
+
+
+Hi Salam,
+Thanks for reading the tip and trying to get the code to work.
+You didn't do anything wrong most likely.
+I ended up dividing the list of symbols from eoddata into three distinct sets
+from the source file in the download file.  The details for how to create the
+three sets are in the tip.  However, only the values in the first column are
+required for the ExchangeSymbols.txt file.
+Here's an excerpt from the first of the three files with just the first thirty
+rows.
+AABA
+AAL
+AAME
+AAOI
+AAON
+AAPL
+AAWW
+AAXJ
+AAXN
+ABCB
+ABDC
+ABEO
+ABEOW
+ABIL
+ABIO
+ABMD
+ABTX
+ABUS
+ACAD
+ACAM
+ACAMU
+ACAMW
+ACBI
+ACER
+ACGL
+ACGLO
+ACGLP
+ACHC
+ACHN
+ACHV
+I just tested the code in the tip with the above 30 symbols.  It worked. 
+Here's the log file from the Python script.
+from after dr 0 0 AABA
+from after dr 1 0 AAL
+from after dr 2 0 AAME
+from after dr 3 0 AAOI
+from after dr 4 0 AAON
+from after dr 5 0 AAPL
+from after dr 6 0 AAWW
+from after dr 7 0 AAXJ
+from after dr 8 0 AAXN
+from after dr 9 0 ABCB
+from after dr 10 0 ABDC
+from after dr 11 0 ABEO
+from except 12 0 ABEOW
+12 ABEOW 0 Eligible for retry
+from except 12 1 ABEOW
+12 ABEOW 1 Eligible for retry
+from except 12 2 ABEOW
+12 ABEOW 2 Eligible for retry
+from except 12 3 ABEOW
+12 ABEOW 3 Eligible for retry
+from except 12 4 ABEOW
+12 ABEOW 4 Eligible for retry
+from except 12 5 ABEOW
+12 ABEOW 5 Eligible for retry
+from except 12 6 ABEOW
+12 ABEOW 6 Eligible for retry
+from except 12 7 ABEOW
+12 ABEOW 7 Eligible for retry
+from except 12 8 ABEOW
+12 ABEOW 8 Eligible for retry
+from except 12 9 ABEOW
+12 ABEOW 9 Eligible for retry
+from except 12 10 ABEOW
+from except 13 0 ABIL
+13 ABIL 0 Eligible for retry
+from except 13 1 ABIL
+13 ABIL 1 Eligible for retry
+from except 13 2 ABIL
+13 ABIL 2 Eligible for retry
+from except 13 3 ABIL
+13 ABIL 3 Eligible for retry
+from except 13 4 ABIL
+13 ABIL 4 Eligible for retry
+from except 13 5 ABIL
+13 ABIL 5 Eligible for retry
+from except 13 6 ABIL
+13 ABIL 6 Eligible for retry
+from except 13 7 ABIL
+13 ABIL 7 Eligible for retry
+from except 13 8 ABIL
+13 ABIL 8 Eligible for retry
+from except 13 9 ABIL
+13 ABIL 9 Eligible for retry
+from except 13 10 ABIL
+from after dr 14 0 ABIO
+from after dr 15 0 ABMD
+from after dr 16 0 ABTX
+from after dr 17 0 ABUS
+from after dr 18 0 ACAD
+from after dr 19 0 ACAM
+from after dr 20 0 ACAMU
+from except 21 0 ACAMW
+21 ACAMW 0 Eligible for retry
+from except 21 1 ACAMW
+21 ACAMW 1 Eligible for retry
+from except 21 2 ACAMW
+21 ACAMW 2 Eligible for retry
+from except 21 3 ACAMW
+21 ACAMW 3 Eligible for retry
+from except 21 4 ACAMW
+21 ACAMW 4 Eligible for retry
+from except 21 5 ACAMW
+21 ACAMW 5 Eligible for retry
+from except 21 6 ACAMW
+21 ACAMW 6 Eligible for retry
+from except 21 7 ACAMW
+21 ACAMW 7 Eligible for retry
+from except 21 8 ACAMW
+21 ACAMW 8 Eligible for retry
+from except 21 9 ACAMW
+21 ACAMW 9 Eligible for retry
+from except 21 10 ACAMW
+from after dr 22 0 ACBI
+from after dr 23 0 ACER
+from after dr 24 0 ACGL
+from after dr 25 0 ACGLO
+from after dr 26 0 ACGLP
+from after dr 27 0 ACHC
+from except 28 0 ACHN
+28 ACHN 0 Eligible for retry
+from except 28 1 ACHN
+28 ACHN 1 Eligible for retry
+from except 28 2 ACHN
+28 ACHN 2 Eligible for retry
+from except 28 3 ACHN
+28 ACHN 3 Eligible for retry
+from except 28 4 ACHN
+28 ACHN 4 Eligible for retry
+from except 28 5 ACHN
+28 ACHN 5 Eligible for retry
+from except 28 6 ACHN
+28 ACHN 6 Eligible for retry
+from except 28 7 ACHN
+28 ACHN 7 Eligible for retry
+from except 28 8 ACHN
+28 ACHN 8 Eligible for retry
+from except 28 9 ACHN
+28 ACHN 9 Eligible for retry
+from except 28 10 ACHN
+from after dr 29 0 ACHV
+As you can see, there are some retries, but not all symbols result in a retry. 
+Yahoo Finance and the eoddata company may be using different symbols for some symbols,
+but they are frequently the same.
+I hope this reply helps you.
+Rick Dobson
+
+
+
+
+
+
+
+Monday, June 8, 2020 - 8:57:03 AM - Salam
+
+
+Back To Top (85855)
+
+
+
+
+Hi Rick, I followed instructions, 1st in the Python script you indicate opening a text file C:\python_programs\ExchangeSymbols.txt whereas in the download zip file there is a C:\python_programs\ExchangeSymbols.csv. Anyway I changed the extension to csv but geting retries for all symbols, I am not very well versed with python, can you help please? Thanks
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+ 
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Follow
+
+Get Free SQL Tips
+Twitter
+LinkedIn
+Facebook
+Pinterest
+RSS
+
+
+
+Learning
+
+DBAs
+Developers
+BI Professionals
+Careers
+
+
+
+Resources
+
+Tutorials
+Webcasts
+Whitepapers
+Tools
+
+
+
+Search
+
+Tip Categories
+Search By TipID
+Authors
+
+
+
+Community
+
+First Timer?
+Pictures
+Contribute
+Event Calendar
+User Groups
+Author of the Year
+
+
+
+More Info
+
+Join
+About
+Copyright
+Privacy
+Disclaimer
+Feedback
+Advertise
+
+
+
+
+
+
+Copyright (c) 2006-2022 Edgewood Solutions, LLC All rights reserved
+Some names and products listed are the registered trademarks of their respective owners.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

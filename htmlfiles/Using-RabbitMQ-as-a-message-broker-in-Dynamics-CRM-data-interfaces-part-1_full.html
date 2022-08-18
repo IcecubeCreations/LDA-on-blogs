@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <title>Using RabbitMQ as a message broker in Dynamics CRM data interfaces – part 1</title>
+    <meta name="description" content="" />
+
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="shortcut icon" href="/favicon.ico">
+
+    <link rel="stylesheet" type="text/css" href="/assets/css/screen.css?v=34deaddd5e" />
+    <link rel="stylesheet" type="text/css" href="/assets/css/prettyPhoto.css?v=34deaddd5e" />
+    <link rel="stylesheet" type="text/css" href="/assets/css/prettify.css?v=34deaddd5e" />
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+    <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Merriweather:300,700,700italic,300italic|Open+Sans:700,400" />
+
+    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
+    <link rel="canonical" href="https://alexanderdevelopment.net/post/2015/01/12/using-rabbitmq-as-a-message-broker-in-dynamics-crm-data-interfaces-part-1/" />
+    <meta name="referrer" content="no-referrer-when-downgrade" />
+    <link rel="amphtml" href="https://alexanderdevelopment.net/post/2015/01/12/using-rabbitmq-as-a-message-broker-in-dynamics-crm-data-interfaces-part-1/amp/" />
+    
+    <meta property="og:site_name" content="Alexander Development" />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="Using RabbitMQ as a message broker in Dynamics CRM data interfaces – part 1" />
+    <meta property="og:description" content="One of the things I love about Dynamics CRM is how easy it is to create data interfaces to enable integration with other systems. If you’ve worked with Dynamics CRM for any length of time, you’ve probably seen multiple web service integrations that enable interoperability with other line-of-business" />
+    <meta property="og:url" content="https://alexanderdevelopment.net/post/2015/01/12/using-rabbitmq-as-a-message-broker-in-dynamics-crm-data-interfaces-part-1/" />
+    <meta property="og:image" content="https://alexanderdevelopment.net/content/images/2015/10/inbound-outbound-broker-5.png" />
+    <meta property="article:published_time" content="2015-01-12T18:00:00.000Z" />
+    <meta property="article:modified_time" content="2015-11-28T22:16:28.000Z" />
+    <meta property="article:tag" content="Microsoft Dynamics CRM" />
+    <meta property="article:tag" content="CRM 2015" />
+    <meta property="article:tag" content="C#" />
+    <meta property="article:tag" content="JSON" />
+    <meta property="article:tag" content="Node.js" />
+    <meta property="article:tag" content="RabbitMQ" />
+    <meta property="article:tag" content="integration" />
+    
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Using RabbitMQ as a message broker in Dynamics CRM data interfaces – part 1" />
+    <meta name="twitter:description" content="One of the things I love about Dynamics CRM is how easy it is to create data interfaces to enable integration with other systems. If you’ve worked with Dynamics CRM for any length of time, you’ve probably seen multiple web service integrations that enable interoperability with other line-of-business" />
+    <meta name="twitter:url" content="https://alexanderdevelopment.net/post/2015/01/12/using-rabbitmq-as-a-message-broker-in-dynamics-crm-data-interfaces-part-1/" />
+    <meta name="twitter:image" content="https://alexanderdevelopment.net/content/images/2015/10/inbound-outbound-broker-5.png" />
+    <meta name="twitter:label1" content="Written by" />
+    <meta name="twitter:data1" content="Lucas Alexander" />
+    <meta name="twitter:label2" content="Filed under" />
+    <meta name="twitter:data2" content="Microsoft Dynamics CRM, CRM 2015, C#, JSON, Node.js, RabbitMQ, integration" />
+    <meta name="twitter:creator" content="@lucas_is" />
+    <meta property="og:image:width" content="765" />
+    <meta property="og:image:height" content="316" />
+    
+    <script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "publisher": {
+        "@type": "Organization",
+        "name": "Alexander Development",
+        "logo": {
+            "@type": "ImageObject",
+            "url": "https://alexanderdevelopment.net/favicon.ico",
+            "width": 60,
+            "height": 60
+        }
+    },
+    "author": {
+        "@type": "Person",
+        "name": "Lucas Alexander",
+        "url": "https://alexanderdevelopment.net/author/lucas/",
+        "sameAs": [
+            "https://twitter.com/lucas_is"
+        ]
+    },
+    "headline": "Using RabbitMQ as a message broker in Dynamics CRM data interfaces – part 1",
+    "url": "https://alexanderdevelopment.net/post/2015/01/12/using-rabbitmq-as-a-message-broker-in-dynamics-crm-data-interfaces-part-1/",
+    "datePublished": "2015-01-12T18:00:00.000Z",
+    "dateModified": "2015-11-28T22:16:28.000Z",
+    "image": {
+        "@type": "ImageObject",
+        "url": "https://alexanderdevelopment.net/content/images/2015/10/inbound-outbound-broker-5.png",
+        "width": 765,
+        "height": 316
+    },
+    "keywords": "Microsoft Dynamics CRM, CRM 2015, C#, JSON, Node.js, RabbitMQ, integration",
+    "description": "One of the things I love about Dynamics CRM is how easy it is to create data interfaces to enable integration with other systems. If you’ve worked with Dynamics CRM for any length of time, you’ve probably seen multiple web service integrations that enable interoperability with other line-of-business",
+    "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": "https://alexanderdevelopment.net/"
+    }
+}
+    </script>
+
+    <script type="text/javascript" src="/public/ghost-sdk.min.js?v=34deaddd5e"></script>
+<script type="text/javascript">
+ghost.init({
+	clientId: "ghost-frontend",
+	clientSecret: "f2aab771dbac"
+});
+</script>
+    <meta name="generator" content="Ghost 1.20" />
+    <link rel="alternate" type="application/rss+xml" title="Alexander Development" href="https://alexanderdevelopment.net/rss/" />
+    <meta name="google-site-verification" content="OAtyxnG2Ee8NczicodhwcFVl99Hiy1hT-xyctZW4OTI" />
+</head>
+<body class="post-template tag-microsoft-dynamics-crm tag-crm-2015 tag-c-sharp tag-json tag-node-js tag-rabbitmq tag-integration">
+
+    
+
+
+<header class="main-header post-head " style="background-image: url(/content/images/2015/10/inbound-outbound-broker-5.png)">
+    <nav class="main-nav overlay clearfix">
+        <a class="back-button icon-arrow-left" href="https://alexanderdevelopment.net">Home</a>
+        <a class="subscribe-button icon-feed" href="https://alexanderdevelopment.net/rss/">Subscribe</a>
+    </nav>
+</header>
+
+<main class="content" role="main">
+
+    <article class="post tag-microsoft-dynamics-crm tag-crm-2015 tag-c-sharp tag-json tag-node-js tag-rabbitmq tag-integration">
+
+        <header class="post-header">
+            <h1 class="post-title">Using RabbitMQ as a message broker in Dynamics CRM data interfaces – part 1</h1>
+            <section class="post-meta">
+                January 12, 2015  in <a href="/tag/microsoft-dynamics-crm/">Microsoft Dynamics CRM</a>, <a href="/tag/crm-2015/">CRM 2015</a>, <a href="/tag/c-sharp/">C#</a>, <a href="/tag/json/">JSON</a>, <a href="/tag/node-js/">Node.js</a>, <a href="/tag/rabbitmq/">RabbitMQ</a>, <a href="/tag/integration/">integration</a>
+            </section>
+        </header>
+
+        <section class="post-content">
+            <div class="kg-card-markdown"><p>One of the things I love about Dynamics CRM is how easy it is to create data interfaces to enable integration with other systems. If you’ve worked with Dynamics CRM for any length of time, you’ve probably seen multiple web service integrations that enable interoperability with other line-of-business and legacy systems. A typical pair of inbound and outbound integrations might look like the picture below.<br>
+<img src="/content/images/2015/10/inbound-outbound.png#img-thumbnail" alt="inbound-outbound.png"></p>
+<p>Using a tightly coupled connection between the source and target systems is usually the easiest (thus the quickest and cheapest) way to establish an integration, but this is often a bad idea. Consider the inbound scenario in which an external application is sending data to Dynamics CRM. What happens if the calling application misbehaves and starts sending thousands of requests per second? This has the potential to overload your CRM server and make it completely unusable. Now consider the outbound scenario in which a CRM plug-in calls an external web service. If the destination application’s web service is offline for a few minutes, the update from the CRM plug-in will not get received unless there’s some sort of error handling and retry logic built into the plug-in</p>
+<h4 id="analternateapproach">An alternate approach</h4>
+<p>For these reasons, and lots of others (logging, security, scalability, just to name a few), it’s considered a best practice to create loosely coupled integrations that rely on a message broker that sits between the source and destination systems. Though the formal definition is more complicated, for our purposes a message broker can be thought of as a collection of queues that hold messages. Publishers write messages to queues, and then consumers pick up the messages and process them appropriately. Additionally, the message broker can be configured to keep messages in their queues until the consumers provide confirmation of successful processing.</p>
+<p>Here’s an example of what the integrations I showed earlier would look like with a message broker.<br>
+<img src="/content/images/2015/10/inbound-outbound-broker.png#img-thumbnail" alt="inbound-outbound-broker.png"></p>
+<p>For the outbound call from the CRM plug-in, the plug-in writes the message to a broker. The message is routed to a queue where it waits to be processed. A separate processing service application retrieves the message from the queue and sends it to the destination application. For the inbound call to CRM, the process works exactly the same, except the source and destination applications are reversed.</p>
+<h4 id="whyisamessagebrokerbetter">Why is a message broker better?</h4>
+<p>In the inbound call scenario, an effective message broker would typically be expected to handle a larger volume of inbound messages than Dynamics CRM because all it’s doing is receiving and routing the data without any additional processing. The processing service can then process the messages in the queue at a speed that doesn’t overload the Dynamics CRM server. In the case of the outbound call, the combination of a message broker and processing service can enable complex retry logic and custom logging without having to store it in the plugin layer. As an added bonus to either scenario, a message broker can provide a guarantee that messages don’t get lost between the source and destination systems as long as the message is successfully published to the broker.</p>
+<h4 id="wheredowegofromhere">Where do we go from here?</h4>
+<p>Over the course of my next four blog posts, I will show how to use <A target="_blank" href="https://www.rabbitmq.com/" rel="nofollow">RabbitMQ</A> as a message broker in your Dynamics CRM data interfaces. I chose RabbitMQ for this series for several reasons:</P><OL><LI>It’s open source.</LI><LI>It runs on multiple platforms.</LI><LI>It’s easy to install and configure.</LI><LI>It’s fast at processing messages.</LI></OL></p>
+<p>If you already have a different message broker in place in your organization or you would like to try a different message broker like Apache ActiveMQ or Microsoft’s Azure Service Bus, most of the approaches and a lot of the code I’m going to show in this series will still be applicable, with the notable exception of the post that discusses how to install and configure RabbitMQ.</p>
+<p>Here’s the roadmap for the rest of the series:</P><UL><LI>Part 2 – basic installation and configuration of a RabbitMQ</LI><LI>Part 3 – creating a Dynamics CRM plug-in that publishes messages using the RabbitMQ .Net client library</LI><LI>Part 4 – creating a sandboxed Dynamics CRM plug-in that publishes messages to RabbitMQ via Node.js</LI><LI>Part 5 – reading messages from a queue and writing them to Dynamics CRM</LI></UL></p>
+<p>If you just can’t wait to dig into the code, I’ve already posted everything to my <A target="_blank" href="https://github.com/lucasalexander/Crm-Sample-Code#crmmessagequeuing" rel="nofollow">repository on GitHub</A>, so you can go ahead and take a look.</p>
+<p>See you next time!</p>
+<p><em>A version of this post was originally published on the HP Enterprise Services Application Services blog.</em></p>
+</div>
+        </section>
+
+        <footer class="post-footer">
+
+
+            <figure class="author-image">
+                <a class="img" href="/author/lucas/" style="background-image: url(/content/images/2018/01/diesel.jpg)"><span class="hidden">Lucas Alexander's Picture</span></a>
+            </figure>
+
+            <section class="author">
+                <h4><a href="/author/lucas/">Lucas Alexander</a></h4>
+
+                    <p>Husband, father, Auburn man, dog owner, coder, coffee drinker.</p>
+                <div class="author-meta">
+                    <span class="author-location icon-location">Auburn, Ala., USA</span>
+                    
+                </div>
+            </section>
+
+
+            <section class="share">
+                <h4>Share this post</h4>
+                <a class="icon-twitter" href="https://twitter.com/share?text=Using%20RabbitMQ%20as%20a%20message%20broker%20in%20Dynamics%20CRM%20data%20interfaces%20%E2%80%93%20part%201&amp;url=https://alexanderdevelopment.net/post/2015/01/12/using-rabbitmq-as-a-message-broker-in-dynamics-crm-data-interfaces-part-1/"
+                    onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+                    <span class="hidden">Twitter</span>
+                </a>
+                <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=https://alexanderdevelopment.net/post/2015/01/12/using-rabbitmq-as-a-message-broker-in-dynamics-crm-data-interfaces-part-1/"
+                    onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+                    <span class="hidden">Facebook</span>
+                </a>
+                <a class="icon-google-plus" href="https://plus.google.com/share?url=https://alexanderdevelopment.net/post/2015/01/12/using-rabbitmq-as-a-message-broker-in-dynamics-crm-data-interfaces-part-1/"
+                   onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+                    <span class="hidden">Google+</span>
+                </a>
+            </section>
+
+        </footer>
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+    var disqus_shortname = 'alexanderdevelopment'; // required: replace example with your forum shortname
+     var disqus_identifier = '2115'; // make sure to use the post.id as an identifier, otherwise disqus will use the pages url per default, which might be problematic...
+  
+
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+    </article>
+
+</main>
+
+
+    <footer class="site-footer">
+            <div class="nav-footer">
+              <a href="/about">ABOUT</a>&nbsp;&nbsp;&nbsp;<a href="/links">LINKS</a>
+            </div>
+            <div class="social-footer">
+              <ul class="list-inline">
+    <li><a href="https://github.com/lucasalexander" target="_blank" class="btn-social btn-outline" data-toggle="tooltip" data-placement="top" title="Github"><i class="fa fa-fw fa-github"></i></a>
+    </li>
+    <li><a href="https://twitter.com/lucas_is" target="_blank" class="btn-social btn-outline" title="Twitter"><i class="fa fa-fw fa-twitter"></i></a>
+    </li>
+    <li><a href="http://www.linkedin.com/in/lucasalexander/" target="_blank" class="btn-social btn-outline" title="LinkedIn"><i class="fa fa-fw fa-linkedin"></i></a>
+    </li>
+    <li><a href="mailto:lucas@alexanderdevelopment.net" target="_blank" class="btn-social btn-outline" title="Email"><i class="fa fa-fw fa-envelope"></i></a>
+    </li>  
+</ul>
+            </div>
+    
+        <section class="copyright"><a href="https://alexanderdevelopment.net">Lucas Alexander</a> &copy; 2022</section>
+    </footer>
+
+    <!-- You can safely delete this line if your theme does not require jQuery -->
+<script type="text/javascript" src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+
+    <script type="text/javascript" src="/assets/js/jquery.fitvids.js?v=34deaddd5e"></script>
+    <script type="text/javascript" src="/assets/js/index.js?v=34deaddd5e"></script>
+    <script type="text/javascript" src="/assets/js/prettify/prettify.js?v=34deaddd5e"></script>
+    <script type="text/javascript" src="/assets/js/prettify/lpa_run_prettify.js?v=34deaddd5e"></script>
+    <script type="text/javascript" src="/assets/js/jquery.prettyPhoto.js?v=34deaddd5e"></script>
+    <script type="text/javascript" src="/assets/js/PrettyPhotoStarter.js?v=34deaddd5e"></script>
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-37582116-1', 'auto');
+      ga('send', 'pageview');
+
+    </script>
+</body>
+</html>

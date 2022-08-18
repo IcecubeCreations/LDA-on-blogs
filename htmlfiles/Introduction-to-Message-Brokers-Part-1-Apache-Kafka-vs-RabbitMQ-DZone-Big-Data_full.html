@@ -1,0 +1,1092 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A software developer takes a look at two popular and open source message broker solutions, Apache Kafka and RabbitMQ, giving a high-level overview of each.">
+  <meta name="keywords" content="kafka, Big data, Message broker, System integration">
+
+  <meta property="og:description" content="A software developer takes a look at two popular and open source message broker solutions, Apache Kafka and RabbitMQ, giving a high-level overview of each.">
+  <meta property="og:site_name" content="dzone.com">
+  <meta property="og:title" content="Introduction to Message Brokers. Part 1: Apache Kafka vs. RabbitMQ - DZone Big Data">
+  <meta property="og:url" content="https://dzone.com/articles/introduction-to-message-brokers-part-1-apache-kafk">
+  <meta property="og:image" content="https://dz2cdn1.dzone.com/storage/article-thumb/11797968-thumb.jpg">
+  <meta property="og:type" content="article">
+
+  <meta name="twitter:site" content="@DZoneInc">
+  <meta name="twitter:image" content="https://dz2cdn1.dzone.com/storage/article-thumb/11797968-thumb.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:description" content="A software developer takes a look at two popular and open source message broker solutions, Apache Kafka and RabbitMQ, giving a high-level overview of each.">
+  <meta name="twitter:title" content="Introduction to Message Brokers. Part 1: Apache Kafka vs. RabbitMQ - DZone Big Data">
+
+  <meta name="referrer" content="origin-when-cross-origin">
+  <meta name="google-site-verification" content="kndbhxcupfEqWmZclhCpB6vlgOs7QSmx2UHAGGnP2mA">
+  <meta name="df-verify" content="df0d76632b4543">
+
+  <link rel="icon" type="image/x-icon" href="https://dz2cdn3.dzone.com/themes/dz20/images/favicon.png">
+  <link rel="image_src" href="https://dz2cdn1.dzone.com/storage/article-thumb/11797968-thumb.jpg">
+  <link rel="canonical" href="https://dzone.com/articles/introduction-to-message-brokers-part-1-apache-kafk">
+
+  <title>Introduction to Message Brokers. Part 1: Apache Kafka vs. RabbitMQ - DZone Big Data</title>
+
+  <link rel="preload" href="https://fonts.dzone.com/themes/dz20/font/fontello.woff?11773374" as="font" type="font/woff" crossorigin="anonymous">
+
+  <link rel="stylesheet" media="all" href="https://dz2cdn3.dzone.com/themes/dz20/ftl/icons.css">
+  <link rel="stylesheet" media="all" href="https://dz2cdn3.dzone.com/themes/dz20/lib/static/bootstrap/bootstrap.min.css">
+  <link rel="stylesheet" media="all" href="https://dz2cdn3.dzone.com/themes/dz20/ftl/article/global.css">
+  <link rel="stylesheet" media="all" href="https://dz2cdn3.dzone.com/themes/dz20/ftl/header/styles.css">
+</head>
+<body>
+<div id="ftl-header">
+  <div class="container-fluid header">
+    <div class="row">
+      <div class="col-md-12" style="padding: 0;">
+        <div class="header-top">
+          <div class="header-container">
+            <div class="pull-left logo-container">
+              <div class="logo">
+                <a class="inner" href="/">
+                  <picture>
+                    <source srcset="https://dz2cdn3.dzone.com/themes/dz20/images/dz_logo_2021_cropped.webp" type="image/webp">
+                    <source srcset="https://dz2cdn3.dzone.com/themes/dz20/images/dz_logo_2021_cropped.png" type="image/png">
+                    <img src="https://dz2cdn3.dzone.com/themes/dz20/images/dz_logo_2021_cropped.png" width="160" height="52" alt="DZone">
+                  </picture>
+                </a>
+              </div>
+
+                <div class="active-portal"><a href="/big-data-analytics-tutorials-tools-news">Big Data Zone</a></div>
+            </div>
+
+            <div class="pull-right login-and-search">
+              <div id="authenticated-block" class="logged-in">
+                <div class="welcome-back">Thanks for visiting DZone today,</div>
+                <div id="user-header" class="user-info">
+                  <button class="user-avatar">
+                    <span id="header-username" class="username"></span>
+                    <img id="header-avatar" src="" alt="user avatar">
+                  </button>
+                  <div id="user-dropdown" class="browse-user-menu">
+                    <div class="user-content">
+                      <a id="header-user-plug" href="#" class="user-description"></a>
+                      <a id="header-user-edit" href="#" class="edit-profile">Edit Profile</a>
+                    </div>
+                    <ul class="user-actions">
+                      <li id="first-user-action"><a id="header-dropdown-manage-email" href="#">Manage Email Subscriptions</a></li>
+                      <li>
+                        <a href="/articles/how-to-submit-a-post-to-dzone?utm_source=DZone&utm_medium=user_dropdown&utm_campaign=how_to_post">
+                          How to Post to DZone
+                        </a>
+                      </li>
+                      <li>
+                        <a href="/articles/dzones-article-submission-guidelines">
+                          Article Submission Guidelines
+                        </a>
+                      </li>
+                    </ul>
+                    <div class="bottom">
+                      <a href="/users/logout.html" class="sign-out">Sign Out</a>
+                      <a id="dropdown-view-profile" href="#" class="view-profile">View Profile</a>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="post-content">
+                  <button id="post-button" class="post-content--button">
+                    <span class="post-class">Post</span>
+                    <i class="icon-plus"></i>
+                  </button>
+
+                  <div id="post-menu" class="posting-links">
+                    <div class="posting-links-menu">
+                      <ul>
+                        <li>
+                          <img src="/themes/dz20/images/dz-postarticle.svg">
+                          <a href="/content/article/post.html">Post an Article</a>
+                        </li>
+                        <li>
+                          <a id="drafts-link" href="#">Manage My Drafts</a>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div id="unauthenticated-block">
+                <div class="dz-intro">Over 2 million developers have joined DZone.</div>
+                <div class="mobile-invisible sign-in-join">
+                  <a href="/users/login.html">Log In</a>
+                  <span class="dz-intro-span">/</span>
+                  <a href="/static/registration.html">Join</a>
+                </div>
+                <a class="join-icon" href="/users/login.html"><i class="icon-user"></i></a>
+              </div>
+              <div class="headerSearch">
+                <a class="icon-search dropdown-toggle" href="/search"></a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="header-bottom">
+
+
+          <ul class="portals header-container scrollable-ul">
+            <li>
+              <a href="/refcardz" id="header-refcardz">
+                <em>Refcardz</em>
+              </a>
+            </li>
+            <li>
+              <a href="/trendreports" id="header-research">
+                <em>Trend Reports</em>
+              </a>
+            </li>
+            <li>
+              <a href="/webinars" id="header-webinars">
+                <em>Webinars</em>
+              </a>
+            </li>
+            <li class="last-portal-link">
+              <a href="#" id="header-portals">
+                <em>
+                  Zones
+                  <span id="zone-arrow" class="collapsible-toggle">
+                    <i class="icon-angle-down"></i>
+                    <i class="icon-angle-up"></i>
+                  </span>
+                </em>
+              </a>
+            </li>
+
+            <li class="separator" aria-hidden="true" style="color: #d9dcdd;">|</li>
+            <li id="portal-list" class="portal-topics">
+              <ul>
+                  <li>
+                    <a href="/agile-methodology-training-tools-news" id="header-2">Agile</a>
+                  </li>
+                  <li>
+                    <a href="/artificial-intelligence-tutorials-tools-news" id="header-4001">AI</a>
+                  </li>
+                  <li>
+                    <a href="/big-data-analytics-tutorials-tools-news" id="header-3">Big Data</a>
+                  </li>
+                  <li>
+                    <a href="/cloud-computing-tutorials-tools-news" id="header-4">Cloud</a>
+                  </li>
+                  <li>
+                    <a href="/database-sql-nosql-tutorials-tools-news" id="header-5">Database</a>
+                  </li>
+                  <li>
+                    <a href="/devops-tutorials-tools-news" id="header-6">DevOps</a>
+                  </li>
+                  <li>
+                    <a href="/enterprise-integration-training-tools-news" id="header-7">Integration</a>
+                  </li>
+                  <li>
+                    <a href="/iot-developer-tutorials-tools-news-reviews" id="header-8">IoT</a>
+                  </li>
+                  <li>
+                    <a href="/java-jdk-development-tutorials-tools-news" id="header-1">Java</a>
+                  </li>
+                  <li>
+                    <a href="/microservices-news-tutorials-tools" id="header-6001">Microservices</a>
+                  </li>
+                  <li>
+                    <a href="/open-source-news-tutorials-tools" id="header-7001">Open Source</a>
+                  </li>
+                  <li>
+                    <a href="/apm-tools-performance-monitoring-optimization" id="header-10">Performance</a>
+                  </li>
+                  <li>
+                    <a href="/application-web-network-security" id="header-2001">Security</a>
+                  </li>
+                  <li>
+                    <a href="/web-development-programming-tutorials-tools-news" id="header-11">Web Dev</a>
+                  </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script async src="https://dz2cdn3.dzone.com/themes/dz20/ftl/header/bundle.js"></script><link rel="stylesheet" media="all" href="https://dz2cdn3.dzone.com/themes/dz20/ftl/article/styles.css">
+
+
+
+
+<div id="ftl-article" >
+  <div class="container-fluid body">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="articles-wrap">
+              <div class="ad-container">
+                <div id="div-gpt-ad-1435246566686-0" class="ads-billboard-article" data-gpt-slot="top"></div>
+              </div>
+
+
+          <div class="article-stream widget-top-border">
+                <div class="content-right-images">
+                  <div id="div-gpt-ad-1435246566686-2" class="sidebar-ad" data-gpt-desktop="true" data-gpt-slot="sidebar1"></div>
+                </div>
+
+                <script type="application/ld+json">
+                  {
+                    "@context": "http://schema.org",
+                    "@type": "Article",
+                    "headline": "Introduction to Message Brokers. Part 1: Apache Kafka vs. RabbitMQ",
+                    "author": {
+                      "@type": "Person",
+                      "name": "Vitaliy Samofal"
+                    },
+                    "audience": "software developers",
+                    "keywords": "apache kafka,rabbitmq,message broker,big data,data integration,internet of things",
+                    "timeRequired": "PT8M",
+                    "commentCount": 1,
+                    "wordCount": "1892",
+                    "accessMode": "textual, visual",
+                    "dateCreated": "2019-05-08T05:01:01Z",
+                    "datePublished": "2019-05-08T00:00:00Z",
+                    "dateModified": "2021-04-26T18:33:43Z",
+                    "articleSection": "big-data-analytics-tutorials-tools-news",
+                    "publisher": {
+                      "@type": "Organization",
+                      "name": "DZone",
+                      "url": "https://dzone.com",
+                      "logo": {
+                        "@type": "ImageObject",
+                        "url": "https://dzone.com/themes/dz20/images/dz_logo_2021_cropped.png"
+                      }
+                    },
+                    "articleBody": "The growing amount of equipment connected to the internet has led to a new term, Internet of Things (or IoT). It came from the machine to machine communication and means a set of devices that are able to interact with each other. The necessity of improving system integration caused the development of message brokers, that is especially important for data analytics and business intelligence. In this article, we will look at two big data tools: Apache Kafka and Rabbit MQ. Why Did Message Brokers Appear? Can you imagine the current amount of data in the world? Nowadays, about 12 billion \"smart\" machines are connected to the internet. Considering that about 7 billion people live on the planet, we have almost one-and-a-half devices per person. By 2020, this number will significantly increase to 200 billion, or even more. With technological development, like the building of \"smart\" houses and other automatic systems, our everyday life becomes more and more digitized. Message Broker Use Case As a result of this digitization, software developers face the problem of successful data exchange. Imagine you have your own application. For example, it's an online store. So, you permanently work in your technological scope, and one day you need to make the application interact with other apps. Previously, you would use simple \"end points\" for machine to machine communication. But nowadays we have special message brokers. They make the process of data exchange simple and reliable. These tools use different protocols that determine the message format. The protocols show how the message should be transmitted, processed, and consumed. Messaging in a Nutshell \" a message broker translates a message from the formal messaging protocol of the sender to the formal messaging protocol of the receiver.\" - Wikipedia Programs like this are essential parts of computer networks. They ensure the transmitting of information from point A to point B. Messaging process When Is a Message Broker Needed? If you want to control data feeds. For example, the number of registrations in any system. When the task is to send data to several applications and avoid direct use of their API. When you need to complete processes in a defined order, like a transactional system. So, we can say that message brokers can do four important things: divide the publisher and consumer. store the messages. route messages. check and organize messages. There are self-deployed and cloud-based messaging tools. In this article, I will share my experience of working with the first type. Apache Kafka Message Broker Pricing: Free Official website: https://kafka.apache.org/ Useful resources: documentation, books Pros: Easy to pick up Powerful event streaming platform Fault-tolerance and reliable solution Good scalability Free community distributed product Multi-tenancy Suitable for real-time processing Excellent for big data project Cons: Lack of ready to use elements The absence of complete monitoring set Dependency on Apache ZooKeeper No routing Issues with an increasing number of messages What do Netflix, eBay, Uber, The New York Times, PayPal, and Pinterest have in common? All these great enterprises have used or are using the world's most popular message broker, Apache Kafka. The Story of Kafka Development With numerous advantages for real-time processing and big data projects, this asynchronous messaging technology has conquered the world. How did it start? In 2010, LinkedIn engineers faced the problem of integrating huge amounts of data from their infrastructure into a Lambda architecture. It also included Hadoop and real-time event processing systems. As for traditional message brokers, they didn't satisfy LinkedIn's needs. These solutions were too heavy and slow. So, the engineering team developed a scalable and fault-tolerant messaging system without lots of bells and whistles. The new queue manager has quickly transformed into a full-fledged event streaming platform. Apache Kafka Capabilities The technology has become popular largely due to its compatibility. We can use Apache Kafka with a wide range of systems. They are: Web and desktop applications. Microservices Monitoring and analytical systems. Any required sinks or sources. NoSQL, Oracle, Hadoop, SFDC. With the help of Apache Kafka, you can successfully create data-driven applications and manage complicated backend systems. The picture below shows the three main capabilities of this queue manager. As you can see, Apache Kafka is able to: publish and subscribe to streams of records with excellent scalability and performance, which makes it suitable for company-wide use. durably store the streams, distributing data across multiple nodes for a highly available deployment. process data streams as they arrive, allowing you to aggregate, create windowing parameters, perform joins of data within a stream, etc. Apache Kafka Key Terms and Concepts First of all, you should know about the abstraction of a distributed commit log. This confusing term is crucial for understanding message brokers. Apache Kafka is based on the log data structure. This means a log is a time-ordered, append-only sequence of data inserts. As for other concepts, they are: topics (the stored streams of records). records (they include a key, a value, and a timestamp). APIs (Producer API, Consumer API, Streams API, Connector API). Kafka Working Principle There are two main patterns of messaging: queuing publish-subscribe Both of them have some pros and cons. The advantage of the first pattern is the opportunity to easily scale the processing. On the other hand, queues aren't multi-subscriber. The second model provides the possibility to broadcast data to multiple consumer groups. At the same time, scaling is more difficult in this case. Apache Kafka combines these two ways of data processing, getting the benefits of both of them. It should be mentioned that this queue manager provides better ordering guarantees than a traditional message broker. Kafka Peculiarities Combining the functions of messaging, storage, and processing, Kafka isn't a common message broker. It's a powerful event streaming platform capable of handling trillions of messages a day. Kafka is useful both for storing and processing historical data from the past and for real-time work. You can use it for creating streaming applications, as well as for streaming data pipelines. If you want to follow the steps of Kafka users, you should be mindful of some nuances: the messages don't have separate IDs (they are addressed by their offset in the log). the system doesn't check the consumers of each topic or message. Kafka doesn't maintain any indexes and doesn't allow random access (it just delivers the messages in order, starting with the offset). the system doesn't have deletes and doesn't buffer the messages in userspace (but there are various configurable storage strategies). Conclusion Being a perfect open-source solution for real-time statistics and big data projects, this message broker has some weaknesses. The thing is it requires you to work a lot. You will feel a lack of plugins and other things that can be simply reused in your code. I recommend you to use this multiple publish/subscribe and queueing tool when you need to optimize the processing of really big amounts of data (100,000 messages per second and more). In this case, Apache Kafka will satisfy your needs. RabbitMQ Message Broker Pricing: Free Official website: https://www.rabbitmq.com Useful resources: tools, best practices Pros: Suitable for many programming languages and messaging protocols. Can be used on different operating systems and cloud environments. Simple to start using and to deploy. Gives an opportunity to use various developer tools. Modern, built-in user interface. Offers clustering and is very good at it. Scales to around 500,000+ messages per second. Cons: Non-transactional (by default). Needs Erlang. Minimal configuration that can be done through code. Issues with processing big amounts of data. The next very popular solution is written in the Erlang. As it's a simple, general-purpose, functional programming language, which consists of many ready to use components, this software doesn't require lots of manual work. RabbitMQ is known as a \"traditional\" message broker, which is suitable for a wide range of projects. It is successfully used for both the development of new startups and notable enterprises. The software is built on the Open Telecom Platform for clustering and failover. You can find many client libraries for using the queue manager, written in all major programming languages. The Story of RabbitMQ Development One of the oldest open source message brokers can be used with various protocols. Many web developers like this software, because of its useful features, libraries, development tools, and instructions. In 2007, Rabbit Technologies Ltd. had developed the system, which originally implemented AMQP. It's an open wire protocol for messaging with complex routing features. AMQP ensured cross-language flexibility of using message broking solutions outside the Java ecosystem. In fact, RabbitMQ perfectly works with Java, Spring, .NET, PHP, Python, Ruby, JavaScript, Go, Elixir, Objective-C, Swift, and many other technologies. The numerous plugins and libraries are the main advantage of the software. RabbitMQ Capabilities Created as a message broker for general use, RabbitMQ is based on the pub-sub communication pattern. The messaging process can be either synchronous or asynchronous, as you prefer. So, the main features of the message broker are: Support of numerous protocols and message queuing, changeable routing to queues, and different types of exchange. Clustering deployment ensures perfect availability and throughput. The software can be used across various zones and regions. The possibilities to use Puppet, BOSH, Chef, and Docker for deployment. Compatibility with the most popular modern programming languages. The opportunity for simple deployment in both private and public clouds. Pluggable authentication, authorization, and support for TLS and LDAP. Many of the proposed tools can be used for continuous integration, operational metrics, and work with other enterprise systems. RabbitMQ Working Principle Being a broker-centric program, RabbitMQ gives guarantees between producers and consumers. If you choose this software, you should use transient messages, rather than durable. The program uses the broker to check the state of a message and verify whether the delivery was successfully completed. The message broker presumes that consumers are usually online. As for the message ordering, the consumers will get the message in the published order itself. The order of publishing is managed consistently. RabbitMQ Peculiarities The main advantage of this message broker is the perfect set of plugins, combined with nice scalability. Many web developers enjoy clear documentation and well-defined rules, as well as the possibility of working with various message exchange models. In fact, RabbitMQ is suitable for three of them: Direct exchange model (individual exchange of a topic, one-by-one). Topic exchange model (each consumer gets a message which is sent to a specific topic). Fanout exchange model (all consumers connected to queues get the message). Here you can see the gap between Kafka and RabbitMQ. If a consumer isn't connected to a fanout exchange in RabbitMQ, the message will be lost. At the same time, Kafka allows us to avoid this, because any consumer can read any message. Conclusion As for me, I like RabbitMQ due to the opportunity to use many plugins. They save time and speed-up work. You can easily adjust filters, priorities, message ordering, etc. Just like Kafka, RabbitMQ requires you to deploy and manage the software. But it has a convenient built-in UI and allows for the use of SSL for better security. As for its ability to cope with big data loads, here RabbitMQ is inferior to Kafka. To sum up, both Apache Kafka and RabbitMQ are truly worth the attention of skilled software developers. I hope my article will help you find suitable big data technologies for your project.",
+                    "mainEntityOfPage": {
+                      "@type": "WebPage",
+                      "@id": "https://dzone.com/articles/introduction-to-message-brokers-part-1-apache-kafk"
+                    },
+                    "image": {
+                      "@type": "ImageObject",
+                      "url": "https://dzone.com//dz2cdn1.dzone.com/storage/article-thumb/11797968-thumb.jpg"
+                    }
+                  }
+                </script>
+
+                  <script type="application/ld+json">
+                    {
+                      "@context": "https://schema.org",
+                      "@type": "BreadcrumbList",
+                      "itemListElement": [{
+                        "@type": "ListItem",
+                        "position": 1,
+                        "name": "DZone",
+                        "item": "https://dzone.com"
+                      }, {
+                        "@type": "ListItem",
+                        "position": 2,
+                        "name": "Big Data Zone",
+                        "item": "https://dzone.com/big-data-analytics-tutorials-tools-news"
+                      }, {
+                        "@type": "ListItem",
+                        "position": 3,
+                        "name": "Introduction to Message Brokers. Part 1: Apache Kafka vs. RabbitMQ",
+                        "item": "https://dzone.com/articles/introduction-to-message-brokers-part-1-apache-kafk"
+                      }]
+                    }
+                  </script>
+
+            <article>
+              <div class="content">
+                <div class="header">
+                  <div class="col-xs-12 breadcrumb-padding">
+                    <a href="/">DZone</a>
+                    >
+                      <a href="/big-data-analytics-tutorials-tools-news">Big Data Zone</a>
+                      >
+                      <a href="#">Introduction to Message Brokers. Part 1: Apache Kafka vs. RabbitMQ</a>
+                  </div>
+
+
+                  <div class="header-title">
+                    <div class="title">
+                      <h1 class="article-title">Introduction to Message Brokers. Part 1: Apache Kafka vs. RabbitMQ</h1>
+                    </div>
+
+                    <div class="subhead">
+                      <h3>If you're looking for a message broker for your next project, read on to get an overview of to of the most popular open source solutions out there.</h3>
+                    </div>
+
+                    <div class="publish-meta">
+                        <div class="article-author-meta">
+                          <img src="https://dzone.com/users/3003313/photo/view.html?time=1569188883597" class="avatar" alt="Vitaliy Samofal user avatar" width="40">
+                          by
+
+                          <div class="author-info">
+                            <span class="author-name">
+                              <a href="/users/3003313/vitaliy-samofal.html" rel="nofollow">Vitaliy Samofal</a>
+                            </span>
+                          </div>
+
+
+
+
+                          &middot;
+                        </div>
+                      <span class="author-date">
+                        May. 08, 19
+                      </span>
+                      &middot;
+                        <a href="/big-data-analytics-tutorials-tools-news" id="portal-name">
+                          <span class="portal-name">Big Data Zone</span>
+                        </a>
+                      &middot;
+                      <span>Analysis</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="author-n-useraction">
+                  <div class="like action">
+                    <div id="activity-like-icon" class="dz-like icon-thumbs-up">
+                      <span class="action-label">
+                        <span id="activity-like-text">Like</span>
+                      </span>
+                      <a href="#">
+                        <span id="activity-like-counter">(30)</span>
+                      </a>
+                    </div>
+                  </div>
+
+                  <div class="action">
+
+                    <button class="comment">
+                      <i class="icon-comment"></i>
+                      Comment
+                      <span id="activity-comment-counter" class="comment-count"></span>
+                    </button>
+                  </div>
+
+                  <div class="save action">
+                    <div id="activity-save-icon" class="save icon-star-empty">
+                      <span id="activity-save-text" class="action-label">Save</span>
+                    </div>
+                  </div>
+
+                  <div class="tweet action">
+                    <a id="tweet-link" href="" class="title" target="_blank">
+                      <span><i class="icon-twitter"></i></span>
+                      <span class="action-label">Tweet</span>
+                    </a>
+                  </div>
+
+                  <div class="pull-right">
+                    <div id="activity-view-container" class="article-views action">
+                      <i class="icon-eye"></i> 37.57K
+                      <span class="action-label">Views</span>
+                    </div>
+                  </div>
+                </div>
+
+                    <div class="signin-prompt">
+                      <p>Join the DZone community and get the full member experience.</p>
+                      <a id="article-signin-prompt" href="/static/registration.html">Join For Free</a>
+                    </div>
+                    <div class="arrow-down"></div>
+
+                  <div id="top-bumper-container"></div>
+
+                <div>
+                  <div class="content-html"><p pid="2"><strong id="docs-internal-guid-f772c516-7fff-d8ff-9a03-bfe5c0beb7f9"></strong></p>
+<p pid="205"><img alt="Message brokers" class="fr-fin fr-dib" src="https://dz2cdn1.dzone.com/storage/temp/11702813-brunch.png" title="Message brokers" width="830"></p>
+<p pid="204">The growing amount of equipment connected to the internet has led to a new term,&nbsp;Internet of Things&nbsp;(or IoT). It came from the machine to machine communication and means a set of devices that are able to interact with each other. The necessity of improving system integration caused the development of&nbsp;<strong><span data-redactor-tag="span">message brokers</span></strong>, that is especially important for data analytics and business intelligence. In this article, we will look at two big data tools:&nbsp;Apache Kafka&nbsp;and&nbsp;Rabbit MQ.</p>
+<h2 pid="60">Why Did Message Brokers Appear?</h2>
+<p pid="61"> Can you imagine the current amount of data in the world? Nowadays, about 12 billion "smart" machines are connected to the internet. Considering that about 7 billion people live on the planet, we have almost one-and-a-half devices per person. By 2020, this number will significantly increase to&nbsp;<a href="https://www.intel.com/content/dam/www/public/us/en/images/iot/guide-to-iot-infographic.png" target="_blank">200 billion</a>, or even more. With technological development, like the building of "smart" houses and other automatic systems, our everyday life becomes more and more digitized.</p>
+<h2 pid="63">Message Broker Use Case</h2>
+<p pid="64"> As a result of this digitization,&nbsp;software developers&nbsp;face the problem of successful data exchange. Imagine you have your own application. For example, it's an online store. So, you permanently work in your technological scope, and one day you need to make the application interact with other apps. Previously, you would use simple "end points" for machine to machine communication. But nowadays we have special&nbsp;message brokers. They make the process of data exchange simple and reliable. These tools use different protocols that determine the message format. The protocols show how the message should be transmitted, processed, and consumed.</p>
+<h2 pid="206">Messaging in a Nutshell</h2>
+<blockquote pid="68">
+ "
+ <em>a message broker translates a message from the formal messaging protocol of the sender to the formal messaging protocol of the receiver." -</em>
+ <a href="https://en.wikipedia.org/wiki/Message_broker" target="_blank">Wikipedia</a>
+</blockquote>
+<p pid="70"> Programs like this are essential parts of computer networks. They ensure the transmitting of information from point A to point B.&nbsp;</p>
+<p pid="72" style="text-align: center;"><img alt="messaging process" class="fr-fin fr-dib" data-original="https://static.tildacdn.com/tild6562-6434-4538-b139-623135373536/__2.png" src="https://static.tildacdn.com/tild6562-6434-4538-b139-623135373536/__2.png"><em> Messaging process</em></p>
+<h2 pid="207">When Is a Message Broker Needed?</h2>
+<ul>
+ <li>If you want to control data feeds. For example, the number of registrations in any system.</li>
+ <li>When the task is to send data to several applications and avoid direct use of their API.</li>
+ <li>When you need to&nbsp;complete processes in a defined order, like a transactional system.</li>
+</ul>
+<p pid="80"> So, we can say that message brokers can do four important things:</p>
+<ol>
+ <li>divide&nbsp;the publisher and consumer.</li>
+ <li>store&nbsp;the messages.</li>
+ <li>route&nbsp;messages.</li>
+ <li>check&nbsp;and organize messages.</li>
+</ol>
+<p pid="86"> There are&nbsp;self-deployed&nbsp;and&nbsp;cloud-based&nbsp;messaging tools. In this article, I will share my experience of working with the first type.</p>
+<h2 pid="88">Apache Kafka Message Broker</h2>
+<p pid="91"> Pricing:&nbsp;Free</p>
+<p pid="92">Official website:&nbsp;<a href="https://kafka.apache.org/" target="_blank">https://kafka.apache.org/</a>&nbsp;</p>
+<p pid="93">Useful resources:&nbsp;<a href="https://kafka.apache.org/documentation.html" target="_blank">documentation</a>,&nbsp;<a href="https://data-flair.training/blogs/apache-kafka-books/" target="_blank">books</a></p>
+<p pid="96"> Pros:</p>
+<ul>
+ <li>Easy to pick up</li>
+ <li>Powerful event streaming platform</li>
+ <li>Fault-tolerance and reliable solution</li>
+ <li>Good scalability</li>
+ <li>Free community distributed product</li>
+ <li>Multi-tenancy</li>
+ <li>Suitable for real-time processing</li>
+ <li>Excellent for big data project</li>
+</ul>
+<p pid="99">Cons:&nbsp;</p>
+<ul>
+ <li>Lack of ready to use elements&nbsp; </li>
+ <li>The absence of complete monitoring set&nbsp; </li>
+ <li>Dependency on Apache ZooKeeper&nbsp; </li>
+ <li>No routing&nbsp; </li>
+ <li>Issues with an increasing number of messages</li>
+</ul>
+<p pid="103"> What do Netflix, eBay, Uber, The New York Times, PayPal, and Pinterest have in common? All these great enterprises have used or are using the world's most popular message broker, Apache Kafka.</p>
+<h3 pid="105">The Story of Kafka Development</h3>
+<p pid="106"> With numerous advantages for real-time processing and big data projects, this asynchronous messaging technology has conquered the world. How did it start?</p>
+<p pid="108">In 2010,&nbsp;<a href="https://engineering.linkedin.com/distributed-systems/log-what-every-software-engineer-should-know-about-real-time-datas-unifying" target="_blank">LinkedIn engineers</a>&nbsp;faced the problem of&nbsp;integrating huge amounts of data from their infrastructure into a Lambda architecture. It also included Hadoop and real-time event processing systems.&nbsp;</p>
+<p pid="109">As for traditional message brokers, they didn't satisfy LinkedIn's needs. These solutions were too heavy and slow. So, the engineering team developed a scalable and fault-tolerant&nbsp;messaging system&nbsp;without lots of bells and whistles. The new queue manager has quickly transformed into a full-fledged event streaming platform.</p>
+<h3 pid="110">Apache Kafka Capabilities&nbsp;</h3>
+<p pid="111"> The technology has become popular largely due to its compatibility. We can use Apache Kafka with a wide range of systems. They are:&nbsp;</p>
+<ul>
+ <li>Web and desktop applications.</li>
+ <li>Microservices&nbsp;</li>
+ <li>Monitoring&nbsp;and analytical systems.</li>
+ <li>Any required sinks or sources.</li>
+ <li>NoSQL, Oracle, Hadoop, SFDC.</li>
+</ul>
+<p pid="117"> With the help of Apache Kafka, you can successfully create data-driven applications and manage complicated backend systems. The picture below shows the three main capabilities of this queue manager.</p>
+<p pid="119"><img alt="Apache Kafka" class="fr-fin fr-dib" data-original="https://static.tildacdn.com/tild3234-3762-4561-b537-616237356665/completion.png" src="https://static.tildacdn.com/tild3234-3762-4561-b537-616237356665/completion.png"></p>
+<p pid="121"> As you can see, Apache Kafka is able to:</p>
+<ol>
+ <li>publish and subscribe&nbsp;to streams of records with excellent scalability and performance, which makes it suitable for company-wide use.&nbsp; </li>
+ <li>durably store&nbsp;the streams, distributing data across multiple nodes for a highly available deployment.</li>
+ <li>process&nbsp;data streams as they arrive, allowing you to aggregate, create&nbsp;windowing parameters, perform&nbsp;joins of data within a stream, etc.</li>
+</ol>
+<h3 pid="126">Apache Kafka Key Terms and Concepts</h3>
+<p pid="127"> First of all, you should know about the abstraction of a distributed commit log. This confusing term is crucial for understanding message brokers. Apache Kafka is based on the&nbsp;<em>log data structure</em>. This means a log is a time-ordered, append-only sequence of data inserts. As for other concepts, they are:</p>
+<ol>
+ <li>topics&nbsp;(the stored streams of records).</li>
+ <li>records&nbsp;(they include a key, a value, and a timestamp).</li>
+ <li>APIs&nbsp;(<a href="https://kafka.apache.org/documentation.html#producerapi" target="_blank">Producer API</a>,&nbsp;<a href="https://kafka.apache.org/documentation.html#consumerapi" target="_blank">Consumer API</a>,&nbsp;<a href="https://kafka.apache.org/documentation/streams" target="_blank">Streams API</a>,&nbsp;<a href="https://kafka.apache.org/documentation.html#connect" target="_blank">Connector API</a>).</li>
+</ol>
+<h3 pid="132">Kafka Working Principle</h3>
+<p pid="133"> There are two main patterns of messaging:</p>
+<ol>
+ <li><a href="http://en.wikipedia.org/wiki/Message_queue" target="_blank">queuing</a></li>
+ <li><a href="https://en.wikipedia.org/wiki/Publish%E2%80%93subscribe_pattern" target="_blank">publish-subscribe</a></li>
+</ol>
+<p pid="139"> Both of them have some pros and cons. The advantage of the first pattern is the opportunity to easily scale the processing. On the other hand, queues aren't multi-subscriber. The second model provides the possibility to broadcast data to multiple consumer groups. At the same time, scaling is more difficult in this case.</p>
+<p pid="141">Apache Kafka combines these two ways of data processing, getting the benefits of both of them. It should be mentioned that this queue manager provides better ordering guarantees than a traditional message broker.</p>
+<h3 pid="143">Kafka Peculiarities</h3>
+<p pid="144"> Combining the functions of messaging, storage, and processing, Kafka isn't a common message broker. It's a powerful event streaming platform capable of handling trillions of messages a day. Kafka is useful both for storing and processing historical data from the past and for real-time work. You can use it for creating streaming applications, as well as for streaming data pipelines.&nbsp;</p>
+<p pid="146">If you want to follow the steps of Kafka users, you should be mindful of some nuances:</p>
+<ol>
+ <li>the messages don't have separate IDs (they are addressed by their offset in the log).</li>
+ <li>the system doesn't check the consumers of each topic or message.</li>
+ <li>Kafka doesn't maintain any indexes and doesn't allow random access (it just delivers the messages in order, starting with the offset).</li>
+ <li>the system doesn't have deletes and doesn't buffer the messages in userspace (but there are various configurable storage strategies).</li>
+</ol>
+<h3 pid="151">Conclusion</h3>
+<p pid="152"> Being a perfect open-source solution for real-time statistics and big data projects, this message broker has some weaknesses. The thing is it requires you to work a lot. You will feel a lack of plugins and other things that can be simply reused in your code.&nbsp;</p>
+<p pid="154">I recommend you to use this multiple publish/subscribe and queueing tool when you need to optimize the processing of really big amounts of data (100,000 messages per second and more). In this case, Apache Kafka will satisfy your needs.</p>
+<h2 pid="156">RabbitMQ Message Broker</h2>
+<p pid="159"> Pricing: Free</p>
+<p pid="160">Official website:&nbsp;<a href="https://www.rabbitmq.com/" target="_blank">https://www.rabbitmq.com</a></p>
+<p pid="161">Useful resources:&nbsp;<a href="https://www.rabbitmq.com/devtools.html" target="_blank">tools</a>,&nbsp;<a href="https://www.rabbitmq.com/best-practices.html" target="_blank">best practices</a>&nbsp;</p>
+<p pid="163">Pros:&nbsp;</p>
+<ul>
+ <li>Suitable for many programming languages and messaging protocols.&nbsp;&nbsp;</li>
+ <li>Can be used on different operating systems and cloud environments.</li>
+ <li>Simple to start using and to deploy.</li>
+ <li>Gives an opportunity to use various developer tools.</li>
+ <li>Modern, built-in user interface.</li>
+ <li>Offers clustering and is very good at it.</li>
+ <li>Scales to around 500,000+ messages per second.</li>
+</ul>
+<p pid="165">Cons:&nbsp;</p>
+<ul>
+ <li>Non-transactional (by default).&nbsp;&nbsp;</li>
+ <li>Needs Erlang.</li>
+ <li>Minimal configuration that can be done through code.</li>
+ <li>Issues with processing big amounts of data.</li>
+</ul>
+<p pid="169"> The next very popular solution is written in the&nbsp;<a href="https://en.wikipedia.org/wiki/Erlang_(programming_language)" target="_blank">Erlang</a>. As it's a simple, general-purpose, functional programming language, which consists of many ready to use components, this software doesn't require lots of manual work. RabbitMQ is known as a&nbsp;"traditional" message broker, which is suitable for a wide range of projects. It is successfully used for both the development of new startups and notable enterprises.</p>
+<p pid="171">The software is built on the&nbsp;<a href="https://en.wikipedia.org/wiki/Open_Telecom_Platform" target="_blank">Open Telecom Platform</a>&nbsp;for clustering and failover. You can find many client libraries for using the queue manager, written in all major programming languages.</p>
+<h3 pid="173">The Story of RabbitMQ Development</h3>
+<p pid="174"> One of the&nbsp;oldest open source message brokers&nbsp;can be used with various protocols. Many web developers like this software, because of its useful features, libraries, development tools, and instructions.&nbsp;</p>
+<p pid="176">In 2007, Rabbit Technologies Ltd. had developed the system, which originally implemented AMQP. It's an open wire protocol for messaging with complex routing features. AMQP ensured cross-language flexibility of using message broking solutions outside the Java ecosystem. In fact, RabbitMQ perfectly works with Java, Spring, .NET, PHP, Python, Ruby, JavaScript, Go, Elixir, Objective-C, Swift, and many other technologies. The numerous plugins and libraries are the main advantage of the software.</p>
+<h3 pid="178">RabbitMQ Capabilities</h3>
+<p pid="179"> Created as a message broker for general use, RabbitMQ is based on the pub-sub communication pattern. The messaging process can be either synchronous or asynchronous, as you prefer. So, the main features of the message broker are:</p>
+<ul>
+ <li>Support of numerous protocols and message queuing, changeable routing to queues, and different types of exchange.</li>
+ <li>Clustering deployment ensures perfect availability and throughput. The software can be used across various zones and regions.</li>
+ <li>The possibilities to use Puppet, BOSH, Chef, and Docker for deployment. Compatibility with the most popular modern programming languages.</li>
+ <li>The opportunity for simple deployment in both private and public clouds.</li>
+ <li>Pluggable authentication, authorization, and support for TLS and LDAP.</li>
+ <li>Many of the proposed tools can be used for continuous integration, operational metrics, and work with other enterprise systems.</li>
+</ul>
+<h3 pid="184">RabbitMQ Working Principle</h3>
+<p pid="185"> Being a broker-centric program, RabbitMQ gives guarantees between producers and consumers. If you choose this software, you should use transient messages, rather than durable.&nbsp;</p>
+<p pid="187">The program uses the broker to check the state of a message and verify whether the delivery was successfully completed. The message broker presumes that consumers are usually online.&nbsp;</p>
+<p pid="189">As for the message ordering, the consumers will get the message in the published order itself. The order of publishing is managed consistently.</p>
+<h3 pid="191">RabbitMQ Peculiarities</h3>
+<p pid="192"> The main advantage of this message broker is the perfect set of plugins, combined with nice scalability. Many web developers enjoy clear documentation and well-defined rules, as well as the possibility of working with various message exchange models. In fact, RabbitMQ is suitable for three of them:</p>
+<ul>
+ <li>Direct&nbsp;exchange model (individual exchange of a topic, one-by-one).</li>
+ <li>Topic&nbsp;exchange model (each consumer gets a message which is sent to a specific topic).</li>
+ <li>Fanout&nbsp;exchange model (all consumers connected to queues get the message).</li>
+</ul>
+<p pid="198"> Here you can see the gap between Kafka and RabbitMQ. If a consumer isn't connected to a fanout exchange in RabbitMQ, the message will be lost. At the same time, Kafka allows us to avoid this, because any consumer can read any message.</p>
+<h2 pid="200">Conclusion</h2>
+<p pid="201"> As for me, I like RabbitMQ due to the opportunity to use many plugins. They save time and speed-up work. You can easily adjust filters, priorities, message ordering, etc. Just like Kafka, RabbitMQ requires you to deploy and manage the software. But it has a convenient built-in UI and allows for the use of SSL for better security. As for its ability to cope with big data loads, here RabbitMQ is inferior to Kafka.&nbsp;</p>
+<p pid="202">To sum up, both Apache Kafka and RabbitMQ are truly worth the attention of skilled software developers. I hope my article will help you find suitable big data technologies for your project.</p></div>
+                </div>
+
+                  <div id="bottom-bumper-container"></div>
+                  <div class="article-tag-pill-container">
+                      <span class="article-tag-pill">kafka</span>
+                      <span class="article-tag-pill">Big data</span>
+                      <span class="article-tag-pill">Message broker</span>
+                      <span class="article-tag-pill">System integration</span>
+                  </div>
+
+                  <div class="attribution">
+                      <p>Published at DZone with permission of <span>Vitaliy Samofal</span>.
+                        <span>
+                          <a href="https://freshcodeit.com/blog-introduction-to-message-brokers-part-1-apache-kafka-vs-rabbitmq" target="_blank">See the original article here.
+                            <i class="icon-link-ext-alt"></i>
+                          </a>
+                        </span>
+                      </p>
+                    <p>Opinions expressed by DZone contributors are their own.</p>
+                  </div>
+
+                    <div class="related">
+                      <h3>Popular on DZone</h3>
+                        <ul>
+                            <li class="relateddiv">
+                              <a href="/articles/functional-vs-non-functional-requirements-the-full?fromrel=true">Functional vs. Non-Functional Requirements: The Full Guide, Definitions, and Technical Examples</a>
+                            </li>
+                            <li class="relateddiv">
+                              <a href="/articles/how-to-optimize-mysql-queries-for-speed-and-perfor?fromrel=true">How to Optimize MySQL Queries for Speed and Performance</a>
+                            </li>
+                            <li class="relateddiv">
+                              <a href="/articles/how-to-hash-salt-and-verify-passwords-in-nodejs-py?fromrel=true">How to Hash, Salt, and Verify Passwords in NodeJS, Python, Golang, and Java</a>
+                            </li>
+                            <li class="relateddiv">
+                              <a href="/articles/usage-of-java-streams-amp-lambdas-in-selenium-webd?fromrel=true">Usage of Java Streams and Lambdas in Selenium WebDriver</a>
+                            </li>
+                        </ul>
+                      </div>
+<div class="comments-overlay"></div>
+<div id="comment-box">
+  <div class="comment-box-wrapper">
+    <div id="comment-input-editor"></div>
+  </div>
+  <div class="info hidden"></div>
+  <div class="comments-content">
+    <div class="comment-header">
+      <hr />
+      <span class="icon-comment">
+        <span class="numOfComments"></span> Comments
+      </span>
+    </div>
+    <div class="comments"></div>
+  </div>
+</div>
+            </article>
+          </div>
+
+            <div id="above-pr-ad" class="bottom-ad-container">
+              <div id="div-gpt-ad-1435246566686-11" data-gpt-slot="bottom"></div>
+            </div>
+            <div class="layout-card widget-top-border partner-resources-block" style="width:100%; margin-bottom: 1em;">
+              <div class="main-container">
+                <div class="featured-header">
+                  <h2>
+                      Big Data<span> Partner Resources</span>
+                  </h2>
+                </div>
+                <div class="partner-resources-container">
+                  <div id="div-gpt-ad-1435246566686-5" class="resource-block" data-gpt-slot="partner" data-gpt-position="pr1"></div>
+                  <div id="div-gpt-ad-1435246566686-6" class="resource-block" data-gpt-slot="partner" data-gpt-position="pr2"></div>
+                  <div id="div-gpt-ad-1435246566686-7" class="resource-block" data-gpt-slot="partner" data-gpt-position="pr3"></div>
+                </div>
+              </div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <div id="bsa-parent" class="bottom-sticky-ad-container hide">
+      <div class="container">
+        <div class="col-md-9">
+          <div class="fixed-bottom-div">
+            <div class="inline-block">
+              <div id="div-gpt-ad-1635294790718-12" data-gpt-desktop="true" class="bottom-sticky-ad"></div>
+            </div>
+            <div class="inline-block">
+              <span id="close" class="bottom-sticky-ad-close-button" onclick="removeBottomStickyAd()">
+                X
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  <div class="modal fade bd-example-modal-lg" id="modal-message" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header"></div>
+        <div class="modal-body"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script async>const articleTitle = 'Introduction to Message Brokers. Part 1: Apache Kafka vs. RabbitMQ'
+const articleUrl = 'https://dzone.com/articles/introduction-to-message-brokers-part-1-apache-kafk'
+
+const retweetLink = document.querySelector('#tweet-link')
+
+function retweet(event) {
+    event.preventDefault()
+    event.stopPropagation()
+
+    const twitter = 'https://twitter.com/intent/tweet'
+    const params = '?text=' + encodeURIComponent(articleTitle) + '&url=' + articleUrl + '&ref=dzone.com&via=DZoneInc'
+    const win = window.open(twitter + params, '_blank')
+    win.focus()
+}
+
+retweetLink.addEventListener('click', retweet);
+
+function showStatusMessage(options) {
+  var modal = document.getElementById("modal-message");
+
+  if(modal) {
+    modal.classList.add(options.type);
+    var modalBody = modal.querySelector(".modal-content .modal-body");
+    var modalHeader = modal.querySelector(".modal-content .modal-header");
+
+    modalHeader.innerText = options.header ? options.header : "";
+    modalBody.innerText = options.body ? options.body : "" ;
+
+    $(modal).modal("show");
+
+    $(modal).on('hidden.bs.modal', function () {
+      modal.classList.remove(options.type);
+    });
+  }
+}
+
+function showConfirmMessage(options) {
+  var modal = document.getElementById("modal-message");
+
+  if(modal) {
+    modal.classList.add(options.type);
+    var modalBody = modal.querySelector(".modal-content .modal-body");
+    var modalHeader = modal.querySelector(".modal-content .modal-header");
+
+    modalHeader.innerText = options.header ? options.header : "";
+    modalBody.innerText = options.body ? options.body : "" ;
+
+    if (options.textarea) {
+      const textareaDiv = document.createElement('div')
+      const textareaLabel = document.createElement('label')
+      textareaLabel.setAttribute('for', 'modal-textarea')
+      textareaLabel.innerText = options.textarea.label
+
+      const textarea = document.createElement('textarea')
+      textarea.id = 'modal-textarea'
+      textarea.placeholder = (options.textarea.placeholder || '')
+      textarea.setAttribute('rows', (options.textarea.rows || 3))
+      textarea.classList.add('form-control', 'not-resizable')
+
+      if (options.textarea.maxlength) {
+        textarea.maxLength = options.textarea.maxlength
+      }
+
+      textareaDiv.appendChild(textareaLabel)
+      textareaDiv.appendChild(textarea)
+      modalBody.appendChild(textareaDiv)
+    }
+
+    var btnContainer = document.createElement("div");
+    btnContainer.classList.add("btn-container");
+
+    var noBtn = document.createElement("button");
+    noBtn.innerText = options.noBtnText ? options.noBtnText : "No";
+    noBtn.classList.add("no-btn");
+
+    var yesBtn = document.createElement("button");
+    yesBtn.innerText = options.yesBtnText ? options.yesBtnText : "Yes";
+    yesBtn.classList.add("yes-btn");
+
+    btnContainer.appendChild(noBtn);
+    btnContainer.appendChild(yesBtn);
+
+    modalBody.appendChild(btnContainer);
+
+    $(modal).modal("show");
+
+    $(noBtn).one("click", function() {
+      $(modal).modal("hide");
+
+      if(options.noCallback) {
+        $(modal).one('hidden.bs.modal', function () {
+          options.noCallback();
+        });
+      }
+    });
+
+    $(yesBtn).one("click", function() {
+      $(modal).modal("hide");
+
+      if(options.yesCallback) {
+        $(modal).one('hidden.bs.modal', function () {
+          options.yesCallback();
+        });
+      }
+    });
+
+    $(modal).on('hidden.bs.modal', function () {
+      modal.classList.remove(options.type);
+    });
+  }
+}
+</script><link rel="stylesheet" media="all" href="https://dz2cdn3.dzone.com/themes/dz20/ftl/footer/styles.css">
+
+<div id="ftl-footer">
+  <div class="container-fluid footerOuter">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="container">
+          <div class="row footer">
+            <div class="col-md-12 footerWidget">
+              <div class="row footerContainer footer">
+                <div class="left col-xs-12 col-sm-7">
+                  <div class="col-xs-12 social-media-icons footer-mobile">
+                    <ul class="icons-only">
+                      <li class="rss-icon" id="rss-footer-1">
+                        <a href="/pages/feeds" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-rss-1"></i>
+                        </a>
+                      </li>
+                      <li class="twitter-icon">
+                        <a href="https://twitter.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-twitter"></i>
+                        </a>
+                      </li>
+                      <li class="facebook-icon">
+                        <a href="https://www.facebook.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-facebook-1"></i>
+                        </a>
+                      </li>
+                      <li class="linkedin-icon">
+                        <a href="https://www.linkedin.com/company/dzone/" target="_blank"
+                           rel="noreferrer noopener">
+                          <i class="icon-linkedin-1"></i>
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div class="top-section col-xs-12">
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">ABOUT US</p>
+                      <ul class="link-group">
+                        <li><a href="/pages/about" rel="noreferrer noopener">About DZone</a></li>
+                        <li><a href="mailto:support@dzone.com" rel="noreferrer noopener">Send feedback</a></li>
+                        <li><a href="https://careers.dzone.com/" target="_blank" rel="noreferrer noopener">Careers</a></li>
+                          <li><a href="/sitemap" rel="noreferrer noopener">Sitemap</a></li>
+                      </ul>
+                    </div>
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">ADVERTISE</p>
+                      <ul class="link-group">
+                        <li><a href="https://advertise.dzone.com" target="_blank" rel="noreferrer noopener">Advertise with DZone</a></li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div class="bottom-section col-xs-12">
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">CONTRIBUTE ON DZONE</p>
+                      <ul class="bottom-top-list link-group">
+                        <li><a href="/articles/dzones-article-submission-guidelines">Article Submission Guidelines</a></li>
+                        <li><a href="/pages/mvb" rel="noreferrer noopener">MVB Program</a></li>
+                        <li><a href="/pages/contribute" rel="noreferrer noopener">Become a Contributor</a></li>
+                        <li><a href="/writers-zone" rel="noreferrer noopener">Visit the Writers' Zone</a></li>
+                      </ul>
+
+                      <p class="section-header">LEGAL</p>
+                      <ul class="link-group">
+                        <li><a href="/pages/tos" rel="noreferrer noopener">Terms of Service</a></li>
+                        <li><a href="/pages/privacy" rel="noreferrer noopener">Privacy Policy</a></li>
+                      </ul>
+                    </div>
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">CONTACT US</p>
+                      <ul class="link-group">
+                        <li>600 Park Offices Drive</li>
+                        <li>Suite 300</li>
+                        <li>Durham, NC 27709</li>
+                        <li><a href="mailto:support@dzone.com" rel="noreferrer noopener">support@dzone.com</a></li>
+                        <li><a href="tel:+19196780300" rel="noreferrer noopener">+1 (919) 678-0300</a></li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="right col-xs-12 col-sm-5">
+
+                  <p class="connect-text">Let's be friends:</p>
+                  <div class="col-xs-12 social-media-icons footer-wide">
+                    <ul class="icons-only">
+                      <li class="rss-icon" id="rss-footer-1">
+                        <a href="/pages/feeds" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-rss-1"></i>
+                        </a>
+                      </li>
+                      <li class="twitter-icon">
+                        <a href="https://twitter.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-twitter"></i>
+                        </a>
+                      </li>
+                      <li class="facebook-icon">
+                        <a href="https://www.facebook.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-facebook-1"></i>
+                        </a>
+                      </li>
+                      <li class="linkedin-icon">
+                        <a href="https://www.linkedin.com/company/dzone/" target="_blank"
+                           rel="noreferrer noopener">
+                          <i class="icon-linkedin-1"></i>
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div class="col-xs-12 powered-by">
+                    <p>DZone.com is powered by&nbsp;</p>
+                    <a href="https://devada.com/answerhub/" rel="noreferrer noopener">
+                      <img src=""
+                           data-src="https://dz2cdn3.dzone.com/themes/dz20/images/answerhub_logo_white_footer.png"
+                           width="150"
+                           height="56"
+                           class="lazyload"
+                           alt="AnswerHub logo">
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  <script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"></script>
+
+  <script async>
+      (function(w, d, s, l, i) {
+          w[l] = w[l] || [];
+          w[l].push({'gtm.start': new Date().getTime(), event: 'gtm.js'});
+          var f = d.getElementsByTagName(s)[0], j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : '';
+          j.async = true;
+          j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+          f.parentNode.insertBefore(j,f);
+      })(window, document, 'script', 'dataLayer', 'GTM-K25QL22');
+  </script>
+
+  <script>
+      window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+      ga('create', 'UA-410289-1', 'auto');
+      ga('require', 'linkid', 'linkid.js');
+      ga('require', 'GTM-TSD9TZP');
+      ga('set', 'siteSpeedSampleRate', 25);
+  </script>
+  <script async src="https://www.google-analytics.com/analytics.js"></script>
+  <script async>const analytics = {
+    'dimension1': 'big-data',
+    'dimension2': 'article/analysis',
+    'dimension3': '2019-05-08',
+    'dimension4': '0',
+    'dimension5': '',
+    'dimension7': 'kafka, Big data, Message broker, System integration',
+    'dimension8': 'vitaliy_samofal',
+    'dimension9': 'undefined',
+    'dimension10': 'Freshcode'
+}
+
+if (window.ga) {
+    Object.keys(analytics).forEach(function(key) {
+        window.ga('set', key, analytics[key])
+    })
+
+    window.ga('send', 'pageview')
+}</script>
+
+  <script>
+      !function (e, o, n, i) {
+          if (!e) {
+              e = e || {}, window.permutive = e, e.q = [];
+              var t = function () {
+                  return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, function (e) {
+                      return (e ^ (window.crypto || window.msCrypto).getRandomValues(new Uint8Array(1))[0] & 15 >> e / 4).toString(16)
+                  })
+              };
+              e.config = i || {}, e.config.apiKey = o, e.config.workspaceId = n, e.config.environment = e.config.environment || "production", (window.crypto || window.msCrypto) && (e.config.viewId = t());
+              for (var g = ["addon", "identify", "track", "trigger", "query", "segment", "segments", "ready", "on", "once", "user", "consent"], r = 0; r < g.length; r++) {
+                  var w = g[r];
+                  e[w] = function (o) {
+                      return function () {
+                          var n = Array.prototype.slice.call(arguments, 0);
+                          e.q.push({
+                              functionName: o,
+                              arguments: n
+                          })
+                      }
+                  }(w)
+              }
+          }
+      }(window.permutive, "bca90777-e088-4f2a-96c2-13ad18deeccc", "18ad0c5b-460c-4d19-a729-dc537805538f", {});
+      window.googletag = window.googletag || {}, window.googletag.cmd = window.googletag.cmd || [], window.googletag.cmd.push(function () {
+          if (0 === window.googletag.pubads().getTargeting("permutive").length) {
+              var e = window.localStorage.getItem("_pdfps");
+              window.googletag.pubads().setTargeting("permutive", e ? JSON.parse(e) : []);
+              var o = window.localStorage.getItem("permutive-id");
+              o && (window.googletag.pubads().setTargeting("puid", o), window.googletag.pubads().setTargeting("ptime", Date.now().toString())), window.permutive.config.viewId && window.googletag.pubads().setTargeting("prmtvvid", window.permutive.config.viewId), window.permutive.config.workspaceId && window.googletag.pubads().setTargeting("prmtvwid", window.permutive.config.workspaceId)
+          }
+      });
+
+
+      permutive.addon('web', {
+          'page': {
+              'category': 'Big Data',
+              'node': {
+                  'authorCompany': 'Freshcode',
+                  'authors': [3003313, ],
+                  'publishDate': new Date(1557273600000),
+                  'sponsorAuthor': false,
+                  'tags': ['kafka', 'Big data', 'Message broker', 'System integration', ],
+                  'title': 'Introduction to Message Brokers. Part 1: Apache Kafka vs. RabbitMQ',
+                  'type': 'article',
+              },
+              'section': 'article',
+          }
+      });
+  </script>
+  <script async src="https://18ad0c5b-460c-4d19-a729-dc537805538f.edge.permutive.app/18ad0c5b-460c-4d19-a729-dc537805538f-web.js"></script>
+
+  <script>
+      const csrf = '-6083472340852059549'
+      const articleId = 2773400
+      const likes = 30
+      const assetDomain = 'https://dz2cdn3.dzone.com'
+      const codemirrorVars = {
+          modeURI: 'https://dz2cdn3.dzone.com/themes/dz20/lib/codemirror/mode/',
+          requiredScripts: [
+              'https://dz2cdn3.dzone.com/themes/dz20/lib/codemirror/lib/codemirror.js',
+              'https://dz2cdn3.dzone.com/themes/dz20/lib/codemirror/mode/meta.js'
+          ]
+      }
+
+      const gptTags = {
+          'zone': 'big_data',
+          'topicTag': 'kafka,Big data,Message broker,System integration',
+          'company': '',
+          'siteSection': 'Zones',
+          'articleCategory': 'analysis',
+          'nodeID': '2773400',
+          'authorID': '3003313',
+          'publishYear': '2019',
+          'publishMonth': '05',
+          'jobRole': '',
+          'companySize': ''
+      }
+
+      const minCommentChar = 10;
+      const peer39Enabled = true;
+  </script>
+
+  <script src="https://dz2cdn3.dzone.com/themes/dz20/lib/static/jquery/jquery.min.js"></script>
+  <script async src="https://dz2cdn3.dzone.com/themes/dz20/lib/static/bootstrap/bootstrap.min.js"></script>
+  <script async src="https://dz2cdn3.dzone.com/themes/dz20/ftl/article/ads.js"></script>
+
+
+
+  <script>
+      function loadScript(src) {
+          return new Promise(function (resolve, reject) {
+              const s = document.createElement('script')
+              s.src = src
+              s.onload = resolve
+              s.onerror = reject
+              document.head.appendChild(s)
+          })
+      }
+
+      function loadStyle(href) {
+          const link = document.createElement('link')
+          link.rel = 'stylesheet'
+          link.href = href
+          document.head.appendChild(link)
+      }
+
+      function loadScriptsSync(deferred) {
+          var p = Promise.resolve()
+          for (var i = 0; i < deferred.length; i++) {
+              let script = deferred[i]
+              p = p.then(function() {
+                  return loadScript(script)
+              })
+          }
+          return p
+      }
+
+      function loadStyles() {
+          const deferred = [
+              'https://dz2cdn3.dzone.com/themes/dz20/lib/codemirror/lib/codemirror.css',
+              'https://dz2cdn3.dzone.com/themes/dz20/ftl/comments/styles.css',
+              'https://dz2cdn3.dzone.com/themes/dz20/lib/froala3/css/froala_editor.pkgd.min.css',
+              'https://dz2cdn3.dzone.com/themes/dz20/lib/froala3/css/themes/gray.min.css',
+              'https://dz2cdn3.dzone.com/themes/dz20/ftl/article/mini-profile.css'
+          ]
+
+          for (var i = 0; i < deferred.length; i++) {
+              loadStyle(deferred[i])
+          }
+      }
+
+      window.addEventListener('load', function(event) {
+          loadStyles()
+          loadScriptsSync([
+              'https://dz2cdn3.dzone.com/themes/dz20/ftl/header/auth-status.js',
+              'https://dz2cdn3.dzone.com/themes/dz20/lib/lazysizes.min.js',
+              'https://dz2cdn3.dzone.com/themes/dz20/ftl/article/codeblocks.js',
+              'https://dz2cdn3.dzone.com/themes/dz20/ftl/article/activity-bar.js',
+              'https://dz2cdn3.dzone.com/themes/dz20/lib/froala3/js/froala_editor.pkgd.min.js',
+              'https://dz2cdn3.dzone.com/themes/dz20/ftl/froala/content.js',
+              'https://dz2cdn3.dzone.com/themes/dz20/ftl/comments/content.js',
+              'https://dz2cdn3.dzone.com/themes/dz20/ftl/article/content.js'
+          ])
+      })
+  </script>
+</body>
+</html>

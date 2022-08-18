@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="format-detection" content="telephone=no">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <link rel="stylesheet" href="/css/application.css?ts=1629452156">
+    <title>Performance comparison of several common JSON libraries in Java</title>
+    <meta name="keywords" content="Java,JSON,github,Google"/>
+    <meta name="description" content="This article uses JMH to test the performance of several common JSON parsing libraries in Java. Every time I see on the Internet what people say about how good a library is, crush other libraries. But it&#039;s better to see a hundred things than to hear them. Only those who have tested them by themUTF-8..."/>
+    
+        <script type="text/javascript" src="//services.vlitag.com/adv1/?q=ff812312f4032d3c559bf0226892db5a" defer="" async=""></script><script> var vitag = vitag || {};</script>
+    </head>
+<body>
+<div class="container header">
+    <div class="header_logo">
+        <h1><a href="https://programmer.help/">Programmer Help</a></h1>
+        <p>Where programmers get help</p>
+    </div>
+    <ul class="header_menu">
+        <li>
+            <a href="https://programmer.help/">Home</a>
+        </li>
+        <li>
+            <a href="https://programmer.help/blogs/">Blogs</a>
+        </li>
+        <li>
+            <a href="https://programmer.help/tags/">Tags</a>
+        </li>
+    </ul>
+</div>
+
+    <div class="container body">
+        <div class="content">
+            <h1 class="blog-title">Performance comparison of several common JSON libraries in Java</h1>
+
+    
+
+    <div class="blog-content">
+        <p>This article uses JMH to test the performance of several common JSON parsing libraries in Java. Every time I see on the Internet what people say about how good a library is, crush other libraries. But it's better to see a hundred things than to hear them. Only those who have tested them by themselves are the most trustworthy.</p>
+<p>JSON is a fairly common data transfer format in both Web and server development. In general, we don't need to be overly concerned about the performance of JSON parsing constructs, except on systems with high performance requirements. </p>
+<p>At present, there are many kinds of open source JSON libraries for Java. Next, we take four commonly used JSON libraries for performance testing and comparison. At the same time, according to the test results, we analyze if we choose the most suitable JSON libraries according to the actual application scenarios.</p>
+<p>The four JSON libraries are Gson, FastJson, Jackson and Json-lib.</p>
+<h2>Brief introduction</h2>
+<p>Choosing a suitable JSON library should be considered from many aspects:</p>
+<ul>
+<li>
+<p>String parsing to JSON performance</p>
+</li>
+<li>
+<p>String parsing into JavaBean performance</p>
+</li>
+<li>
+<p>JavaBean Constructs JSON Performance</p>
+</li>
+<li>
+<p>Set Construction JSON Performance</p>
+</li>
+<li>
+<p>Ease of use</p>
+</li>
+</ul>
+<p>First, I briefly introduce the identity background of the four libraries.</p>
+<h3>Gson</h3>
+<div>
+<p>Project address: https://github.com/google/gson</p>
+</div>
+<p>Gson is currently the most fully functional Json parser. Gson was originally developed by Google to meet the internal needs of Google, but it has been used by many companies or users since its first release in May 2008. Gson's application is mainly to Json and fromJson two conversion functions, no dependency, no need for exceptional additional jar, can run directly on JDK. Before using this object transformation, it is necessary to create the type of object and its members before successfully converting JSON strings into corresponding objects. As long as there are get and set methods in the class, Gson can completely realize the transformation of complex types of JSON to beans or beans to json, which is the magic weapon of JSON parsing.</p>
+<h3>FastJson</h3>
+<div>
+<p>Project address: https://github.com/alibaba/fastjson</p>
+</div>
+<p>Fastjson is a high performance JSON processor written in Java language, developed by Alibaba. No dependencies, no extra jar exceptions, can run directly on JDK. FastJson has some problems with complex type of Bean transformation Json, which may lead to errors in Json transformation and need to make references. FastJson uses original algorithms to speed up parse to its maximum, exceeding all JSON libraries.</p>
+<h3>Jackson</h3>
+<div>
+<p>Project address: https://github.com/FasterXML/jackson</p>
+</div>
+<p>Jackson is a widely used Java open source framework for serializing and deserializing json. The Jackson community is relatively active and updates faster. According to statistics from Github, Jackson is one of the most popular JSON parsers. <a href="https://www.javazhiyin.com/go?url=http://mp.weixin.qq.com/s?__biz=MzI4Njc5NjM1NQ==&amp;mid=2247488093&amp;idx=1&amp;sn=e1923eb3d78a78c7805e507a97b26e10&amp;chksm=ebd62d71dca1a4670837c47ee2c05cf080206d0b59e92f889499b8bf219e07eaf794531811e9&amp;scene=21#wechat_redirect" target="_blank">Spring MVC</a> The default json parser is Jackson.</p>
+<p>Jackson has many advantages:</p>
+<ul>
+<li>
+<p>Jackson relies on fewer jar packages and is easy to use.</p>
+</li>
+<li>
+<p>Jackson parses large json files faster than other Java json frameworks such as Gson.</p>
+</li>
+<li>
+<p>Jackson runtime occupies less memory and performs better</p>
+</li>
+<li>
+<p>Jackson has a flexible API that can be easily extended and customized.</p>
+</li>
+</ul>
+<p>The latest version is 2.9.4. Jackson's core module consists of three parts:</p>
+<ol>
+<li>
+<p>The jackson-core core package provides an API based on stream pattern parsing, which includes JsonPaser and JsonGenerator. Jackson's internal implementation generates and parses json through json Generator and json Parser of the high-performance streaming mode API.</p>
+</li>
+<li>
+<p>jackson-annotations annotation packages provide standard annotation functions.</p>
+</li>
+<li>
+<p>The jackson-databind data binding package provides object-bound parsing-based API (ObjectMapper) and tree-model parsing-based API (JsonNode); object-bound parsing-based API and tree-model parsing-based API rely on stream-model parsing-based API.</p>
+</li>
+</ol>
+<p>Why is Jackson's introduction so long? Because it is also my favorite.</p>
+<h3>Json-lib</h3>
+<div>
+<p>Project address: http://json-lib.sourceforge.net/index.html</p>
+</div>
+<p>Json-lib is also the most widely used JSON parsing tool at the beginning. The disadvantage of json-lib is that it really depends on many third-party packages. For complex types of conversion, json-lib also has shortcomings for JSON to beans. For example, there will be a list or map set of another class in one class, and the transformation of json-lib from JSON to beans will be problematic. Json-lib can not meet the needs of the Internet in terms of function and performance.</p>
+<h3>Write performance tests</h3>
+<p>Next, start writing performance test code for these four libraries.</p>
+<h3>Adding maven dependencies</h3>
+<p>First of all, of course, add maven dependencies for four libraries. To be fair, I use all of their latest versions:</p>
+<blockquote>
+<pre><span style="color: #008080;"> 1</span> &lt;!-- Json libs--&gt;
+<span style="color: #008080;"> 2</span> &lt;dependency&gt;
+<span style="color: #008080;"> 3</span>     &lt;groupId&gt;net.sf.json-lib&lt;/groupId&gt;
+<span style="color: #008080;"> 4</span>     &lt;artifactId&gt;json-lib&lt;/artifactId&gt;
+<span style="color: #008080;"> 5</span>     &lt;version&gt;2.4&lt;/version&gt;
+<span style="color: #008080;"> 6</span>     &lt;classifier&gt;jdk15&lt;/classifier&gt;
+<span style="color: #008080;"> 7</span> &lt;/dependency&gt;
+<span style="color: #008080;"> 8</span> &lt;dependency&gt;
+<span style="color: #008080;"> 9</span>     &lt;groupId&gt;com.google.code.gson&lt;/groupId&gt;
+<span style="color: #008080;">10</span>     &lt;artifactId&gt;gson&lt;/artifactId&gt;
+<span style="color: #008080;">11</span>     &lt;version&gt;2.8.2&lt;/version&gt;
+<span style="color: #008080;">12</span> &lt;/dependency&gt;
+<span style="color: #008080;">13</span> &lt;dependency&gt;
+<span style="color: #008080;">14</span>     &lt;groupId&gt;com.alibaba&lt;/groupId&gt;
+<span style="color: #008080;">15</span>     &lt;artifactId&gt;fastjson&lt;/artifactId&gt;
+<span style="color: #008080;">16</span>     &lt;version&gt;1.2.46&lt;/version&gt;
+<span style="color: #008080;">17</span> &lt;/dependency&gt;
+<span style="color: #008080;">18</span> &lt;dependency&gt;
+<span style="color: #008080;">19</span>     &lt;groupId&gt;com.fasterxml.jackson.core&lt;/groupId&gt;
+<span style="color: #008080;">20</span>     &lt;artifactId&gt;jackson-databind&lt;/artifactId&gt;
+<span style="color: #008080;">21</span>     &lt;version&gt;2.9.4&lt;/version&gt;
+<span style="color: #008080;">22</span> &lt;/dependency&gt;
+<span style="color: #008080;">23</span> &lt;dependency&gt;
+<span style="color: #008080;">24</span>     &lt;groupId&gt;com.fasterxml.jackson.core&lt;/groupId&gt;
+<span style="color: #008080;">25</span>     &lt;artifactId&gt;jackson-annotations&lt;/artifactId&gt;
+<span style="color: #008080;">26</span>     &lt;version&gt;2.9.4&lt;/version&gt;
+<span style="color: #008080;">27</span> &lt;/dependency&gt;</pre>
+</blockquote>
+<p> </p>
+<h3>Tool classes for four Libraries</h3>
+<p>FastJsonUtil.java</p>
+<blockquote>
+<pre><span style="color: #008080;">1</span> <span style="color: #0000ff;">public</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> FastJsonUtil {
+</span><span style="color: #008080;">2</span>     <span style="color: #0000ff;">public</span> <span style="color: #0000ff;">static</span><span style="color: #000000;"> String bean2Json(Object obj) {
+</span><span style="color: #008080;">3</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;"> JSON.toJSONString(obj);
+</span><span style="color: #008080;">4</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">5</span> 
+<span style="color: #008080;">6</span>     <span style="color: #0000ff;">public</span> <span style="color: #0000ff;">static</span> &lt;T&gt; T json2Bean(String jsonStr, Class&lt;T&gt;<span style="color: #000000;"> objClass) {
+</span><span style="color: #008080;">7</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;"> JSON.parseObject(jsonStr, objClass);
+</span><span style="color: #008080;">8</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">9</span> }</pre>
+</blockquote>
+<p>GsonUtil.java</p>
+<blockquote>
+<pre><span style="color: #008080;"> 1</span> <span style="color: #0000ff;">public</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> GsonUtil {
+</span><span style="color: #008080;"> 2</span>     <span style="color: #0000ff;">private</span> <span style="color: #0000ff;">static</span> Gson gson = <span style="color: #0000ff;">new</span><span style="color: #000000;"> GsonBuilder().create();
+</span><span style="color: #008080;"> 3</span> 
+<span style="color: #008080;"> 4</span>     <span style="color: #0000ff;">public</span> <span style="color: #0000ff;">static</span><span style="color: #000000;"> String bean2Json(Object obj) {
+</span><span style="color: #008080;"> 5</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;"> gson.toJson(obj);
+</span><span style="color: #008080;"> 6</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 7</span> 
+<span style="color: #008080;"> 8</span>     <span style="color: #0000ff;">public</span> <span style="color: #0000ff;">static</span> &lt;T&gt; T json2Bean(String jsonStr, Class&lt;T&gt;<span style="color: #000000;"> objClass) {
+</span><span style="color: #008080;"> 9</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;"> gson.fromJson(jsonStr, objClass);
+</span><span style="color: #008080;">10</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">11</span> 
+<span style="color: #008080;">12</span>     <span style="color: #0000ff;">public</span> <span style="color: #0000ff;">static</span><span style="color: #000000;"> String jsonFormatter(String uglyJsonStr) {
+</span><span style="color: #008080;">13</span>         Gson gson = <span style="color: #0000ff;">new</span><span style="color: #000000;"> GsonBuilder().setPrettyPrinting().create();
+</span><span style="color: #008080;">14</span>         JsonParser jp = <span style="color: #0000ff;">new</span><span style="color: #000000;"> JsonParser();
+</span><span style="color: #008080;">15</span>         JsonElement je =<span style="color: #000000;"> jp.parse(uglyJsonStr);
+</span><span style="color: #008080;">16</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;"> gson.toJson(je);
+</span><span style="color: #008080;">17</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">18</span> }</pre>
+</blockquote>
+<p>JacksonUtil.java</p>
+<blockquote>
+<pre><span style="color: #008080;"> 1</span> <span style="color: #0000ff;">public</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> JacksonUtil {
+</span><span style="color: #008080;"> 2</span>     <span style="color: #0000ff;">private</span> <span style="color: #0000ff;">static</span> ObjectMapper mapper = <span style="color: #0000ff;">new</span><span style="color: #000000;"> ObjectMapper();
+</span><span style="color: #008080;"> 3</span> 
+<span style="color: #008080;"> 4</span>     <span style="color: #0000ff;">public</span> <span style="color: #0000ff;">static</span><span style="color: #000000;"> String bean2Json(Object obj) {
+</span><span style="color: #008080;"> 5</span>         <span style="color: #0000ff;">try</span><span style="color: #000000;"> {
+</span><span style="color: #008080;"> 6</span>             <span style="color: #0000ff;">return</span><span style="color: #000000;"> mapper.writeValueAsString(obj);
+</span><span style="color: #008080;"> 7</span>         } <span style="color: #0000ff;">catch</span><span style="color: #000000;"> (JsonProcessingException e) {
+</span><span style="color: #008080;"> 8</span> <span style="color: #000000;">            e.printStackTrace();
+</span><span style="color: #008080;"> 9</span>             <span style="color: #0000ff;">return</span> <span style="color: #0000ff;">null</span><span style="color: #000000;">;
+</span><span style="color: #008080;">10</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">11</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">12</span> 
+<span style="color: #008080;">13</span>     <span style="color: #0000ff;">public</span> <span style="color: #0000ff;">static</span> &lt;T&gt; T json2Bean(String jsonStr, Class&lt;T&gt;<span style="color: #000000;"> objClass) {
+</span><span style="color: #008080;">14</span>         <span style="color: #0000ff;">try</span><span style="color: #000000;"> {
+</span><span style="color: #008080;">15</span>             <span style="color: #0000ff;">return</span><span style="color: #000000;"> mapper.readValue(jsonStr, objClass);
+</span><span style="color: #008080;">16</span>         } <span style="color: #0000ff;">catch</span><span style="color: #000000;"> (IOException e) {
+</span><span style="color: #008080;">17</span> <span style="color: #000000;">            e.printStackTrace();
+</span><span style="color: #008080;">18</span>             <span style="color: #0000ff;">return</span> <span style="color: #0000ff;">null</span><span style="color: #000000;">;
+</span><span style="color: #008080;">19</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">20</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">21</span> }</pre>
+</blockquote>
+<p>JsonLibUtil.java</p>
+<blockquote>
+<pre><span style="color: #008080;"> 1</span> <span style="color: #0000ff;">public</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> JsonLibUtil {
+</span><span style="color: #008080;"> 2</span> 
+<span style="color: #008080;"> 3</span>     <span style="color: #0000ff;">public</span> <span style="color: #0000ff;">static</span><span style="color: #000000;"> String bean2Json(Object obj) {
+</span><span style="color: #008080;"> 4</span>         JSONObject jsonObject =<span style="color: #000000;"> JSONObject.fromObject(obj);
+</span><span style="color: #008080;"> 5</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;"> jsonObject.toString();
+</span><span style="color: #008080;"> 6</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 7</span> 
+<span style="color: #008080;"> 8</span>     @SuppressWarnings("unchecked"<span style="color: #000000;">)
+</span><span style="color: #008080;"> 9</span>     <span style="color: #0000ff;">public</span> <span style="color: #0000ff;">static</span> &lt;T&gt; T json2Bean(String jsonStr, Class&lt;T&gt;<span style="color: #000000;"> objClass) {
+</span><span style="color: #008080;">10</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;"> (T) JSONObject.toBean(JSONObject.fromObject(jsonStr), objClass);
+</span><span style="color: #008080;">11</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">12</span> }</pre>
+</blockquote>
+<h3>Prepare the Model class</h3>
+<p>Here I write a simple Person class with attributes of Date, List, Map and the custom class FullName to simulate the real scene to the greatest extent.</p>
+<blockquote>
+<pre><span style="color: #008080;"> 1</span> <span style="color: #0000ff;">public</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> Person {
+</span><span style="color: #008080;"> 2</span>     <span style="color: #0000ff;">private</span><span style="color: #000000;"> String name;
+</span><span style="color: #008080;"> 3</span>     <span style="color: #0000ff;">private</span><span style="color: #000000;"> FullName fullName;
+</span><span style="color: #008080;"> 4</span>     <span style="color: #0000ff;">private</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> age;
+</span><span style="color: #008080;"> 5</span>     <span style="color: #0000ff;">private</span><span style="color: #000000;"> Date birthday;
+</span><span style="color: #008080;"> 6</span>     <span style="color: #0000ff;">private</span> List&lt;String&gt;<span style="color: #000000;"> hobbies;
+</span><span style="color: #008080;"> 7</span>     <span style="color: #0000ff;">private</span> Map&lt;String, String&gt;<span style="color: #000000;"> clothes;
+</span><span style="color: #008080;"> 8</span>     <span style="color: #0000ff;">private</span> List&lt;Person&gt;<span style="color: #000000;"> friends;
+</span><span style="color: #008080;"> 9</span> 
+<span style="color: #008080;">10</span>     <span style="color: #008000;">//</span><span style="color: #008000;"> getter/setter ellipsis</span>
+<span style="color: #008080;">11</span> 
+<span style="color: #008080;">12</span> <span style="color: #000000;">    @Override
+</span><span style="color: #008080;">13</span>     <span style="color: #0000ff;">public</span><span style="color: #000000;"> String toString() {
+</span><span style="color: #008080;">14</span>         StringBuilder str = <span style="color: #0000ff;">new</span> StringBuilder("Person [name=" + name + ", fullName=" + fullName + ", age="
+<span style="color: #008080;">15</span>                 + age + ", birthday=" + birthday + ", hobbies=" +<span style="color: #000000;"> hobbies
+</span><span style="color: #008080;">16</span>                 + ", clothes=" + clothes + "]n"<span style="color: #000000;">);
+</span><span style="color: #008080;">17</span>         <span style="color: #0000ff;">if</span> (friends != <span style="color: #0000ff;">null</span><span style="color: #000000;">) {
+</span><span style="color: #008080;">18</span>             str.append("Friends:n"<span style="color: #000000;">);
+</span><span style="color: #008080;">19</span>             <span style="color: #0000ff;">for</span><span style="color: #000000;"> (Person f : friends) {
+</span><span style="color: #008080;">20</span>                 str.append("t"<span style="color: #000000;">).append(f);
+</span><span style="color: #008080;">21</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;">22</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">23</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;"> str.toString();
+</span><span style="color: #008080;">24</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">25</span> 
+<span style="color: #008080;">26</span> }</pre>
+</blockquote>
+<p> </p>
+<blockquote>
+<pre><span style="color: #008080;"> 1</span> <span style="color: #0000ff;">public</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> FullName {
+</span><span style="color: #008080;"> 2</span>     <span style="color: #0000ff;">private</span><span style="color: #000000;"> String firstName;
+</span><span style="color: #008080;"> 3</span>     <span style="color: #0000ff;">private</span><span style="color: #000000;"> String middleName;
+</span><span style="color: #008080;"> 4</span>     <span style="color: #0000ff;">private</span><span style="color: #000000;"> String lastName;
+</span><span style="color: #008080;"> 5</span> 
+<span style="color: #008080;"> 6</span>     <span style="color: #0000ff;">public</span><span style="color: #000000;"> FullName() {
+</span><span style="color: #008080;"> 7</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 8</span> 
+<span style="color: #008080;"> 9</span>     <span style="color: #0000ff;">public</span><span style="color: #000000;"> FullName(String firstName, String middleName, String lastName) {
+</span><span style="color: #008080;">10</span>         <span style="color: #0000ff;">this</span>.firstName =<span style="color: #000000;"> firstName;
+</span><span style="color: #008080;">11</span>         <span style="color: #0000ff;">this</span>.middleName =<span style="color: #000000;"> middleName;
+</span><span style="color: #008080;">12</span>         <span style="color: #0000ff;">this</span>.lastName =<span style="color: #000000;"> lastName;
+</span><span style="color: #008080;">13</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">14</span> 
+<span style="color: #008080;">15</span>     <span style="color: #008000;">//</span><span style="color: #008000;"> ellipsis getter and setter</span>
+<span style="color: #008080;">16</span> 
+<span style="color: #008080;">17</span> <span style="color: #000000;">    @Override
+</span><span style="color: #008080;">18</span>     <span style="color: #0000ff;">public</span><span style="color: #000000;"> String toString() {
+</span><span style="color: #008080;">19</span>         <span style="color: #0000ff;">return</span> "[firstName=" + firstName + ", middleName="
+<span style="color: #008080;">20</span>                 + middleName + ", lastName=" + lastName + "]"<span style="color: #000000;">;
+</span><span style="color: #008080;">21</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">22</span> }</pre>
+</blockquote>
+<p> </p>
+<h3>JSON Serialization Performance Benchmark</h3>
+<blockquote>
+<pre><span style="color: #008080;"> 1</span> <span style="color: #000000;">@BenchmarkMode(Mode.SingleShotTime)
+</span><span style="color: #008080;"> 2</span> <span style="color: #000000;">@OutputTimeUnit(TimeUnit.SECONDS)
+</span><span style="color: #008080;"> 3</span> <span style="color: #000000;">@State(Scope.Benchmark)
+</span><span style="color: #008080;"> 4</span> <span style="color: #0000ff;">public</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> JsonSerializeBenchmark {
+</span><span style="color: #008080;"> 5</span>     <span style="color: #008000;">/**</span>
+<span style="color: #008080;"> 6</span> <span style="color: #008000;">     * Number of serialization parameters
+</span><span style="color: #008080;"> 7</span>      <span style="color: #008000;">*/</span>
+<span style="color: #008080;"> 8</span>     @Param({"1000", "10000", "100000"<span style="color: #000000;">})
+</span><span style="color: #008080;"> 9</span>     <span style="color: #0000ff;">private</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> count;
+</span><span style="color: #008080;">10</span> 
+<span style="color: #008080;">11</span>     <span style="color: #0000ff;">private</span><span style="color: #000000;"> Person p;
+</span><span style="color: #008080;">12</span> 
+<span style="color: #008080;">13</span>     <span style="color: #0000ff;">public</span> <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">void</span> main(String[] args) <span style="color: #0000ff;">throws</span><span style="color: #000000;"> Exception {
+</span><span style="color: #008080;">14</span>         Options opt = <span style="color: #0000ff;">new</span><span style="color: #000000;"> OptionsBuilder()
+</span><span style="color: #008080;">15</span>                 .include(JsonSerializeBenchmark.<span style="color: #0000ff;">class</span><span style="color: #000000;">.getSimpleName())
+</span><span style="color: #008080;">16</span>                 .forks(1<span style="color: #000000;">)
+</span><span style="color: #008080;">17</span>                 .warmupIterations(0<span style="color: #000000;">)
+</span><span style="color: #008080;">18</span> <span style="color: #000000;">                .build();
+</span><span style="color: #008080;">19</span>         Collection&lt;RunResult&gt; results =  <span style="color: #0000ff;">new</span><span style="color: #000000;"> Runner(opt).run();
+</span><span style="color: #008080;">20</span>         ResultExporter.exportResult("JSON Serialization performance", results, "count", "second"<span style="color: #000000;">);
+</span><span style="color: #008080;">21</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">22</span> 
+<span style="color: #008080;">23</span> <span style="color: #000000;">    @Benchmark
+</span><span style="color: #008080;">24</span>     <span style="color: #0000ff;">public</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> JsonLib() {
+</span><span style="color: #008080;">25</span>         <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = 0; i &lt; count; i++<span style="color: #000000;">) {
+</span><span style="color: #008080;">26</span> <span style="color: #000000;">            JsonLibUtil.bean2Json(p);
+</span><span style="color: #008080;">27</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">28</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">29</span> 
+<span style="color: #008080;">30</span> <span style="color: #000000;">    @Benchmark
+</span><span style="color: #008080;">31</span>     <span style="color: #0000ff;">public</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> Gson() {
+</span><span style="color: #008080;">32</span>         <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = 0; i &lt; count; i++<span style="color: #000000;">) {
+</span><span style="color: #008080;">33</span> <span style="color: #000000;">            GsonUtil.bean2Json(p);
+</span><span style="color: #008080;">34</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">35</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">36</span> 
+<span style="color: #008080;">37</span> <span style="color: #000000;">    @Benchmark
+</span><span style="color: #008080;">38</span>     <span style="color: #0000ff;">public</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> FastJson() {
+</span><span style="color: #008080;">39</span>         <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = 0; i &lt; count; i++<span style="color: #000000;">) {
+</span><span style="color: #008080;">40</span> <span style="color: #000000;">            FastJsonUtil.bean2Json(p);
+</span><span style="color: #008080;">41</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">42</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">43</span> 
+<span style="color: #008080;">44</span> <span style="color: #000000;">    @Benchmark
+</span><span style="color: #008080;">45</span>     <span style="color: #0000ff;">public</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> Jackson() {
+</span><span style="color: #008080;">46</span>         <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = 0; i &lt; count; i++<span style="color: #000000;">) {
+</span><span style="color: #008080;">47</span> <span style="color: #000000;">            JacksonUtil.bean2Json(p);
+</span><span style="color: #008080;">48</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">49</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">50</span> 
+<span style="color: #008080;">51</span> <span style="color: #000000;">    @Setup
+</span><span style="color: #008080;">52</span>     <span style="color: #0000ff;">public</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> prepare() {
+</span><span style="color: #008080;">53</span>         List&lt;Person&gt; friends=<span style="color: #0000ff;">new</span> ArrayList&lt;Person&gt;<span style="color: #000000;">();
+</span><span style="color: #008080;">54</span>         friends.add(createAPerson("Xiao Ming",<span style="color: #0000ff;">null</span><span style="color: #000000;">));
+</span><span style="color: #008080;">55</span>         friends.add(createAPerson("Tony",<span style="color: #0000ff;">null</span><span style="color: #000000;">));
+</span><span style="color: #008080;">56</span>         friends.add(createAPerson("Chen Xiao er",<span style="color: #0000ff;">null</span><span style="color: #000000;">));
+</span><span style="color: #008080;">57</span>         p=createAPerson("Xiao Shu"<span style="color: #000000;">,friends);
+</span><span style="color: #008080;">58</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">59</span> 
+<span style="color: #008080;">60</span> <span style="color: #000000;">    @TearDown
+</span><span style="color: #008080;">61</span>     <span style="color: #0000ff;">public</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> shutdown() {
+</span><span style="color: #008080;">62</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">63</span> 
+<span style="color: #008080;">64</span>     <span style="color: #0000ff;">private</span> Person createAPerson(String name,List&lt;Person&gt;<span style="color: #000000;"> friends) {
+</span><span style="color: #008080;">65</span>         Person newPerson=<span style="color: #0000ff;">new</span><span style="color: #000000;"> Person();
+</span><span style="color: #008080;">66</span> <span style="color: #000000;">        newPerson.setName(name);
+</span><span style="color: #008080;">67</span>         newPerson.setFullName(<span style="color: #0000ff;">new</span> FullName("zjj_first", "zjj_middle", "zjj_last"<span style="color: #000000;">));
+</span><span style="color: #008080;">68</span>         newPerson.setAge(24<span style="color: #000000;">);
+</span><span style="color: #008080;">69</span>         List&lt;String&gt; hobbies=<span style="color: #0000ff;">new</span> ArrayList&lt;String&gt;<span style="color: #000000;">();
+</span><span style="color: #008080;">70</span>         hobbies.add("Basketball"<span style="color: #000000;">);
+</span><span style="color: #008080;">71</span>         hobbies.add("Swimming"<span style="color: #000000;">);
+</span><span style="color: #008080;">72</span>         hobbies.add("coding"<span style="color: #000000;">);
+</span><span style="color: #008080;">73</span> <span style="color: #000000;">        newPerson.setHobbies(hobbies);
+</span><span style="color: #008080;">74</span>         Map&lt;String,String&gt; clothes=<span style="color: #0000ff;">new</span> HashMap&lt;String, String&gt;<span style="color: #000000;">();
+</span><span style="color: #008080;">75</span>         clothes.put("coat", "Nike"<span style="color: #000000;">);
+</span><span style="color: #008080;">76</span>         clothes.put("trousers", "adidas"<span style="color: #000000;">);
+</span><span style="color: #008080;">77</span>         clothes.put("shoes", "Anta"<span style="color: #000000;">);
+</span><span style="color: #008080;">78</span> <span style="color: #000000;">        newPerson.setClothes(clothes);
+</span><span style="color: #008080;">79</span> <span style="color: #000000;">        newPerson.setFriends(friends);
+</span><span style="color: #008080;">80</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;"> newPerson;
+</span><span style="color: #008080;">81</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">82</span> }</pre>
+</blockquote>
+<p> </p>
+<p>To illustrate, in the code above</p>
+<blockquote>
+<pre class="brush:csharp;gutter:true;">ResultExporter.exportResult("JSON Serialization performance", results, "count", "second");</pre>
+</blockquote>
+<p>This is my own method of filling the performance test report data into the Echarts diagram and then exporting the png image.</p>
+<p>The results of the execution are as follows:</p>
+<p><img src="/images/blog/53fb9f75e78efe3ad87a30cd7874d6ee.jpg" alt=""></p>
+<p>From the above test results, we can see that when serialization times are relatively small, Gson performance is the best. When the number of serialization times is increasing to 100000, Gson is weaker than Jackson and FastJson. At this time, FastJson performance is real cattle. In addition, we can see that Jackson has been outstanding regardless of the number of small or large. And that Json-lib was just funny. C</p>
+<h3>JSON deserialization performance benchmark</h3>
+<blockquote>
+<pre><span style="color: #008080;"> 1</span> <span style="color: #000000;">@BenchmarkMode(Mode.SingleShotTime)
+</span><span style="color: #008080;"> 2</span> <span style="color: #000000;">@OutputTimeUnit(TimeUnit.SECONDS)
+</span><span style="color: #008080;"> 3</span> <span style="color: #000000;">@State(Scope.Benchmark)
+</span><span style="color: #008080;"> 4</span> <span style="color: #0000ff;">public</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> JsonDeserializeBenchmark {
+</span><span style="color: #008080;"> 5</span>     <span style="color: #008000;">/**</span>
+<span style="color: #008080;"> 6</span> <span style="color: #008000;">     * Deserialization number parameter
+</span><span style="color: #008080;"> 7</span>      <span style="color: #008000;">*/</span>
+<span style="color: #008080;"> 8</span>     @Param({"1000", "10000", "100000"<span style="color: #000000;">})
+</span><span style="color: #008080;"> 9</span>     <span style="color: #0000ff;">private</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> count;
+</span><span style="color: #008080;">10</span> 
+<span style="color: #008080;">11</span>     <span style="color: #0000ff;">private</span><span style="color: #000000;"> String jsonStr;
+</span><span style="color: #008080;">12</span> 
+<span style="color: #008080;">13</span>     <span style="color: #0000ff;">public</span> <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">void</span> main(String[] args) <span style="color: #0000ff;">throws</span><span style="color: #000000;"> Exception {
+</span><span style="color: #008080;">14</span>         Options opt = <span style="color: #0000ff;">new</span><span style="color: #000000;"> OptionsBuilder()
+</span><span style="color: #008080;">15</span>                 .include(JsonDeserializeBenchmark.<span style="color: #0000ff;">class</span><span style="color: #000000;">.getSimpleName())
+</span><span style="color: #008080;">16</span>                 .forks(1<span style="color: #000000;">)
+</span><span style="color: #008080;">17</span>                 .warmupIterations(0<span style="color: #000000;">)
+</span><span style="color: #008080;">18</span> <span style="color: #000000;">                .build();
+</span><span style="color: #008080;">19</span>         Collection&lt;RunResult&gt; results =  <span style="color: #0000ff;">new</span><span style="color: #000000;"> Runner(opt).run();
+</span><span style="color: #008080;">20</span>         ResultExporter.exportResult("JSON Deserialization performance", results, "count", "second"<span style="color: #000000;">);
+</span><span style="color: #008080;">21</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">22</span> 
+<span style="color: #008080;">23</span> <span style="color: #000000;">    @Benchmark
+</span><span style="color: #008080;">24</span>     <span style="color: #0000ff;">public</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> JsonLib() {
+</span><span style="color: #008080;">25</span>         <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = 0; i &lt; count; i++<span style="color: #000000;">) {
+</span><span style="color: #008080;">26</span>             JsonLibUtil.json2Bean(jsonStr, Person.<span style="color: #0000ff;">class</span><span style="color: #000000;">);
+</span><span style="color: #008080;">27</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">28</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">29</span> 
+<span style="color: #008080;">30</span> <span style="color: #000000;">    @Benchmark
+</span><span style="color: #008080;">31</span>     <span style="color: #0000ff;">public</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> Gson() {
+</span><span style="color: #008080;">32</span>         <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = 0; i &lt; count; i++<span style="color: #000000;">) {
+</span><span style="color: #008080;">33</span>             GsonUtil.json2Bean(jsonStr, Person.<span style="color: #0000ff;">class</span><span style="color: #000000;">);
+</span><span style="color: #008080;">34</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">35</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">36</span> 
+<span style="color: #008080;">37</span> <span style="color: #000000;">    @Benchmark
+</span><span style="color: #008080;">38</span>     <span style="color: #0000ff;">public</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> FastJson() {
+</span><span style="color: #008080;">39</span>         <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = 0; i &lt; count; i++<span style="color: #000000;">) {
+</span><span style="color: #008080;">40</span>             FastJsonUtil.json2Bean(jsonStr, Person.<span style="color: #0000ff;">class</span><span style="color: #000000;">);
+</span><span style="color: #008080;">41</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">42</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">43</span> 
+<span style="color: #008080;">44</span> <span style="color: #000000;">    @Benchmark
+</span><span style="color: #008080;">45</span>     <span style="color: #0000ff;">public</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> Jackson() {
+</span><span style="color: #008080;">46</span>         <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = 0; i &lt; count; i++<span style="color: #000000;">) {
+</span><span style="color: #008080;">47</span>             JacksonUtil.json2Bean(jsonStr, Person.<span style="color: #0000ff;">class</span><span style="color: #000000;">);
+</span><span style="color: #008080;">48</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">49</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">50</span> 
+<span style="color: #008080;">51</span> <span style="color: #000000;">    @Setup
+</span><span style="color: #008080;">52</span>     <span style="color: #0000ff;">public</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> prepare() {
+</span><span style="color: #008080;">53</span>         jsonStr="{"name":"Xiao Shu","fullName":{"firstName":"zjj_first","middleName":"zjj_middle","lastName":"zjj_last"},"age":24,"birthday":null,"hobbies":["Basketball","Swimming","coding"],"clothes":{"shoes":"Anta","trousers":"adidas","coat":"Nike"},"friends":[{"name":"Xiao Ming","fullName":{"firstName":"xxx_first","middleName":"xxx_middle","lastName":"xxx_last"},"age":24,"birthday":null,"hobbies":["Basketball","Swimming","coding"],"clothes":{"shoes":"Anta","trousers":"adidas","coat":"Nike"},"friends":null},{"name":"Tony","fullName":{"firstName":"xxx_first","middleName":"xxx_middle","lastName":"xxx_last"},"age":24,"birthday":null,"hobbies":["Basketball","Swimming","coding"],"clothes":{"shoes":"Anta","trousers":"adidas","coat":"Nike"},"friends":null},{"name":"Chen Xiao er","fullName":{"firstName":"xxx_first","middleName":"xxx_middle","lastName":"xxx_last"},"age":24,"birthday":null,"hobbies":["Basketball","Swimming","coding"],"clothes":{"shoes":"Anta","trousers":"adidas","coat":"Nike"},"friends":null}]}"<span style="color: #000000;">;
+</span><span style="color: #008080;">54</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">55</span> 
+<span style="color: #008080;">56</span> <span style="color: #000000;">    @TearDown
+</span><span style="color: #008080;">57</span>     <span style="color: #0000ff;">public</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> shutdown() {
+</span><span style="color: #008080;">58</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">59</span> }</pre>
+</blockquote>
+<p> </p>
+<p>The results of the execution are as follows:</p>
+<p><img src="/images/blog/03da6e4865bf92ab7694948db2f05292.jpg" alt=""></p>
+<p>From the test results above, we can see that Gson, Jackson and FastJson are not very different when deserializing, and their performance is excellent, and that Json-lib is still going to be funny.</p>
+<p> </p>
+<p>Source: xncoding.com/2018/01/09/java/jsons.html</p>
+
+<p>Good essay selection</p>
+<p><a href="https://www.javazhiyin.com/go?url=http://mp.weixin.qq.com/s?__biz=MzI4Njc5NjM1NQ==&amp;mid=2247488093&amp;idx=1&amp;sn=e1923eb3d78a78c7805e507a97b26e10&amp;chksm=ebd62d71dca1a4670837c47ee2c05cf080206d0b59e92f889499b8bf219e07eaf794531811e9&amp;scene=21#wechat_redirect" target="_blank">Interviewer: Have you analyzed the source code of Spring MVC?</a></p>
+<p><a href="https://www.javazhiyin.com/go?url=http://mp.weixin.qq.com/s?__biz=MzU2MTI4MjI0MQ==&amp;mid=2247486011&amp;idx=1&amp;sn=a53ec23c8729f8fa03e41340d9f7e707&amp;chksm=fc7a6795cb0dee831d7ea09ced0f176464c1df59291cb08ac3f9f0885e7a7f729d8581b31c2a&amp;scene=21#wechat_redirect" target="_blank">Java performance optimization: teach you how to run code efficiently</a></p>
+<p><a href="https://www.javazhiyin.com/go?url=http://mp.weixin.qq.com/s?__biz=MzU2MTI4MjI0MQ==&amp;mid=2247485987&amp;idx=1&amp;sn=f0a1f851bec006e7aacbc0d5e183bac1&amp;chksm=fc7a678dcb0dee9bb0619e363833f9e43f3c61ad57cf40a46cfb1d3ac840a90af51ea0a96ac0&amp;scene=21#wechat_redirect" target="_blank">token-based multi-platform identity authentication architecture design</a></p>
+<p><a href="https://www.javazhiyin.com/go?url=http://mp.weixin.qq.com/s?__biz=MzU2MTI4MjI0MQ==&amp;mid=2247485942&amp;idx=1&amp;sn=00ad2b126c54d2e579892321bf7f9060&amp;chksm=fc7a6458cb0ded4e004246c8565632c6994a57078264a035fd3a0a37f5d37a83df316586e9f0&amp;scene=21#wechat_redirect" target="_blank">What exactly did the bottom of select count(*) do?</a></p>
+<p><a href="https://www.javazhiyin.com/go?url=http://mp.weixin.qq.com/s?__biz=MzU2MTI4MjI0MQ==&amp;mid=2247485906&amp;idx=1&amp;sn=100197909bbc525ec1cda59335e5cf39&amp;chksm=fc7a647ccb0ded6ae2db78f8dc9a590bb3fdcd64e7bcb0a150ec0fea21f5d01aff44807784aa&amp;scene=21#wechat_redirect" target="_blank">Analysis of Springboot Startup Principle</a></p>
+    </div>
+
+    
+
+        <p class="blog-tags">Tags:
+            <a href="https://programmer.help/tags/java">Java</a>
+            <a href="https://programmer.help/tags/json">JSON</a>
+            <a href="https://programmer.help/tags/github">github</a>
+            <a href="https://programmer.help/tags/google">Google</a>
+        </p>
+        <p class="blog-user-date">Posted on <i>Sat, 18 May 2019 10:58:35 -0400</i> by <b>kts</b></p>
+
+    
+    
+        </div><!--
+        --><div class="sidebar">
+        <h3>Hot Tags</h3>
+<ul class="hot-tags">
+        <li><a href="https://programmer.help/tags/java">Java</a> - 7906</li>
+        <li><a href="https://programmer.help/tags/database">Database</a> - 3176</li>
+        <li><a href="https://programmer.help/tags/python">Python</a> - 3103</li>
+        <li><a href="https://programmer.help/tags/attribute">Attribute</a> - 2963</li>
+        <li><a href="https://programmer.help/tags/programming">Programming</a> - 2938</li>
+        <li><a href="https://programmer.help/tags/javascript">Javascript</a> - 2788</li>
+        <li><a href="https://programmer.help/tags/spring">Spring</a> - 2575</li>
+        <li><a href="https://programmer.help/tags/xml">xml</a> - 2270</li>
+        <li><a href="https://programmer.help/tags/android">Android</a> - 2243</li>
+        <li><a href="https://programmer.help/tags/linux">Linux</a> - 2204</li>
+        <li><a href="https://programmer.help/tags/json">JSON</a> - 2150</li>
+        <li><a href="https://programmer.help/tags/less">less</a> - 2137</li>
+        <li><a href="https://programmer.help/tags/network">network</a> - 2115</li>
+        <li><a href="https://programmer.help/tags/github">github</a> - 2063</li>
+        <li><a href="https://programmer.help/tags/mysql">MySQL</a> - 1760</li>
+        <li><a href="https://programmer.help/tags/sql">SQL</a> - 1616</li>
+        <li><a href="https://programmer.help/tags/php">PHP</a> - 1559</li>
+        <li><a href="https://programmer.help/tags/encoding">encoding</a> - 1360</li>
+        <li><a href="https://programmer.help/tags/mobile">Mobile</a> - 1172</li>
+        <li><a href="https://programmer.help/tags/apache">Apache</a> - 1137</li>
+    </ul>
+
+
+<div class="adsbyvli" data-ad-slot="vi_1739574577" style="width: 300px; height: 250px"></div><script>(vitag.Init = window.vitag.Init || []).push(function(){viAPItag.display("vi_1739574577")})</script>
+
+        </div>
+    </div>
+
+<div class="container footer">
+    &copy;2022 <a href="https://programmer.help/">Programmer Help</a>
+    <script type="text/javascript">
+        var html = '<a href="' + '/contact-us/' + '">';
+        html += 'Contact Us' + '</a>';
+        document.write(html)
+    </script>
+</div><script>
+    var _hmt = _hmt || [];
+    (function() {
+        var hm = document.createElement("script");
+        hm.src = "https://hm.baidu.com/hm.js?9a0ffc6fe7a6b5d3ef8b1ad8c659f59a";
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(hm, s);
+    })();
+</script>
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-136936861-1"></script>
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'UA-136936861-1');
+</script>
+</body>
+</html>

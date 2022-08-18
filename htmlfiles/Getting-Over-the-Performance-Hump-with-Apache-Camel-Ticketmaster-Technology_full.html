@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="profile" href="http://gmpg.org/xfn/11">
+<link rel="pingback" href="https://tech.ticketmaster.com/xmlrpc.php">
+
+<title>Getting Over the Performance Hump with Apache Camel &#8211; Ticketmaster Technology</title>
+<script type="text/javascript">
+  WebFontConfig = {"google":{"families":["Lato:b:latin,latin-ext","Lato:r,i,b,bi:latin,latin-ext"]}};
+  (function() {
+    var wf = document.createElement('script');
+    wf.src = 'https://s0.wp.com/wp-content/plugins/custom-fonts/js/webfont.js';
+    wf.type = 'text/javascript';
+    wf.async = 'true';
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(wf, s);
+	})();
+</script><style id="jetpack-custom-fonts-css">.wf-active body{font-family:"Lato",sans-serif}.wf-active button, .wf-active input, .wf-active select, .wf-active textarea{font-family:"Lato",sans-serif}.wf-active blockquote, .wf-active body .content-area .wpcom-reblog-snapshot .reblogger-note-content blockquote{font-family:"Lato",sans-serif}.wf-active .size-thumbnail + .wp-caption-text, .wf-active .size-medium + .wp-caption-text, .wf-active .wp-caption-text{font-family:"Lato",sans-serif}.wf-active .site-footer, .wf-active button, .wf-active input[type="button"], .wf-active input[type="reset"], .wf-active input[type="submit"], .wf-active #infinite-handle span{font-family:"Lato",sans-serif}.wf-active th{font-weight:700;font-style:normal}.wf-active h1, .wf-active h2, .wf-active h3, .wf-active h4, .wf-active h5, .wf-active h6{font-family:"Lato",sans-serif;font-weight:700;font-style:normal}.wf-active h1{font-weight:700;font-style:normal}.wf-active h2{font-weight:700;font-style:normal}.wf-active h3{font-weight:700;font-style:normal}.wf-active h4{font-weight:700;font-style:normal}.wf-active h5{font-weight:700;font-style:normal}.wf-active h6{font-weight:700;font-style:normal}.wf-active th{font-weight:700;font-family:"Lato",sans-serif;font-style:normal}.wf-active .site-title{font-style:normal;font-weight:700}.wf-active .site-description{font-style:normal;font-weight:700}.wf-active .widget-title{font-weight:700;font-style:normal}.wf-active .page-title{font-style:normal;font-weight:700}.wf-active .format-aside .entry-title{font-style:normal;font-weight:700}.wf-active .comment-reply-title, .wf-active .comments-title{font-style:normal;font-weight:700}@media screen and (min-width: 80em){.wf-active h1{font-weight:700;font-style:normal}}@media screen and (min-width: 80em){.wf-active h2{font-weight:700;font-style:normal}}@media screen and (min-width: 80em){.wf-active h3{font-weight:700;font-style:normal}}@media screen and (min-width: 80em){.wf-active h4{font-weight:700;font-style:normal}}@media screen and (min-width: 80em){.wf-active h5{font-weight:700;font-style:normal}}@media screen and (min-width: 80em){.wf-active h6{font-weight:700;font-style:normal}}</style>
+<meta name='robots' content='max-image-preview:large' />
+
+<!-- Async WordPress.com Remote Login -->
+<script id="wpcom_remote_login_js">
+var wpcom_remote_login_extra_auth = '';
+function wpcom_remote_login_remove_dom_node_id( element_id ) {
+	var dom_node = document.getElementById( element_id );
+	if ( dom_node ) { dom_node.parentNode.removeChild( dom_node ); }
+}
+function wpcom_remote_login_remove_dom_node_classes( class_name ) {
+	var dom_nodes = document.querySelectorAll( '.' + class_name );
+	for ( var i = 0; i < dom_nodes.length; i++ ) {
+		dom_nodes[ i ].parentNode.removeChild( dom_nodes[ i ] );
+	}
+}
+function wpcom_remote_login_final_cleanup() {
+	wpcom_remote_login_remove_dom_node_classes( "wpcom_remote_login_msg" );
+	wpcom_remote_login_remove_dom_node_id( "wpcom_remote_login_key" );
+	wpcom_remote_login_remove_dom_node_id( "wpcom_remote_login_validate" );
+	wpcom_remote_login_remove_dom_node_id( "wpcom_remote_login_js" );
+	wpcom_remote_login_remove_dom_node_id( "wpcom_request_access_iframe" );
+	wpcom_remote_login_remove_dom_node_id( "wpcom_request_access_styles" );
+}
+
+// Watch for messages back from the remote login
+window.addEventListener( "message", function( e ) {
+	if ( e.origin === "https://r-login.wordpress.com" ) {
+		var data = {};
+		try {
+			data = JSON.parse( e.data );
+		} catch( e ) {
+			wpcom_remote_login_final_cleanup();
+			return;
+		}
+
+		if ( data.msg === 'LOGIN' ) {
+			// Clean up the login check iframe
+			wpcom_remote_login_remove_dom_node_id( "wpcom_remote_login_key" );
+
+			var id_regex = new RegExp( /^[0-9]+$/ );
+			var token_regex = new RegExp( /^.*|.*|.*$/ );
+			if (
+				token_regex.test( data.token )
+				&& id_regex.test( data.wpcomid )
+			) {
+				// We have everything we need to ask for a login
+				var script = document.createElement( "script" );
+				script.setAttribute( "id", "wpcom_remote_login_validate" );
+				script.src = '/remote-login.php?wpcom_remote_login=validate'
+					+ '&wpcomid=' + data.wpcomid
+					+ '&token=' + encodeURIComponent( data.token )
+					+ '&host=' + window.location.protocol
+					+ '//' + window.location.hostname
+					+ '&postid=201'
+					+ '&is_singular=1';
+				document.body.appendChild( script );
+			}
+
+			return;
+		}
+
+		// Safari ITP, not logged in, so redirect
+		if ( data.msg === 'LOGIN-REDIRECT' ) {
+			window.location = 'https://wordpress.com/log-in?redirect_to=' + window.location.href;
+			return;
+		}
+
+		// Safari ITP, storage access failed, remove the request
+		if ( data.msg === 'LOGIN-REMOVE' ) {
+			var css_zap = 'html { -webkit-transition: margin-top 1s; transition: margin-top 1s; } /* 9001 */ html { margin-top: 0 !important; } * html body { margin-top: 0 !important; } @media screen and ( max-width: 782px ) { html { margin-top: 0 !important; } * html body { margin-top: 0 !important; } }';
+			var style_zap = document.createElement( 'style' );
+			style_zap.type = 'text/css';
+			style_zap.appendChild( document.createTextNode( css_zap ) );
+			document.body.appendChild( style_zap );
+
+			var e = document.getElementById( 'wpcom_request_access_iframe' );
+			e.parentNode.removeChild( e );
+
+			document.cookie = 'wordpress_com_login_access=denied; path=/; max-age=31536000';
+
+			return;
+		}
+
+		// Safari ITP
+		if ( data.msg === 'REQUEST_ACCESS' ) {
+			console.log( 'request access: safari' );
+
+			// Check ITP iframe enable/disable knob
+			if ( wpcom_remote_login_extra_auth !== 'safari_itp_iframe' ) {
+				return;
+			}
+
+			// If we are in a "private window" there is no ITP.
+			var private_window = false;
+			try {
+				var opendb = window.openDatabase( null, null, null, null );
+			} catch( e ) {
+				private_window = true;
+			}
+
+			if ( private_window ) {
+				console.log( 'private window' );
+				return;
+			}
+
+			var iframe = document.createElement( 'iframe' );
+			iframe.id = 'wpcom_request_access_iframe';
+			iframe.setAttribute( 'scrolling', 'no' );
+			iframe.setAttribute( 'sandbox', 'allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-top-navigation-by-user-activation' );
+			iframe.src = 'https://r-login.wordpress.com/remote-login.php?wpcom_remote_login=request_access&origin=' + encodeURIComponent( data.origin ) + '&wpcomid=' + encodeURIComponent( data.wpcomid );
+
+			var css = 'html { -webkit-transition: margin-top 1s; transition: margin-top 1s; } /* 9001 */ html { margin-top: 46px !important; } * html body { margin-top: 46px !important; } @media screen and ( max-width: 660px ) { html { margin-top: 71px !important; } * html body { margin-top: 71px !important; } #wpcom_request_access_iframe { display: block; height: 71px !important; } } #wpcom_request_access_iframe { border: 0px; height: 46px; position: fixed; top: 0; left: 0; width: 100%; min-width: 100%; z-index: 99999; background: #23282d; } ';
+
+			var style = document.createElement( 'style' );
+			style.type = 'text/css';
+			style.id = 'wpcom_request_access_styles';
+			style.appendChild( document.createTextNode( css ) );
+			document.body.appendChild( style );
+
+			document.body.appendChild( iframe );
+		}
+
+		if ( data.msg === 'DONE' ) {
+			wpcom_remote_login_final_cleanup();
+		}
+	}
+}, false );
+
+// Inject the remote login iframe after the page has had a chance to load
+// more critical resources
+window.addEventListener( "DOMContentLoaded", function( e ) {
+	var iframe = document.createElement( "iframe" );
+	iframe.style.display = "none";
+	iframe.setAttribute( "scrolling", "no" );
+	iframe.setAttribute( "id", "wpcom_remote_login_key" );
+	iframe.src = "https://r-login.wordpress.com/remote-login.php"
+		+ "?wpcom_remote_login=key"
+		+ "&origin=aHR0cHM6Ly90ZWNoLnRpY2tldG1hc3Rlci5jb20%3D"
+		+ "&wpcomid=58663291"
+		+ "&time=1653575748";
+	document.body.appendChild( iframe );
+}, false );
+</script>
+<link rel='dns-prefetch' href='//s2.wp.com' />
+<link rel='dns-prefetch' href='//ticketmastertech.wordpress.com' />
+<link rel='dns-prefetch' href='//s0.wp.com' />
+<link rel='dns-prefetch' href='//fonts.googleapis.com' />
+<link href='https://fonts.gstatic.com' crossorigin rel='preconnect' />
+<link rel="alternate" type="application/rss+xml" title="Ticketmaster Technology &raquo; Feed" href="https://tech.ticketmaster.com/feed/" />
+<link rel="alternate" type="application/rss+xml" title="Ticketmaster Technology &raquo; Comments Feed" href="https://tech.ticketmaster.com/comments/feed/" />
+<link rel="alternate" type="application/rss+xml" title="Ticketmaster Technology &raquo; Getting Over the Performance Hump with Apache&nbsp;Camel Comments Feed" href="https://tech.ticketmaster.com/2014/12/01/getting-over-the-performance-hump-with-apache-camel/feed/" />
+	<script type="text/javascript">
+		/* <![CDATA[ */
+		function addLoadEvent(func) {
+			var oldonload = window.onload;
+			if (typeof window.onload != 'function') {
+				window.onload = func;
+			} else {
+				window.onload = function () {
+					oldonload();
+					func();
+				}
+			}
+		}
+		/* ]]> */
+	</script>
+	<script type="text/javascript">
+window._wpemojiSettings = {"baseUrl":"https:\/\/s0.wp.com\/wp-content\/mu-plugins\/wpcom-smileys\/twemoji\/2\/72x72\/","ext":".png","svgUrl":"https:\/\/s0.wp.com\/wp-content\/mu-plugins\/wpcom-smileys\/twemoji\/2\/svg\/","svgExt":".svg","source":{"concatemoji":"https:\/\/s1.wp.com\/wp-includes\/js\/wp-emoji-release.min.js?m=1652185836h&ver=6.0-RC4-53438"}};
+/*! This file is auto-generated */
+!function(e,a,t){var n,r,o,i=a.createElement("canvas"),p=i.getContext&&i.getContext("2d");function s(e,t){var a=String.fromCharCode,e=(p.clearRect(0,0,i.width,i.height),p.fillText(a.apply(this,e),0,0),i.toDataURL());return p.clearRect(0,0,i.width,i.height),p.fillText(a.apply(this,t),0,0),e===i.toDataURL()}function c(e){var t=a.createElement("script");t.src=e,t.defer=t.type="text/javascript",a.getElementsByTagName("head")[0].appendChild(t)}for(o=Array("flag","emoji"),t.supports={everything:!0,everythingExceptFlag:!0},r=0;r<o.length;r++)t.supports[o[r]]=function(e){if(!p||!p.fillText)return!1;switch(p.textBaseline="top",p.font="600 32px Arial",e){case"flag":return s([127987,65039,8205,9895,65039],[127987,65039,8203,9895,65039])?!1:!s([55356,56826,55356,56819],[55356,56826,8203,55356,56819])&&!s([55356,57332,56128,56423,56128,56418,56128,56421,56128,56430,56128,56423,56128,56447],[55356,57332,8203,56128,56423,8203,56128,56418,8203,56128,56421,8203,56128,56430,8203,56128,56423,8203,56128,56447]);case"emoji":return!s([129777,127995,8205,129778,127999],[129777,127995,8203,129778,127999])}return!1}(o[r]),t.supports.everything=t.supports.everything&&t.supports[o[r]],"flag"!==o[r]&&(t.supports.everythingExceptFlag=t.supports.everythingExceptFlag&&t.supports[o[r]]);t.supports.everythingExceptFlag=t.supports.everythingExceptFlag&&!t.supports.flag,t.DOMReady=!1,t.readyCallback=function(){t.DOMReady=!0},t.supports.everything||(n=function(){t.readyCallback()},a.addEventListener?(a.addEventListener("DOMContentLoaded",n,!1),e.addEventListener("load",n,!1)):(e.attachEvent("onload",n),a.attachEvent("onreadystatechange",function(){"complete"===a.readyState&&t.readyCallback()})),(e=t.source||{}).concatemoji?c(e.concatemoji):e.wpemoji&&e.twemoji&&(c(e.twemoji),c(e.wpemoji)))}(window,document,window._wpemojiSettings);
+</script>
+<style type="text/css">
+img.wp-smiley,
+img.emoji {
+	display: inline !important;
+	border: none !important;
+	box-shadow: none !important;
+	height: 1em !important;
+	width: 1em !important;
+	margin: 0 0.07em !important;
+	vertical-align: -0.1em !important;
+	background: none !important;
+	padding: 0 !important;
+}
+</style>
+	<link rel='stylesheet' id='all-css-0-1' href='https://s0.wp.com/_static/??-eJyNj1tuAjEMRTfUjMujwxfqWjKJFRmch+IElN13OhIwHSjweWSf62s4J2ViKBgK+KoSV0dB4JxM9Eo8MbYFdUbkAx5rGVkXtCpFKQt6pjEdUeCAJWlzVBPdrV92XR1xwOzGSUY4rTbdulvDUIktDByngCHr3EBKY7wGUTBc7e8dAY+WNDL6qcgMEuuGWTE6bVrnKbzWx9mc/0j/l5+azn7WLdaiXCa7qP12RNaFgpOb/u33q/5r89lvd7v+8ANwF7fv?cssminify=yes' type='text/css' media='all' />
+<style id='wp-block-library-inline-css'>
+.has-text-align-justify {
+	text-align:justify;
+}
+</style>
+<style id='global-styles-inline-css'>
+body{--wp--preset--color--black: #000000;--wp--preset--color--cyan-bluish-gray: #abb8c3;--wp--preset--color--white: #ffffff;--wp--preset--color--pale-pink: #f78da7;--wp--preset--color--vivid-red: #cf2e2e;--wp--preset--color--luminous-vivid-orange: #ff6900;--wp--preset--color--luminous-vivid-amber: #fcb900;--wp--preset--color--light-green-cyan: #7bdcb5;--wp--preset--color--vivid-green-cyan: #00d084;--wp--preset--color--pale-cyan-blue: #8ed1fc;--wp--preset--color--vivid-cyan-blue: #0693e3;--wp--preset--color--vivid-purple: #9b51e0;--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple: linear-gradient(135deg,rgba(6,147,227,1) 0%,rgb(155,81,224) 100%);--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan: linear-gradient(135deg,rgb(122,220,180) 0%,rgb(0,208,130) 100%);--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange: linear-gradient(135deg,rgba(252,185,0,1) 0%,rgba(255,105,0,1) 100%);--wp--preset--gradient--luminous-vivid-orange-to-vivid-red: linear-gradient(135deg,rgba(255,105,0,1) 0%,rgb(207,46,46) 100%);--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray: linear-gradient(135deg,rgb(238,238,238) 0%,rgb(169,184,195) 100%);--wp--preset--gradient--cool-to-warm-spectrum: linear-gradient(135deg,rgb(74,234,220) 0%,rgb(151,120,209) 20%,rgb(207,42,186) 40%,rgb(238,44,130) 60%,rgb(251,105,98) 80%,rgb(254,248,76) 100%);--wp--preset--gradient--blush-light-purple: linear-gradient(135deg,rgb(255,206,236) 0%,rgb(152,150,240) 100%);--wp--preset--gradient--blush-bordeaux: linear-gradient(135deg,rgb(254,205,165) 0%,rgb(254,45,45) 50%,rgb(107,0,62) 100%);--wp--preset--gradient--luminous-dusk: linear-gradient(135deg,rgb(255,203,112) 0%,rgb(199,81,192) 50%,rgb(65,88,208) 100%);--wp--preset--gradient--pale-ocean: linear-gradient(135deg,rgb(255,245,203) 0%,rgb(182,227,212) 50%,rgb(51,167,181) 100%);--wp--preset--gradient--electric-grass: linear-gradient(135deg,rgb(202,248,128) 0%,rgb(113,206,126) 100%);--wp--preset--gradient--midnight: linear-gradient(135deg,rgb(2,3,129) 0%,rgb(40,116,252) 100%);--wp--preset--duotone--dark-grayscale: url('#wp-duotone-dark-grayscale');--wp--preset--duotone--grayscale: url('#wp-duotone-grayscale');--wp--preset--duotone--purple-yellow: url('#wp-duotone-purple-yellow');--wp--preset--duotone--blue-red: url('#wp-duotone-blue-red');--wp--preset--duotone--midnight: url('#wp-duotone-midnight');--wp--preset--duotone--magenta-yellow: url('#wp-duotone-magenta-yellow');--wp--preset--duotone--purple-green: url('#wp-duotone-purple-green');--wp--preset--duotone--blue-orange: url('#wp-duotone-blue-orange');--wp--preset--font-size--small: 13px;--wp--preset--font-size--medium: 20px;--wp--preset--font-size--large: 36px;--wp--preset--font-size--x-large: 42px;}.has-black-color{color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-color{color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-color{color: var(--wp--preset--color--white) !important;}.has-pale-pink-color{color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-color{color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-color{color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-color{color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-color{color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-color{color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-color{color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-color{color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-color{color: var(--wp--preset--color--vivid-purple) !important;}.has-black-background-color{background-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-background-color{background-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-background-color{background-color: var(--wp--preset--color--white) !important;}.has-pale-pink-background-color{background-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-background-color{background-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-background-color{background-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-background-color{background-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-background-color{background-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-background-color{background-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-background-color{background-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-background-color{background-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-background-color{background-color: var(--wp--preset--color--vivid-purple) !important;}.has-black-border-color{border-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-border-color{border-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-border-color{border-color: var(--wp--preset--color--white) !important;}.has-pale-pink-border-color{border-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-border-color{border-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-border-color{border-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-border-color{border-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-border-color{border-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-border-color{border-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-border-color{border-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-border-color{border-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-border-color{border-color: var(--wp--preset--color--vivid-purple) !important;}.has-vivid-cyan-blue-to-vivid-purple-gradient-background{background: var(--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple) !important;}.has-light-green-cyan-to-vivid-green-cyan-gradient-background{background: var(--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan) !important;}.has-luminous-vivid-amber-to-luminous-vivid-orange-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange) !important;}.has-luminous-vivid-orange-to-vivid-red-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-orange-to-vivid-red) !important;}.has-very-light-gray-to-cyan-bluish-gray-gradient-background{background: var(--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray) !important;}.has-cool-to-warm-spectrum-gradient-background{background: var(--wp--preset--gradient--cool-to-warm-spectrum) !important;}.has-blush-light-purple-gradient-background{background: var(--wp--preset--gradient--blush-light-purple) !important;}.has-blush-bordeaux-gradient-background{background: var(--wp--preset--gradient--blush-bordeaux) !important;}.has-luminous-dusk-gradient-background{background: var(--wp--preset--gradient--luminous-dusk) !important;}.has-pale-ocean-gradient-background{background: var(--wp--preset--gradient--pale-ocean) !important;}.has-electric-grass-gradient-background{background: var(--wp--preset--gradient--electric-grass) !important;}.has-midnight-gradient-background{background: var(--wp--preset--gradient--midnight) !important;}.has-small-font-size{font-size: var(--wp--preset--font-size--small) !important;}.has-medium-font-size{font-size: var(--wp--preset--font-size--medium) !important;}.has-large-font-size{font-size: var(--wp--preset--font-size--large) !important;}.has-x-large-font-size{font-size: var(--wp--preset--font-size--x-large) !important;}
+</style>
+<link rel='stylesheet' id='all-css-2-1' href='https://s1.wp.com/_static/??-eJx9js0KAjEMhF/ImBXWwx7EZ2lrrJH+0bSIb290L4raS5hM5mOCtwIup0apYexQQvecBF2upH4spqEmIp3YUKCosa0T2eBv7FaUAWtLJRHQGblHaBcF5YtbbSzdoqMg3AWl3QONCjwlqqyHP3JUwpKDQU5urYHXs+OyDCE70zinjwXOwXAdoZVsyF6lR029rU/oGA+7/TQv0zwvy/UBIISRKQ==?cssminify=yes' type='text/css' media='all' />
+<link rel='stylesheet' id='print-css-3-1' href='https://s2.wp.com/wp-content/mu-plugins/global-print/global-print.css?m=1465851035h&cssminify=yes' type='text/css' media='print' />
+<link rel='stylesheet' id='all-css-4-1' href='https://s2.wp.com/_static/??/wp-content/themes/pub/isola/style.css,/wp-content/themes/pub/celsius/style.css?m=1504904499j&cssminify=yes' type='text/css' media='all' />
+<link crossorigin="anonymous" rel='stylesheet' id='celsius-droid-serif-css'  href='https://fonts.googleapis.com/css?family=Libre+Baskerville%3A400%2C700%2C400italic&#038;ver=6.0-RC4-53438' media='all' />
+<link crossorigin="anonymous" rel='stylesheet' id='celsius-droid-sans-css'  href='https://fonts.googleapis.com/css?family=Source+Sans+Pro%3A300%2C400%2C600%2C300italic%2C400italic%2C600italic&#038;ver=6.0-RC4-53438' media='all' />
+<style id='jetpack-global-styles-frontend-style-inline-css'>
+:root { --font-headings: unset; --font-base: unset; --font-headings-default: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif; --font-base-default: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif;}
+</style>
+<link rel='stylesheet' id='all-css-10-1' href='https://s1.wp.com/_static/??-eJxti0EKgCAQAD+UbVFGHaK3mJgaqyut0vejQ4eo0zAwA2cSmmI2MUMoImGxPjIk4iw2VP4Adurw0T6sNXMF/xeT9goFkqW3fKbsTDAMrgeLtCq8gyXM7dCNUjZy6vcLZTc31Q==?cssminify=yes' type='text/css' media='all' />
+<script id='jetpack_related-posts-js-extra'>
+var related_posts_js_options = {"post_heading":"h4"};
+</script>
+<script id='media-video-jwt-bridge-js-extra'>
+var videopressAjax = {"ajaxUrl":"https:\/\/ticketmastertech.wordpress.com\/wp-admin\/admin-ajax.php","bridgeUrl":"https:\/\/s2.wp.com\/wp-content\/mu-plugins\/videopress\/js\/videopress-token-bridge.js","post_id":"201"};
+</script>
+<script id='wpcom-actionbar-placeholder-js-extra'>
+var actionbardata = {"siteID":"58663291","siteURL":"https:\/\/tech.ticketmaster.com","xhrURL":"https:\/\/tech.ticketmaster.com\/wp-admin\/admin-ajax.php","nonce":"da2e64eb2b","isLoggedIn":"","statusMessage":"","subsEmailDefault":"instantly","proxyScriptUrl":"https:\/\/s0.wp.com\/wp-content\/js\/wpcom-proxy-request.js?ver=20211021","shortlink":"https:\/\/wp.me\/p3Y907-3f","i18n":{"followedText":"New posts from this site will now appear in your <a href=\"https:\/\/wordpress.com\/read\">Reader<\/a>","foldBar":"Collapse this bar","unfoldBar":"Expand this bar"}};
+</script>
+<script crossorigin='anonymous' type='text/javascript' src='https://s1.wp.com/_static/??-eJyFjuEKwjAMhF/IrExwzh/is8w1ltS2qWmr7u2tojiG4K9wue8uUbcII4eMISublOcjOYSSUAZTd0DhxI1NKzXjfIHoiqGQlKAbMmqInPJCLVO1XVyGKHyfPh6F0RWN6WnaS0GZ3qPxFP5C4MlIPTiHf/x4JY0cBdOr4asg8xkDHIW0wZo/+H3bbdbbXdv3nX0AfVNoyg=='></script>
+<script type='text/javascript'>
+	window.addEventListener( 'DOMContentLoaded', function() {
+		rltInitialize( {"token":null,"iframeOrigins":["https:\/\/widgets.wp.com"]} );
+	} );
+</script>
+<link rel="EditURI" type="application/rsd+xml" title="RSD" href="https://ticketmastertech.wordpress.com/xmlrpc.php?rsd" />
+<link rel="wlwmanifest" type="application/wlwmanifest+xml" href="https://s1.wp.com/wp-includes/wlwmanifest.xml" /> 
+<meta name="generator" content="WordPress.com" />
+<link rel="canonical" href="https://tech.ticketmaster.com/2014/12/01/getting-over-the-performance-hump-with-apache-camel/" />
+<link rel='shortlink' href='https://wp.me/p3Y907-3f' />
+<link rel="alternate" type="application/json+oembed" href="https://public-api.wordpress.com/oembed/?format=json&amp;url=https%3A%2F%2Ftech.ticketmaster.com%2F2014%2F12%2F01%2Fgetting-over-the-performance-hump-with-apache-camel%2F&amp;for=wpcom-auto-discovery" /><link rel="alternate" type="application/xml+oembed" href="https://public-api.wordpress.com/oembed/?format=xml&amp;url=https%3A%2F%2Ftech.ticketmaster.com%2F2014%2F12%2F01%2Fgetting-over-the-performance-hump-with-apache-camel%2F&amp;for=wpcom-auto-discovery" />
+<!-- Jetpack Open Graph Tags -->
+<meta property="og:type" content="article" />
+<meta property="og:title" content="Getting Over the Performance Hump with Apache Camel" />
+<meta property="og:url" content="https://tech.ticketmaster.com/2014/12/01/getting-over-the-performance-hump-with-apache-camel/" />
+<meta property="og:description" content="This post goes over some of our findings in improving performance of one of our Apache Camel based web services.  The past year, Ticketmaster has seen tremendous growth in our new product, TM+, of …" />
+<meta property="article:published_time" content="2014-12-01T21:39:24+00:00" />
+<meta property="article:modified_time" content="2015-06-19T15:48:43+00:00" />
+<meta property="og:site_name" content="Ticketmaster Technology" />
+<meta property="og:image" content="https://ticketmastertech.files.wordpress.com/2014/12/reserveinventory-before.png" />
+<meta property="og:image:width" content="768" />
+<meta property="og:image:height" content="292" />
+<meta property="og:image:alt" content="" />
+<meta property="og:locale" content="en_US" />
+<meta property="article:publisher" content="https://www.facebook.com/WordPresscom" />
+<meta name="twitter:text:title" content="Getting Over the Performance Hump with Apache&nbsp;Camel" />
+<meta name="twitter:image" content="https://ticketmastertech.files.wordpress.com/2014/12/reserveinventory-before.png?w=640" />
+<meta name="twitter:card" content="summary_large_image" />
+
+<!-- End Jetpack Open Graph Tags -->
+<link rel="shortcut icon" type="image/x-icon" href="https://secure.gravatar.com/blavatar/f67d7e695bd9335981167b5368e1605c?s=32" sizes="16x16" />
+<link rel="icon" type="image/x-icon" href="https://secure.gravatar.com/blavatar/f67d7e695bd9335981167b5368e1605c?s=32" sizes="16x16" />
+<link rel="apple-touch-icon" href="https://secure.gravatar.com/blavatar/f67d7e695bd9335981167b5368e1605c?s=114" />
+<link rel='openid.server' href='https://tech.ticketmaster.com/?openidserver=1' />
+<link rel='openid.delegate' href='https://tech.ticketmaster.com/' />
+<link rel="search" type="application/opensearchdescription+xml" href="https://tech.ticketmaster.com/osd.xml" title="Ticketmaster Technology" />
+<link rel="search" type="application/opensearchdescription+xml" href="https://s1.wp.com/opensearch.xml" title="WordPress.com" />
+<meta name="theme-color" content="#f3f3f3" />
+<style type="text/css">.recentcomments a{display:inline !important;padding:0 !important;margin:0 !important;}</style>		<style type="text/css">
+			.recentcomments a {
+				display: inline !important;
+				padding: 0 !important;
+				margin: 0 !important;
+			}
+
+			table.recentcommentsavatartop img.avatar, table.recentcommentsavatarend img.avatar {
+				border: 0px;
+				margin: 0;
+			}
+
+			table.recentcommentsavatartop a, table.recentcommentsavatarend a {
+				border: 0px !important;
+				background-color: transparent !important;
+			}
+
+			td.recentcommentsavatarend, td.recentcommentsavatartop {
+				padding: 0px 0px 1px 0px;
+				margin: 0px;
+			}
+
+			td.recentcommentstextend {
+				border: none !important;
+				padding: 0px 0px 2px 10px;
+			}
+
+			.rtl td.recentcommentstextend {
+				padding: 0px 10px 2px 0px;
+			}
+
+			td.recentcommentstexttop {
+				border: none;
+				padding: 0px 0px 0px 10px;
+			}
+
+			.rtl td.recentcommentstexttop {
+				padding: 0px 10px 0px 0px;
+			}
+		</style>
+		<meta name="application-name" content="Ticketmaster Technology" /><meta name="msapplication-window" content="width=device-width;height=device-height" /><meta name="msapplication-tooltip" content="Bringing out the fan in everyone..." /><meta name="msapplication-task" content="name=Subscribe;action-uri=https://tech.ticketmaster.com/feed/;icon-uri=https://secure.gravatar.com/blavatar/f67d7e695bd9335981167b5368e1605c?s=16" /><meta name="msapplication-task" content="name=Sign up for a free blog;action-uri=http://wordpress.com/signup/;icon-uri=https://s1.wp.com/i/favicon.ico" /><meta name="msapplication-task" content="name=WordPress.com Support;action-uri=http://support.wordpress.com/;icon-uri=https://s1.wp.com/i/favicon.ico" /><meta name="msapplication-task" content="name=WordPress.com Forums;action-uri=http://forums.wordpress.com/;icon-uri=https://s1.wp.com/i/favicon.ico" /><meta name="description" content="This post goes over some of our findings in improving performance of one of our Apache Camel based web services.  The past year, Ticketmaster has seen tremendous growth in our new product, TM+, of which our service is a key component. With the increase in traffic, we have been working hard to ensure acceptable response&hellip;" />
+<style type="text/css" id="custom-background-css">
+body.custom-background { background-color: #f3f3f3; }
+</style>
+	<link rel="amphtml" href="https://tech.ticketmaster.com/2014/12/01/getting-over-the-performance-hump-with-apache-camel/amp/"><style type="text/css" id="custom-colors-css">
+	div#respond {
+		border-color: rgba(255,255,255,0.3) !important;
+	}
+body, #infinite-footer .container { color: #444444;}
+.entry-title, .comments-title, .comment-reply-title, .entry-title a, .entry-title a:hover, .entry-title a:visited { color: #444444;}
+.site-title a, .site-title a:visited { color: #1E1E1E;}
+.toggle .menu-toggle-image { fill: #1E1E1E;}
+.header-search .search-icon .icon { fill: #1E1E1E;}
+.jetpack-recipe, .site-content, .site-footer, .hentry, td, th, .page-header, .comment-list .children, .main-navigation a, .widget ul li, .widget-area, .widget, .entry-footer, .site-header { border-color: #f2f2f2;}
+.jetpack-recipe, .site-content, .site-footer, .hentry, td, th, .page-header, .comment-list .children, .main-navigation a, .widget ul li, .widget-area, .widget, .entry-footer, .site-header { border-color: rgba( 242, 242, 242, 0.3 );}
+.contact-form label span { color: #686868;}
+button, input[type="button"], input[type="reset"], input[type="submit"], #infinite-handle span { background-color: #999999;}
+button, input[type="button"], input[type="reset"], input[type="submit"], #infinite-handle span { background-color: rgba( 153, 153, 153, 0.5 );}
+.entry-footer > span a,.entry-footer > span a:visited, .reply a, .reply a:visited, .comment-metadata .edit-link a, .comment-metadata .edit-link a:visited { color: #686868;}
+.contact-form label span { color: #686868;}
+.entry-format:visited, .entry-format:hover { color: #686868;}
+.site-footer a, .comment-form-author a, .comment-form-email a, .comment-form-url a, .comment-form-comment a { color: #686868;}
+.site-footer a:visited, .comment-form-author a:visited, .comment-form-email a:visited, .comment-form-url a:visited, .comment-form-comment a:visited { color: #686868;}
+.page-title { color: #686868;}
+blockquote { color: #686868;}
+.comments-title, .comment-reply-title { color: #686868;}
+.comment-metadata, .comment-metadata a, .comment-metadata a:visited { color: #686868;}
+#infinite-footer .container, #infinite-footer .container a, #infinite-footer .container a:visited { color: #686868;}
+.format-aside .entry-title a,.format-aside .entry-title a:visited { color: #686868;}
+.main-navigation a, .main-navigation a:visited, .main-navigation .current_page_item > a, .main-navigation .current-menu-item > a, .main-navigation .current_page_item > a:visited, .main-navigation .current-menu-item > a:visited { color: #232323;}
+#menu-close, .widget-title { color: #232323;}
+button:hover, input[type="button"]:hover, input[type="reset"]:hover, input[type="submit"]:hover, #infinite-handle span:hover, button:focus, input[type="button"]:focus, input[type="reset"]:focus, input[type="submit"]:focus, #infinite-handle span:focus, button:active, input[type="button"]:active, input[type="reset"]:active, input[type="submit"]:active, #infinite-handle span:active { color: #232323;}
+#toggle-sidebar, .widget-area { color: #232323;}
+.widget-area a, .widget-area a:visited, .widget-area a:hover { color: #232323;}
+.main-navigation a:hover { color: #232323;}
+.wp-caption-text, .wp-caption { color: #686868;}
+button, input[type="button"], input[type="reset"], input[type="submit"], #infinite-handle span { color: #282828;}
+body, .site-header, #infinite-footer .container { background-color: #f3f3f3;}
+.comments-link a:hover, .byline a:hover, .edit-link a:hover, .tags-links a:hover, .posted-on a:hover, .reply a:hover { background-color: #f3f3f3;}
+#toggle-sidebar, .toggle-open #toggle-sidebar { background-color: #009cde;}
+#toggle-sidebar::-webkit-scrollbar { background-color: #009cde;}
+#toggle-sidebar::-webkit-scrollbar-thumb { border-color: #009cde;}
+#toggle-sidebar::-webkit-scrollbar-thumb { background-color: #0079AD;}
+.jetpack-recipe-title { border-color: #009cde;}
+.jetpack-recipe-title { border-color: rgba( 0, 156, 222, 0.3 );}
+button:hover, input[type="button"]:hover, input[type="reset"]:hover, input[type="submit"]:hover, #infinite-handle span:hover, button:focus, input[type="button"]:focus, input[type="reset"]:focus, input[type="submit"]:focus, #infinite-handle span:focus, button:active, input[type="button"]:active, input[type="reset"]:active, input[type="submit"]:active, #infinite-handle span:active { background-color: #009cde;}
+.tags-links a,.tags-links a:visited { border-color: #006E9E;}
+.tags-links a,.tags-links a:visited { color: #006E9E;}
+.entry-footer span > a:hover, .comment-metadata .edit-link a:hover, .reply a:hover { color: #006E9E;}
+a, a:visited { color: #006E9E;}
+.site-title a:hover, a:hover, a:focus, a:active, .site-footer a:hover { color: #006E9E;}
+.toggle .menu-toggle-image:hover, .toggle .menu-toggle-image:focus, .toggle .menu-toggle-image:active { fill: #006E9E;}
+.header-search:hover .search-icon .icon, .header-search:focus .search-icon .icon, .header-search:active .search-icon .icon { fill: #006E9E;}
+</style>
+</head>
+
+<body class="post-template-default single single-post postid-201 single-format-standard custom-background customizer-styles-applied group-blog widgets-hidden highlander-enabled highlander-light">
+<div id="page" class="hfeed site">
+	<a class="skip-link screen-reader-text" href="#content">Skip to content</a>
+	<header id="masthead" class="site-header" role="banner">
+		<div class="site-header-inner">
+			<div class="site-branding">
+				<button id="menu-toggle" class="toggle">
+					<svg version="1.1" class="menu-toggle-image" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+						 width="24px" height="24px" viewBox="0 0 24 24" enable-background="new 0 0 24 24" xml:space="preserve">
+						<g id="menu">
+							<g>
+								<rect x="3" y="4" width="18" height="3"/>
+								<rect x="3" y="10" width="18" height="3"/>
+								<rect x="3" y="16" width="18" height="3"/>
+							</g>
+						</g>
+					</svg>
+					<span class="screen-reader-text">Primary Menu</span>
+				</button>
+				<h1 class="site-title"><a href="https://tech.ticketmaster.com/" rel="home">Ticketmaster Technology</a></h1>
+				<h2 class="site-description">Bringing out the fan in everyone&#8230;</h2>
+			</div>
+
+			<div id="site-search" class="header-search">
+				<div class="header-search-form">
+					<form role="search" method="get" class="search-form" action="https://tech.ticketmaster.com/">
+	<label>
+		<span class="screen-reader-text">Search for:</span>
+		<span class="search-icon">
+		<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+			 width="24px" height="24px" viewBox="0 0 24 24" enable-background="new 0 0 24 24" xml:space="preserve">
+			<g id="search">
+				<path class="icon" d="M15.846,13.846C16.573,12.742,17,11.421,17,10c0-3.866-3.134-7-7-7s-7,3.134-7,7s3.134,7,7,7
+					c1.421,0,2.742-0.427,3.846-1.154L19,21l2-2L15.846,13.846z M10,15c-2.761,0-5-2.238-5-5c0-2.761,2.239-5,5-5c2.762,0,5,2.239,5,5
+					C15,12.762,12.762,15,10,15z"/>
+			</g>
+		</svg>
+	</span>
+		<input type="search" class="search-field" placeholder="Search …" value="" name="s" title="Search for:" />
+	</label>
+	<input type="submit" class="search-submit" value="Search" />
+</form>				</div><!-- .header-search-form -->
+			</div><!-- #site-navigation -->
+		</div><!-- .site-header-inner -->
+	</header><!-- #masthead -->
+
+	<div id="toggle-sidebar">
+		<button id="menu-close">
+			<span class="screen-reader-text">Close Menu</span>
+		</button>
+		<nav id="site-navigation" class="main-navigation" role="navigation">
+			<div class="menu-wrapper">
+				<div class="menu"><ul>
+<li ><a href="https://tech.ticketmaster.com/">Home</a></li><li class="page_item page-item-1"><a href="https://tech.ticketmaster.com/about/">About</a></li>
+</ul></div>
+			</div>
+		</nav><!-- #site-navigation -->
+						<div id="secondary" class="widget-area" role="complementary">
+		
+		<aside id="recent-posts-2" class="widget widget_recent_entries">
+		<h1 class="widget-title">Recent Posts</h1>
+		<ul>
+											<li>
+					<a href="https://tech.ticketmaster.com/2018/05/31/ticketmaster-presence-wins-best-in-sports-technology-at-sports-business-awards/">Ticketmaster Presence wins “Best in Sports Technology” at Sports Business&nbsp;Awards</a>
+									</li>
+											<li>
+					<a href="https://tech.ticketmaster.com/2017/10/04/ticketmaster-launches-an-action-on-google-assistant/">Ticketmaster Launches an Action on Google&nbsp;Assistant</a>
+									</li>
+											<li>
+					<a href="https://tech.ticketmaster.com/2017/07/12/ticketmaster-presence-when-tickets-go-digital-event-going-gets-better/">Ticketmaster Presence: When tickets go digital, event going gets&nbsp;better</a>
+									</li>
+											<li>
+					<a href="https://tech.ticketmaster.com/2017/05/18/ticketmaster-demonstrates-cutting-edge-android-instant-apps-technology-at-google-io/">Ticketmaster Demonstrates Cutting Edge Android Instant Apps Technology at Google&nbsp;I/O</a>
+									</li>
+											<li>
+					<a href="https://tech.ticketmaster.com/2017/05/08/tech-maturity-is-now-available-on-github/">Tech Maturity is now available on&nbsp;GitHub</a>
+									</li>
+					</ul>
+
+		</aside><aside id="categories-2" class="widget widget_categories"><h1 class="widget-title">Categories</h1>
+			<ul>
+					<li class="cat-item cat-item-641922"><a href="https://tech.ticketmaster.com/category/android/">Android</a>
+</li>
+	<li class="cat-item cat-item-4276"><a href="https://tech.ticketmaster.com/category/api/">API</a>
+</li>
+	<li class="cat-item cat-item-2290"><a href="https://tech.ticketmaster.com/category/architecture/">Architecture</a>
+</li>
+	<li class="cat-item cat-item-24168178"><a href="https://tech.ticketmaster.com/category/build-pipeline/">Build Pipeline</a>
+</li>
+	<li class="cat-item cat-item-4884"><a href="https://tech.ticketmaster.com/category/design-patterns/">Design Patterns</a>
+</li>
+	<li class="cat-item cat-item-28070474"><a href="https://tech.ticketmaster.com/category/devops/">DevOps</a>
+</li>
+	<li class="cat-item cat-item-679865"><a href="https://tech.ticketmaster.com/category/garbage-collection/">Garbage Collection</a>
+</li>
+	<li class="cat-item cat-item-186"><a href="https://tech.ticketmaster.com/category/innovation/">Innovation</a>
+</li>
+	<li class="cat-item cat-item-63598592"><a href="https://tech.ticketmaster.com/category/interactive-seat-map/">Interactive Seat Map</a>
+</li>
+	<li class="cat-item cat-item-303691439"><a href="https://tech.ticketmaster.com/category/metrilyx/">Metrilyx</a>
+</li>
+	<li class="cat-item cat-item-120"><a href="https://tech.ticketmaster.com/category/mobile/">Mobile</a>
+</li>
+	<li class="cat-item cat-item-111949"><a href="https://tech.ticketmaster.com/category/monitoring/">Monitoring</a>
+</li>
+	<li class="cat-item cat-item-1930"><a href="https://tech.ticketmaster.com/category/performance/">Performance</a>
+</li>
+	<li class="cat-item cat-item-3231"><a href="https://tech.ticketmaster.com/category/purpose/">Purpose</a>
+</li>
+	<li class="cat-item cat-item-296485"><a href="https://tech.ticketmaster.com/category/raising-the-bar/">Raising the Bar</a>
+</li>
+	<li class="cat-item cat-item-12"><a href="https://tech.ticketmaster.com/category/testing/">Testing</a>
+</li>
+	<li class="cat-item cat-item-7391"><a href="https://tech.ticketmaster.com/category/tm/">TM+</a>
+</li>
+	<li class="cat-item cat-item-1"><a href="https://tech.ticketmaster.com/category/uncategorized/">Uncategorized</a>
+</li>
+	<li class="cat-item cat-item-2358"><a href="https://tech.ticketmaster.com/category/web-services/">Web Services</a>
+</li>
+			</ul>
+
+			</aside><aside id="archives-2" class="widget widget_archive"><h1 class="widget-title">Archives</h1>
+			<ul>
+					<li><a href='https://tech.ticketmaster.com/2018/05/'>May 2018</a></li>
+	<li><a href='https://tech.ticketmaster.com/2017/10/'>October 2017</a></li>
+	<li><a href='https://tech.ticketmaster.com/2017/07/'>July 2017</a></li>
+	<li><a href='https://tech.ticketmaster.com/2017/05/'>May 2017</a></li>
+	<li><a href='https://tech.ticketmaster.com/2017/01/'>January 2017</a></li>
+	<li><a href='https://tech.ticketmaster.com/2016/11/'>November 2016</a></li>
+	<li><a href='https://tech.ticketmaster.com/2016/05/'>May 2016</a></li>
+	<li><a href='https://tech.ticketmaster.com/2016/03/'>March 2016</a></li>
+	<li><a href='https://tech.ticketmaster.com/2016/02/'>February 2016</a></li>
+	<li><a href='https://tech.ticketmaster.com/2016/01/'>January 2016</a></li>
+	<li><a href='https://tech.ticketmaster.com/2015/12/'>December 2015</a></li>
+	<li><a href='https://tech.ticketmaster.com/2015/11/'>November 2015</a></li>
+	<li><a href='https://tech.ticketmaster.com/2015/10/'>October 2015</a></li>
+	<li><a href='https://tech.ticketmaster.com/2015/09/'>September 2015</a></li>
+	<li><a href='https://tech.ticketmaster.com/2015/08/'>August 2015</a></li>
+	<li><a href='https://tech.ticketmaster.com/2015/07/'>July 2015</a></li>
+	<li><a href='https://tech.ticketmaster.com/2015/06/'>June 2015</a></li>
+	<li><a href='https://tech.ticketmaster.com/2015/05/'>May 2015</a></li>
+	<li><a href='https://tech.ticketmaster.com/2015/04/'>April 2015</a></li>
+	<li><a href='https://tech.ticketmaster.com/2015/03/'>March 2015</a></li>
+	<li><a href='https://tech.ticketmaster.com/2015/02/'>February 2015</a></li>
+	<li><a href='https://tech.ticketmaster.com/2015/01/'>January 2015</a></li>
+	<li><a href='https://tech.ticketmaster.com/2014/12/'>December 2014</a></li>
+	<li><a href='https://tech.ticketmaster.com/2014/11/'>November 2014</a></li>
+	<li><a href='https://tech.ticketmaster.com/2014/10/'>October 2014</a></li>
+	<li><a href='https://tech.ticketmaster.com/2014/08/'>August 2014</a></li>
+	<li><a href='https://tech.ticketmaster.com/2014/07/'>July 2014</a></li>
+	<li><a href='https://tech.ticketmaster.com/2014/06/'>June 2014</a></li>
+	<li><a href='https://tech.ticketmaster.com/2014/05/'>May 2014</a></li>
+			</ul>
+
+			</aside><aside id="recent-comments-2" class="widget widget_recent_comments"><h1 class="widget-title">Recent Comments</h1>				<table class="recentcommentsavatar" cellspacing="0" cellpadding="0" border="0">
+					<tr><td title="Ticketmaster Demonstrates Cutting Edge Android Instant Apps Technology at Google I/O | Ticketmaster Technology" class="recentcommentsavatartop" style="height:48px; width:48px;"><a href="https://tech.ticketmaster.com/2017/05/18/ticketmaster-demonstrates-cutting-edge-android-instant-apps-technology-at-google-io/" rel="nofollow"><img alt='' src='https://secure.gravatar.com/blavatar/f67d7e695bd9335981167b5368e1605c?s=48' class='avatar avatar-48' height='48' width='48' /></a></td><td class="recentcommentstexttop" style=""><a href="https://tech.ticketmaster.com/2017/05/18/ticketmaster-demonstrates-cutting-edge-android-instant-apps-technology-at-google-io/" rel="nofollow">Ticketmaster Demonst&hellip;</a> on <a href="https://tech.ticketmaster.com/2015/07/24/2015-year-of-the-android/comment-page-1/#comment-1176">2015: Year of the&nbsp;Android</a></td></tr><tr><td title="Ticketmaster shows you the view from any seat in the house - MY ICT HUB" class="recentcommentsavatarend" style="height:48px; width:48px;"><a href="https://myicthub.net/2017/05/12/ticketmaster-shows-you-the-view-from-any-seat-in-the-house/" rel="nofollow"></a></td><td class="recentcommentstextend" style=""><a href="https://myicthub.net/2017/05/12/ticketmaster-shows-you-the-view-from-any-seat-in-the-house/" rel="nofollow">Ticketmaster shows y&hellip;</a> on <a href="https://tech.ticketmaster.com/2015/01/28/view-from-section-behind-the-scenes/comment-page-1/#comment-1151">View from Section – Behind The&hellip;</a></td></tr><tr><td title="Ticketmaster shows you the view from any seat in the house | Mindfeeder LLC" class="recentcommentsavatarend" style="height:48px; width:48px;"><a href="https://mindfeederllc.com/2017/05/12/ticketmaster-shows-you-the-view-from-any-seat-in-the-house/" rel="nofollow"></a></td><td class="recentcommentstextend" style=""><a href="https://mindfeederllc.com/2017/05/12/ticketmaster-shows-you-the-view-from-any-seat-in-the-house/" rel="nofollow">Ticketmaster shows y&hellip;</a> on <a href="https://tech.ticketmaster.com/2015/01/28/view-from-section-behind-the-scenes/comment-page-1/#comment-1150">View from Section – Behind The&hellip;</a></td></tr><tr><td title="Ticketmaster shows you the view from any seat in the house &#8211; dafsfe" class="recentcommentsavatarend" style="height:48px; width:48px;"><a href="http://www.dafsfe.com/2017/05/11/ticketmaster-shows-you-the-view-from-any-seat-in-the-house/" rel="nofollow"></a></td><td class="recentcommentstextend" style=""><a href="http://www.dafsfe.com/2017/05/11/ticketmaster-shows-you-the-view-from-any-seat-in-the-house/" rel="nofollow">Ticketmaster shows y&hellip;</a> on <a href="https://tech.ticketmaster.com/2015/01/28/view-from-section-behind-the-scenes/comment-page-1/#comment-1149">View from Section – Behind The&hellip;</a></td></tr><tr><td title="Ticketmaster shows you the view from any seat in the house &#8211; cctvtewb" class="recentcommentsavatarend" style="height:48px; width:48px;"><a href="http://www.cctvtewb.com/2017/05/11/ticketmaster-shows-you-the-view-from-any-seat-in-the-house/" rel="nofollow"></a></td><td class="recentcommentstextend" style=""><a href="http://www.cctvtewb.com/2017/05/11/ticketmaster-shows-you-the-view-from-any-seat-in-the-house/" rel="nofollow">Ticketmaster shows y&hellip;</a> on <a href="https://tech.ticketmaster.com/2015/01/28/view-from-section-behind-the-scenes/comment-page-1/#comment-1148">View from Section – Behind The&hellip;</a></td></tr>				</table>
+				</aside><aside id="search-2" class="widget widget_search"><form role="search" method="get" class="search-form" action="https://tech.ticketmaster.com/">
+	<label>
+		<span class="screen-reader-text">Search for:</span>
+		<span class="search-icon">
+		<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+			 width="24px" height="24px" viewBox="0 0 24 24" enable-background="new 0 0 24 24" xml:space="preserve">
+			<g id="search">
+				<path class="icon" d="M15.846,13.846C16.573,12.742,17,11.421,17,10c0-3.866-3.134-7-7-7s-7,3.134-7,7s3.134,7,7,7
+					c1.421,0,2.742-0.427,3.846-1.154L19,21l2-2L15.846,13.846z M10,15c-2.761,0-5-2.238-5-5c0-2.761,2.239-5,5-5c2.762,0,5,2.239,5,5
+					C15,12.762,12.762,15,10,15z"/>
+			</g>
+		</svg>
+	</span>
+		<input type="search" class="search-field" placeholder="Search …" value="" name="s" title="Search for:" />
+	</label>
+	<input type="submit" class="search-submit" value="Search" />
+</form></aside><aside id="meta-2" class="widget widget_meta"><h1 class="widget-title">Meta</h1>
+		<ul>
+			<li><a href="https://wordpress.com/start?ref=wplogin">Register</a></li>			<li><a href="https://ticketmastertech.wordpress.com/wp-login.php">Log in</a></li>
+			<li><a href="https://tech.ticketmaster.com/feed/">Entries feed</a></li>
+			<li><a href="https://tech.ticketmaster.com/comments/feed/">Comments feed</a></li>
+
+			<li><a href="https://wordpress.com/" title="Powered by WordPress, state-of-the-art semantic personal publishing platform.">WordPress.com</a></li>
+		</ul>
+
+		</aside>	</div><!-- #secondary -->
+			</div>
+
+	
+	<div id="content" class="site-content">
+
+	<div id="primary" class="content-area">
+		<main id="main" class="site-main" role="main">
+
+		
+			
+<article id="post-201" class="post-201 post type-post status-publish format-standard hentry category-design-patterns category-garbage-collection category-metrilyx category-performance category-tm">
+	<header class="entry-header">
+		
+		<h1 class="entry-title">Getting Over the Performance Hump with Apache&nbsp;Camel</h1>	</header><!-- .entry-header -->
+
+	
+	
+	<div class="entry-content">
+					<p>This post goes over some of our findings in improving performance of one of our <a title="Apache Camel" href="http://camel.apache.org/">Apache Camel</a> based web services.  The past year, Ticketmaster has seen tremendous growth in our new product, TM+, of which our service is a key component. With the increase in traffic, we have been working hard to ensure acceptable response times for our customer-facing services.  For the most part, our service has performed well, with a majority of requests completing within our desired duration. However, we had occasional requests which took longer to execute, at seemingly random intervals, so we set about to investigate and fix these worst-case performance spikes.<span id="more-201"></span></p>
+<p><a href="https://ticketmastertech.files.wordpress.com/2014/12/reserveinventory-before.png"><img data-attachment-id="207" data-permalink="https://tech.ticketmaster.com/2014/12/01/getting-over-the-performance-hump-with-apache-camel/reserveinventory-before/" data-orig-file="https://ticketmastertech.files.wordpress.com/2014/12/reserveinventory-before.png" data-orig-size="768,292" data-comments-opened="1" data-image-meta="{&quot;aperture&quot;:&quot;0&quot;,&quot;credit&quot;:&quot;&quot;,&quot;camera&quot;:&quot;&quot;,&quot;caption&quot;:&quot;&quot;,&quot;created_timestamp&quot;:&quot;0&quot;,&quot;copyright&quot;:&quot;&quot;,&quot;focal_length&quot;:&quot;0&quot;,&quot;iso&quot;:&quot;0&quot;,&quot;shutter_speed&quot;:&quot;0&quot;,&quot;title&quot;:&quot;&quot;,&quot;orientation&quot;:&quot;0&quot;}" data-image-title="reserveInventory-before" data-image-description="" data-image-caption="" data-medium-file="https://ticketmastertech.files.wordpress.com/2014/12/reserveinventory-before.png?w=300" data-large-file="https://ticketmastertech.files.wordpress.com/2014/12/reserveinventory-before.png?w=768" class="alignnone size-large wp-image-207" src="https://ticketmastertech.files.wordpress.com/2014/12/reserveinventory-before.png?w=1024&#038;h=389" alt="reserveInventory-before" srcset="https://ticketmastertech.files.wordpress.com/2014/12/reserveinventory-before.png 768w, https://ticketmastertech.files.wordpress.com/2014/12/reserveinventory-before.png?w=150&amp;h=57 150w, https://ticketmastertech.files.wordpress.com/2014/12/reserveinventory-before.png?w=300&amp;h=114 300w" sizes="(max-width: 768px) 100vw, 768px"   /></a></p>
+<p>CSI (Consolidated System of Inventory) is one of our central web services that acts as an abstraction layer for transactional APIs across a potentially wide range of inventory sources.  We use <a class="external-link" href="http://camel.apache.org/" rel="nofollow">Apache Camel</a> – for its excellent support of Enterprise Integration Patterns – to route requests to other web services.  Through this investigation, we found several optimizations to the way we use Camel that have greatly reduced garbage collection times, and as a result, improved performance.</p>
+<p>Note that the issues and solutions presented here were discovered using Camel 2.9.2. Another thing to note is that the custom graphs you&#8217;re seeing here are all based on Ticketmaster&#8217;s awesome open source graphing solution, <a title="Ticketmaster's Open Source Graph Platform, Metrilyx" href="https://github.com/Ticketmaster/metrilyx-2.0">Metrilyx</a>, which is a visualization layer on top of OpenTSDB.</p>
+<p>We first noticed that when execution times were slow, our logs would show no application activity for a certain duration, which often indicates that garbage collection is taking place.  We then saw in our application JVM metrics that young-generation garbage collection was taking longer than expected:</p>
+<p><a href="https://ticketmastertech.files.wordpress.com/2014/12/gc-before.png"><img data-attachment-id="204" data-permalink="https://tech.ticketmaster.com/2014/12/01/getting-over-the-performance-hump-with-apache-camel/gc-before/" data-orig-file="https://ticketmastertech.files.wordpress.com/2014/12/gc-before.png" data-orig-size="509,268" data-comments-opened="1" data-image-meta="{&quot;aperture&quot;:&quot;0&quot;,&quot;credit&quot;:&quot;&quot;,&quot;camera&quot;:&quot;&quot;,&quot;caption&quot;:&quot;&quot;,&quot;created_timestamp&quot;:&quot;0&quot;,&quot;copyright&quot;:&quot;&quot;,&quot;focal_length&quot;:&quot;0&quot;,&quot;iso&quot;:&quot;0&quot;,&quot;shutter_speed&quot;:&quot;0&quot;,&quot;title&quot;:&quot;&quot;,&quot;orientation&quot;:&quot;0&quot;}" data-image-title="gc-before" data-image-description="" data-image-caption="" data-medium-file="https://ticketmastertech.files.wordpress.com/2014/12/gc-before.png?w=300" data-large-file="https://ticketmastertech.files.wordpress.com/2014/12/gc-before.png?w=509" class="alignnone size-full wp-image-204" src="https://ticketmastertech.files.wordpress.com/2014/12/gc-before.png?w=1120" alt="gc-before" srcset="https://ticketmastertech.files.wordpress.com/2014/12/gc-before.png 509w, https://ticketmastertech.files.wordpress.com/2014/12/gc-before.png?w=150 150w, https://ticketmastertech.files.wordpress.com/2014/12/gc-before.png?w=300 300w" sizes="(max-width: 509px) 100vw, 509px"   /></a></p>
+<p>We turned on garbage collection logs and confirmed that collection times directly correlated with the pauses we were seeing in the application.  Our problem identified, the next step was to find out how and why our application was allocating excessive amounts of memory.  We had had success using Java&#8217;s VisualVM to diagnose previous memory issues, so we began by using that tool to inspect heap dumps.</p>
+<p>Although the excessive garbage collection times are a result of memory usage, the issue is not a memory leak, so the problem objects are not immediately apparent in a heap dump.  We were already suspicious of our Camel integration when looking at GC issues, so we drilled down to Camel objects in a heap dump to look for clues.  The heap dump was taken while we were putting load on our service, so although the heap dump process temporarily stops the application and triggers a full garbage collection before retrieving the memory snapshot, there were enough in-flight requests to reveal Camel&#8217;s TypeMapping class as a possible offender.  Objects of this class are very small, but they are allocated at a high rate compared to the overall rate of requests, so we then began to examine what causes these objects to be created.</p>
+<p><a href="https://ticketmastertech.files.wordpress.com/2014/12/heap-dump.png"><img data-attachment-id="205" data-permalink="https://tech.ticketmaster.com/2014/12/01/getting-over-the-performance-hump-with-apache-camel/heap-dump/" data-orig-file="https://ticketmastertech.files.wordpress.com/2014/12/heap-dump.png" data-orig-size="766,550" data-comments-opened="1" data-image-meta="{&quot;aperture&quot;:&quot;0&quot;,&quot;credit&quot;:&quot;&quot;,&quot;camera&quot;:&quot;&quot;,&quot;caption&quot;:&quot;&quot;,&quot;created_timestamp&quot;:&quot;0&quot;,&quot;copyright&quot;:&quot;&quot;,&quot;focal_length&quot;:&quot;0&quot;,&quot;iso&quot;:&quot;0&quot;,&quot;shutter_speed&quot;:&quot;0&quot;,&quot;title&quot;:&quot;&quot;,&quot;orientation&quot;:&quot;0&quot;}" data-image-title="heap-dump" data-image-description="" data-image-caption="" data-medium-file="https://ticketmastertech.files.wordpress.com/2014/12/heap-dump.png?w=300" data-large-file="https://ticketmastertech.files.wordpress.com/2014/12/heap-dump.png?w=766" class="alignnone size-large wp-image-205" src="https://ticketmastertech.files.wordpress.com/2014/12/heap-dump.png?w=1024&#038;h=735" alt="heap-dump" srcset="https://ticketmastertech.files.wordpress.com/2014/12/heap-dump.png 766w, https://ticketmastertech.files.wordpress.com/2014/12/heap-dump.png?w=150&amp;h=108 150w, https://ticketmastertech.files.wordpress.com/2014/12/heap-dump.png?w=300&amp;h=215 300w" sizes="(max-width: 766px) 100vw, 766px"   /></a></p>
+<p><a title="Apache Camel" href="http://camel.apache.org/">Apache Camel</a> has a very flexible <a title="Apache Camel's Type Converter documentation" href="http://camel.apache.org/type-converter.html">TypeConverter API</a> for transforming objects, which examines a variety of different aspects of the source object to determine whether a desired conversion is possible.  Those aspects include type hierarchy, whether the object is part of a collection, and more, and those attributes are inspected repeatedly while Camel iterates through its list of possible conversion strategies.  This approach makes the following code possible:</p>
+<pre><code>
+exchange.getIn().setBody(Arrays.asList(new RequestImpl()));
+RequestInterface body = exchange.getIn().getBody(RequestInterface.class());
+</code></pre>
+<p>However, this flexibility comes at a cost of high and rapid memory allocation.  Every time Camel tries to perform a conversion, it checks to see if it has attempted it before, by creating a TypeMapping object that encapsulates the relationship between the source and destination types, which is then used as a key for Camel&#8217;s in-memory map of Type Converters.  Over the course of a single request, we observed hundreds of these objects being created.</p>
+<p>Increasing the severity of the issue is the fact that Camel uses this conversion strategy for more than just the exchange payload.  Camel attempts to convert method invocations in routes to its native Processor interface before proceeding with the invocation.</p>
+<p>Due to the nature of this issue, fixes are necessarily on a case-by-case basis.  We combed through our Camel routes to find places where we could help Camel eliminate the need to perform these type conversions.</p>
+<h3 id="GettingovertheperformancehumpwithApacheCamel-BlogPost-CXFMessageContentsList">CXF MessageContentsList</h3>
+<p>When using Camel&#8217;s CXF component, Camel&#8217;s exchange is populated with a CXF MessageContentsList object (a subclass of ArrayList) which contains the request payload.  We have always been able to bypass this wrapper by requesting the element class directly from Camel:</p>
+<pre><code>
+ReservationRequestGroup reserveInventoryRequest =     
+        exchange.getIn().getBody(ReservationRequestGroup.class);
+</code></pre>
+<p>Due to the relatively complex type hierarchy of MessageContentsList, this call is quite expensive from a memory allocation perspective.  To streamline this call, we added a Camel processor, invoked at the beginning of every HTTP request, which extracts the request element from the list and stores it directly as the Camel exchange body:</p>
+<pre><code>
+@Override
+public void process(Exchange exchange) throws Exception {
+    MessageContentsList contentsList = 
+            exchange.getIn().getBody(MessageContentsList.class);
+    if (contentsList != null &amp;&amp; contentsList.size() == 1) {
+        in.setBody(contentsList.get(0));
+    }
+}
+</code></pre>
+<p>The important point of this fix is that we are requesting the exchange body as its actual type (MessageContentsList).  When this is done, the method call is virtually free, and no TypeMapping objects are created.  Because of Camel&#8217;s flexibility, this change is transparent to other places in our code where we extract the message body, but all of those calls are now optimized as well, assuming the requested type is the same as the actual body type.  Since CSI is a routing service that makes calls to other systems, we invoke this processor both when we receive the incoming request from the client and the incoming response from the end inventory system.</p>
+<h3 id="GettingovertheperformancehumpwithApacheCamel-BlogPost-Transform">Transform</h3>
+<p>In CSI, we have many instances in our routes when we need to invoke a custom converter object on our exchange payload.  We used Camel&#8217;s transform API to do this, in Spring DSL:</p>
+<pre><code>
+&lt;transform&gt; 
+    &lt;method bean="helperTPI" method="convert" /&gt; 
+&lt;/transform&gt;
+</code></pre>
+<p>As noted above, Camel attempts to convert this style of bean invocation into its own Processor.  Using Camel&#8217;s to API, we can bypass this:</p>
+<pre><code>
+&lt;to uri="bean:helperTPI?method=convert" /&gt;
+</code></pre>
+<p>With this invocation, Camel calls the method directly without trying to convert the bean to a processor.</p>
+<p>With these fixes deployed, impact to our GC time was immediate and significant.  Peak GC times went down by around two-thirds.</p>
+<p><a href="https://ticketmastertech.files.wordpress.com/2014/12/gc-after.png"><img data-attachment-id="203" data-permalink="https://tech.ticketmaster.com/2014/12/01/getting-over-the-performance-hump-with-apache-camel/gc-after/" data-orig-file="https://ticketmastertech.files.wordpress.com/2014/12/gc-after.png" data-orig-size="510,269" data-comments-opened="1" data-image-meta="{&quot;aperture&quot;:&quot;0&quot;,&quot;credit&quot;:&quot;&quot;,&quot;camera&quot;:&quot;&quot;,&quot;caption&quot;:&quot;&quot;,&quot;created_timestamp&quot;:&quot;0&quot;,&quot;copyright&quot;:&quot;&quot;,&quot;focal_length&quot;:&quot;0&quot;,&quot;iso&quot;:&quot;0&quot;,&quot;shutter_speed&quot;:&quot;0&quot;,&quot;title&quot;:&quot;&quot;,&quot;orientation&quot;:&quot;0&quot;}" data-image-title="gc-after" data-image-description="" data-image-caption="" data-medium-file="https://ticketmastertech.files.wordpress.com/2014/12/gc-after.png?w=300" data-large-file="https://ticketmastertech.files.wordpress.com/2014/12/gc-after.png?w=510" class="alignnone size-full wp-image-203" src="https://ticketmastertech.files.wordpress.com/2014/12/gc-after.png?w=1120" alt="gc-after" srcset="https://ticketmastertech.files.wordpress.com/2014/12/gc-after.png 510w, https://ticketmastertech.files.wordpress.com/2014/12/gc-after.png?w=150 150w, https://ticketmastertech.files.wordpress.com/2014/12/gc-after.png?w=300 300w" sizes="(max-width: 510px) 100vw, 510px"   /></a></p>
+<p>Due to the random nature of GC-related performance issues, and usage patterns of the CSI service, direct performance impacts can be difficult to measure.  However, we have seen that worst-case execution time is generally much lower and more stable.</p>
+<p><a href="https://ticketmastertech.files.wordpress.com/2014/12/reserveinventory-after.png"><img data-attachment-id="206" data-permalink="https://tech.ticketmaster.com/2014/12/01/getting-over-the-performance-hump-with-apache-camel/reserveinventory-after/" data-orig-file="https://ticketmastertech.files.wordpress.com/2014/12/reserveinventory-after.png" data-orig-size="770,281" data-comments-opened="1" data-image-meta="{&quot;aperture&quot;:&quot;0&quot;,&quot;credit&quot;:&quot;&quot;,&quot;camera&quot;:&quot;&quot;,&quot;caption&quot;:&quot;&quot;,&quot;created_timestamp&quot;:&quot;0&quot;,&quot;copyright&quot;:&quot;&quot;,&quot;focal_length&quot;:&quot;0&quot;,&quot;iso&quot;:&quot;0&quot;,&quot;shutter_speed&quot;:&quot;0&quot;,&quot;title&quot;:&quot;&quot;,&quot;orientation&quot;:&quot;0&quot;}" data-image-title="reserveInventory-after" data-image-description="" data-image-caption="" data-medium-file="https://ticketmastertech.files.wordpress.com/2014/12/reserveinventory-after.png?w=300" data-large-file="https://ticketmastertech.files.wordpress.com/2014/12/reserveinventory-after.png?w=770" class="alignnone size-large wp-image-206" src="https://ticketmastertech.files.wordpress.com/2014/12/reserveinventory-after.png?w=1024&#038;h=374" alt="reserveInventory-after" srcset="https://ticketmastertech.files.wordpress.com/2014/12/reserveinventory-after.png 770w, https://ticketmastertech.files.wordpress.com/2014/12/reserveinventory-after.png?w=150&amp;h=55 150w, https://ticketmastertech.files.wordpress.com/2014/12/reserveinventory-after.png?w=300&amp;h=109 300w" sizes="(max-width: 770px) 100vw, 770px"   /></a></p>
+<div id="jp-post-flair" class="sharedaddy sd-like-enabled sd-sharing-enabled"><div class="sharedaddy sd-sharing-enabled"><div class="robots-nocontent sd-block sd-social sd-social-icon-text sd-sharing"><h3 class="sd-title">Share this:</h3><div class="sd-content"><ul><li class="share-twitter"><a rel="nofollow noopener noreferrer" data-shared="sharing-twitter-201" class="share-twitter sd-button share-icon" href="https://tech.ticketmaster.com/2014/12/01/getting-over-the-performance-hump-with-apache-camel/?share=twitter" target="_blank" title="Click to share on Twitter"><span>Twitter</span></a></li><li class="share-facebook"><a rel="nofollow noopener noreferrer" data-shared="sharing-facebook-201" class="share-facebook sd-button share-icon" href="https://tech.ticketmaster.com/2014/12/01/getting-over-the-performance-hump-with-apache-camel/?share=facebook" target="_blank" title="Click to share on Facebook"><span>Facebook</span></a></li><li class="share-end"></li></ul></div></div></div><div class='sharedaddy sd-block sd-like jetpack-likes-widget-wrapper jetpack-likes-widget-unloaded' id='like-post-wrapper-58663291-201-628f904444bc8' data-src='//widgets.wp.com/likes/index.html?ver=20220105#blog_id=58663291&amp;post_id=201&amp;origin=ticketmastertech.wordpress.com&amp;obj_id=58663291-201-628f904444bc8&amp;domain=tech.ticketmaster.com' data-name='like-post-frame-58663291-201-628f904444bc8' data-title='Like or Reblog'><h3 class='sd-title'>Like this:</h3><div class='likes-widget-placeholder post-likes-widget-placeholder' style='height: 55px;'><span class='button'><span>Like</span></span> <span class="loading">Loading...</span></div><span class='sd-text-color'></span><a class='sd-link-color'></a></div>
+<div id='jp-relatedposts' class='jp-relatedposts' >
+	<h3 class="jp-relatedposts-headline"><em>Related</em></h3>
+</div></div>					</div><!-- .entry-content -->
+
+	<footer class="entry-footer">
+		
+		<span class="posted-on"><a href="https://tech.ticketmaster.com/2014/12/01/getting-over-the-performance-hump-with-apache-camel/" rel="bookmark"><time class="entry-date published" datetime="2014-12-01T13:39:24-08:00">December 1, 2014</time><time class="updated" datetime="2015-06-19T08:48:43-07:00">June 19, 2015</time></a></span><span class="byline"> <span class="author vcard"><a class="url fn n" href="https://tech.ticketmaster.com/author/mboisver/">Michael Boisvert</a></span></span>
+		
+	</footer><!-- .entry-footer -->
+</article><!-- #post-## -->
+
+				<nav class="navigation post-navigation" role="navigation">
+		<h1 class="screen-reader-text">Post navigation</h1>
+		<div class="nav-links">
+			<div class="nav-previous"><a href="https://tech.ticketmaster.com/2014/11/14/fear-and-paranoia-in-a-devops-world/" rel="prev"><span class="meta-nav">&larr;</span> Fear and Paranoia in a DevOps&nbsp;World</a></div><div class="nav-next"><a href="https://tech.ticketmaster.com/2015/01/28/view-from-section-behind-the-scenes/" rel="next">View from Section – Behind The&nbsp;Scenes <span class="meta-nav">&rarr;</span></a></div>		</div><!-- .nav-links -->
+	</nav><!-- .navigation -->
+	
+			
+<div id="comments" class="comments-area">
+
+	
+			<h2 class="comments-title">
+			6 thoughts on &ldquo;<span>Getting Over the Performance Hump with Apache&nbsp;Camel</span>&rdquo;		</h2>
+
+		
+		<ol class="comment-list">
+					<li id="comment-41" class="comment even thread-even depth-1 highlander-comment">
+			<article id="div-comment-41" class="comment-body">
+				<footer class="comment-meta">
+					<div class="comment-author vcard">
+						<img alt='' src='https://1.gravatar.com/avatar/7160fd53e75c8891c0eb6ffbaa646134?s=50&#038;d=identicon&#038;r=G' class='avatar avatar-50' height='50' width='50' />						<b class="fn">Dennis</b> <span class="says">says:</span>					</div><!-- .comment-author -->
+
+					<div class="comment-metadata">
+						<a href="https://tech.ticketmaster.com/2014/12/01/getting-over-the-performance-hump-with-apache-camel/#comment-41"><time datetime="2014-12-03T18:38:00-08:00">December 3, 2014 at 6:38 pm</time></a>					</div><!-- .comment-metadata -->
+
+									</footer><!-- .comment-meta -->
+
+				<div class="comment-content">
+					<p>Thank you</p>
+				</div><!-- .comment-content -->
+
+							</article><!-- .comment-body -->
+		</li><!-- #comment-## -->
+		<li id="comment-46" class="comment odd alt thread-odd thread-alt depth-1 highlander-comment">
+			<article id="div-comment-46" class="comment-body">
+				<footer class="comment-meta">
+					<div class="comment-author vcard">
+						<img alt='' src='https://1.gravatar.com/avatar/d0eb816c4bd5b56171ff4d0068ab2bf1?s=50&#038;d=identicon&#038;r=G' class='avatar avatar-50' height='50' width='50' />						<b class="fn">Vince</b> <span class="says">says:</span>					</div><!-- .comment-author -->
+
+					<div class="comment-metadata">
+						<a href="https://tech.ticketmaster.com/2014/12/01/getting-over-the-performance-hump-with-apache-camel/#comment-46"><time datetime="2014-12-10T10:35:43-08:00">December 10, 2014 at 10:35 am</time></a>					</div><!-- .comment-metadata -->
+
+									</footer><!-- .comment-meta -->
+
+				<div class="comment-content">
+					<p>Hi Michael,</p>
+<p>Great Article!  </p>
+<p>Thanks for sharing your findings 🙂</p>
+<p>I was curious about something.  </p>
+<p>When you encountered these issues did you attempt to increase your JVM&#8217;s NewSize to meet the new object generation rate required by your application?</p>
+<p>I have run into similar performance issues in the past and was able to overcome them by making sure that my JVM Young Generation (Eden, and Survior) space was properly sized for my applications needs to avoid unnecessary minor and major garbage collections.</p>
+<p>I have no doubt the changes you made will yield better performance, but just wanted to know if there was a way to overcome this performance hump and still be able to rely on camel&#8217;s Type Converter API when needed and not have to worry about the performance hit.</p>
+<p>Best Regards and Thanks!,<br />
+Vince Furlanetto</p>
+				</div><!-- .comment-content -->
+
+							</article><!-- .comment-body -->
+		</li><!-- #comment-## -->
+		<li id="comment-48" class="comment byuser comment-author-mboisver bypostauthor even thread-even depth-1 parent highlander-comment">
+			<article id="div-comment-48" class="comment-body">
+				<footer class="comment-meta">
+					<div class="comment-author vcard">
+						<img alt='' src='https://1.gravatar.com/avatar/a3073112902e2e029967c9aa62e8a927?s=50&#038;d=identicon&#038;r=G' class='avatar avatar-50' height='50' width='50' />						<b class="fn">Michael Boisvert</b> <span class="says">says:</span>					</div><!-- .comment-author -->
+
+					<div class="comment-metadata">
+						<a href="https://tech.ticketmaster.com/2014/12/01/getting-over-the-performance-hump-with-apache-camel/#comment-48"><time datetime="2014-12-12T11:50:49-08:00">December 12, 2014 at 11:50 am</time></a>					</div><!-- .comment-metadata -->
+
+									</footer><!-- .comment-meta -->
+
+				<div class="comment-content">
+					<p>Hi Vince,</p>
+<p>Thanks for your response and suggestions.</p>
+<p>We didn&#8217;t spend much time turning GC knobs when we started looking at the issue, because we wanted to focus on finding ways to reduce memory usage within the application.  With regards to the TypeConverter API, our use case is straightforward enough so that altering our routes to force the most optimal usage of the converters was a practical approach to dealing with the issue.  So for more complex routes where these kinds of changes may not be feasible, I don&#8217;t have a definitive answer as to whether similar improvements can be made by adjusting JVM settings alone.</p>
+<p>But it is possible&#8211;since the objects created by the TypeConverter are very short-lived, the pauses incurred by promoting objects to the survivor space were probably for other objects in the application, prematurely pushed out of the Eden space by the volume of Camel objects.  In that case, increasing the Eden space could help by delaying garbage collection enough to let other objects die (this is effectively what happened when we implemented our fixes).  We will consider this in further efforts, and it is very helpful to know you had success in tuning those settings!</p>
+<p>I hope this helps, and thanks!<br />
+-Michael Boisvert</p>
+				</div><!-- .comment-content -->
+
+							</article><!-- .comment-body -->
+		<ol class="children">
+		<li id="comment-49" class="comment odd alt depth-2 highlander-comment">
+			<article id="div-comment-49" class="comment-body">
+				<footer class="comment-meta">
+					<div class="comment-author vcard">
+						<img alt='' src='https://1.gravatar.com/avatar/d0eb816c4bd5b56171ff4d0068ab2bf1?s=50&#038;d=identicon&#038;r=G' class='avatar avatar-50' height='50' width='50' />						<b class="fn">Vince</b> <span class="says">says:</span>					</div><!-- .comment-author -->
+
+					<div class="comment-metadata">
+						<a href="https://tech.ticketmaster.com/2014/12/01/getting-over-the-performance-hump-with-apache-camel/#comment-49"><time datetime="2014-12-12T11:59:02-08:00">December 12, 2014 at 11:59 am</time></a>					</div><!-- .comment-metadata -->
+
+									</footer><!-- .comment-meta -->
+
+				<div class="comment-content">
+					<p>Hey Michael,</p>
+<p>Thanks for replying :).</p>
+<p>Makes perfect sense.</p>
+<p>Well if you do ever end up getting around to tinkering with the JVM settings for this please do share your findings as I am indeed curious.</p>
+<p>Take care,<br />
+Vince</p>
+				</div><!-- .comment-content -->
+
+							</article><!-- .comment-body -->
+		</li><!-- #comment-## -->
+</ol><!-- .children -->
+</li><!-- #comment-## -->
+		<li id="comment-97" class="comment even thread-odd thread-alt depth-1 highlander-comment">
+			<article id="div-comment-97" class="comment-body">
+				<footer class="comment-meta">
+					<div class="comment-author vcard">
+						<img alt='' src='https://2.gravatar.com/avatar/29222a2dca6dd4cd33790d72ff3f5346?s=50&#038;d=identicon&#038;r=G' class='avatar avatar-50' height='50' width='50' />						<b class="fn"><a href='http://gravatar.com/gentootweaker' rel='external nofollow ugc' class='url'>Jim</a></b> <span class="says">says:</span>					</div><!-- .comment-author -->
+
+					<div class="comment-metadata">
+						<a href="https://tech.ticketmaster.com/2014/12/01/getting-over-the-performance-hump-with-apache-camel/#comment-97"><time datetime="2015-02-04T16:20:11-08:00">February 4, 2015 at 4:20 pm</time></a>					</div><!-- .comment-metadata -->
+
+									</footer><!-- .comment-meta -->
+
+				<div class="comment-content">
+					<p>These results sound like a pre-escape-analysis JRE is in use.  combined with adequate GC headroom escape analysis should alleviate pressure from short-lived objects.  it is possible through bad habits like linked-queues and cache-everything strategies to break escape analysis.  interesting that this is a december-2014 article.  all current vm&#8217;s 1.7+ in 2015 are using escape analysis</p>
+				</div><!-- .comment-content -->
+
+							</article><!-- .comment-body -->
+		</li><!-- #comment-## -->
+		<li id="comment-966" class="comment odd alt thread-even depth-1 highlander-comment">
+			<article id="div-comment-966" class="comment-body">
+				<footer class="comment-meta">
+					<div class="comment-author vcard">
+						<img alt='' src='https://2.gravatar.com/avatar/e57c7d8ed930aeba34775aa6f35ea074?s=50&#038;d=identicon&#038;r=G' class='avatar avatar-50' height='50' width='50' />						<b class="fn">Jasen Jacobsen</b> <span class="says">says:</span>					</div><!-- .comment-author -->
+
+					<div class="comment-metadata">
+						<a href="https://tech.ticketmaster.com/2014/12/01/getting-over-the-performance-hump-with-apache-camel/#comment-966"><time datetime="2016-12-13T06:27:01-08:00">December 13, 2016 at 6:27 am</time></a>					</div><!-- .comment-metadata -->
+
+									</footer><!-- .comment-meta -->
+
+				<div class="comment-content">
+					<p>I believe we just had a similar problem. We are using Camel for some Extract Transform Load tasks: pulling data out of some databases, mashing the results into new forms, and putting them into another database. We are using inline  Groovy in several places because of its concise syntax and general ease of use. Unfortunately, we found that after running several hours we were getting out of memory errors. I plugged in VisualVM and could see that the number of classes loaded kept going up, and each time garbage collection happened about 15MB of heap memory got lost. Not good.</p>
+<p>To troubleshoot, I pulled all the Groovy to an external library. Just doing this slowed down the memory leak, but did not stop it. Then I applied the @CompileStatic annotation to my Groovy class. This, of course, caused all the dynamic duck typing to break horribly. Bye-bye &#8220;def&#8221;, using dot-notation on maps, and a several other conveniences. But, the memory leak went away. The number of classes loaded stabilized, GC stopped leaking heap memory.</p>
+<p>It is very clear Camel did not clean up after itself cleanly after each run through the route.</p>
+				</div><!-- .comment-content -->
+
+							</article><!-- .comment-body -->
+		</li><!-- #comment-## -->
+		</ol><!-- .comment-list -->
+
+		
+	
+			<p class="no-comments">Comments are closed.</p>
+	
+	
+</div><!-- #comments -->
+
+		
+		</main><!-- #main -->
+	</div><!-- #primary -->
+
+
+	</div><!-- #content -->
+
+	<footer id="colophon" class="site-footer" role="contentinfo">
+		<div class="site-info">
+			<a href="https://wordpress.com/?ref=footer_blog" rel="nofollow">Blog at WordPress.com.</a>
+			
+					</div><!-- .site-info -->
+	</footer><!-- #colophon -->
+</div><!-- #page -->
+
+<!--  -->
+<script src='//0.gravatar.com/js/gprofiles.js?ver=202221z' id='grofiles-cards-js'></script>
+<script id='wpgroho-js-extra'>
+var WPGroHo = {"my_hash":""};
+</script>
+<script crossorigin='anonymous' type='text/javascript' src='https://s1.wp.com/wp-content/mu-plugins/gravatar-hovercards/wpgroho.js?m=1610363240h'></script>
+
+	<script>
+		// Initialize and attach hovercards to all gravatars
+		( function() {
+			function init() {
+				if ( typeof Gravatar === 'undefined' ) {
+					return;
+				}
+
+				if ( typeof Gravatar.init !== 'function' ) {
+					return;
+				}
+
+				Gravatar.profile_cb = function ( hash, id ) {
+					WPGroHo.syncProfileData( hash, id );
+				};
+
+				Gravatar.my_hash = WPGroHo.my_hash;
+				Gravatar.init( 'body', '#wp-admin-bar-my-account' );
+			}
+
+			if ( document.readyState !== 'loading' ) {
+				init();
+			} else {
+				document.addEventListener( 'DOMContentLoaded', init );
+			}
+		} )();
+	</script>
+
+		<div style="display:none">
+	<div class="grofile-hash-map-7160fd53e75c8891c0eb6ffbaa646134">
+	</div>
+	<div class="grofile-hash-map-d0eb816c4bd5b56171ff4d0068ab2bf1">
+	</div>
+	<div class="grofile-hash-map-a3073112902e2e029967c9aa62e8a927">
+	</div>
+	<div class="grofile-hash-map-29222a2dca6dd4cd33790d72ff3f5346">
+	</div>
+	<div class="grofile-hash-map-e57c7d8ed930aeba34775aa6f35ea074">
+	</div>
+	</div>
+	<div id="actionbar" style="display: none;"
+			class="actnbr-pub-celsius actnbr-has-follow">
+		<ul>
+								<li class="actnbr-btn actnbr-hidden">
+								<a class="actnbr-action actnbr-actn-follow " href="">
+			<svg class="gridicon gridicons-reader-follow" height="24" width="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g><path d="M23 16v2h-3v3h-2v-3h-3v-2h3v-3h2v3h3zM20 2v9h-4v3h-3v4H4c-1.1 0-2-.9-2-2V2h18zM8 13v-1H4v1h4zm3-3H4v1h7v-1zm0-2H4v1h7V8zm7-4H4v2h14V4z"/></g></svg><span>Follow</span>
+		</a>
+		<a class="actnbr-action actnbr-actn-following  no-display" href="">
+			<svg class="gridicon gridicons-reader-following" height="24" width="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g><path d="M23 13.482L15.508 21 12 17.4l1.412-1.388 2.106 2.188 6.094-6.094L23 13.482zm-7.455 1.862L20 10.89V2H2v14c0 1.1.9 2 2 2h4.538l4.913-4.832 2.095 2.176zM8 13H4v-1h4v1zm3-2H4v-1h7v1zm0-2H4V8h7v1zm7-3H4V4h14v2z"/></g></svg><span>Following</span>
+		</a>
+							<div class="actnbr-popover tip tip-top-left actnbr-notice" id="follow-bubble">
+							<div class="tip-arrow"></div>
+							<div class="tip-inner actnbr-follow-bubble">
+															<ul>
+											<li class="actnbr-sitename">
+			<a href="https://tech.ticketmaster.com">
+				<img alt='' src='https://secure.gravatar.com/blavatar/f67d7e695bd9335981167b5368e1605c?s=50&#038;d=https%3A%2F%2Fs2.wp.com%2Fi%2Flogo%2Fwpcom-gray-white.png' class='avatar avatar-50' height='50' width='50' />				Ticketmaster Technology			</a>
+		</li>
+										<form method="post" action="https://subscribe.wordpress.com" accept-charset="utf-8" style="display: none;">
+																						<div class="actnbr-follow-count">Join 118 other followers</div>
+																					<div>
+										<input type="email" name="email" placeholder="Enter your email address" class="actnbr-email-field" aria-label="Enter your email address" />
+										</div>
+										<input type="hidden" name="action" value="subscribe" />
+										<input type="hidden" name="blog_id" value="58663291" />
+										<input type="hidden" name="source" value="https://tech.ticketmaster.com/2014/12/01/getting-over-the-performance-hump-with-apache-camel/" />
+										<input type="hidden" name="sub-type" value="actionbar-follow" />
+										<input type="hidden" id="_wpnonce" name="_wpnonce" value="31e4765b08" />										<div class="actnbr-button-wrap">
+											<button type="submit" value="Sign me up">
+												Sign me up											</button>
+										</div>
+									</form>
+									<li class="actnbr-login-nudge">
+										<div>
+											Already have a WordPress.com account? <a href="https://wordpress.com/log-in?redirect_to=https%3A%2F%2Fr-login.wordpress.com%2Fremote-login.php%3Faction%3Dlink%26back%3Dhttps%253A%252F%252Ftech.ticketmaster.com%252F2014%252F12%252F01%252Fgetting-over-the-performance-hump-with-apache-camel%252F">Log in now.</a>										</div>
+									</li>
+								</ul>
+															</div>
+						</div>
+					</li>
+							<li class="actnbr-ellipsis actnbr-hidden">
+				<svg class="gridicon gridicons-ellipsis" height="24" width="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g><path d="M7 12c0 1.104-.896 2-2 2s-2-.896-2-2 .896-2 2-2 2 .896 2 2zm12-2c-1.104 0-2 .896-2 2s.896 2 2 2 2-.896 2-2-.896-2-2-2zm-7 0c-1.104 0-2 .896-2 2s.896 2 2 2 2-.896 2-2-.896-2-2-2z"/></g></svg>				<div class="actnbr-popover tip tip-top-left actnbr-more">
+					<div class="tip-arrow"></div>
+					<div class="tip-inner">
+						<ul>
+									<li class="actnbr-sitename">
+			<a href="https://tech.ticketmaster.com">
+				<img alt='' src='https://secure.gravatar.com/blavatar/f67d7e695bd9335981167b5368e1605c?s=50&#038;d=https%3A%2F%2Fs2.wp.com%2Fi%2Flogo%2Fwpcom-gray-white.png' class='avatar avatar-50' height='50' width='50' />				Ticketmaster Technology			</a>
+		</li>
+								<li class="actnbr-folded-customize">
+								<a href="https://ticketmastertech.wordpress.com/wp-admin/customize.php?url=https%3A%2F%2Fticketmastertech.wordpress.com%2F2014%2F12%2F01%2Fgetting-over-the-performance-hump-with-apache-camel%2F">
+									<svg class="gridicon gridicons-customize" height="20" width="20" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g><path d="M2 6c0-1.505.78-3.08 2-4 0 .845.69 2 2 2 1.657 0 3 1.343 3 3 0 .386-.08.752-.212 1.09.74.594 1.476 1.19 2.19 1.81L8.9 11.98c-.62-.716-1.214-1.454-1.807-2.192C6.753 9.92 6.387 10 6 10c-2.21 0-4-1.79-4-4zm12.152 6.848l1.34-1.34c.607.304 1.283.492 2.008.492 2.485 0 4.5-2.015 4.5-4.5 0-.725-.188-1.4-.493-2.007L18 9l-2-2 3.507-3.507C18.9 3.188 18.225 3 17.5 3 15.015 3 13 5.015 13 7.5c0 .725.188 1.4.493 2.007L3 20l2 2 6.848-6.848c1.885 1.928 3.874 3.753 5.977 5.45l1.425 1.148 1.5-1.5-1.15-1.425c-1.695-2.103-3.52-4.092-5.448-5.977z"/></g></svg>									<span>Customize</span>
+								</a>
+							</li>
+																<li class="actnbr-folded-follow">
+												<a class="actnbr-action actnbr-actn-follow " href="">
+			<svg class="gridicon gridicons-reader-follow" height="24" width="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g><path d="M23 16v2h-3v3h-2v-3h-3v-2h3v-3h2v3h3zM20 2v9h-4v3h-3v4H4c-1.1 0-2-.9-2-2V2h18zM8 13v-1H4v1h4zm3-3H4v1h7v-1zm0-2H4v1h7V8zm7-4H4v2h14V4z"/></g></svg><span>Follow</span>
+		</a>
+		<a class="actnbr-action actnbr-actn-following  no-display" href="">
+			<svg class="gridicon gridicons-reader-following" height="24" width="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g><path d="M23 13.482L15.508 21 12 17.4l1.412-1.388 2.106 2.188 6.094-6.094L23 13.482zm-7.455 1.862L20 10.89V2H2v14c0 1.1.9 2 2 2h4.538l4.913-4.832 2.095 2.176zM8 13H4v-1h4v1zm3-2H4v-1h7v1zm0-2H4V8h7v1zm7-3H4V4h14v2z"/></g></svg><span>Following</span>
+		</a>
+										</li>
+																	<li class="actnbr-signup"><a href="https://wordpress.com/start/">Sign up</a></li>
+									<li class="actnbr-login"><a href="https://wordpress.com/log-in?redirect_to=https%3A%2F%2Fr-login.wordpress.com%2Fremote-login.php%3Faction%3Dlink%26back%3Dhttps%253A%252F%252Ftech.ticketmaster.com%252F2014%252F12%252F01%252Fgetting-over-the-performance-hump-with-apache-camel%252F">Log in</a></li>
+																	<li class="actnbr-shortlink"><a href="https://wp.me/p3Y907-3f">Copy shortlink</a></li>
+																	<li class="flb-report"><a href="http://en.wordpress.com/abuse/">Report this content</a></li>
+																	<li class="actnbr-reader">
+										<a href="https://wordpress.com/read/blogs/58663291/posts/201">
+											View post in Reader										</a>
+									</li>
+																	<li class="actnbr-subs">
+										<a href="https://subscribe.wordpress.com/">Manage subscriptions</a>
+									</li>
+																		<li class="actnbr-fold"><a href="">Collapse this bar</a></li>
+															</ul>
+					</div>
+				</div>
+			</li>
+		</ul>
+	</div>
+	
+<script>
+window.addEventListener( "load", function( event ) {
+	var link = document.createElement( "link" );
+	link.href = "https://s0.wp.com/wp-content/mu-plugins/actionbar/actionbar.css?v=20210915";
+	link.type = "text/css";
+	link.rel = "stylesheet";
+	document.head.appendChild( link );
+
+	var script = document.createElement( "script" );
+	script.src = "https://s0.wp.com/wp-content/mu-plugins/actionbar/actionbar.js?v=20220329";
+	script.defer = true;
+	document.body.appendChild( script );
+} );
+</script>
+
+			<div id="jp-carousel-loading-overlay">
+			<div id="jp-carousel-loading-wrapper">
+				<span id="jp-carousel-library-loading">&nbsp;</span>
+			</div>
+		</div>
+		<div class="jp-carousel-overlay" style="display: none;">
+
+		<div class="jp-carousel-container">
+			<!-- The Carousel Swiper -->
+			<div
+				class="jp-carousel-wrap swiper-container jp-carousel-swiper-container jp-carousel-transitions"
+				itemscope
+				itemtype="https://schema.org/ImageGallery">
+				<div class="jp-carousel swiper-wrapper"></div>
+				<div class="jp-swiper-button-prev swiper-button-prev">
+					<svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<mask id="maskPrev" mask-type="alpha" maskUnits="userSpaceOnUse" x="8" y="6" width="9" height="12">
+							<path d="M16.2072 16.59L11.6496 12L16.2072 7.41L14.8041 6L8.8335 12L14.8041 18L16.2072 16.59Z" fill="white"/>
+						</mask>
+						<g mask="url(#maskPrev)">
+							<rect x="0.579102" width="23.8823" height="24" fill="#FFFFFF"/>
+						</g>
+					</svg>
+				</div>
+				<div class="jp-swiper-button-next swiper-button-next">
+					<svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<mask id="maskNext" mask-type="alpha" maskUnits="userSpaceOnUse" x="8" y="6" width="8" height="12">
+							<path d="M8.59814 16.59L13.1557 12L8.59814 7.41L10.0012 6L15.9718 12L10.0012 18L8.59814 16.59Z" fill="white"/>
+						</mask>
+						<g mask="url(#maskNext)">
+							<rect x="0.34375" width="23.8822" height="24" fill="#FFFFFF"/>
+						</g>
+					</svg>
+				</div>
+			</div>
+			<!-- The main close buton -->
+			<div class="jp-carousel-close-hint">
+				<svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+					<mask id="maskClose" mask-type="alpha" maskUnits="userSpaceOnUse" x="5" y="5" width="15" height="14">
+						<path d="M19.3166 6.41L17.9135 5L12.3509 10.59L6.78834 5L5.38525 6.41L10.9478 12L5.38525 17.59L6.78834 19L12.3509 13.41L17.9135 19L19.3166 17.59L13.754 12L19.3166 6.41Z" fill="white"/>
+					</mask>
+					<g mask="url(#maskClose)">
+						<rect x="0.409668" width="23.8823" height="24" fill="#FFFFFF"/>
+					</g>
+				</svg>
+			</div>
+			<!-- Image info, comments and meta -->
+			<div class="jp-carousel-info">
+				<div class="jp-carousel-info-footer">
+					<div class="jp-carousel-pagination-container">
+						<div class="jp-swiper-pagination swiper-pagination"></div>
+						<div class="jp-carousel-pagination"></div>
+					</div>
+					<div class="jp-carousel-photo-title-container">
+						<h2 class="jp-carousel-photo-caption"></h2>
+					</div>
+					<div class="jp-carousel-photo-icons-container">
+						<a href="#" class="jp-carousel-icon-btn jp-carousel-icon-info" aria-label="Toggle photo metadata visibility">
+							<span class="jp-carousel-icon">
+								<svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+									<mask id="maskInfo" mask-type="alpha" maskUnits="userSpaceOnUse" x="2" y="2" width="21" height="20">
+										<path fill-rule="evenodd" clip-rule="evenodd" d="M12.7537 2C7.26076 2 2.80273 6.48 2.80273 12C2.80273 17.52 7.26076 22 12.7537 22C18.2466 22 22.7046 17.52 22.7046 12C22.7046 6.48 18.2466 2 12.7537 2ZM11.7586 7V9H13.7488V7H11.7586ZM11.7586 11V17H13.7488V11H11.7586ZM4.79292 12C4.79292 16.41 8.36531 20 12.7537 20C17.142 20 20.7144 16.41 20.7144 12C20.7144 7.59 17.142 4 12.7537 4C8.36531 4 4.79292 7.59 4.79292 12Z" fill="white"/>
+									</mask>
+									<g mask="url(#maskInfo)">
+										<rect x="0.8125" width="23.8823" height="24" fill="#FFFFFF"/>
+									</g>
+								</svg>
+							</span>
+						</a>
+												<a href="#" class="jp-carousel-icon-btn jp-carousel-icon-comments" aria-label="Toggle photo comments visibility">
+							<span class="jp-carousel-icon">
+								<svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+									<mask id="maskComments" mask-type="alpha" maskUnits="userSpaceOnUse" x="2" y="2" width="21" height="20">
+										<path fill-rule="evenodd" clip-rule="evenodd" d="M4.3271 2H20.2486C21.3432 2 22.2388 2.9 22.2388 4V16C22.2388 17.1 21.3432 18 20.2486 18H6.31729L2.33691 22V4C2.33691 2.9 3.2325 2 4.3271 2ZM6.31729 16H20.2486V4H4.3271V18L6.31729 16Z" fill="white"/>
+									</mask>
+									<g mask="url(#maskComments)">
+										<rect x="0.34668" width="23.8823" height="24" fill="#FFFFFF"/>
+									</g>
+								</svg>
+
+								<span class="jp-carousel-has-comments-indicator" aria-label="This image has comments."></span>
+							</span>
+						</a>
+											</div>
+				</div>
+				<div class="jp-carousel-info-extra">
+					<div class="jp-carousel-info-content-wrapper">
+						<div class="jp-carousel-photo-title-container">
+							<h2 class="jp-carousel-photo-title"></h2>
+						</div>
+						<div class="jp-carousel-comments-wrapper">
+															<div id="jp-carousel-comments-loading">
+									<span>Loading Comments...</span>
+								</div>
+								<div class="jp-carousel-comments"></div>
+								<div id="jp-carousel-comment-form-container">
+									<span id="jp-carousel-comment-form-spinner">&nbsp;</span>
+									<div id="jp-carousel-comment-post-results"></div>
+																														<form id="jp-carousel-comment-form">
+												<label for="jp-carousel-comment-form-comment-field" class="screen-reader-text">Write a Comment...</label>
+												<textarea
+													name="comment"
+													class="jp-carousel-comment-form-field jp-carousel-comment-form-textarea"
+													id="jp-carousel-comment-form-comment-field"
+													placeholder="Write a Comment..."
+												></textarea>
+												<div id="jp-carousel-comment-form-submit-and-info-wrapper">
+													<div id="jp-carousel-comment-form-commenting-as">
+																													<fieldset>
+																<label for="jp-carousel-comment-form-email-field">Email (Required)</label>
+																<input type="text" name="email" class="jp-carousel-comment-form-field jp-carousel-comment-form-text-field" id="jp-carousel-comment-form-email-field" />
+															</fieldset>
+															<fieldset>
+																<label for="jp-carousel-comment-form-author-field">Name (Required)</label>
+																<input type="text" name="author" class="jp-carousel-comment-form-field jp-carousel-comment-form-text-field" id="jp-carousel-comment-form-author-field" />
+															</fieldset>
+															<fieldset>
+																<label for="jp-carousel-comment-form-url-field">Website</label>
+																<input type="text" name="url" class="jp-carousel-comment-form-field jp-carousel-comment-form-text-field" id="jp-carousel-comment-form-url-field" />
+															</fieldset>
+																											</div>
+													<input
+														type="submit"
+														name="submit"
+														class="jp-carousel-comment-form-button"
+														id="jp-carousel-comment-form-button-submit"
+														value="Post Comment" />
+												</div>
+											</form>
+																											</div>
+													</div>
+						<div class="jp-carousel-image-meta">
+							<div class="jp-carousel-title-and-caption">
+								<div class="jp-carousel-photo-info">
+									<h3 class="jp-carousel-caption" itemprop="caption description"></h3>
+								</div>
+
+								<div class="jp-carousel-photo-description"></div>
+							</div>
+							<ul class="jp-carousel-image-exif" style="display: none;"></ul>
+							<a class="jp-carousel-image-download" target="_blank" style="display: none;">
+								<svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+									<mask id="mask0" mask-type="alpha" maskUnits="userSpaceOnUse" x="3" y="3" width="19" height="18">
+										<path fill-rule="evenodd" clip-rule="evenodd" d="M5.84615 5V19H19.7775V12H21.7677V19C21.7677 20.1 20.8721 21 19.7775 21H5.84615C4.74159 21 3.85596 20.1 3.85596 19V5C3.85596 3.9 4.74159 3 5.84615 3H12.8118V5H5.84615ZM14.802 5V3H21.7677V10H19.7775V6.41L9.99569 16.24L8.59261 14.83L18.3744 5H14.802Z" fill="white"/>
+									</mask>
+									<g mask="url(#mask0)">
+										<rect x="0.870605" width="23.8823" height="24" fill="#FFFFFF"/>
+									</g>
+								</svg>
+								<span class="jp-carousel-download-text"></span>
+							</a>
+							<div class="jp-carousel-image-map" style="display: none;"></div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		</div>
+		
+	<script type="text/javascript">
+		window.WPCOM_sharing_counts = {"https:\/\/tech.ticketmaster.com\/2014\/12\/01\/getting-over-the-performance-hump-with-apache-camel\/":201};
+	</script>
+				<link rel='stylesheet' id='all-css-0-2' href='https://s0.wp.com/_static/??/wp-content/mu-plugins/carousel/swiper-bundle.css,/wp-content/mu-plugins/carousel/jetpack-carousel.css?m=1630955947j&cssminify=yes' type='text/css' media='all' />
+<script id='jetpack-carousel-js-extra'>
+var jetpackSwiperLibraryPath = {"url":"\/wp-content\/mu-plugins\/carousel\/swiper-bundle.js"};
+var jetpackCarouselStrings = {"widths":[370,700,1000,1200,1400,2000],"is_logged_in":"","lang":"en","ajaxurl":"https:\/\/tech.ticketmaster.com\/wp-admin\/admin-ajax.php","nonce":"c241372b51","display_exif":"1","display_comments":"1","single_image_gallery":"1","single_image_gallery_media_file":"","background_color":"black","comment":"Comment","post_comment":"Post Comment","write_comment":"Write a Comment...","loading_comments":"Loading Comments...","download_original":"View full size <span class=\"photo-size\">{0}<span class=\"photo-size-times\">\u00d7<\/span>{1}<\/span>","no_comment_text":"Please be sure to submit some text with your comment.","no_comment_email":"Please provide an email address to comment.","no_comment_author":"Please provide your name to comment.","comment_post_error":"Sorry, but there was an error posting your comment. Please try again later.","comment_approved":"Your comment was approved.","comment_unapproved":"Your comment is in moderation.","camera":"Camera","aperture":"Aperture","shutter_speed":"Shutter Speed","focal_length":"Focal Length","copyright":"Copyright","comment_registration":"0","require_name_email":"1","login_url":"https:\/\/ticketmastertech.wordpress.com\/wp-login.php?redirect_to=https%3A%2F%2Ftech.ticketmaster.com%2F2014%2F12%2F01%2Fgetting-over-the-performance-hump-with-apache-camel%2F","blog_id":"58663291","meta_data":["camera","aperture","shutter_speed","focal_length","copyright"],"stats_query_args":"blog=58663291&v=wpcom&tz=-7&user_id=0&subd=ticketmastertech","is_public":"1"};
+</script>
+<script id='sharing-js-js-extra'>
+var sharing_js_options = {"lang":"en","counts":"1","is_stats_active":"1"};
+</script>
+<script crossorigin='anonymous' type='text/javascript' src='https://s1.wp.com/_static/??-eJyNjtGuwjAIhl9IRD1G44XxWbBjG1tLa2n1PL7TxMR4seyKH/g+Aj4SuKiFteBg2PBdHKf/9WAr/FqFCsnXTtTQy8iGt8qVe9LGc/6FS89hQlK9olj09Dr8DktApbt0VCTqEtpGSeBFR2ijqwatzL1OTRCFK2UMZIXzlKBkcqPNSI5yrMYeBy5pYuEzWODAI7kYftoZL0Ur0HqSjNZTFu0+dZIu4bw97E/7zW53/BueUgOkxw=='></script>
+<script type='text/javascript'>
+var windowOpen;
+			( function () {
+				function matches( el, sel ) {
+					return !! (
+						el.matches && el.matches( sel ) ||
+						el.msMatchesSelector && el.msMatchesSelector( sel )
+					);
+				}
+
+				document.body.addEventListener( 'click', function ( event ) {
+					if ( ! event.target ) {
+						return;
+					}
+
+					var el;
+					if ( matches( event.target, 'a.share-twitter' ) ) {
+						el = event.target;
+					} else if ( event.target.parentNode && matches( event.target.parentNode, 'a.share-twitter' ) ) {
+						el = event.target.parentNode;
+					}
+
+					if ( el ) {
+						event.preventDefault();
+
+						// If there's another sharing window open, close it.
+						if ( typeof windowOpen !== 'undefined' ) {
+							windowOpen.close();
+						}
+						windowOpen = window.open( el.getAttribute( 'href' ), 'wpcomtwitter', 'menubar=1,resizable=1,width=600,height=350' );
+						return false;
+					}
+				} );
+			} )();
+var windowOpen;
+			( function () {
+				function matches( el, sel ) {
+					return !! (
+						el.matches && el.matches( sel ) ||
+						el.msMatchesSelector && el.msMatchesSelector( sel )
+					);
+				}
+
+				document.body.addEventListener( 'click', function ( event ) {
+					if ( ! event.target ) {
+						return;
+					}
+
+					var el;
+					if ( matches( event.target, 'a.share-facebook' ) ) {
+						el = event.target;
+					} else if ( event.target.parentNode && matches( event.target.parentNode, 'a.share-facebook' ) ) {
+						el = event.target.parentNode;
+					}
+
+					if ( el ) {
+						event.preventDefault();
+
+						// If there's another sharing window open, close it.
+						if ( typeof windowOpen !== 'undefined' ) {
+							windowOpen.close();
+						}
+						windowOpen = window.open( el.getAttribute( 'href' ), 'wpcomfacebook', 'menubar=1,resizable=1,width=600,height=400' );
+						return false;
+					}
+				} );
+			} )();
+</script>
+<script type="text/javascript">
+// <![CDATA[
+(function() {
+try{
+  if ( window.external &&'msIsSiteMode' in window.external) {
+    if (window.external.msIsSiteMode()) {
+      var jl = document.createElement('script');
+      jl.type='text/javascript';
+      jl.async=true;
+      jl.src='/wp-content/plugins/ie-sitemode/custom-jumplist.php';
+      var s = document.getElementsByTagName('script')[0];
+      s.parentNode.insertBefore(jl, s);
+    }
+  }
+}catch(e){}
+})();
+// ]]>
+</script>	<iframe src='https://widgets.wp.com/likes/master.html?ver=20220105#ver=20220105&amp;origin=https://tech.ticketmaster.com' scrolling='no' id='likes-master' name='likes-master' style='display:none;'></iframe>
+	<div id='likes-other-gravatars'>
+		<div class="likes-text">
+			<span>%d</span> bloggers like this:		</div>
+		<ul class="wpl-avatars sd-like-gravatars"></ul>
+	</div>
+
+		<script src="//stats.wp.com/w.js?63" defer></script> <script type="text/javascript">
+_tkq = window._tkq || [];
+_stq = window._stq || [];
+_tkq.push(['storeContext', {'blog_id':'58663291','blog_tz':'-7','user_lang':'en','blog_lang':'en','user_id':'0'}]);
+_stq.push(['view', {'blog':'58663291','v':'wpcom','tz':'-7','user_id':'0','post':'201','subd':'ticketmastertech'}]);
+_stq.push(['extra', {'crypt':'UE40eW5QN0p8M2Y/RE1TaVhzUzFMbjdWNHpwZGhTayxPSUFCMGNrd29+Smw0TDhnZmRTK0hlRi9QSGh6bi9GXVhBJWIlZlR5U1JMLU8/MkNtblkvY1d6WXxNVzFUY192eXo2WzgvJS9uPXplVmQ2MSVBYVZHYUxIbGE0XWtTS1BPTDlma28reXhJakhsbDBBTmV5Mkd3d3QlOVk0K11YdyVZQjhMbkVIamdIZ35XL21ZfE89T0FhZEgxK0w1aGIzc3Bvcls2WjM5SGItZXAwaFJKRDBBW2NxcDcuPVZxPUJTdldrZFo3eDZsX3NHWEt6K1JkZE52Jmdld0Njam8xZUU5VTksQzVrZjNFbWk/dTdiNXFUQVRHRnxLM3dBQjZ3S2xZb1NGbDBdaUltdnhZbmR0'}]);
+_stq.push([ 'clickTrackerInit', '58663291', '201' ]);
+	</script>
+<noscript><img src="https://pixel.wp.com/b.gif?v=noscript" style="height:1px;width:1px;overflow:hidden;position:absolute;bottom:1px;" alt="" /></noscript>
+<script>
+if ( 'object' === typeof wpcom_mobile_user_agent_info ) {
+
+	wpcom_mobile_user_agent_info.init();
+	var mobileStatsQueryString = "";
+	
+	if( false !== wpcom_mobile_user_agent_info.matchedPlatformName )
+		mobileStatsQueryString += "&x_" + 'mobile_platforms' + '=' + wpcom_mobile_user_agent_info.matchedPlatformName;
+	
+	if( false !== wpcom_mobile_user_agent_info.matchedUserAgentName )
+		mobileStatsQueryString += "&x_" + 'mobile_devices' + '=' + wpcom_mobile_user_agent_info.matchedUserAgentName;
+	
+	if( wpcom_mobile_user_agent_info.isIPad() )
+		mobileStatsQueryString += "&x_" + 'ipad_views' + '=' + 'views';
+
+	if( "" != mobileStatsQueryString ) {
+		new Image().src = document.location.protocol + '//pixel.wp.com/g.gif?v=wpcom-no-pv' + mobileStatsQueryString + '&baba=' + Math.random();
+	}
+	
+}
+</script>
+</body>
+</html>

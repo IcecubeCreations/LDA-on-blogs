@@ -1,0 +1,564 @@
+
+
+
+
+
+
+
+
+
+
+Micro services - Versioning strategies
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Toggle navigation
+Menu 
+
+Niels.nu
+
+
+
+
+Home
+
+
+Archive
+
+
+About
+
+
+
+
+
+
+
+
+
+
+Micro services - Versioning strategies
+Identifying the problems with versioning and exploring possible solutions.
+Posted on 21 May 2016
+
+
+
+
+
+
+
+
+
+
+
+
+μServices are hip! They have been for a while now. But while a very strong
+modular loosely coupled approach tends to make projects easier to maintain it
+also brings it’s own set of problems. In this blog post I want to dive into one of
+these problems; versioning.
+
+
+This blog post comes with example code.
+
+
+Update: I have also created a more in-depth implementation of this adapter pattern
+in Spring Boot. Read all about it here!
+
+
+
+
+Introduction
+
+
+A few years ago I worked on a project that used a μService (ish) approach.
+While the code was well written and a complete joy to work on versioning the
+services was not taken into account. For serialization between services a home
+grown RPC layer based on Netty and Kryo was used. It was fast and easy to use but it
+had one huge problem: the services could not communicate between each other
+unless the serialized classes had the exact same structure and they used the
+same (or at least compatible) Kryo versions.
+
+
+Since there was also no version negotiation between the services there was only
+one solution: deploy the entire ecosystem as one big monolith. And this is
+something a lot with mic: a modular monolith instead of a
+true μService architecture where you don’t have the benefits of a μService
+architecture (agility: you should be able to swap one of the services
+out) while you still have the downsides of a μService architecture (mainly
+you lose the ability to do transactional updates).
+
+
+This is why, if you decide on going for a μService architecture, you need to
+figure out and decide on a strategy to use and stick to it.
+
+
+
+
+Data format
+
+
+Let’s start with a data format. In the example in the introduction we used a
+binary format that while it was small and fast had one big issue in that it was
+hard or almost impossible to make backward-compatible. This was a mistake. While
+there are binary formats that allow for backwards-compatibility (Protobuf, Smile)
+in our examples we’ll just use JSON. If a new protocol version just adds fields
+it should be handled just fine by older clients.
+
+
+
+
+
+Important
+
+
+Make sure you test this! I am currently working at a large
+bank where we had a misbehaving client that didn’t ignore unknown JSON fields
+and crashed!
+
+
+
+
+
+
+
+Protocol versions
+
+
+I mentioned the protocol version and this is the second important component that
+you need to decide on: your protocol version numbering. You can in fact just use
+a single integer number you bump whenever a new version breaks compatibility.
+Since your protocol is backward compatible always within a version there is no
+acute need for a <major>.<minor> versioning scheme.
+
+
+Also make sure that the client always tells the service which protocol version
+it expects. When the client doesn’t we should in fact thrown an error instead of
+making the implicit assumption the client wants a certain version: this
+tells a developer that he must always include the version. You also need this
+information to know how many clients are still not up to date to assess the impact
+of deprecating old versions.
+
+
+
+
+Strategies
+
+
+So now that we decided on a data format and a protocol versioning strategy we
+can now apply this and decide on a strategy. We’ll use a very simple "Order"
+API for a web shop as an example. We just have a single GET call that returns an
+order with it’s items based on it’s ID.
+
+
+We have two versions, 1 and 2, that are not compatible. Version 1 response:
+
+
+
+{
+  "id": 1,
+  "customerFirstName": "John",
+  "customerLsatName": "Williams",
+  "orderTotal": 1886,
+  "timestamp": 1464078528986,
+  "items": [
+    { "name": "Milk",  "qtty": 4, "price": 2.99 },
+    { "name": "Bread", "qtty": 2, "price": 3.45 }
+  ]
+}
+
+
+
+As you can see we made a few mistakes in this response. The customerLastName field
+is misspelled and the orderTotal being in cents is inconsistent with the order item
+prices being decimal numbers. So we fixed this in format version 2:
+
+
+
+{
+  "id": 1,
+  "customerFirstName": "John",
+  "customerLastName": "Williams",
+  "orderTotal": 18.86,
+  "timestamp": 1464078528986,
+  "items": [
+    { "name": "Milk",  "qtty": 4, "price": 2.99 },
+    { "name": "Bread", "qtty": 2, "price": 3.45 }
+  ]
+}
+
+
+
+Much better! Also; completely incompatible!
+
+
+Routing based versioning
+
+A relatively simply strategy that works well for API’s that are externally
+exposed is to simply have the version in the route URL. So the first version of
+our client will GET /v1/order/1 and newer versions based on our new API would
+request GET /v2/order/1. We would then have the old version of the API running on
+port 8001 and the new version on port 8002.
+
+
+A reverse proxy (like Nginx) would then simply route the request (removing the
+/vN bit) to the corresponding service.
+
+
+This is a strategy that is relatively simply to implement (even in hindsight) but
+it does some with a few drawbacks. The first one is obviously that you need to be
+able to keep older versions of services running in parallel. A new version of
+our Order server might for example alter the database in such a way that older
+versions can’t access the data anymore.
+
+
+Another issue is that while this works well for externally exposed services we’re
+talking about μServices here. You’d have many services communicating between
+each other that would all have to go through a reverse proxy.
+
+
+
+View based versioning
+
+Another approach is to move the logic of handling backwards compatibility to the
+code. In my opinion this makes sense: the developer who made the modification
+tends to know how to be backwards compatible best.
+
+
+Our example code is based on Spring Boot (although conceptually any language and
+framework can be used) which internally uses Jackson for JSON serialization.
+Jackson has the concept of 'views'. A common scenario of these
+kinds of views is that you want to expose only a part of a Person’s details for
+unauthorized users and more information for authorized / friends-of users.
+Similar to how for example your e-mail on your Facebook profile can be made available
+only to your close friends.
+
+
+More info on Jackson Views here.
+
+
+In the example project
+I have created a controller
+that shows the two approaches. Let’s take a look at the constructor first:
+
+
+
+public Controller() {
+orderDb.add(new Order(1, "John", "Williams", currentTimeMillis(),
+    new Order.Item("Milk", 4, "2.99"),
+    new Order.Item("Bread", 2, "3.45")));
+
+    viewMap.put(1, View.Version1.class);
+    adapterMap.put(1, o -> new MappingJacksonValue(new OrderV1(o)));
+}
+
+
+
+As you can see we fill our 'database' with a single Order and also configure the
+view and adapter maps. A 'view', as explained in the
+linked article
+is just any class. It uses classes instead of plain strings so that it can use
+basic object inheritance.
+
+
+The adapter is a simple Function that maps an order to a MappingJacksonValue
+object.
+
+
+I will also explain the getProtocolVersion utility method:
+
+
+
+private int getProtocolVersion() {
+    String header = request.getHeader("X-Protocol-Version");
+    if(header == null) {
+        throw new NoProtocolVersionException();
+    }
+    else {
+        return parseInt(header);
+    }
+}
+
+
+
+This method, used by both versioning methods, is how we get the protocol version
+from the client supplied header. If it’s not supplied it will respond with a 400
+status code.
+
+
+
+
+
+Note
+
+
+Normally you would have a generic (Filter-based) solution that handles this
+but for simplicity’s sake this logic is in the Controller class.
+
+
+
+
+
+The controller source is relatively simple:
+
+
+
+@RequestMapping(value = "/method1/{id}", method = RequestMethod.GET)
+public MappingJacksonValue getMethod1(@PathVariable int id) {
+    MappingJacksonValue result = new MappingJacksonValue(find(id));
+    result.setSerializationView(getOrderView());
+
+    return result;
+}
+
+private Class<?> getOrderView() {
+    return viewMap.getOrDefault(getProtocolVersion(), View.Version2.class);
+}
+
+
+
+What you probably notice is that we don’t return an "Order" object from the
+controller like you’d normally do but use a Jackson MappingJacksonValue wrapper
+instead. This gives us the flexibility to supply a different view based on the
+version.
+
+
+The getOrderView method simply looks up a view class based on the version or
+returns the default Version2 view.
+
+
+Now we set the view, let’s see how the backwards compatibility is handled. This
+is handled in the OrderSerializer class which is a standard Jackson serializer:
+
+
+
+public class OrderSerializer extends JsonSerializer<Order> {
+    private static final BigDecimal HUNDRED = new BigDecimal(100);
+    @Override
+    public void serialize(Order order,
+        JsonGenerator jsonGenerator,
+        SerializerProvider serializerProvider) throws IOException {
+
+        jsonGenerator.writeStartObject();
+
+        jsonGenerator.writeNumberField("id",
+            order.getId());
+        jsonGenerator.writeStringField("customerFirstName",
+            order.getCustomerFirstName());
+
+        if(serializerProvider.getActiveView() == View.Version1.class) {
+            jsonGenerator.writeStringField("customerLsatName",
+                order.getCustomerLastName());
+            jsonGenerator.writeNumberField("orderTotal",
+                order.getOrderTotal()
+                    .multiply(HUNDRED)
+                    .longValue());
+        }
+        else {
+            jsonGenerator.writeStringField("customerLastName",
+                order.getCustomerLastName());
+            jsonGenerator.writeNumberField("orderTotal",
+                order.getOrderTotal());
+        }
+
+        jsonGenerator.writeNumberField("timestamp",
+            order.getTimestamp());
+
+
+        serializerProvider.defaultSerializeField("items",
+            order.getItems(), jsonGenerator);
+
+        jsonGenerator.writeEndObject();
+    }
+}
+
+
+
+The reason I’ve used a serializer instead of just using the standard View
+functionality is because it can’t handle serializing a property under a different
+name very well.
+
+
+As you can see the view is supplied to the serializer through the
+serializerProvider.getActiveView() method and you can perform your compatibility
+logic based on this. The downside is that you have to do a lot of manual work.
+
+
+
+
+
+Adapter based versioning
+
+
+A method that is in my opinion a bit more elegant is the application of the
+Adapter design pattern. We take advantage of the loosely coupled nature of
+μServices and, based on the protocol version, just return a completely
+different object. In this approach we will also use the X-Protocol-Version header
+supplied by the client.
+
+
+So let’s take a look at the second route:
+
+
+
+@RequestMapping(value = "/method2/{id}", method = RequestMethod.GET)
+public MappingJacksonValue getMethod2(@PathVariable int id) {
+    return adapt(find(id));
+}
+
+private MappingJacksonValue adapt(Order order) {
+    return adapterMap
+            .getOrDefault(getProtocolVersion(), MappingJacksonValue::new)
+            .apply(order);
+}
+
+
+
+The controller passes the found Order to an adapt method that looks up the
+mapping function (yay for Java 8!) and applies it to an order. As you have seen
+in the constructor for version 1 it wraps the Order in an OrderV1 object that
+then gets serialized by Jackson into the output. It looks like this:
+
+
+
+public class OrderV1 {
+    private static final BigDecimal HUNDRED = new BigDecimal(100);
+
+    private Order order;
+
+    public OrderV1(Order order) {
+        this.order = order;
+    }
+
+    public String getCustomerFirstName() {
+        return order.getCustomerFirstName();
+    }
+
+    @JsonProperty("customerLsatName")
+    public String getCustomerLastName() {
+        return order.getCustomerLastName();
+    }
+
+    public long getOrderTotal() {
+        return order.getOrderTotal().multiply(HUNDRED).longValue();
+    }
+
+    public long getTimeStamp() {
+        return order.getTimestamp();
+    }
+
+    public List<Order.Item> getItems() {
+        return order.getItems();
+    }
+}
+
+
+
+This is a typical adapter: it doesn’t contain any data itself; it just 'adapts'
+the new version to an old interface. This way all the important logic is still
+in the Order class and only 'adapter logic' is contained in the adapter.
+
+
+What I like about this solution is that it is clear and easy to read, doesn’t
+require a lot of code (keep in mind you only need adapters for classes that 'break'
+between versions) and is also easy to adapt (heh) to different serialization
+methods. This mechanism can easily be applied to for example Protobuf
+serialization and / or services communicating with for example Kafka queues.
+
+
+
+
+Conclusion
+
+
+I’ve shown a few approaches in this blog post and each of these has their pro’s
+and con’s. The important lesson however is that versioning should be part of your
+architecture and not just some kind of afterthought. Just for external API’s it’s
+already important but with the fine mesh of interconnected services you see in
+a μService architecture. It’s a must to decide on a strategy.
+
+
+And no matter which strategy you choose you have to make sure that you always
+clearly communicate (in the URL, the name of your Kafka topic or a header) what
+the expected protocol version is. Without it it is impossible to route, impossible
+to write adapters and impossible to even know which versions are 'out there' in
+the wild.
+
+
+I hope you enjoyed this post as much as I enjoyed writing it. Feel free to play
+around with the example
+and please let me know if you have comments or questions!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Copyright © Niels Dommerholt - Baked With JBake - Template Clean Blog
+
+
+
+
+
+
+
+
+
+
+
+
+
+

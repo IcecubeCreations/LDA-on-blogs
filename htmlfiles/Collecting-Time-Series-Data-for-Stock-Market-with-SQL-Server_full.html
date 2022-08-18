@@ -1,0 +1,1975 @@
+
+<!DOCTYPE html>
+<html class="no-js" lang="en">
+<head>
+<meta http-equiv="Content-Language" content="en-us" />
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252" />
+
+<link rel="SHORTCUT ICON" href="/favicon.ico" />
+<meta content="width=device-width, initial-scale=1.0" name="viewport" />
+<title>Collecting Time Series Data for Stock Market with SQL Server</title>
+<meta name="description" content="Collecting stock symbol data over multiple years can allow you do to time series analysis on stock prices.  In this tip we look at how to download stock prices for all stocks over a set period of time and load the data into SQL Server for analysis. " />
+<link rel="canonical" href="https://www.mssqltips.com/sqlservertip/6233/collecting-time-series-data-for-stock-market-with-sql-server/" />
+<link rel="stylesheet" href="/css/foundation-app-combined-min.css">
+<script>/*! loadCSS. [c]2017 Filament Group, Inc. MIT License */!function(t){"use strict";t.loadCSS||(t.loadCSS=function(){});var e=loadCSS.relpreload={};if(e.support=function(){var e;try{e=t.document.createElement("link").relList.supports("preload")}catch(t){e=!1}return function(){return e}}(),e.bindMediaToggle=function(t){var e=t.media||"all";function a(){t.addEventListener?t.removeEventListener("load",a):t.attachEvent&&t.detachEvent("onload",a),t.setAttribute("onload",null),t.media=e}t.addEventListener?t.addEventListener("load",a):t.attachEvent&&t.attachEvent("onload",a),setTimeout(function(){t.rel="stylesheet",t.media="only x"}),setTimeout(a,3e3)},e.poly=function(){if(!e.support())for(var a=t.document.getElementsByTagName("link"),n=0;n<a.length;n++){var o=a[n];"preload"!==o.rel||"style"!==o.getAttribute("as")||o.getAttribute("data-loadcss")||(o.setAttribute("data-loadcss",!0),e.bindMediaToggle(o))}},!e.support()){e.poly();var a=t.setInterval(e.poly,500);t.addEventListener?t.addEventListener("load",function(){e.poly(),t.clearInterval(a)}):t.attachEvent&&t.attachEvent("onload",function(){e.poly(),t.clearInterval(a)})}"undefined"!=typeof exports?exports.loadCSS=loadCSS:t.loadCSS=loadCSS}("undefined"!=typeof global?global:this);</script>
+<script type="application/ld+json">
+{
+  "@context": "http://schema.org",
+  "@type": "NewsArticle",
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://www.mssqltips.com/sqlservertip/6233/collecting-time-series-data-for-stock-market-with-sql-server/"
+  },
+  "headline": "Collecting Time Series Data for Stock Market with SQL Server",
+  "image": [
+  
+    "https://www.mssqltips.com/images_newsletter/6233_NewsletterImage.png"
+  
+   ],  
+  "datePublished": "2020-02-10T00:00:00+05:00",
+  "dateModified": "2020-02-10T00:00:00+05:00",
+  "author": {
+    "@type": "Person",
+    "name": "Rick Dobson"
+  },
+   "publisher": {
+    "@type": "Organization",
+    "name": "MSSQLTips",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://www.mssqltips.com/images/mslogo_113x60.png"
+    }
+  },
+  "description": "Collecting stock symbol data over multiple years can allow you do to time series analysis on stock prices.  In this tip we look at how to download stock prices for all stocks over a set period of time and load the data into SQL Server for analysis. "
+}
+</script>
+<meta property="og:url" content="https://www.mssqltips.com/sqlservertip/6233/collecting-time-series-data-for-stock-market-with-sql-server/" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Collecting Time Series Data for Stock Market with SQL Server" />
+<meta property="og:description" content="Collecting stock symbol data over multiple years can allow you do to time series analysis on stock prices.  In this tip we look at how to download stock prices for all stocks over a set period of time and load the data into SQL Server for analysis. " />
+<meta property="og:image" content="https://www.mssqltips.com/images_newsletter/6233_NewsletterImage.png" />
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@mssqltips">
+<meta name="twitter:creator" content="@mssqltips">
+<meta name="twitter:title" content="Collecting Time Series Data for Stock Market with SQL Server">
+<meta name="twitter:description" content="Collecting stock symbol data over multiple years can allow you do to time series analysis on stock prices.  In this tip we look at how to download stock prices for all stocks over a set period of time and load the data into SQL Server for analysis. ">
+<meta name="twitter:image" content="https://www.mssqltips.com/images_newsletter/6233_NewsletterImage.png">
+<script>
+
+var head = document.getElementsByTagName('head')[0];
+var js = document.createElement("script");
+
+js.type = "text/javascript";
+
+if (screen.width > 749)
+{
+    js.src = "https://securepubads.g.doubleclick.net/tag/js/gpt.js";
+}
+head.appendChild(js);
+
+if (screen.width > 749)
+{
+
+!function(a9,a,p,s,t,A,g){if(a[a9])return;function q(c,r){a[a9]._Q.push([c,r])}a[a9]={init:function(){q("i",arguments)},fetchBids:function(){q("f",arguments)},setDisplayBids:function(){},targetingKeys:function(){return[]},_Q:[]};A=p.createElement(s);A.async=!0;A.src=t;g=p.getElementsByTagName(s)[0];g.parentNode.insertBefore(A,g)}("apstag",window,document,"script","//c.amazon-adsystem.com/aax2/apstag.js");
+
+apstag.init({
+  pubID: '434bb5e4-3704-4b75-b36c-785a444462bd',
+  adServer: 'googletag',
+  simplerGPT: true,
+  schain: {
+    complete: 1,
+    ver: '1.0',
+    nodes: [
+      {
+        asi: 'theadengine.com',
+        sid: '01307',
+        hp: 1,
+      },
+    ],
+  },
+});
+
+window.googletag = window.googletag || {cmd: []};
+
+googletag.cmd.push(function() {
+
+   var mapping = googletag.sizeMapping().
+   addSize([100, 100], []).
+   addSize([320, 400], []).
+   addSize([320, 700], []).
+   addSize([750, 200],  [[728, 90],[300,250],[160,300],[300,600],[170,90]]).
+   addSize([1050, 200], [[728, 90],[300,250],[160,300],[300,600],[170,90]]).build();
+
+   var mapping728 = googletag.sizeMapping()
+     .addSize([750, 200], [728, 90])
+     .addSize([0, 0], [])
+     .build();
+   var mapping300 = googletag.sizeMapping()
+     .addSize([640, 400], [300, 250])
+     .addSize([0, 0], [])
+     .build();
+   var mapping600 = googletag.sizeMapping()
+     .addSize([640, 600], [[160,600],[300,600]])
+     .addSize([0, 0], [])
+     .build();
+   var mapping170 = googletag.sizeMapping()
+     .addSize([640, 400], [170,90])
+     .addSize([0, 0], [])
+     .build();   
+   
+   
+ 
+   googletag.defineSlot('/53998264/160x600-Primary', [[160,600],[300,600]], 'div-gpt-ad-1388505177750-0').defineSizeMapping(mapping600).addService(googletag.pubads());  
+   googletag.defineSlot('/53998264/160x600-Secondary', [[160,600],[300,600]], 'div-gpt-ad-1388505177750-1').defineSizeMapping(mapping600).addService(googletag.pubads());  
+   googletag.defineSlot('/53998264/300x250-Primary', [300, 250], 'div-gpt-ad-1388505177750-2').defineSizeMapping(mapping300).addService(googletag.pubads());  
+   googletag.defineSlot('/53998264/300x250-Secondary', [300, 250], 'div-gpt-ad-1388505177750-3').defineSizeMapping(mapping300).addService(googletag.pubads());  
+   googletag.defineSlot('/53998264/728x90-Primary', [728, 90], 'ad-slot-leader').defineSizeMapping(mapping728).addService(googletag.pubads()); 
+   
+   googletag.pubads().setTargeting('SyncFusion','Dev');
+
+   // googletag.pubads().enableLazyLoad();
+   googletag.pubads().disableInitialLoad();
+   googletag.pubads().collapseEmptyDivs();
+   googletag.enableServices();
+});
+
+
+googletag.cmd.push(function(){ 
+  apstag.fetchBids({ 
+  timeout: 2000 }, 
+    function(bids) {
+      apstag.setDisplayBids(); 
+      googletag.pubads().refresh();
+  }); 
+}); 
+
+}
+
+</script>
+</head>
+<body onload="PR.prettyPrint()" style="background-color:white;">
+<a name="top"></a>
+
+<div name="container" id="container">
+<div class="sticky-no">
+<nav class="top-bar" data-topbar role="navigation">
+<ul class="title-area">
+<li class="name">
+<a href="https://www.mssqltips.com/"><img alt="mssqltips logo" src="/images/mslogo_bw_89x45-2.png" width="89" height="45"></a>
+</li>
+
+<li class="toggle-topbar menu-icon"><a href="#"><span>Menu</span></a></li>
+</ul>
+<section class="top-bar-section">
+
+<ul class="right">
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'join'});" href="/get-free-sql-server-tips/?ref=JoinHeaderMenu"><span style="color:red;">Join</span></a></li>
+<li class="has-dropdown hide-for-medium"><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'beginner'});" href="#">Beginner</a>
+<ul class="dropdown">
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'beginner'});" href="/sqlservertip/1948/sql-server/">What is SQL Server?</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'beginner'});" href="/sqlservertutorial/9214/sql-server-101-tutorial-outline-and-overview/">SQL Server 101</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'beginner'});" href="/sqlservertip/6422/sql-server-concepts/">SQL Server Concepts</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'beginner'});" href="/sqlservertip/6429/sql-server-download-quick-links/">SQL Server Download Links</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'beginner'});" href="/sqlservertutorial/3700/my-first-sql-server-business-intelligence-project-tutorial/">My First BI Project </a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'beginner'});" href="/sqlservertip/2677/sql-server-career-planning/">SQL Server Career Plan</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'beginner'});" href="/sql-server-webcasts/">Webinars</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'beginner'});" href="/sql-server-categories/">All Categories</a></li>
+</ul>
+</li>
+<li class="has-dropdown hide-for-medium"><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'tutorial'});" href="#">Tutorials</a>
+<ul class="dropdown">
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'tutorial'});" href="/sqlservertutorial/9214/sql-server-101-tutorial-outline-and-overview/">SQL Server 101</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'tutorial'});" href="/sqlservertutorial/160/sql-server-stored-procedure-tutorial/">Stored Procedures</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'tutorial'});" href="/sqlservertutorial/276/sql-server-performance-tuning-and-monitoring-tutorial/">Performance Tuning</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'tutorial'});" href="/sqlservertutorial/9131/sql-server-index-tutorial-overview/">Indexing</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'tutorial'});" href="/sqlservertutorial/9053/sql-server-integration-services-ssis-2016-tutorial/">Integration Services</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'tutorial'});" href="/sqlservertutorial/9079/sql-server-reporting-services-ssrs-2017-installation-and-configuration-setup/">Reporting Services</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'tutorial'});" href="/sql-server-tutorials/">All Tutorials</a></li> 
+</ul>
+</li>
+<li class="has-dropdown"><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'dba'});" href="#">DBA</a>
+<ul class="dropdown">
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'dba'});" href="/sql-server-tip-category/60/database-administration/">Database Administration</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'dba'});" href="/sqlservertutorial/276/sql-server-performance-tuning-and-monitoring-tutorial/">Performance Tuning</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'dba'});" href="/sql-server-tip-category/54/monitoring/">Monitoring</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'dba'});" href="/sqlservertutorial/9194/sql-server-extended-events-tutorial/">Extended Events</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'dba'});" href="/sql-server-tip-category/81/powershell/">PowerShell</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'dba'});" href="/sql-server-tip-category/27/sql-server-agent/">SQL Server Agent</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'dba'});" href="/sqlservertutorial/9268/sql-server-management-studio-overview-ssms/">Management Studio</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'dba'});" href="/sql-server-tip-category/161/backup/">Backup</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'dba'});" href="/sql-server-tip-category/202/restore/">Restore</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'dba'});" href="/sql-server-tip-category/143/availability-groups/">Availability Groups</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'dba'});" href="/sql-server-webcasts/">Webinars</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'dba'});" href="/sql-server-categories/">All Categories</a></li>
+</ul>
+</li>
+<li class="has-dropdown">
+<a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'tsql'});" href="#">T-SQL</a>
+<ul class="dropdown">
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'tsql'});" href="/sqlservertutorial/160/sql-server-stored-procedure-tutorial/">Stored Procedure Tutorial</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'tsql'});" href="/sqlservertip/1667/sql-server-join-example/">SQL Server Join Example</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'tsql'});" href="/sqlservertip/1958/sql-server-cross-apply-and-outer-apply/">CROSS APPLY + OUTER APPLY</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'tsql'});" href="/sqlservertip/1599/cursor-in-sql-server/">Cursor in SQL Server</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'tsql'});" href="/sqlservertip/2914/rolling-up-multiple-rows-into-a-single-row-and-column-for-sql-server-data/">Rolling up multiple rows</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'tsql'});" href="/sqlservertip/1160/execute-dynamic-sql-commands-in-sql-server/">Execute Dynamic SQL</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'tsql'});" href="/sqlservertip/1145/date-and-time-conversions-using-sql-server/">Date and Time Conversions</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'tsql'});" href="/sqlservertip/2655/format-sql-server-dates-with-format-function/">Format SQL Server Dates</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'tsql'});" href="/sqlservertip/4054/creating-a-date-dimension-or-calendar-table-in-sql-server/">Calendar Table</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'tsql'});" href="/sqlservertip/2509/add-and-subtract-dates-using-dateadd-in-sql-server/">Add and Subtract Dates</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'tsql'});" href="/sqlservertip/5993/sql-server-date-and-time-functions-with-examples/">Date and Time Functions</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'tsql'});" href="/sql-server-webcasts/">Webinars</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'tsql'});" href="/sql-server-categories/">All Categories</a></li>
+</ul>
+</li>
+<li class="has-dropdown hide-for-medium">
+<a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'bi'});" href="#">Analytics</a>
+<ul class="dropdown">
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'bi'});" href="/sql-server-tip-category/211/power-bi/">Power BI</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'bi'});" href="/sqlservertutorial/9053/sql-server-integration-services-ssis-2016-tutorial/">Integration Services</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'bi'});" href="/sql-server-business-intelligence-resources/">Azure Data Factory</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'bi'});" href="/sqlservertutorial/9079/sql-server-reporting-services-ssrs-2017-installation-and-configuration-setup/">Reporting Services</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'bi'});" href="/sqlservertutorial/4200/sql-server-analysis-services-2016-ssas-tutorial/">Analysis Services</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'bi'});" href="/sqlservertutorial/9073/sql-server-2017-and-python-basics/">Python</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'bi'});" href="/sqlservertutorial/9040/getting-started-with-r-in-sql-server/">R</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'bi'});" href="/sql-server-webcasts/">Webinars</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'bi'});" href="/sql-server-categories/">All Categories</a></li>
+</ul>
+</li>
+<li class="has-dropdown hide-for-medium">
+<a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'cloud'});" href="#">Cloud</a>
+<ul class="dropdown">
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'cloud'});" href="/sql-server-tip-category/205/amazon-aws/">AWS</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'cloud'});" href="/sql-server-tip-category/87/azure/">Azure</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'cloud'});" href="/sql-server-categories/">All Categories</a></li>
+</ul>
+</li>
+<li class="has-dropdown hide-for-medium">
+<a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'showcase'});" href="#">Tools</a>
+<ul class="dropdown">
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'showcase'});" href="/sqlservertip/6297/melissa-data-quality-solutions-for-ssis/?ps=melissa">Data Quality Tools</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'showcase'});" href="/sqlservertip/6310/solarwinds-database-performance-analyzer-for-sql-server/?ps=solarwinds-dpa">Database Performance Analyzer</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'showcase'});" href="/sqlservertip/6367/quest-foglight-for-databases/?ps=quest-foglight">Foglight for SQL Server</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'showcase'});" href="/sqlservertip/6845/sql-diagnostic-manager-for-sql-server/?ps=sql-dm">SQL Diagnostic Manager for SQL Server</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'showcase'});" href="/sqlservertip/7159/solarwinds-sentryone-sql-server-performance-tuning/?ps=solarwinds-s1">SolarWinds SQL Sentry</a></li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'showcase'});" href="/sqlservertip/7224/dbi-performance-suite-for-db2-and-sql-server/?ps=dbi-software">DBI Web Performance Suite</a></li>
+</ul>
+</li>
+<li><a onclick="gtag('event', 'click', {'event_category': 'hmenu', 'event_label': 'search'});" href="/search/"><span style="color:red;">Search</span></a></li>
+</ul>
+</section>
+</nav>
+</div>
+<div class="row">
+<div class="entry-content large-9 columns" role="content"> <h1>Collecting Time Series Data for Stock Market with SQL Server</h1>
+<article>
+<p>By: <a href="/sqlserverauthor/57/rick-dobson/" rel="author" title="author profile for Rick Dobson">Rick Dobson</a> &nbsp;&nbsp;|&nbsp;&nbsp; Updated: 2020-02-10 &nbsp;&nbsp;|&nbsp;&nbsp; <a href="#comments" title="read and post comments">Comments (6)</a> &nbsp;&nbsp;|&nbsp;&nbsp; Related: <a href="/sql-server-developer-resources/">More</a> > <a href="/sql-server-tip-category/23/tsql/">TSQL</a></p>
+<br />
+<div style="width: 100%; padding: 4px; background-color: #3A5CAC; text-align: left; line-height: 25px;">
+<a target="_blank" onclick="gtag('event', 'click', {'event_category': 'YBWebinar', 'event_label': 'Click'});" href="https://www.mssqltips.com/sql-server-webcast-signup/?id=906&src=yb" style="color:#FFFFFF;font-size: 18px;font-weight:normal;">&nbsp;&nbsp; Free MSSQLTips webinar - "Efficient Monitoring and Management of SQL Server" (click to register)</a>
+</div>
+<br>
+<h5>Problem</h5>
+<p>Collecting stock symbol data over multiple years can allow you do to time series
+analysis on stock prices.&nbsp; In this tip we look at how to download stock
+prices for all stocks over a set period of time and load the data into SQL
+Server for analysis.</p>
+<div align="center" class="hide-for-print hide-for-small"> <div id="ad-slot-leader" style="width:728px; height:90px; min-width:728px; min-height:90px;"> <script type='text/javascript'> if (screen.width > 749) { googletag.cmd.push(function() {googletag.display('ad-slot-leader'); }); }	</script> </div></div><h5>Solution</h5>
+<p>One of the most common questions among data professionals in the finance industry
+is how do I collect historical price and volume data for a lot of security symbols
+from Yahoo Finance (<a href="https://finance.yahoo.com/" target="_blank">https://finance.yahoo.com/</a>).&nbsp;
+The Yahoo Finance site is interesting because it provides free time series data
+on tens of thousands of securities from multiple markets across the globe.</p>
+<p>This tip demonstrates how to import Yahoo Finance time series data into a SQL
+Server table.</p>
+<ul>
+<li>The data are collected via a script that takes advantage of a special Python
+programmatic interface for collecting time series from Yahoo Finance and other
+internet resources.</li>
+<li>The output from the Python program is a csv file that a T-SQL script imports
+into a SQL Server table.</li>
+</ul>
+<h2>Some sources for collecting ticker symbols</h2>
+<p>Yahoo Finance maintains an immense amount of historical time series data about
+symbols for securities, but it is not straightforward to know all the symbols tracked.&nbsp;
+</p>
+<p>Stackoverflow.com offers several
+<a href="https://stackoverflow.com/questions/5246843/how-to-get-a-complete-list-of-ticker-symbols-from-yahoo-finance" target="_blank">
+alternative answers to the question of how to get a complete list of ticker
+symbols from Yahoo Finance</a> for one or more stock market exchanges.
+</p>
+<p>Investexel.net published
+<a href="http://investexcel.net/all-yahoo-finance-stock-tickers/" target="_blank">
+an Excel workbook file with many security symbols</a>.&nbsp; The
+data for their symbol list was gathered in September 2017.&nbsp; To my knowledge,
+the web site has not updated its free, publicly available list since then.</p>
+<p>The <a href="http://eoddata.com" target="_blank">eoddata company</a>
+provides daily as well as historical end-of-day price and volume data for ticker
+symbols from major exchanges across the globe.&nbsp; This tip demonstrates a process
+for collecting ticker symbols from eoddata, and then downloading time series data
+from Yahoo Finance for the symbols.&nbsp; You will learn how to collect time series
+data for slightly more than 8,000 symbols from the AMEX, NASDAQ, and NYSE exchanges
+tracked by eoddata.</p>
+<p>Here&rsquo;s a screen shot from the eoddata site from which you can download
+its list of ticker symbols for an exchange.&nbsp; The Exchange selection box allows
+you to pick from many international exchanges, including the three exchanges used
+in this tip (NASDAQ Stock Exchange, New York Stock Exchange, and American Stock
+Exchange).&nbsp; Clicking the DOWNLOAD SYMBOL LIST link downloads a txt file with
+Symbol and Description columns for ticker symbols in the selected exchange.</p>
+<div class="imageborder">
+<img loading="lazy" width="900" height="436" alt="eoddata stock data download" src="/tipimages2/6233_collect-time-series-data-sql-server-8000-stocks.001.png" />
+</div>
+<p>Here&rsquo;s an excerpt from the symbol list from within Windows Notepad.&nbsp;
+The preceding screen shot and the one below shows the first ten symbols in alphabetical
+order from the NASDAQ Stock Exchange, but a complete list of symbols for an exchange
+downloads.&nbsp; You must have a standard membership to perform the download, but
+there is no charge for a standard membership.</p>
+<div class="imageborder">
+<img loading="lazy" width="398" height="277" alt="stock data" src="/tipimages2/6233_collect-time-series-data-sql-server-8000-stocks.002.png" />
+</div>
+<p>After I downloaded the results from eoddata, I added another column to indicate
+the exchange from which the symbol was selected.&nbsp; The rows of symbol data were
+arranged alphabetically by symbol within exchange.&nbsp; The downloads available
+with this tip include a csv file named ExhangeSymbols.csv.&nbsp; You can use your
+preferred technique for parsing the download data columns and loading the results
+into a SQL Server table.&nbsp; This tip references a SQL Server table named ExchangeSymbols
+that is populated from the file.&nbsp; Within the context of this tip&rsquo;s code,
+the table resides in the dbo schema of the for_csv_from_python database.</p>
+<p>Here&rsquo;s an excerpt of two sets of ten rows from SQL Server table for the
+downloaded symbols.&nbsp; As of the time the download was performed, there were
+8856 symbols tracked by eoddata across the three exchanges.</p>
+<ul>
+<li>The list of symbols in the screen shot below extends over the first 2000
+rows in the ExchangeSymbols table.&nbsp; The symbols start with AABA and run
+through KZIA on the NASDAQ Stock Exchange. This is the first set of symbols.
+</li>
+<li>The second list of symbols from eoddata (not excerpted below) to match against
+Yahoo Finance time series data start with KZR on the NASDAQ Stock Exchange and
+extend through HCI on the New York Stock exchange.</li>
+<li>The third list of symbols from eoddata (not excerpted below) to match against
+Yahoo Finance starts with HCP on the New York Stock Exchange and extends through
+UWM on the Amex Stock Exchange.</li>
+</ul>
+<div class="imageborder">
+<img loading="lazy" width="534" height="549" alt="stock data" src="/tipimages2/6233_collect-time-series-data-sql-server-8000-stocks.003.png" />
+</div>
+<h2>A Python script to create a csv file with Yahoo Finance historical price and
+volume data</h2>
+<p>This section presents and describes a Python script for extracting historical
+price and volume data from Yahoo Finance for each of the three sets of symbols referenced
+in the previous section.&nbsp; The enhancements in this tip relative to a
+<a href="/sqlservertip/6232/load-time-series-data-with-sql-server/" target="_blank">prior
+tip</a> are primarily to handle
+symbol mismatches between eoddata and Yahoo Finance and inappropriate data in one
+or more columns of time series data values.&nbsp; This section also displays excerpts
+from the script output to clarify how the code interacts with its data sources.
+</p>
+<p>The pull of Yahoo Finance time series data starts on the first trading date in
+2009 and runs through October 7, 2019.&nbsp; Each row of time series data consists
+of a symbol, a trading date, price values (open, high, low, and close), and a volume
+value.&nbsp; The Yahoo Finance data pull across all three symbol sets exceeds 15
+million rows!&nbsp; Yet, the overall process for collecting the time series data
+is relatively quick to run and easy to implement.</p>
+<p>The bullets below walk you through the script.</p>
+<ul>
+<li>The script starts with a couple of comment lines (they start with #).&nbsp;
+In general, each code block within the script is preceded by one or more comment
+lines that summarize the code&rsquo;s functionality.
+<ul>
+<li>The import statement for pandas_datareader.data links to an add-on application
+for Python that is especially convenient for processing tabular data, such
+as that displayed within the preceding screen shot.&nbsp; The datareader
+offers a means of importing data from various pubic web data sources, including
+Yahoo Finance.&nbsp; The import statement assigns an alias of web to the
+datareader.</li>
+<li>The second import statement references the built-in Python datetime
+module, which offers techniques for processing date and time values.
+</li>
+</ul>
+</li>
+<li>The line that starts with "#read ticker symbols&hellip;" is
+a comment line that heads a short code block for reading symbols from a txt
+file.&nbsp; The txt file is populated by symbol column values of one of the
+three sets of symbols from the ExchangeSymbols table.&nbsp; The code updates
+the contents of an object named symbol with the contents of the txt file.
+</li>
+<li>The start variable is specified with a date (1/1/2009) in Gregorian format.
+</li>
+<li>The end variable is also specified with a date (10/7/2019) in Gregorian
+format.</li>
+<li>The path_out and file_out strings specify the destination of the csv file
+prepared by the script.
+<ul>
+<li>The file_out name is the string constant &apos;yahoo_prices_volumes_for_ExchangeSymbols_from_01012009_07102019.csv&rsquo;.
+</li>
+<li>After the csv file is populated by the script, the file name is manually
+re-named for the source set of symbols.&nbsp; For example, the file name
+for the first set of symbols is modified to &lsquo;yahoo_prices_volumes_for_ExchangeSymbols_from_01012009_07102019_aaba_kzia.csv&rsquo;.
+</li>
+</ul>
+</li>
+<li>The script concludes with a while loop that passes through sequential ticker
+values in symbol.
+<ul>
+<li>A try&hellip;except statement is at the outmost code structure within
+the loop.
+<ul>
+<li>Within the try block, the following kinds of operations are attempted.
+<ul>
+<li>A datareader call tries to read a block of time series values
+for the current ticker symbol.</li>
+<li>If the read is successful, the code next inserts the return
+values into a dataframe object.</li>
+<li>Additional processing is performed before the returned values
+are inserted into a csv file.</li>
+<li>The to_csv method for the dataframe populates a csv file with
+the contents of the dataframe.&nbsp; The mode value for the symbol
+ticker determines if there is a header row before the first row
+of time series values for a symbol.
+<ul>
+<li>The header row contains column names for time series data.&nbsp;
+The header row appears immediately before the first row of time
+series data for the first symbol in a set of symbols.</li>
+<li>Other symbols after the first symbol do not display a header
+row before their time series values.</li>
+<li>The path_out+file_out expression defines the path and file
+name for the csv file.</li>
+</ul>
+</li>
+<li>If there is no exception in a try block, a print statement logs
+the success of the try block.</li>
+</ul>
+</li>
+<li>Within the except block, errors from within the try block are handled.
+<ul>
+<li>A failure anywhere within the try block causes the try block
+code not to complete and transfers control to the except block.
+</li>
+<li>The following rules define error processing rules.
+<ul>
+<li>The occurrence of an exception is printed to a log at the
+top of the except clause.</li>
+<li>If the failure to read a block of time series values for
+a ticker symbol is eligible for another read attempt, then this
+special outcome is logged and control transfers to the try block.
+</li>
+<li>If the failure is for the tenth read attempt, then the value
+of j is reset to 0.&nbsp; Control also transfers to the top
+of the while loop for an attempt to read data for the next ticker
+symbol.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>The while loop iterates based on values for two variables named i and
+j.
+<ul>
+<li>These two variables are initialized in two assignment statements
+just before the while statement.</li>
+<li>The i value points at successive sequential ticker values in symbol.&nbsp;
+The value of i is 0 for the first symbol and it ends with a value of
+one less than the number of ticker values in symbol.&nbsp; The value
+of i increases by 1 for each successful try pass through the while loop.
+</li>
+<li>The j value tracks successive tries to save a successfully read
+and processed time series set for a symbol.
+<ul>
+<li>Values of j permitting a retry for a read and output attempt
+for a symbol start at 0 and run through 9.&nbsp; The value of j
+increases by one for each retry.</li>
+<li>A value of 10 for j signifies that no further retries are permitted.&nbsp;
+This value of j results in a reset of j to a value of 0 and an increment
+of i by a value of 1 to point at the next sequential ticker symbol.&nbsp;
+Control passes to the top of the while loop for processing the next
+symbol.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<div class="scrollbox">
+<pre>
+#settings for importing built-in datetime and date libraries
+#and external pandas_datareader libraries
+ 
+import pandas_datareader.data as web
+import datetime
+ 
+#read ticker symbols from a file to python list object named symbol
+symbol = []
+with open(&apos;C:\python_programs\ExchangeSymbols.txt&apos;) as f:
+&nbsp;&nbsp;&nbsp; for line in f:
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; symbol.append(line.strip())
+f.close
+ 
+ 
+#datetime is a Python module
+#datetime.date is a data type within the datetime module
+ 
+#the start expression is for January 1, 2009
+start = datetime.date(2009,1,1)
+ 
+#the end expression is for October 7, 2019
+end = datetime.date(2019,10,7)
+ 
+#set path for csv file
+path_out = &apos;c:/python_programs_output/&apos;
+file_out = &apos;yahoo_prices_volumes_for_ExchangeSymbols_from_01012009_07102019.csv&apos;
+ 
+#loop through tickers in symbol list with i values of 0 through
+#index for last list item
+ 
+#if no historical data returned on any pass, try to get the ticker data again
+#if destination file is open in Excel, close Excel and continue data collection
+#quit retries to get historical data for a symbol after tenth retry
+ 
+i=0&nbsp; #pointer for symbol
+j=0&nbsp; #count for loop within symbol
+while i&lt;len(symbol):
+&nbsp;&nbsp;&nbsp; try:
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; df = web.DataReader(symbol[i], &apos;yahoo&apos;, start, end)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; df.insert(0,&apos;Symbol&apos;,symbol[i])
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; df = df.drop([&apos;Adj Close&apos;], axis=1)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; print (&quot;from after dr&quot;, i,j, symbol[i])
+ 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if i == 0:
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; df.to_csv(path_out+file_out)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; else:
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; df.to_csv(path_out+file_out,mode = &apos;a&apos;,header=False)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; j=0&nbsp;&nbsp;&nbsp; 
+&nbsp;&nbsp;&nbsp; except:
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; print (&quot;from except&quot;, i,j, symbol[i])
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if j &lt;=9:
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; print(i, symbol[i], j,&quot;Eligible for retry&quot;)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; j = j+1
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; continue
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if j == 10:
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; j=0
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; i=i+1
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; continue
+&nbsp;&nbsp;&nbsp; i=i+1
+</pre>
+</div>
+<p>The next screen shot shows the log for the first thirteen symbols from the first
+set of symbols.&nbsp; This log prints by default in an output window from the IDLE
+application that ships with Python 3.</p>
+<ul>
+<li>Log records for symbols are manually assigned a background color to signify
+the type of outcome for a symbol.
+<ul>
+<li>Green is for successful reads and outputs of time series values in a
+single try.</li>
+<li>Yellow is for rows depicting symbols with more than 1 try to get to
+a successful output of its time series values.</li>
+<li>Red is for rows depicting no successful read and write through ten consecutive
+tries.</li>
+</ul>
+</li>
+<li>The two numbers on each log record denote the value of i followed by the
+value of j.&nbsp; These values indicate the attempts made to retrieve time series
+data from Yahoo Finance for the ticker values in ExchangeSymbols.txt.</li>
+<li>The five symbols from AABA through AAON each had their time series data
+successfully read from Yahoo Finance and copied to a csv file in a single try.
+</li>
+<li>The AAPL and AAWW symbols each had their time series data successfully read
+and copied to a file, but more than 1 try was required for success.</li>
+<li>The ABEOW symbol did not have its data successfully read and copied in any
+of 10 tries.</li>
+<li>Other symbols in the log are not explicitly discussed, but the background
+color for their log records along with the values of i and j indicate how many
+tries were made for each symbol.</li>
+</ul>
+<div class="imageborder">
+<img loading="lazy" width="726" height="915" alt="python script progress" src="/tipimages2/6233_collect-time-series-data-sql-server-8000-stocks.004.png" />
+</div>
+<p>After the conclusion of a run for the preceding Python script for a set of symbols,
+the csv file was renamed manually.&nbsp; The Python script was run for each of the
+three sets of symbols.</p>
+<ul>
+<li>The csv file for the first set of symbols was renamed from yahoo_prices_volumes_for_ExchangeSymbols_from_01012009_07102019.csv
+to yahoo_prices_volumes_for_ExchangeSymbols_from_01012009_07102019_aaba_kzia.csv.
+</li>
+<li>The csv file for the second set of symbols was renamed to yahoo_prices_volumes_for_ExchangeSymbols_from_01012009_07102019_kzr_hci.csv.
+</li>
+<li>The csv file for the third set of symbols was renamed to yahoo_prices_volumes_for_ExchangeSymbols_from_01012009_07102019_hcp_uwm.csv.
+</li>
+</ul>
+<p>The next pair of screen shots shows from a Notepad++ session the first and last
+ten data rows for the csv file created by the preceding Python script for the first
+set of symbols.</p>
+<ul>
+<li>The image for the first ten data rows has a row of column headers immediately
+preceding the first ten data rows.</li>
+<li>The ten data rows in the top screen shot is for the AABA symbol, which is
+the first symbol in the first set of symbols.
+<ul>
+<li>These rows start with the first trading date in 2009, which is Friday
+January 2, 2009.</li>
+<li>Date values progress through successive trading dates; recall that there
+is no trading on weekend dates, such as 2009-01-03 and 2009-01-04.</li>
+</ul>
+</li>
+<li>The ten rows in the bottom screen shot is for the KZIA symbol, which is
+the last symbol in the first set of symbols.&nbsp; These Date values are for
+the last ten trading days in the time series dataset.</li>
+</ul>
+<div class="imageborder">
+<img loading="lazy" width="655" height="392" alt="raw stock data download " src="/tipimages2/6233_collect-time-series-data-sql-server-8000-stocks.005.png" />
+</div>
+<div class="imageborder">
+<img loading="lazy" width="655" height="392" alt="raw stock data download " src="/tipimages2/6233_collect-time-series-data-sql-server-8000-stocks.006.png" />
+</div>
+<p>The csv files for the second and third sets of symbols follow the same layout
+as for the preceding two screen shots.</p>
+<h2>T-SQL script and process for migrating csv file contents to a SQL Server table
+</h2>
+<p>This section describes a two-step process for importing and transforming the
+csv files with price and volume data.</p>
+<ul>
+<li>The first step imports the csv field values into a SQL Server with six columns
+of string values and one column of date values.&nbsp; Using sting input fields
+for selected csv file contents helps to eliminate the possibility of inappropriate
+data for a more narrowly defined data type aborting the input of csv file rows
+to SLQ Server table rows.</li>
+<li>The second step transforms the string values to money and integer values
+except for the symbol field which is natively a string data type.</li>
+</ul>
+<p>The T-SQL code for inputting the csv files for each of the three symbol sets
+appears below.</p>
+<ul>
+<li>First, the script creates two tables for receiving the csv file contents.
+<ul>
+<li>The yahoo_prices_volumes_for_MSSQLTips_nvarchar table declares a string
+data type for all columns except the Date column which has a data type of
+date.</li>
+<li>The yahoo_prices_volumes_for_MSSQLTips table has column data types based
+on the type of data in a column.</li>
+</ul>
+</li>
+<li>Next, the script invokes three steps to convert the csv file contents for
+the first set of symbols to rows in the yahoo_prices_volumes_for_MSSQLTips table.
+<ul>
+<li>First, the rows of the yahoo_prices_volumes_for_MSSQLTips_nvarchar table
+are truncated in preparation for inserting a fresh set of rows.</li>
+<li>Second, a bulk insert statement transfers the contents of the yahoo_prices_volumes_for_ExchangeSymbols_from_01012009_07102019_aaba_kzia.csv
+file to the dbo.yahoo_prices_volumes_for_MSSQLTips_nvarchar
+table.</li>
+<li>Third, the contents of the dbo.yahoo_prices_volumes_for_MSSQLTips_nvarchar
+table are inserted into the dbo.yahoo_prices_volumes_for_MSSQLTips
+table.&nbsp; Notice a cast table transforms the volume contents from the
+yahoo_prices_volumes_for_MSSQLTips_nvarchar table.&nbsp; This transformation
+handles a data glitch in Yahoo Finance where volume column values are typed
+as floating-point numbers instead of integers for the volume values associated
+with some symbols.</li>
+</ul>
+</li>
+<li>The script applies the same three operations as in the preceding step for
+adding csv file rows for the second and third symbol sets to the yahoo_prices_volumes_for_MSSQLTips
+table.</li>
+</ul>
+<div class="scrollbox">
+<pre>
+-- drop table for nvarchar watchlist if it exists
+<span style="color: #0000ff">if</span><span style="color: #808080">(</span><span style="color: #0000ff">select</span><span style="color: #808080">(</span><span style="color: #ff00ff">object_id</span><span style="color: #808080">(</span><span style="color: #ff0000">&apos;dbo.yahoo_prices_volumes_for_MSSQLTips_nvarchar&apos;</span><span style="color: #808080">)))</span> <span style="color: #808080">is</span> <span style="color: #808080">not</span> <span style="color: #808080">null</span>
+<span style="color: #0000ff">drop</span> <span style="color: #0000ff">table</span> dbo<span style="color: #808080">.</span>yahoo_prices_volumes_for_MSSQLTips_nvarchar
+ 
+-- create table for watchlist
+<span style="color: #0000ff">CREATE</span> <span style="color: #0000ff">TABLE</span> dbo<span style="color: #808080">.</span>yahoo_prices_volumes_for_MSSQLTips_nvarchar<span style="color: #808080">(</span>
+   [Date] <span style="color: #0000ff">date</span><span style="color: #808080">,</span>
+   [Symbol] <span style="color: #0000ff">nvarchar</span><span style="color: #808080">(</span>10<span style="color: #808080">),</span>
+   [Open] <span style="color: #0000ff">nvarchar</span><span style="color: #808080">(</span>50<span style="color: #808080">)</span> <span style="color: #808080">NULL,</span>
+   [High] <span style="color: #0000ff">nvarchar</span><span style="color: #808080">(</span>50<span style="color: #808080">)</span> <span style="color: #808080">NULL,</span>
+   [Low] <span style="color: #0000ff">nvarchar</span><span style="color: #808080">(</span>50<span style="color: #808080">)</span> <span style="color: #808080">NULL,</span>
+   [Close] <span style="color: #0000ff">nvarchar</span><span style="color: #808080">(</span>50<span style="color: #808080">)</span> <span style="color: #808080">NULL,</span>
+   [Volume] <span style="color: #0000ff">nvarchar</span><span style="color: #808080">(</span>50<span style="color: #808080">)</span> <span style="color: #808080">NULL</span>
+<span style="color: #808080">)</span> 
+<span style="color: #0000ff">GO</span>
+ 
+-- drop table for data typed watchlist if it exists
+<span style="color: #0000ff">if</span><span style="color: #808080">(</span><span style="color: #0000ff">select</span><span style="color: #808080">(</span><span style="color: #ff00ff">object_id</span><span style="color: #808080">(</span><span style="color: #ff0000">&apos;dbo.yahoo_prices_volumes_for_MSSQLTips&apos;</span><span style="color: #808080">)))</span> <span style="color: #808080">is</span> <span style="color: #808080">not</span> <span style="color: #808080">null</span>
+<span style="color: #0000ff">drop</span> <span style="color: #0000ff">table</span> dbo<span style="color: #808080">.</span>yahoo_prices_volumes_for_MSSQLTips
+<span style="color: #0000ff">CREATE</span> <span style="color: #0000ff">TABLE</span> [dbo]<span style="color: #808080">.</span>[yahoo_prices_volumes_for_MSSQLTips]<span style="color: #808080">(</span>
+   [Date] [date] <span style="color: #808080">NULL,</span>
+   [Symbol] [nvarchar]<span style="color: #808080">(</span>10<span style="color: #808080">)</span> <span style="color: #808080">NULL,</span>
+   [Open] [money] <span style="color: #808080">NULL,</span>
+   [High] [money] <span style="color: #808080">NULL,</span>
+   [Low] [money] <span style="color: #808080">NULL,</span>
+   [Close] [money] <span style="color: #808080">NULL,</span>
+   [Volume] [bigint] <span style="color: #808080">NULL</span>
+<span style="color: #808080">)</span>
+<span style="color: #0000ff">GO</span>
+ 
+---------------------------------------------------------------------------------------------------
+ 
+-- for first symbol set
+ 
+-- migrate csv file to nvarchar watchlist
+<span style="color: #0000ff">truncate</span> <span style="color: #0000ff">table</span> dbo<span style="color: #808080">.</span>yahoo_prices_volumes_for_MSSQLTips_nvarchar
+<span style="color: #0000ff">bulk</span> <span style="color: #0000ff">insert</span> dbo<span style="color: #808080">.</span>yahoo_prices_volumes_for_MSSQLTips_nvarchar
+<span style="color: #0000ff">from</span> <span style="color: #ff0000">&apos;C:\python_programs_output\yahoo_prices_volumes_for_ExchangeSymbols_from_01012009_07102019_aaba_kzia.csv&apos;</span>
+<span style="color: #0000ff">with</span>
+<span style="color: #808080">(</span>
+&nbsp;&nbsp;&nbsp; <span style="color: #0000ff">firstrow</span> <span style="color: #808080">=</span> 2<span style="color: #808080">,</span>
+&nbsp;&nbsp;&nbsp; <span style="color: #0000ff">fieldterminator</span> <span style="color: #808080">=</span> <span style="color: #ff0000">&apos;,&apos;</span><span style="color: #808080">,</span>&nbsp; --CSV field delimiter
+&nbsp;&nbsp;&nbsp; <span style="color: #0000ff">rowterminator</span> <span style="color: #808080">=</span> <span style="color: #ff0000">&apos;\n&apos;</span>
+<span style="color: #808080">)</span>
+ 
+-- insert dbo.yahoo_prices_volumes_for_MSSQLTips_nvarchar into dbo.yahoo_prices_volumes_for_MSSQLTips
+<span style="color: #0000ff">insert</span> <span style="color: #0000ff">into</span> dbo<span style="color: #808080">.</span>yahoo_prices_volumes_for_MSSQLTips
+<span style="color: #0000ff">select</span> 
+   [Date]<span style="color: #808080">,</span>
+   [Symbol]<span style="color: #808080">,</span>
+   [Open]<span style="color: #808080">,</span>
+   [High]<span style="color: #808080">,</span>
+   [Low]<span style="color: #808080">,</span>
+   [Close]<span style="color: #808080">,</span>
+   <span style="color: #ff00ff">cast</span><span style="color: #808080">(</span>[Volume] <span style="color: #0000ff">as</span> <span style="color: #0000ff">float</span><span style="color: #808080">)</span> 
+<span style="color: #0000ff">from</span> dbo<span style="color: #808080">.</span>yahoo_prices_volumes_for_MSSQLTips_nvarchar
+ 
+---------------------------------------------------------------------------------------------------
+ 
+-- for second symbol set
+ 
+-- migrate csv file to nvarchar watchlist
+<span style="color: #0000ff">truncate</span> <span style="color: #0000ff">table</span> dbo<span style="color: #808080">.</span>yahoo_prices_volumes_for_MSSQLTips_nvarchar
+<span style="color: #0000ff">bulk</span> <span style="color: #0000ff">insert</span> dbo<span style="color: #808080">.</span>yahoo_prices_volumes_for_MSSQLTips_nvarchar
+<span style="color: #0000ff">from</span> <span style="color: #ff0000">&apos;C:\python_programs_output\yahoo_prices_volumes_for_ExchangeSymbols_from_01012009_07102019_kzr_hci.csv&apos;</span>
+<span style="color: #0000ff">with</span>
+<span style="color: #808080">(</span>
+&nbsp;&nbsp;&nbsp; <span style="color: #0000ff">firstrow</span> <span style="color: #808080">=</span> 2<span style="color: #808080">,</span>
+&nbsp;&nbsp;&nbsp; <span style="color: #0000ff">fieldterminator</span> <span style="color: #808080">=</span> <span style="color: #ff0000">&apos;,&apos;</span><span style="color: #808080">,</span>&nbsp; --CSV field delimiter
+&nbsp;&nbsp;&nbsp; <span style="color: #0000ff">rowterminator</span> <span style="color: #808080">=</span> <span style="color: #ff0000">&apos;\n&apos;</span>
+<span style="color: #808080">)</span> 
+ 
+--select count(*) from dbo.yahoo_prices_volumes_for_MSSQLTips_nvarchar ;select * from dbo.yahoo_prices_volumes_for_MSSQLTips_nvarchar
+ 
+-- insert dbo.yahoo_prices_volumes_for_MSSQLTips_nvarchar into -- dbo.yahoo_prices_volumes_for_MSSQLTips
+<span style="color: #0000ff">insert</span> <span style="color: #0000ff">into</span> dbo<span style="color: #808080">.</span>yahoo_prices_volumes_for_MSSQLTips
+<span style="color: #0000ff">select</span> 
+   [Date]<span style="color: #808080">,</span>
+   [Symbol]<span style="color: #808080">,</span>
+   [Open]<span style="color: #808080">,</span>
+   [High]<span style="color: #808080">,</span>
+   [Low]<span style="color: #808080">,</span>
+   [Close]<span style="color: #808080">,</span>
+   <span style="color: #ff00ff">cast</span><span style="color: #808080">(</span>[Volume] <span style="color: #0000ff">as</span> <span style="color: #0000ff">float</span><span style="color: #808080">)</span> 
+<span style="color: #0000ff">from</span> dbo<span style="color: #808080">.</span>yahoo_prices_volumes_for_MSSQLTips_nvarchar
+ 
+---------------------------------------------------------------------------------------------------
+ 
+-- for third symbol set
+ 
+-- migrate csv file to nvarchar watchlist
+<span style="color: #0000ff">truncate</span> <span style="color: #0000ff">table</span> dbo<span style="color: #808080">.</span>yahoo_prices_volumes_for_MSSQLTips_nvarchar
+<span style="color: #0000ff">bulk</span> <span style="color: #0000ff">insert</span> dbo<span style="color: #808080">.</span>yahoo_prices_volumes_for_MSSQLTips_nvarchar
+<span style="color: #0000ff">from</span> <span style="color: #ff0000">&apos;C:\python_programs_output\yahoo_prices_volumes_for_ExchangeSymbols_from_01012009_07102019_hcp_uwm.csv&apos;</span>
+<span style="color: #0000ff">with</span>
+<span style="color: #808080">(</span>
+&nbsp;&nbsp;&nbsp; <span style="color: #0000ff">firstrow</span> <span style="color: #808080">=</span> 2<span style="color: #808080">,</span>
+&nbsp;&nbsp;&nbsp; <span style="color: #0000ff">fieldterminator</span> <span style="color: #808080">=</span> <span style="color: #ff0000">&apos;,&apos;</span><span style="color: #808080">,</span>&nbsp; --CSV field delimiter
+&nbsp;&nbsp;&nbsp; <span style="color: #0000ff">rowterminator</span> <span style="color: #808080">=</span> <span style="color: #ff0000">&apos;\n&apos;</span>
+<span style="color: #808080">)</span>
+ 
+-- insert&nbsp; dbo.yahoo_prices_volumes_for_MSSQLTips_nvarchar into dbo.yahoo_prices_volumes_for_MSSQLTips
+<span style="color: #0000ff">insert</span> <span style="color: #0000ff">into</span> dbo<span style="color: #808080">.</span>yahoo_prices_volumes_for_MSSQLTips
+<span style="color: #0000ff">select</span> 
+   [Date]<span style="color: #808080">,</span>
+   [Symbol]<span style="color: #808080">,</span>
+   [Open]<span style="color: #808080">,</span>
+   [High]<span style="color: #808080">,</span>
+   [Low]<span style="color: #808080">,</span>
+   [Close]<span style="color: #808080">,</span>
+   <span style="color: #ff00ff">cast</span><span style="color: #808080">(</span>[Volume] <span style="color: #0000ff">as</span> <span style="color: #0000ff">float</span><span style="color: #808080">)</span> 
+<span style="color: #0000ff">from</span> dbo<span style="color: #808080">.</span>yahoo_prices_volumes_for_MSSQLTips_nvarchar
+</pre>
+</div>
+<h2>Verifying the time series values</h2>
+<p>Future tips will drill down on the data in the yahoo_prices_volumes_for_MSSQLTips
+table within the for_csv_from_python database.&nbsp; However, it may be helpful
+to present in this tip some queries for the table to give you a feel for what was
+downloaded from the Yahoo Finance and eoddata websites in this tip.&nbsp; You will
+generally want to confirm a data load of millions of rows with some validation queries
+that confirm the data you inserted into SQL Server.</p>
+<p>The following screen shot shows three simple queries that explore the downloaded
+data in some basic ways.</p>
+<ul>
+<li>The first query counts the total number of rows in the yahoo_prices_volumes_for_MSSQLTips
+table.&nbsp; As you can see, over 15 million rows were downloaded from Yahoo
+Finance.</li>
+<li>The second query counts the number of distinct symbols in the downloaded
+data.&nbsp; Just 8,089 distinct symbols are in the table.&nbsp; As you will
+learn in subsequent tips, not all symbols have the same number of data rows.&nbsp;
+This results from some symbols being listed on an exchange before others and
+from not all symbols trading on each trade date after they initially traded.
+</li>
+<li>The third query counts the number of distinct dates in the table.&nbsp;
+Not all dates from 1/1/2009 through 10/7/2019 are in the table.&nbsp; For example,
+securities do not trade on weekend days as well as around ten holidays per year.
+</li>
+</ul>
+<div class="imageborder">
+<img loading="lazy" width="688" height="734" alt="stock data query results" src="/tipimages2/6233_collect-time-series-data-sql-server-8000-stocks.007.png" />
+</div>
+<p>The following screen shot shows of an excerpt of the first 13 symbols in alphabetical
+order from the downloaded ExchangeSymbols table from the eoddata site.&nbsp; As
+you can see, the table contains 8,856 symbols from three different exchanges (NYSE,
+AMEX, and NASDAQ).</p>
+<div class="imageborder">
+<img loading="lazy" width="666" height="757" alt="stock data query results" src="/tipimages2/6233_collect-time-series-data-sql-server-8000-stocks.008.png" />
+</div>
+<p>The next screen shot shows a query and an excerpt of the first thirteen rows
+from its results set.&nbsp; This query returns the eoddata symbols (ExchangeSymbols)
+that are also in Yahoo Finance (yahoo_prices_volumes_for_MSSQLTips).&nbsp; Notice
+that the total count of rows is 8,089; this value matches the result from the initial
+set of three queries with the title of count_of_total_returned_distinct_symbols.
+</p>
+<div class="imageborder">
+<img loading="lazy" width="676" height="769" alt="stock data query results" src="/tipimages2/6233_collect-time-series-data-sql-server-8000-stocks.009.png" />
+</div>
+<p>The last screen shot in this tip shows another query and an excerpt of the first
+thirteen rows from its results set.&nbsp; This query returns the eoddata symbols
+that do not match any symbols in the Yahoo Finance web site interface for Python.&nbsp;
+There are 767 total rows in the results set.&nbsp; The sum of 767 rows from the
+following query and 8,089 rows from the preceding query matches the total number
+of symbols returned for the three exchanges from the eoddata web site as of the
+time this tip was prepared.</p>
+<div class="imageborder">
+<img loading="lazy" width="661" height="752" alt="stock data query results" src="/tipimages2/6233_collect-time-series-data-sql-server-8000-stocks.010.png" />
+</div>
+<h5>Next Steps</h5>
+<p>You can try out the code examples for this tip.&nbsp; All the referenced scripts
+along with a csv file having all the symbols referenced from eoddata are available
+in <a href="/tipimages2/6233_Scripts.zip" target="_blank">this tip&rsquo;s download file</a>.</p>
+<ul>
+<li>Try to duplicate the results in this tip with the same symbols as in this
+tip.</li>
+<li>If you are not interested in three major US exchanges, try using symbols
+from other exchanges available from eoddata.</li>
+<li>You can also try to use the approach described here for security data to
+other kinds of data, such as readings from weather stations, or your company&rsquo;s
+internal sales and production data by product over time.</li>
+<li>Finally, leave a comment about your success in adapting this tip for your
+business as well as any related issues you want covered in future tips.</li>
+</ul>
+<br /><br />
+<div style="width:95%;">
+<script src="https://fast.wistia.com/embed/medias/fbvlltguct.jsonp" async></script><script src="https://fast.wistia.com/assets/external/E-v1.js" async></script><div class="wistia_responsive_padding" style="padding:56.25% 0 0 0;position:relative;"><div class="wistia_responsive_wrapper" style="height:100%;left:0;position:absolute;top:0;width:100%;"><div class="wistia_embed wistia_async_fbvlltguct videoFoam=true" style="height:100%;position:relative;width:100%"><div class="wistia_swatch" style="height:100%;left:0;opacity:0;overflow:hidden;position:absolute;top:0;transition:opacity 200ms;width:100%;"><img src="https://fast.wistia.com/embed/medias/fbvlltguct/swatch" style="filter:blur(5px);height:100%;object-fit:contain;width:100%;" alt="" aria-hidden="true" onload="this.parentNode.style.opacity=1;" /></div></div></div></div>
+<br>
+<p style="text-align:center;"><a onclick="gtag('event', 'download', {'event_category': 'SolarWinds', 'event_label': 'ProdCommercial'});" href="https://www.solarwinds.com/database-insights-sql-server/registration?CMP=SYN-VID-MSSQL-SW_WW_X_RR_FLT_CQ_EN_DISSQL_SW-DISQL-X_X_X_VID_X-X" target="_blank">Get Started Now - Click here to get your free 14 day trial of SolarWinds Database Insights</a>
+<br>
+</div>
+<div class="row">
+<div class="large-6 medium-6 small-12 columns">
+<div style="width:100%; background-color:#B00000;">
+<h2 style="text-align:center; color:white;">Related Articles</h2>
+</div>
+<div style="line-height:120%;font-size:85%;padding-left:5px;">
+<a onclick="gtag('event', '6233', {'event_category': 'Related', 'event_label': '1103'});" href="/sqlservertip/1103/delete-duplicate-rows-with-no-primary-key-on-a-sql-server-table/">Delete duplicate rows with no primary key on a SQL Server table</a><br><br>
+</div>
+<div style="line-height:120%;font-size:85%;padding-left:5px;">
+<a onclick="gtag('event', '6233', {'event_category': 'Related', 'event_label': '1547'});" href="/sqlservertip/1547/calculating-mathematical-values-in-sql-server/">Calculating Mathematical Values in SQL Server</a><br><br>
+</div>
+<div style="line-height:120%;font-size:85%;padding-left:5px;">
+<a onclick="gtag('event', '6233', {'event_category': 'Related', 'event_label': '1599'});" href="/sqlservertip/1599/cursor-in-sql-server/">SQL Server Cursor Example</a><br><br>
+</div>
+<div style="line-height:120%;font-size:85%;padding-left:5px;">
+<a onclick="gtag('event', '6233', {'event_category': 'Related', 'event_label': '1704'});" href="/sqlservertip/1704/using-merge-in-sql-server-to-insert-update-and-delete-at-the-same-time/">Using MERGE in SQL Server to insert, update and delete at the same time</a><br><br>
+</div>
+<div style="line-height:120%;font-size:85%;padding-left:5px;">
+<a onclick="gtag('event', '6233', {'event_category': 'Related', 'event_label': '2914'});" href="/sqlservertip/2914/rolling-up-multiple-rows-into-a-single-row-and-column-for-sql-server-data/">Rolling up multiple rows into a single row and column for SQL Server data</a><br><br>
+</div>
+<div style="line-height:120%;font-size:85%;padding-left:5px;">
+<a onclick="gtag('event', '6233', {'event_category': 'Related', 'event_label': '4067'});" href="/sqlservertip/4067/find-max-value-from-multiple-columns-in-a-sql-server-table/">Find MAX value from multiple columns in a SQL Server table</a><br><br>
+</div>
+<div style="line-height:120%;font-size:85%;padding-left:5px;">
+<a onclick="gtag('event', '6233', {'event_category': 'Related', 'event_label': '4640'});" href="/sqlservertip/4640/create-or-alter-statement-in-sql-server/">CREATE OR ALTER statement in SQL Server</a><br><br>
+</div>
+<div style="line-height:120%;font-size:85%;padding-left:5px;">
+<a onclick="gtag('event', '6233', {'event_category': 'Related', 'event_label': '5118'});" href="/sqlservertip/5118/sql-server-cte-vs-temp-table-vs-table-variable-performance-test/">SQL Server CTE vs Temp Table vs Table Variable Performance Test</a><br><br>
+</div>
+<div style="line-height:120%;font-size:85%;padding-left:5px;">
+<a onclick="gtag('event', '6233', {'event_category': 'Related', 'event_label': '6013'});" href="/sqlservertip/6013/sql-server-in-vs-exists/">SQL Server IN vs EXISTS</a><br><br>
+</div>
+<div style="line-height:120%;font-size:85%;padding-left:5px;">
+<a onclick="gtag('event', '6233', {'event_category': 'Related', 'event_label': '6091'});" href="/sqlservertip/6091/how-to-use-rowcount-in-sql-server/">How to use @@ROWCOUNT in SQL Server</a><br><br>
+</div>
+<div style="line-height:120%;font-size:85%;padding-left:5px;">
+<a onclick="gtag('event', '6233', {'event_category': 'Related', 'event_label': '6148'});" href="/sqlservertip/6148/sql-server-loop-through-table-rows-without-cursor/">SQL Server Loop through Table Rows without Cursor</a><br><br>
+</div>
+<div style="line-height:120%;font-size:85%;padding-left:5px;">
+<a onclick="gtag('event', '6233', {'event_category': 'Related', 'event_label': '6321'});" href="/sqlservertip/6321/split-delimited-string-into-columns-in-sql-server-with-parsename/">Split Delimited String into Columns in SQL Server with PARSENAME</a><br><br>
+</div>
+<div style="line-height:120%;font-size:85%;padding-left:5px;">
+<a onclick="gtag('event', '6233', {'event_category': 'Related', 'event_label': '6509'});" href="/sqlservertip/6509/sql-server-substring/">SQL Server SUBSTRING Examples</a><br><br>
+</div>
+<div style="line-height:120%;font-size:85%;padding-left:5px;">
+<a onclick="gtag('event', '6233', {'event_category': 'Related', 'event_label': '6769'});" href="/sqlservertip/6769/sql-server-drop-table-if-exists/">SQL Server DROP TABLE IF EXISTS Examples</a><br><br>
+</div>
+<div style="line-height:120%;font-size:85%;padding-left:5px;">
+<a onclick="gtag('event', '6233', {'event_category': 'Related', 'event_label': '6798'});" href="/sqlservertip/6798/drop-all-tables-sql-server/">Drop All Tables in a SQL Server Database</a><br><br>
+</div>
+<div style="line-height:120%;font-size:85%;padding-left:5px;">
+<a onclick="gtag('event', '6233', {'event_category': 'Related', 'event_label': '6810'});" href="/sqlservertip/6810/sql-select-distinct-examples/">SQL SELECT DISTINCT Examples</a><br><br>
+</div>
+<div style="line-height:120%;font-size:85%;padding-left:5px;">
+<a onclick="gtag('event', '6233', {'event_category': 'Related', 'event_label': '6819'});" href="/sqlservertip/6819/case-statement-in-sql-examples/">SQL Server T-SQL CASE Statement Examples</a><br><br>
+</div>
+<div style="line-height:120%;font-size:85%;padding-left:5px;">
+<a onclick="gtag('event', '6233', {'event_category': 'Related', 'event_label': '6904'});" href="/sqlservertip/6904/sql-not-in-operator/">SQL NOT IN Operator</a><br><br>
+</div>
+<div style="line-height:120%;font-size:85%;padding-left:5px;">
+<a onclick="gtag('event', '6233', {'event_category': 'Related', 'event_label': '6955'});" href="/sqlservertip/6955/learning-sql-group-by-clause/">Learning the SQL GROUP BY Clause</a><br><br>
+</div>
+<div style="line-height:120%;font-size:85%;padding-left:5px;">
+<a onclick="gtag('event', '6233', {'event_category': 'Related', 'event_label': '6971'});" href="/sqlservertip/6971/sql-cast-sql-convert-function/">Learn how to convert data with SQL CAST and SQL CONVERT</a><br><br>
+</div>
+</div>
+<div class="large-6 medium-6 small-12 columns">
+<div style="width:100%; background-color:#B00000;">
+<h2 style="text-align:center; color:white;">Popular Articles</h2>
+</div>
+<div style="line-height:120%;font-size:85%;padding-left:5px;">
+<a onclick="gtag('event', '6233', {'event_category': 'Popular', 'event_label': '1145'});" href="/sqlservertip/1145/date-and-time-conversions-using-sql-server/">Date and Time Conversions Using SQL Server</a><br><br>
+</div>
+<div style="line-height:120%;font-size:85%;padding-left:5px;">
+<a onclick="gtag('event', '6233', {'event_category': 'Popular', 'event_label': '2655'});" href="/sqlservertip/2655/format-sql-server-dates-with-format-function/">Format SQL Server Dates with FORMAT Function</a><br><br>
+</div>
+<div style="line-height:120%;font-size:85%;padding-left:5px;">
+<a onclick="gtag('event', '6233', {'event_category': 'Popular', 'event_label': '1958'});" href="/sqlservertip/1958/sql-server-cross-apply-and-outer-apply/">SQL Server CROSS APPLY and OUTER APPLY</a><br><br>
+</div>
+<div style="line-height:120%;font-size:85%;padding-left:5px;">
+<a onclick="gtag('event', '6233', {'event_category': 'Popular', 'event_label': '1599'});" href="/sqlservertip/1599/cursor-in-sql-server/">SQL Server Cursor Example</a><br><br>
+</div>
+<div style="line-height:120%;font-size:85%;padding-left:5px;">
+<a onclick="gtag('event', '6233', {'event_category': 'Popular', 'event_label': '6769'});" href="/sqlservertip/6769/sql-server-drop-table-if-exists/">SQL Server DROP TABLE IF EXISTS Examples</a><br><br>
+</div>
+<div style="line-height:120%;font-size:85%;padding-left:5px;">
+<a onclick="gtag('event', '6233', {'event_category': 'Popular', 'event_label': '2914'});" href="/sqlservertip/2914/rolling-up-multiple-rows-into-a-single-row-and-column-for-sql-server-data/">Rolling up multiple rows into a single row and column for SQL Server data</a><br><br>
+</div>
+<div style="line-height:120%;font-size:85%;padding-left:5px;">
+<a onclick="gtag('event', '6233', {'event_category': 'Popular', 'event_label': '6904'});" href="/sqlservertip/6904/sql-not-in-operator/">SQL NOT IN Operator</a><br><br>
+</div>
+<div style="line-height:120%;font-size:85%;padding-left:5px;">
+<a onclick="gtag('event', '6233', {'event_category': 'Popular', 'event_label': '1140'});" href="/sqlservertip/1140/how-to-tell-what-sql-server-version-you-are-running/">How to tell what SQL Server versions you are running</a><br><br>
+</div>
+<div style="line-height:120%;font-size:85%;padding-left:5px;">
+<a onclick="gtag('event', '6233', {'event_category': 'Popular', 'event_label': '2509'});" href="/sqlservertip/2509/add-and-subtract-dates-using-dateadd-in-sql-server/">Add and Subtract Dates using DATEADD in SQL Server</a><br><br>
+</div>
+<div style="line-height:120%;font-size:85%;padding-left:5px;">
+<a onclick="gtag('event', '6233', {'event_category': 'Popular', 'event_label': '6452'});" href="/sqlservertip/6452/sql-convert-date-to-yyyymmdd/">SQL Convert Date to YYYYMMDD</a><br><br>
+</div>
+<div style="line-height:120%;font-size:85%;padding-left:5px;">
+<a onclick="gtag('event', '6233', {'event_category': 'Popular', 'event_label': '6148'});" href="/sqlservertip/6148/sql-server-loop-through-table-rows-without-cursor/">SQL Server Loop through Table Rows without Cursor</a><br><br>
+</div>
+<div style="line-height:120%;font-size:85%;padding-left:5px;">
+<a onclick="gtag('event', '6233', {'event_category': 'Popular', 'event_label': '2340'});" href="/sqlservertip/2340/resolving-could-not-open-a-connection-to-sql-server-errors/">Resolving could not open a connection to SQL Server errors</a><br><br>
+</div>
+<div style="line-height:120%;font-size:85%;padding-left:5px;">
+<a onclick="gtag('event', '6233', {'event_category': 'Popular', 'event_label': '6817'});" href="/sqlservertip/6817/sql-current-date/">How to Get Current Date in SQL Server</a><br><br>
+</div>
+<div style="line-height:120%;font-size:85%;padding-left:5px;">
+<a onclick="gtag('event', '6233', {'event_category': 'Popular', 'event_label': '2537'});" href="/sqlservertip/2537/sql-server-row-count-for-all-tables-in-a-database/">SQL Server Row Count for all Tables in a Database</a><br><br>
+</div>
+<div style="line-height:120%;font-size:85%;padding-left:5px;">
+<a onclick="gtag('event', '6233', {'event_category': 'Popular', 'event_label': '1704'});" href="/sqlservertip/1704/using-merge-in-sql-server-to-insert-update-and-delete-at-the-same-time/">Using MERGE in SQL Server to insert, update and delete at the same time</a><br><br>
+</div>
+<div style="line-height:120%;font-size:85%;padding-left:5px;">
+<a onclick="gtag('event', '6233', {'event_category': 'Popular', 'event_label': '6429'});" href="/sqlservertip/6429/sql-server-download-quick-links/">SQL Server Download Quick Links</a><br><br>
+</div>
+<div style="line-height:120%;font-size:85%;padding-left:5px;">
+<a onclick="gtag('event', '6233', {'event_category': 'Popular', 'event_label': '2985'});" href="/sqlservertip/2985/concatenate-sql-server-columns-into-a-string-with-concat/">Concatenate SQL Server Columns into a String with CONCAT()</a><br><br>
+</div>
+<div style="line-height:120%;font-size:85%;padding-left:5px;">
+<a onclick="gtag('event', '6233', {'event_category': 'Popular', 'event_label': '5460'});" href="/sqlservertip/5460/sql-server-database-stuck-in-restoring-state/">SQL Server Database Stuck in Restoring State</a><br><br>
+</div>
+<div style="line-height:120%;font-size:85%;padding-left:5px;">
+<a onclick="gtag('event', '6233', {'event_category': 'Popular', 'event_label': '1522'});" href="/sqlservertip/1522/searching-and-finding-a-string-value-in-all-columns-in-a-sql-server-table/">Searching and finding a string value in all columns in a SQL Server table</a><br><br>
+</div>
+<div style="line-height:120%;font-size:85%;padding-left:5px;">
+<a onclick="gtag('event', '6233', {'event_category': 'Popular', 'event_label': '2779'});" href="/sqlservertip/2779/ways-to-compare-and-find-differences-for-sql-server-tables-and-data/">Ways to compare and find differences for SQL Server tables and data</a><br><br>
+</div>
+</div>
+</div>
+<br /><br /><br />
+<div class="row">
+<div class="large-6 columns">
+<div align="center" class="hide-for-print"><a href="/download-scripts/" onclick="gtag('event', 'click', {'event_category': 'Scripts', 'event_label': 'BotTip'});" target="_blank"><img loading="lazy" border="0" src="/images/Free-Download_20190509.png" alt="get scripts" width="300" height="150"></a></div>
+<br />
+</div>
+<div class="large-6 columns">
+<div align="center" class="hide-for-print"><a href="/sql-server-tip-category/23/tsql/" onclick="gtag('event', 'click', {'event_category': 'NextTip', 'event_label': 'YellowArrow'});"><img loading="lazy" border="0" src="/images/nav_nexttip_clickhere_rev1.png" alt="next tip button" width="300" height="150"></a></div>
+<br />
+</div>
+</div>
+<br /><br />
+<h5>About the author</h5>
+<div class="row">
+<div class="large-12 columns">
+<a href="/sqlserverauthor/57/rick-dobson/"><img loading="lazy" style="float: left; padding: 0px 10px 0px 0px;" alt="MSSQLTips author Rick Dobson" height="150" src="/images/RickDobson.JPG" width="100" /></a>
+Rick Dobson is a Microsoft Certified Technical Specialist and well accomplished SQL Server and Access author.
+<br /><br /><b><a href="/sqlserverauthor/57/rick-dobson/">View all my tips</a></b>
+</div>
+</div>
+<br /><br />
+Article Last Updated: 2020-02-10
+<a name="comments"></a>
+</article>
+<div class="row">
+</div>
+<div class="hide-for-print">
+<hr>
+<h2>Comments For This Article</h2>
+<button class="button round" data-reveal-id="myModal" data-reveal-ajax="/zurb_comments.asp?id=1x6233">Add Comment</button>
+<div id="myModal" class="reveal-modal" data-reveal aria-labelledby="modalTitle" aria-hidden="true" role="dialog">
+</div>
+<style type="text/css">
+.ForumPostBodyArea
+{
+	width: 100%;
+	vertical-align: top;
+	overflow: auto;
+}
+</style>
+<br /><br /><br />
+<table border="0" width="100%" cellspacing="0" cellpadding="4" style="border: 1px solid #CBDCED; table-layout: fixed;">
+<tr>
+<td width="80%" bgcolor="#E8F3FF">
+<b>Friday, June 12, 2020 - 9:28:54 AM - Rick Dobson</b>
+</td>
+<td style="text-align: right;" bgcolor="#E8F3FF">
+<a title="read the tip" href="#top">Back To Top</a> <small>(85989)</small>
+</td>
+</tr>
+<tr>
+<td colspan="2" class="ForumPostBodyArea">
+<p>Hi Salam,</p>
+<p>Glad to hear that you got the script to work after correcting a configuration glitch.&nbsp; I was thinking that might be your problem because I have been running variations of that Python script for years with different input and output settings.</p>
+<p>Cheers,</p>
+<p>Rick Dobson</p>
+</td>
+</tr>
+</table>
+<br>
+<table border="0" width="100%" cellspacing="0" cellpadding="4" style="border: 1px solid #CBDCED; table-layout: fixed;">
+<tr>
+<td width="80%" bgcolor="#E8F3FF">
+<b>Friday, June 12, 2020 - 8:15:53 AM - Salam</b>
+</td>
+<td style="text-align: right;" bgcolor="#E8F3FF">
+<a title="read the tip" href="#top">Back To Top</a> <small>(85984)</small>
+</td>
+</tr>
+<tr>
+<td colspan="2" class="ForumPostBodyArea">
+<p>Hi Rick,</p>
+<p>I switched to another machine where I had VS 2K19 with Python support and needed to add the path to of python 3.7 to the env variables. Also, when trying to install pandas_datareader, I got an issue</p>
+<p>*** ERROR: Could not install packages due to an Environment Error [WinError 5] Access is denied:&nbsp;</p>
+<p>C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\Python37_64\\Lib\\site-packages\\pytz</p>
+<p>Consider using the `--user` option or check the permissions. *** -</p>
+<p>so I added --user and was able to run the script which worked like a charm</p>
+<p>Thanks for your help</p>
+</td>
+</tr>
+</table>
+<br>
+<table border="0" width="100%" cellspacing="0" cellpadding="4" style="border: 1px solid #CBDCED; table-layout: fixed;">
+<tr>
+<td width="80%" bgcolor="#E8F3FF">
+<b>Tuesday, June 9, 2020 - 4:03:39 PM - Rick Dobson</b>
+</td>
+<td style="text-align: right;" bgcolor="#E8F3FF">
+<a title="read the tip" href="#top">Back To Top</a> <small>(85889)</small>
+</td>
+</tr>
+<tr>
+<td colspan="2" class="ForumPostBodyArea">
+<p>Hi Salam,</p>
+<p>I am not a Python expert either.&nbsp; I figured out how to load Python and get
+this program to work for me.&nbsp; In this message, I change the program to conform
+generally to your changes.&nbsp; I hope that this example helps.&nbsp; If not, I
+suggest you try consulting a Python programming expert for help with Python installation
+or configuration.</p>
+<p>I created a file with the thirteen symbols that you sent me.&nbsp; I saved the
+file in this location: E:\TEMP\CollectingTimeSeriesData.&nbsp; The file's name was
+ExchangeSymbols_short_test_2.txt.&nbsp; It was a simple txt file with one symbol
+per line.</p>
+<p>Next, I modified my Python script to point at the file of symbols; see the modification
+below.&nbsp; Notice particularly, the format is: e:\\temp\CollectingTimeSeriesData\ExchangeSymbols_short_test_2.txt.</p>
+<p>#settings for importing built-in datetime and date libraries</p>
+<p>#and external pandas_datareader libraries</p>
+<p>import pandas_datareader.data as web</p>
+<p>import datetime</p>
+<p>#read ticker symbols from a file to python list object named symbol</p>
+<p>symbol = []</p>
+<p>with open('e:\\temp\CollectingTimeSeriesData\ExchangeSymbols_short_test_2.txt')
+as f:</p>
+<p>&nbsp; &nbsp; for line in f:</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; symbol.append(line.strip())</p>
+<p>f.close</p>
+<p>#datetime is a Python module</p>
+<p>#datetime.date is a data type within the datetime module</p>
+<p>#the start expression is for January 1, 2009</p>
+<p>start = datetime.date(2009,1,1)</p>
+<p>#the end expression is for October 7, 2019</p>
+<p>end = datetime.date(2019,10,7)</p>
+<p>#set path for csv file</p>
+<p>path_out = 'c:/python_programs_output/'</p>
+<p>file_out = 'yahoo_prices_volumes_for_ExchangeSymbols_from_01012009_07102019.csv'</p>
+<p>#loop through tickers in symbol list with i values of 0 through</p>
+<p>#index for last list item</p>
+<p>#if no historical data returned on any pass, try to get the ticker data again</p>
+<p>#if destination file is open in Excel, close Excel and continue data collection</p>
+<p>#quit retries to get historical data for a symbol after tenth retry</p>
+<p>i=0&nbsp; #pointer for symbol</p>
+<p>j=0&nbsp; #count for loop within symbol</p>
+<p>while i&lt;len(symbol):</p>
+<p>&nbsp; &nbsp; try:</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; df = web.DataReader(symbol[i], 'yahoo', start, end)</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; df.insert(0,'Symbol',symbol[i])</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; df = df.drop(['Adj Close'], axis=1)</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; print ("from after dr", i,j, symbol[i])</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;&nbsp;</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; if i == 0:</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; df.to_csv(path_out+file_out)</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; else:</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; df.to_csv(path_out+file_out,mode =
+'a',header=False)</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; j=0&nbsp; &nbsp;&nbsp;</p>
+<p>&nbsp; &nbsp; except:</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; print ("from except", i,j, symbol[i])</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; if j &lt;=9:</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; print(i, symbol[i], j,"Eligible for
+retry")</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; j = j+1</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; continue</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; if j == 10:</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; j=0</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; i=i+1</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; continue</p>
+<p>&nbsp; &nbsp; i=i+1</p>
+<p>Finally, I ran the modified script.&nbsp; I show the log written below.&nbsp;
+It appears to be successful.</p>
+<p>from after dr 0 0 AABA</p>
+<p>from after dr 1 0 AAL</p>
+<p>from after dr 2 0 AAME</p>
+<p>from after dr 3 0 AAOI</p>
+<p>from after dr 4 0 AAON</p>
+<p>from after dr 5 0 AAPL</p>
+<p>from after dr 6 0 AAWW</p>
+<p>from after dr 7 0 AAXJ</p>
+<p>from after dr 8 0 AAXN</p>
+<p>from after dr 9 0 ABCB</p>
+<p>from after dr 10 0 ABDC</p>
+<p>from after dr 11 0 ABEO</p>
+<p>from except 12 0 ABEOW</p>
+<p>12 ABEOW 0 Eligible for retry</p>
+<p>from except 12 1 ABEOW</p>
+<p>12 ABEOW 1 Eligible for retry</p>
+<p>from except 12 2 ABEOW</p>
+<p>12 ABEOW 2 Eligible for retry</p>
+<p>from except 12 3 ABEOW</p>
+<p>12 ABEOW 3 Eligible for retry</p>
+<p>from except 12 4 ABEOW</p>
+<p>12 ABEOW 4 Eligible for retry</p>
+<p>from except 12 5 ABEOW</p>
+<p>12 ABEOW 5 Eligible for retry</p>
+<p>from except 12 6 ABEOW</p>
+<p>12 ABEOW 6 Eligible for retry</p>
+<p>from except 12 7 ABEOW</p>
+<p>12 ABEOW 7 Eligible for retry</p>
+<p>from except 12 8 ABEOW</p>
+<p>12 ABEOW 8 Eligible for retry</p>
+<p>from except 12 9 ABEOW</p>
+<p>12 ABEOW 9 Eligible for retry</p>
+<p>from except 12 10 ABEOW</p>
+<p>I hope this helps.&nbsp; In any event, I am not sure how to help you beyond this
+second reply to you.</p>
+<p>Good fortune in getting a modified version of the Pyhon script to work either
+based on the example in this reply or with some additional modifications that you
+are able to devise on your own.&nbsp; When you do get it going, it would be great
+if you can post your successful modification as a reply to this message.</p>
+<p>Cheers,</p>
+<p>Rick Dobson</p>
+</td>
+</tr>
+</table>
+<br>
+<table border="0" width="100%" cellspacing="0" cellpadding="4" style="border: 1px solid #CBDCED; table-layout: fixed;">
+<tr>
+<td width="80%" bgcolor="#E8F3FF">
+<b>Tuesday, June 9, 2020 - 11:10:36 AM - Salam</b>
+</td>
+<td style="text-align: right;" bgcolor="#E8F3FF">
+<a title="read the tip" href="#top">Back To Top</a> <small>(85877)</small>
+</td>
+</tr>
+<tr>
+<td colspan="2" class="ForumPostBodyArea">
+<p>Rick, I am not sure I understnad what you mean by 3 files distinct. Anyway, I also created a file with 13 symbols as follows</p>
+<p>AABA</p>
+<p>AAL</p>
+<p>AAME</p>
+<p>AAOI</p>
+<p>AAON</p>
+<p>AAPL</p>
+<p>AAWW</p>
+<p>AAXJ</p>
+<p>AAXN</p>
+<p>ABCB</p>
+<p>ABDC</p>
+<p>ABEO</p>
+<p>ABEOW</p>
+<p>Named "ExhangeSymbols13.txt", then updated the python file to use this file but stil&nbsp;</p>
+<p>with open('E:\\temp\\CollectingTimeSeriesData\\ExhangeSymbols13.txt', 'r') as f:</p>
+<p>&nbsp; &nbsp; for line in f:</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; symbol.append(line.strip())</p>
+<p>f.close</p>
+<p>still no record is getting written to output file as you can see</p>
+<p>E:\temp\CollectingTimeSeriesData&gt;python E:\temp\CollectingTimeSeriesData\read_ExchangeSymbols_for_export_via_csv.py</p>
+<p>('from except', 0, 0, 'AABA')</p>
+<p>(0, 'AABA', 0, 'Eligible for retry')</p>
+<p>('from after dr', 0, 1, 'AABA')</p>
+<p>('from except', 0, 1, 'AABA')</p>
+<p>(0, 'AABA', 1, 'Eligible for retry')</p>
+<p>('from after dr', 0, 2, 'AABA')</p>
+<p>('from except', 0, 2, 'AABA')</p>
+<p>(0, 'AABA', 2, 'Eligible for retry')</p>
+<p>('from after dr', 0, 3, 'AABA')</p>
+<p>('from except', 0, 3, 'AABA')</p>
+<p>(0, 'AABA', 3, 'Eligible for retry')</p>
+<p>('from after dr', 0, 4, 'AABA')</p>
+<p>('from except', 0, 4, 'AABA')</p>
+<p>(0, 'AABA', 4, 'Eligible for retry')</p>
+<p>('from after dr', 0, 5, 'AABA')</p>
+<p>('from except', 0, 5, 'AABA')</p>
+<p>(0, 'AABA', 5, 'Eligible for retry')</p>
+<p>('from after dr', 0, 6, 'AABA')</p>
+<p>('from except', 0, 6, 'AABA')</p>
+<p>(0, 'AABA', 6, 'Eligible for retry')</p>
+<p>('from after dr', 0, 7, 'AABA')</p>
+<p>('from except', 0, 7, 'AABA')</p>
+<p>(0, 'AABA', 7, 'Eligible for retry')</p>
+<p>('from after dr', 0, 8, 'AABA')</p>
+<p>('from except', 0, 8, 'AABA')</p>
+<p>(0, 'AABA', 8, 'Eligible for retry')</p>
+<p>('from after dr', 0, 9, 'AABA')</p>
+<p>('from except', 0, 9, 'AABA')</p>
+<p>(0, 'AABA', 9, 'Eligible for retry')</p>
+<p>('from except', 0, 10, 'AABA')</p>
+<p>('from after dr', 1, 0, 'AAL')</p>
+<p>('from except', 1, 0, 'AAL')</p>
+<p>(1, 'AAL', 0, 'Eligible for retry')</p>
+<p>('from after dr', 1, 1, 'AAL')</p>
+<p>('from except', 1, 1, 'AAL')</p>
+<p>(1, 'AAL', 1, 'Eligible for retry')</p>
+<p>('from after dr', 1, 2, 'AAL')</p>
+<p>('from except', 1, 2, 'AAL')</p>
+<p>(1, 'AAL', 2, 'Eligible for retry')</p>
+<p>('from after dr', 1, 3, 'AAL')</p>
+<p>('from except', 1, 3, 'AAL')</p>
+<p>(1, 'AAL', 3, 'Eligible for retry')</p>
+<p>('from after dr', 1, 4, 'AAL')</p>
+<p>('from except', 1, 4, 'AAL')</p>
+<p>(1, 'AAL', 4, 'Eligible for retry')</p>
+<p>('from after dr', 1, 5, 'AAL')</p>
+<p>('from except', 1, 5, 'AAL')</p>
+<p>(1, 'AAL', 5, 'Eligible for retry')</p>
+<p>('from after dr', 1, 6, 'AAL')</p>
+<p>('from except', 1, 6, 'AAL')</p>
+<p>(1, 'AAL', 6, 'Eligible for retry')</p>
+<p>('from after dr', 1, 7, 'AAL')</p>
+<p>('from except', 1, 7, 'AAL')</p>
+<p>(1, 'AAL', 7, 'Eligible for retry')</p>
+<p>('from after dr', 1, 8, 'AAL')</p>
+<p>('from except', 1, 8, 'AAL')</p>
+<p>(1, 'AAL', 8, 'Eligible for retry')</p>
+<p>('from after dr', 1, 9, 'AAL')</p>
+<p>('from except', 1, 9, 'AAL')</p>
+<p>(1, 'AAL', 9, 'Eligible for retry')</p>
+<p>('from after dr', 1, 10, 'AAL')</p>
+<p>('from except', 1, 10, 'AAL')</p>
+<p>('from after dr', 2, 0, 'AAME')</p>
+<p>('from except', 2, 0, 'AAME')</p>
+<p>(2, 'AAME', 0, 'Eligible for retry')</p>
+<p>('from after dr', 2, 1, 'AAME')</p>
+<p>('from except', 2, 1, 'AAME')</p>
+<p>(2, 'AAME', 1, 'Eligible for retry')</p>
+<p>('from after dr', 2, 2, 'AAME')</p>
+<p>('from except', 2, 2, 'AAME')</p>
+<p>(2, 'AAME', 2, 'Eligible for retry')</p>
+<p>('from after dr', 2, 3, 'AAME')</p>
+<p>('from except', 2, 3, 'AAME')</p>
+<p>(2, 'AAME', 3, 'Eligible for retry')</p>
+<p>('from after dr', 2, 4, 'AAME')</p>
+<p>('from except', 2, 4, 'AAME')</p>
+<p>(2, 'AAME', 4, 'Eligible for retry')</p>
+<p>('from after dr', 2, 5, 'AAME')</p>
+<p>('from except', 2, 5, 'AAME')</p>
+<p>(2, 'AAME', 5, 'Eligible for retry')</p>
+<p>('from after dr', 2, 6, 'AAME')</p>
+<p>('from except', 2, 6, 'AAME')</p>
+<p>(2, 'AAME', 6, 'Eligible for retry')</p>
+<p>('from after dr', 2, 7, 'AAME')</p>
+<p>('from except', 2, 7, 'AAME')</p>
+<p>(2, 'AAME', 7, 'Eligible for retry')</p>
+<p>('from after dr', 2, 8, 'AAME')</p>
+<p>('from except', 2, 8, 'AAME')</p>
+<p>(2, 'AAME', 8, 'Eligible for retry')</p>
+<p>('from after dr', 2, 9, 'AAME')</p>
+<p>('from except', 2, 9, 'AAME')</p>
+<p>(2, 'AAME', 9, 'Eligible for retry')</p>
+<p>('from after dr', 2, 10, 'AAME')</p>
+<p>('from except', 2, 10, 'AAME')</p>
+<p>('from after dr', 3, 0, 'AAOI')</p>
+<p>('from except', 3, 0, 'AAOI')</p>
+<p>(3, 'AAOI', 0, 'Eligible for retry')</p>
+<p>('from after dr', 3, 1, 'AAOI')</p>
+<p>('from except', 3, 1, 'AAOI')</p>
+<p>(3, 'AAOI', 1, 'Eligible for retry')</p>
+<p>('from after dr', 3, 2, 'AAOI')</p>
+<p>('from except', 3, 2, 'AAOI')</p>
+<p>(3, 'AAOI', 2, 'Eligible for retry')</p>
+<p>('from after dr', 3, 3, 'AAOI')</p>
+<p>('from except', 3, 3, 'AAOI')</p>
+<p>(3, 'AAOI', 3, 'Eligible for retry')</p>
+<p>('from after dr', 3, 4, 'AAOI')</p>
+<p>('from except', 3, 4, 'AAOI')</p>
+<p>(3, 'AAOI', 4, 'Eligible for retry')</p>
+<p>('from after dr', 3, 5, 'AAOI')</p>
+<p>('from except', 3, 5, 'AAOI')</p>
+<p>(3, 'AAOI', 5, 'Eligible for retry')</p>
+<p>('from after dr', 3, 6, 'AAOI')</p>
+<p>('from except', 3, 6, 'AAOI')</p>
+<p>(3, 'AAOI', 6, 'Eligible for retry')</p>
+<p>('from after dr', 3, 7, 'AAOI')</p>
+<p>('from except', 3, 7, 'AAOI')</p>
+<p>(3, 'AAOI', 7, 'Eligible for retry')</p>
+<p>('from after dr', 3, 8, 'AAOI')</p>
+<p>('from except', 3, 8, 'AAOI')</p>
+<p>(3, 'AAOI', 8, 'Eligible for retry')</p>
+<p>('from after dr', 3, 9, 'AAOI')</p>
+<p>('from except', 3, 9, 'AAOI')</p>
+<p>(3, 'AAOI', 9, 'Eligible for retry')</p>
+<p>('from after dr', 3, 10, 'AAOI')</p>
+<p>('from except', 3, 10, 'AAOI')</p>
+<p>('from after dr', 4, 0, 'AAON')</p>
+<p>('from except', 4, 0, 'AAON')</p>
+<p>(4, 'AAON', 0, 'Eligible for retry')</p>
+<p>('from after dr', 4, 1, 'AAON')</p>
+<p>('from except', 4, 1, 'AAON')</p>
+<p>(4, 'AAON', 1, 'Eligible for retry')</p>
+<p>('from after dr', 4, 2, 'AAON')</p>
+<p>('from except', 4, 2, 'AAON')</p>
+<p>(4, 'AAON', 2, 'Eligible for retry')</p>
+<p>('from after dr', 4, 3, 'AAON')</p>
+<p>('from except', 4, 3, 'AAON')</p>
+<p>(4, 'AAON', 3, 'Eligible for retry')</p>
+<p>('from after dr', 4, 4, 'AAON')</p>
+<p>('from except', 4, 4, 'AAON')</p>
+<p>(4, 'AAON', 4, 'Eligible for retry')</p>
+<p>('from after dr', 4, 5, 'AAON')</p>
+<p>('from except', 4, 5, 'AAON')</p>
+<p>(4, 'AAON', 5, 'Eligible for retry')</p>
+<p>('from after dr', 4, 6, 'AAON')</p>
+<p>('from except', 4, 6, 'AAON')</p>
+<p>(4, 'AAON', 6, 'Eligible for retry')</p>
+<p>('from after dr', 4, 7, 'AAON')</p>
+<p>('from except', 4, 7, 'AAON')</p>
+<p>(4, 'AAON', 7, 'Eligible for retry')</p>
+<p>('from after dr', 4, 8, 'AAON')</p>
+<p>('from except', 4, 8, 'AAON')</p>
+<p>(4, 'AAON', 8, 'Eligible for retry')</p>
+<p>('from after dr', 4, 9, 'AAON')</p>
+<p>('from except', 4, 9, 'AAON')</p>
+<p>(4, 'AAON', 9, 'Eligible for retry')</p>
+<p>('from after dr', 4, 10, 'AAON')</p>
+<p>('from except', 4, 10, 'AAON')</p>
+<p>('from after dr', 5, 0, 'AAPL')</p>
+<p>('from except', 5, 0, 'AAPL')</p>
+<p>(5, 'AAPL', 0, 'Eligible for retry')</p>
+<p>('from after dr', 5, 1, 'AAPL')</p>
+<p>('from except', 5, 1, 'AAPL')</p>
+<p>(5, 'AAPL', 1, 'Eligible for retry')</p>
+<p>('from after dr', 5, 2, 'AAPL')</p>
+<p>('from except', 5, 2, 'AAPL')</p>
+<p>(5, 'AAPL', 2, 'Eligible for retry')</p>
+<p>('from after dr', 5, 3, 'AAPL')</p>
+<p>('from except', 5, 3, 'AAPL')</p>
+<p>(5, 'AAPL', 3, 'Eligible for retry')</p>
+<p>('from after dr', 5, 4, 'AAPL')</p>
+<p>('from except', 5, 4, 'AAPL')</p>
+<p>(5, 'AAPL', 4, 'Eligible for retry')</p>
+<p>('from after dr', 5, 5, 'AAPL')</p>
+<p>('from except', 5, 5, 'AAPL')</p>
+<p>(5, 'AAPL', 5, 'Eligible for retry')</p>
+<p>('from after dr', 5, 6, 'AAPL')</p>
+<p>('from except', 5, 6, 'AAPL')</p>
+<p>(5, 'AAPL', 6, 'Eligible for retry')</p>
+<p>('from after dr', 5, 7, 'AAPL')</p>
+<p>('from except', 5, 7, 'AAPL')</p>
+<p>(5, 'AAPL', 7, 'Eligible for retry')</p>
+<p>('from after dr', 5, 8, 'AAPL')</p>
+<p>('from except', 5, 8, 'AAPL')</p>
+<p>(5, 'AAPL', 8, 'Eligible for retry')</p>
+<p>('from after dr', 5, 9, 'AAPL')</p>
+<p>('from except', 5, 9, 'AAPL')</p>
+<p>(5, 'AAPL', 9, 'Eligible for retry')</p>
+<p>('from after dr', 5, 10, 'AAPL')</p>
+<p>('from except', 5, 10, 'AAPL')</p>
+<p>('from after dr', 6, 0, 'AAWW')</p>
+<p>('from except', 6, 0, 'AAWW')</p>
+<p>(6, 'AAWW', 0, 'Eligible for retry')</p>
+<p>('from after dr', 6, 1, 'AAWW')</p>
+<p>('from except', 6, 1, 'AAWW')</p>
+<p>(6, 'AAWW', 1, 'Eligible for retry')</p>
+<p>('from after dr', 6, 2, 'AAWW')</p>
+<p>('from except', 6, 2, 'AAWW')</p>
+<p>(6, 'AAWW', 2, 'Eligible for retry')</p>
+<p>('from after dr', 6, 3, 'AAWW')</p>
+<p>('from except', 6, 3, 'AAWW')</p>
+<p>(6, 'AAWW', 3, 'Eligible for retry')</p>
+<p>('from after dr', 6, 4, 'AAWW')</p>
+<p>('from except', 6, 4, 'AAWW')</p>
+<p>(6, 'AAWW', 4, 'Eligible for retry')</p>
+<p>('from after dr', 6, 5, 'AAWW')</p>
+<p>('from except', 6, 5, 'AAWW')</p>
+<p>(6, 'AAWW', 5, 'Eligible for retry')</p>
+<p>('from after dr', 6, 6, 'AAWW')</p>
+<p>('from except', 6, 6, 'AAWW')</p>
+<p>(6, 'AAWW', 6, 'Eligible for retry')</p>
+<p>('from after dr', 6, 7, 'AAWW')</p>
+<p>('from except', 6, 7, 'AAWW')</p>
+<p>(6, 'AAWW', 7, 'Eligible for retry')</p>
+<p>('from after dr', 6, 8, 'AAWW')</p>
+<p>('from except', 6, 8, 'AAWW')</p>
+<p>(6, 'AAWW', 8, 'Eligible for retry')</p>
+<p>('from after dr', 6, 9, 'AAWW')</p>
+<p>('from except', 6, 9, 'AAWW')</p>
+<p>(6, 'AAWW', 9, 'Eligible for retry')</p>
+<p>('from after dr', 6, 10, 'AAWW')</p>
+<p>('from except', 6, 10, 'AAWW')</p>
+<p>('from after dr', 7, 0, 'AAXJ')</p>
+<p>('from except', 7, 0, 'AAXJ')</p>
+<p>(7, 'AAXJ', 0, 'Eligible for retry')</p>
+<p>('from after dr', 7, 1, 'AAXJ')</p>
+<p>('from except', 7, 1, 'AAXJ')</p>
+<p>(7, 'AAXJ', 1, 'Eligible for retry')</p>
+<p>('from after dr', 7, 2, 'AAXJ')</p>
+<p>('from except', 7, 2, 'AAXJ')</p>
+<p>(7, 'AAXJ', 2, 'Eligible for retry')</p>
+<p>('from after dr', 7, 3, 'AAXJ')</p>
+<p>('from except', 7, 3, 'AAXJ')</p>
+<p>(7, 'AAXJ', 3, 'Eligible for retry')</p>
+<p>('from after dr', 7, 4, 'AAXJ')</p>
+<p>('from except', 7, 4, 'AAXJ')</p>
+<p>(7, 'AAXJ', 4, 'Eligible for retry')</p>
+<p>('from after dr', 7, 5, 'AAXJ')</p>
+<p>('from except', 7, 5, 'AAXJ')</p>
+<p>(7, 'AAXJ', 5, 'Eligible for retry')</p>
+<p>('from after dr', 7, 6, 'AAXJ')</p>
+<p>('from except', 7, 6, 'AAXJ')</p>
+<p>(7, 'AAXJ', 6, 'Eligible for retry')</p>
+<p>('from after dr', 7, 7, 'AAXJ')</p>
+<p>('from except', 7, 7, 'AAXJ')</p>
+<p>(7, 'AAXJ', 7, 'Eligible for retry')</p>
+<p>('from after dr', 7, 8, 'AAXJ')</p>
+<p>('from except', 7, 8, 'AAXJ')</p>
+<p>(7, 'AAXJ', 8, 'Eligible for retry')</p>
+<p>('from after dr', 7, 9, 'AAXJ')</p>
+<p>('from except', 7, 9, 'AAXJ')</p>
+<p>(7, 'AAXJ', 9, 'Eligible for retry')</p>
+<p>('from after dr', 7, 10, 'AAXJ')</p>
+<p>('from except', 7, 10, 'AAXJ')</p>
+<p>('from after dr', 8, 0, 'AAXN')</p>
+<p>('from except', 8, 0, 'AAXN')</p>
+</td>
+</tr>
+</table>
+<br>
+<table border="0" width="100%" cellspacing="0" cellpadding="4" style="border: 1px solid #CBDCED; table-layout: fixed;">
+<tr>
+<td width="80%" bgcolor="#E8F3FF">
+<b>Monday, June 8, 2020 - 10:47:23 PM - Rick Dobson</b>
+</td>
+<td style="text-align: right;" bgcolor="#E8F3FF">
+<a title="read the tip" href="#top">Back To Top</a> <small>(85859)</small>
+</td>
+</tr>
+<tr>
+<td colspan="2" class="ForumPostBodyArea">
+<p>Hi Salam,</p>
+<p>Thanks for reading the tip and trying to get the code to work.</p>
+<p>You didn't do anything wrong most likely.</p>
+<p>I ended up dividing the list of symbols from eoddata into three distinct sets
+from the source file in the download file.&nbsp; The details for how to create the
+three sets are in the tip.&nbsp; However, only the values in the first column are
+required for the ExchangeSymbols.txt file.</p>
+<p>Here's an excerpt from the first of the three files with just the first thirty
+rows.</p>
+<p>AABA</p>
+<p>AAL</p>
+<p>AAME</p>
+<p>AAOI</p>
+<p>AAON</p>
+<p>AAPL</p>
+<p>AAWW</p>
+<p>AAXJ</p>
+<p>AAXN</p>
+<p>ABCB</p>
+<p>ABDC</p>
+<p>ABEO</p>
+<p>ABEOW</p>
+<p>ABIL</p>
+<p>ABIO</p>
+<p>ABMD</p>
+<p>ABTX</p>
+<p>ABUS</p>
+<p>ACAD</p>
+<p>ACAM</p>
+<p>ACAMU</p>
+<p>ACAMW</p>
+<p>ACBI</p>
+<p>ACER</p>
+<p>ACGL</p>
+<p>ACGLO</p>
+<p>ACGLP</p>
+<p>ACHC</p>
+<p>ACHN</p>
+<p>ACHV</p>
+<p>I just tested the code in the tip with the above 30 symbols.&nbsp; It worked.&nbsp;
+Here's the log file from the Python script.</p>
+<p>from after dr 0 0 AABA</p>
+<p>from after dr 1 0 AAL</p>
+<p>from after dr 2 0 AAME</p>
+<p>from after dr 3 0 AAOI</p>
+<p>from after dr 4 0 AAON</p>
+<p>from after dr 5 0 AAPL</p>
+<p>from after dr 6 0 AAWW</p>
+<p>from after dr 7 0 AAXJ</p>
+<p>from after dr 8 0 AAXN</p>
+<p>from after dr 9 0 ABCB</p>
+<p>from after dr 10 0 ABDC</p>
+<p>from after dr 11 0 ABEO</p>
+<p>from except 12 0 ABEOW</p>
+<p>12 ABEOW 0 Eligible for retry</p>
+<p>from except 12 1 ABEOW</p>
+<p>12 ABEOW 1 Eligible for retry</p>
+<p>from except 12 2 ABEOW</p>
+<p>12 ABEOW 2 Eligible for retry</p>
+<p>from except 12 3 ABEOW</p>
+<p>12 ABEOW 3 Eligible for retry</p>
+<p>from except 12 4 ABEOW</p>
+<p>12 ABEOW 4 Eligible for retry</p>
+<p>from except 12 5 ABEOW</p>
+<p>12 ABEOW 5 Eligible for retry</p>
+<p>from except 12 6 ABEOW</p>
+<p>12 ABEOW 6 Eligible for retry</p>
+<p>from except 12 7 ABEOW</p>
+<p>12 ABEOW 7 Eligible for retry</p>
+<p>from except 12 8 ABEOW</p>
+<p>12 ABEOW 8 Eligible for retry</p>
+<p>from except 12 9 ABEOW</p>
+<p>12 ABEOW 9 Eligible for retry</p>
+<p>from except 12 10 ABEOW</p>
+<p>from except 13 0 ABIL</p>
+<p>13 ABIL 0 Eligible for retry</p>
+<p>from except 13 1 ABIL</p>
+<p>13 ABIL 1 Eligible for retry</p>
+<p>from except 13 2 ABIL</p>
+<p>13 ABIL 2 Eligible for retry</p>
+<p>from except 13 3 ABIL</p>
+<p>13 ABIL 3 Eligible for retry</p>
+<p>from except 13 4 ABIL</p>
+<p>13 ABIL 4 Eligible for retry</p>
+<p>from except 13 5 ABIL</p>
+<p>13 ABIL 5 Eligible for retry</p>
+<p>from except 13 6 ABIL</p>
+<p>13 ABIL 6 Eligible for retry</p>
+<p>from except 13 7 ABIL</p>
+<p>13 ABIL 7 Eligible for retry</p>
+<p>from except 13 8 ABIL</p>
+<p>13 ABIL 8 Eligible for retry</p>
+<p>from except 13 9 ABIL</p>
+<p>13 ABIL 9 Eligible for retry</p>
+<p>from except 13 10 ABIL</p>
+<p>from after dr 14 0 ABIO</p>
+<p>from after dr 15 0 ABMD</p>
+<p>from after dr 16 0 ABTX</p>
+<p>from after dr 17 0 ABUS</p>
+<p>from after dr 18 0 ACAD</p>
+<p>from after dr 19 0 ACAM</p>
+<p>from after dr 20 0 ACAMU</p>
+<p>from except 21 0 ACAMW</p>
+<p>21 ACAMW 0 Eligible for retry</p>
+<p>from except 21 1 ACAMW</p>
+<p>21 ACAMW 1 Eligible for retry</p>
+<p>from except 21 2 ACAMW</p>
+<p>21 ACAMW 2 Eligible for retry</p>
+<p>from except 21 3 ACAMW</p>
+<p>21 ACAMW 3 Eligible for retry</p>
+<p>from except 21 4 ACAMW</p>
+<p>21 ACAMW 4 Eligible for retry</p>
+<p>from except 21 5 ACAMW</p>
+<p>21 ACAMW 5 Eligible for retry</p>
+<p>from except 21 6 ACAMW</p>
+<p>21 ACAMW 6 Eligible for retry</p>
+<p>from except 21 7 ACAMW</p>
+<p>21 ACAMW 7 Eligible for retry</p>
+<p>from except 21 8 ACAMW</p>
+<p>21 ACAMW 8 Eligible for retry</p>
+<p>from except 21 9 ACAMW</p>
+<p>21 ACAMW 9 Eligible for retry</p>
+<p>from except 21 10 ACAMW</p>
+<p>from after dr 22 0 ACBI</p>
+<p>from after dr 23 0 ACER</p>
+<p>from after dr 24 0 ACGL</p>
+<p>from after dr 25 0 ACGLO</p>
+<p>from after dr 26 0 ACGLP</p>
+<p>from after dr 27 0 ACHC</p>
+<p>from except 28 0 ACHN</p>
+<p>28 ACHN 0 Eligible for retry</p>
+<p>from except 28 1 ACHN</p>
+<p>28 ACHN 1 Eligible for retry</p>
+<p>from except 28 2 ACHN</p>
+<p>28 ACHN 2 Eligible for retry</p>
+<p>from except 28 3 ACHN</p>
+<p>28 ACHN 3 Eligible for retry</p>
+<p>from except 28 4 ACHN</p>
+<p>28 ACHN 4 Eligible for retry</p>
+<p>from except 28 5 ACHN</p>
+<p>28 ACHN 5 Eligible for retry</p>
+<p>from except 28 6 ACHN</p>
+<p>28 ACHN 6 Eligible for retry</p>
+<p>from except 28 7 ACHN</p>
+<p>28 ACHN 7 Eligible for retry</p>
+<p>from except 28 8 ACHN</p>
+<p>28 ACHN 8 Eligible for retry</p>
+<p>from except 28 9 ACHN</p>
+<p>28 ACHN 9 Eligible for retry</p>
+<p>from except 28 10 ACHN</p>
+<p>from after dr 29 0 ACHV</p>
+<p>As you can see, there are some retries, but not all symbols result in a retry.&nbsp;
+Yahoo Finance and the eoddata company may be using different symbols for some symbols,
+but they are frequently the same.</p>
+<p>I hope this reply helps you.</p>
+<p>Rick Dobson</p>
+</td>
+</tr>
+</table>
+<br>
+<table border="0" width="100%" cellspacing="0" cellpadding="4" style="border: 1px solid #CBDCED; table-layout: fixed;">
+<tr>
+<td width="80%" bgcolor="#E8F3FF">
+<b>Monday, June 8, 2020 - 8:57:03 AM - Salam</b>
+</td>
+<td style="text-align: right;" bgcolor="#E8F3FF">
+<a title="read the tip" href="#top">Back To Top</a> <small>(85855)</small>
+</td>
+</tr>
+<tr>
+<td colspan="2" class="ForumPostBodyArea">
+<p>Hi Rick, I followed instructions, 1st in the Python script you indicate opening a text file C:\python_programs\ExchangeSymbols.txt whereas in the download zip file there is a C:\python_programs\ExchangeSymbols.csv. Anyway I changed the extension to csv but geting retries for all symbols, I am not very well versed with python, can you help please? Thanks</p>
+</td>
+</tr>
+</table>
+<br>
+</div>
+</div>
+<style>
+			div.stickyright {
+			  position: -webkit-sticky;
+			  position: sticky;
+			  padding: 0;
+			  background-color: white;
+			  width: 300px;
+			  z-index: 1;
+			}
+	</style>
+<div class="large-3 hide-for-print columns rightsize">
+<br />
+<div align="center" class="hide-for-print"><a href="/download-scripts/" onclick="gtag('event', 'click', {'event_category': 'download-button', 'event_label': 'indexscripts'});" target="_blank"><img loading="lazy" src="/images/download-scripts.png" alt="download" width="273" height="93"></a></div>
+<br /><br />
+
+<div align="center">
+<div id='div-gpt-ad-1388505177750-0' style='width:300px; height:600px; min-width: 300px; min-height: 600px;'>
+<script type='text/javascript'>
+	if (screen.width > 749)
+	{
+		googletag.cmd.push(function() { googletag.display('div-gpt-ad-1388505177750-0'); });
+	}	
+	</script>
+</div>
+</div><br /><br /><br />
+<div align="center">
+<div id='div-gpt-ad-1388505177750-3' style='width:300px; height:250px; min-width:300px; min-height:250px;'>
+<script type='text/javascript'>
+	if (screen.width > 749)
+	{
+		googletag.cmd.push(function() { googletag.display('div-gpt-ad-1388505177750-3'); });
+	}	
+	</script>
+</div>
+</div> <br /><br /><br />
+<div align="center">
+<div id='div-gpt-ad-1388505177750-1' style='width:300px; height:600px; min-width: 300px; min-height: 600px;'>
+<script type='text/javascript'>
+	if (screen.width > 749)
+	{
+		googletag.cmd.push(function() { googletag.display('div-gpt-ad-1388505177750-1'); });
+	}
+	</script>
+</div>
+</div> <br /><br /><br />
+<div class="stickyright" style="top:55px;">
+
+<div align="center">
+<div id='div-gpt-ad-1388505177750-2' style='width:300px; height:250px; min-width:300px; min-height:250px;'>
+<script type='text/javascript'>
+	if (screen.width > 749)
+	{	
+		googletag.cmd.push(function() { googletag.display('div-gpt-ad-1388505177750-2'); });
+	}	
+	</script>
+</div>
+</div> <br /><br /><br /> <script language="Javascript">
+	function ValidateEmail(inputText)
+	{
+	
+		if (document.optin.consent.checked == false) {
+		     alert("Please agree to terms by ticking check box.");
+		     return false;
+	            }	
+	   
+		var mailformat = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+		if(inputText.value.match(mailformat))
+		{
+			document.optin.ea.focus();
+			return true;
+		}
+		else
+		{
+			alert("You have entered an invalid email address!");
+			document.optin.ea.focus();
+			return false;
+		}
+	}
+
+	</script>
+<div id="sticky2">
+<div id="search-div" style="height:300px; width:300px">
+<div id="signup-div">
+<div style="text-align: center;"><a href="/get-free-sql-server-tips/?ref=LeftGFSTSlant"><img loading="lazy" alt="get free sql tips" border="0" src="/images/GetFreeSQLTips_black_box.png" width="300" height="150"></a></div>
+<form action="/get-free-sql-server-tips/" method="post" name="optin" onsubmit="return ValidateEmail(document.optin.ea)">
+<input name="URL" type="hidden" value="leftform" />
+<input name="ReferralURL" type="hidden" value="" />
+<div class="row">
+<div class="large-12 columns">
+<div class="row collapse">
+<div class="small-10 columns">
+<input size="25" type="text" onblur="if (this.value=='') this.value=this.defaultValue" onclick="if (this.defaultValue==this.value) this.value=''" value="enter business email" name="ea">
+</div>
+<div class="small-2 columns">
+<input type="submit" name="Button1" value="Join" />
+</div>
+</div>
+</div>
+</div>
+<div class="row">
+<div class="large-12 columns">
+<div class="row collapse">
+<div class="small-1 columns">
+<input type="checkbox" name="consent" value="1">
+</div>
+<div class="small-11 columns">
+<a href="/privacy/" target="_blank"><img loading="lazy" src="/images/mssqltips-agree-terms.png" alt="agree to terms" width="276" height="67"></a>
+</div>
+</div>
+</div>
+</div>
+<br /><br />
+</form>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<footer class="row hide-for-print">
+<hr />
+<ul class="small-block-grid-2 medium-block-grid-3 large-block-grid-6" style="margin:10px;">
+<li>
+<h3><span style="color:#3B6D93">Follow</span></h3>
+<ul>
+<li><a href="/get-free-sql-server-tips/?ref=GetFooterMenu">Get Free SQL Tips</a></li>
+<li><a rel="noopener" href="https://twitter.com/mssqltips" target="_blank">Twitter</a></li>
+<li><a rel="noopener" href="https://www.linkedin.com/groups/2320891/" target="_blank">LinkedIn</a></li>
+<li><a rel="noopener" href="https://www.facebook.com/mssqltips/" target="_blank">Facebook</a></li>
+<li><a rel="noopener" href="https://www.pinterest.com/mssqltips/" target="_blank">Pinterest</a></li>
+<li><a rel="noopener" href="https://feeds.feedburner.com/MSSQLTips-LatestSqlServerTips" target="_blank">RSS</a></li>
+</ul>
+</li>
+<li>
+<h3><span style="color:#3B6D93">Learning</span></h3>
+<ul>
+<li><a href="/sql-server-dba-resources/">DBAs</a></li>
+<li><a href="/sql-server-developer-resources/">Developers</a></li>
+<li><a href="/sql-server-business-intelligence-resources/">BI Professionals</a></li>
+<li><a href="/sql-server-professional-development-resources/">Careers</a></li>
+</ul>
+</li>
+<li>
+<h3><span style="color:#3B6D93">Resources</span></h3>
+<ul>
+<li><a href="/sql-server-tutorials/">Tutorials</a></li>
+<li><a href="/sql-server-webcasts/">Webcasts</a></li>
+<li><a href="/sql-server-whitepapers/">Whitepapers</a></li>
+<li><a href="/sql-server-tools/">Tools</a></li>
+</ul>
+</li>
+<li>
+<h3><span style="color:#3B6D93">Search</span></h3>
+<ul>
+<li><a href="/sql-server-categories/">Tip Categories</a></li>
+<li><a href="/search-tip-id/">Search By TipID</a></li>
+<li><a href="/sql-server-mssqltips-authors/">Authors</a></li>
+</ul>
+</li>
+<li>
+<h3><span style="color:#3B6D93">Community</span></h3>
+<ul>
+<li><a href="/learn-more-about-mssqltips/">First Timer?</a></li>
+<li><a href="/mssqltips-community/1/">Pictures</a></li>
+<li><a href="/contribute/">Contribute</a></li>
+<li><a href="/sql-server-event-list/">Event Calendar</a></li>
+<li><a href="/sql-server-user-groups/">User Groups</a></li>
+<li><a href="/mssqltips-author-of-year/">Author of the Year</a></li>
+</ul>
+</li>
+<li>
+<h3><span style="color:#3B6D93">More Info</span></h3>
+<ul>
+<li><a href="/get-free-sql-server-tips/?ref=JoinFooterMenu">Join</a></li>
+<li><a href="/about/">About</a></li>
+<li><a href="/copyright/">Copyright</a></li>
+<li><a href="/privacy/">Privacy</a></li>
+<li><a href="/disclaimer/">Disclaimer</a></li>
+<li><a href="/feedback/">Feedback</a></li>
+<li><a href="/advertise/">Advertise</a></li>
+</ul>
+</li>
+</ul>
+<hr />
+<div class="row">
+<div class="large-12 columns text-center">
+<p>Copyright (c) 2006-2022 <a href="https://www.edgewoodsolutions.com">Edgewood Solutions, LLC</a> All rights reserved<br />
+<small>Some names and products listed are the registered trademarks of their respective owners.</small></p>
+</div>
+</div>
+</footer>
+
+<style type="text/css">
+#slideboxtop{
+    width:100%;
+    height:50px;
+    padding:0px;
+    background-color:#FFFFFF;      
+    border-bottom:1px solid #000000;
+    position:fixed;
+    top: -350px;
+	-moz-box-shadow:-2px 0px 5px #aaa;
+	-webkit-box-shadow:-2px 0px 5px #aaa;
+/* 	box-shadow:-2px 0px 5px #aaa;    */
+}
+</style>
+<div class="hide-for-small hide-for-medium hide-for-print">
+<div id="slideboxtop" style="z-index:1;">
+<div style="text-align:center">
+<div w3-include-html="/Site-Sponsorship/site-sponsorship.asp"></div>
+</div>
+</div>
+</div>
+<script src="/js/jquery-foundation-combined-min.js"></script>
+<script type="text/javascript">
+var articleLength = $("article").find("p").length;
+
+ 
+
+</script>
+<script>
+    $(document).foundation();
+</script>
+<script type="text/javascript" src="/css/prettify.combined.js" defer></script>
+<script type="text/javascript">
+$(function() {
+	$(window).scroll(function(){
+		if  ($(window).scrollTop() > 250)
+			$('#slideboxtop').animate({'top':'0px'});
+		else
+			$('#slideboxtop').stop(true).animate({'top':'-250px'});
+	});
+});
+</script>
+<script>
+function includeHTML() {
+  var z, i, elmnt, file, xhttp;
+  /*loop through a collection of all HTML elements:*/
+  
+  z = document.getElementsByTagName("*");
+  for (i = 0; i < z.length; i++) {
+    elmnt = z[i];
+    /*search for elements with a certain atrribute:*/
+    file = elmnt.getAttribute("w3-include-html");
+	if (file) {
+      /*make an HTTP request using the attribute value as the file name:*/
+      xhttp = new XMLHttpRequest();
+      xhttp.onreadystatechange = function() {
+        if (this.readyState == 4) {
+          if (this.status == 200) {elmnt.innerHTML = this.responseText;}
+          if (this.status == 404) {elmnt.innerHTML = "Page not found.";}
+          /*remove the attribute, and call this function once more:*/
+          elmnt.removeAttribute("w3-include-html");
+          includeHTML();
+        }
+      }   
+      xhttp.open("GET", file, true);
+      xhttp.send();
+      /*exit the function:*/
+      return;
+    }
+  }
+};
+</script>
+<script>
+ if ($(window).width() > 1000) {
+	includeHTML();
+	$("div.rightsize").height($("#container").height());
+    }	
+</script>
+
+<script> 
+//<![CDATA[ 
+if (screen.width > 0)
+{
+function deferGoogleJS() { 
+var d = document.createElement("script"); 
+d.src = "https://www.googletagmanager.com/gtag/js?id=UA-910745-2", 
+document.body.appendChild(d) 
+} 
+window.addEventListener ? window.addEventListener("load", deferGoogleJS, !1) : window.attachEvent ? window.attachEvent("onload", deferGoogleJS) : window.onload = deferGoogleJS; 
+window.dataLayer = window.dataLayer || [];
+
+function gtag() { 
+dataLayer.push(arguments); 
+} 
+gtag('js', new Date()); 
+gtag('config', 'UA-910745-2'); 
+}
+//]]> 
+</script>
+</body>
+</html>

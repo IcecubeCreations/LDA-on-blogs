@@ -1,0 +1,657 @@
+
+
+
+
+
+Kafka vs RabbitMQ vs Enduro/X vs  ActiveMQ on Go – performance benchmark of the year 2018! | publicwork
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+publicwork
+
+
+
+
+
+
+Menu
+Skip to content
+Home
+About
+Contact
+ 
+Search
+
+
+
+
+Search for:
+
+
+
+ 
+
+
+
+
+
+
+Kafka vs RabbitMQ vs Enduro/X vs  ActiveMQ on Go – performance benchmark of the year 2018! 
+June 27, 2018July 1, 2018 / publicwork1 
+
+
+This blog explores to compare with equal tests large quantity of the modern middlewares available on the market. The test compares most trending middlewares which are:
+
+Apache Kafka
+RabbitMQ
+Enduro/X
+ActiveMQ
+
+The testing is based on Enduro/X middleware benchmark suite. Which basically performs two types of tests between to processes located on local machine. The tests are following:
+
+Two way RPC (client call server and server responds back)
+One way – client process connects to server and streams all the data to Server
+
+The testing code is written for Go language and is based on Enduro/X Bechmark Suite.
+Test platform
+Both benchmarks ar performed on following system:
+
+Linux Mint 18.3
+Linux 4.10.0-38-generic #42~16.04.1-Ubuntu SMP Tue Oct 10 16:32:20 UTC 2017 x86_64 x86_64 x86_64 GNU/Linux
+CPU: Intel(R) Core(TM) i5-4300U CPU @ 1.90GHz
+RAM: 12GB
+
+Java version 1.8:
+$ java -version
+openjdk version "1.8.0_171"
+OpenJDK Runtime Environment (build 1.8.0_171-8u171-b11-0ubuntu0.16.04.1-b11)
+OpenJDK 64-Bit Server VM (build 25.171-b11, mixed mode)
+Test results
+This section lists test results got from the system testing.
+RPC Style
+RPC style calls – Enduro/X vs RabbitMQ vs Kafka vs ActiveMQ
+From the results we see that Enduro/X performs very well with RPC style calls. All other middlewares keeps almost the same results. Seems like ActiveMQ gets little better with bigger message sizes.
+One way (classical publish/subscribe)
+One way calls: RPC style calls – Enduro/X vs RabbitMQ vs Kafka vs ActiveMQ
+With one way calls. We get in the front the Apache Kafka. Then Enduro/X follows. all other competitors seems to run at the same level. Also we see that with bigger message sizes, at some points ApacheMQ gets in the front.
+CPU/Memory Usage during testing
+This section lists CPU usage author monitored on his testing machine.
+Kafka
+CPU Usage Kafka RPC
+CPU Usage Kafka Oneway
+RabbitMQ
+CPU Usage RabbitMQ RPC
+CPU Usage RabbitMQ Oneway
+
+Enduro/X
+CPU usage Enduro/X RPC
+CPU usage Enduro/X Oneway
+ActiveMQ
+CPU Usage ActiveMQ RPC
+CPU Usage ActiveMQ Oneway
+System stability
+Author have faced following issues during the testing:
+Kafka notes
+For Kafka, Author faced “Queue full” error during the one way publish to topic test. The quick-and-dirty fix was to restart client call during the facing this error.
+ActiveMQ notes
+During the ActiveMQ testing with Go (uses STOMP protocol), author got several times, “connection closed” during the client send operations, for example:
+$ ./run1w.sh 
+~/projects/endurox-benchmark-suite/tests/activemq ~/projects/endurox-benchmark-suite/tests/activemq
+Starting server process...
+panic: send on closed channel
+goroutine 1 [running]:
+github.com/go-stomp/stomp.(*Conn).Send(0xc42009e3f0, 0x563f5d, 0xd, 0x566378, 0x18, 0xc4200b4a80, 0x940, 0x940, 0xc42004dbd0, 0x1, ...) /home/mvitolin/projects/endurox-benchmark-suite/src/github.com/go-stomp/stomp/conn.go:437 +0x299 main.runbench.func1(0xc42000e038, 0x14c0000000388, 0xc4200b4a80, 0x940, 0x940, 0x1, 0x0, 0x0, 0x0, 0x0)
+ /home/<hidden>/projects/endurox-benchmark-suite/src/amqclt/amqclt.go:51 +0x17f exbench.Ndrx_bench_clmain(0xc42000e038, 0x1, 0xc42004dec8, 0x2d)
+ /home/<hidden>/projects/endurox-benchmark-suite/src/exbench/testutil.go:248 +0x345 main.runbench(0x0)
+ /home/<hidden>/projects/endurox-benchmark-suite/src/amqclt/amqclt.go:38 +0x19f main.main()
+ /home/<hidden>/projects/endurox-benchmark-suite/src/amqclt/amqclt.go:108 +0xd7 amqclt -num 400000 -oneway failed
+Test exiting with: 2
+ 
+Thus the code was fixed to re-connect in case of client errors.
+ 
+Conclusions
+During the testing the results shows that Enduro/X shows goods results with RPC style calls. For Oneway testing (publish only), Apache Kafka was the best. But downside for Kafka is that calls were not blocked, thus “dirty” solution was to restart the sending message to the queue while the Enduro/X no “dirty fixes” are needed, as when the queue is full, the process blocks and waits for free space. Then after all the ActiveMQ with Go STOMP client was also showing good results when message size increased. But the downside with STOMP client was that, during the testing, the client got disconnected for some reason. RabbitMQ also seems to be stable platform and no special fixes were needed to execute the test cases (except that channel send must be used to get “blocked” style calls). RabbitMQ showed quite good stable results.
+
+
+ 
+Share this:TwitterFacebookLike this:Like Loading...
+
+Related
+ 
+
+
+ActiveMQ, benchmark, enduro/x, Go, Kafka, linux, middleware, RabbitMQ, Uncategorized 
+2018, ActiveMQ, Apache Kafka, benchmark, golang, golang performance, Kafka, RabbitMQ 
+
+
+Post navigation
+
+← Enduro/X vs RabbitMQ review and benchmarkA4 Tech mouse wheel speed fix on Linux → 
+
+
+
+Leave a Reply Cancel reply
+
+
+Enter your comment here...
+
+
+
+
+Fill in your details below or click an icon to log in:
+
+
+
+
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+
+
+
+ 
+ 
+
+
+Email (required) (Address never made public)
+
+
+
+Name (required)
+
+
+
+Website
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+			You are commenting using your WordPress.com account.			
+				( Log Out / 
+				Change )
+			
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+			You are commenting using your Twitter account.			
+				( Log Out / 
+				Change )
+			
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+			You are commenting using your Facebook account.			
+				( Log Out / 
+				Change )
+			
+
+
+
+
+
+
+Cancel
+Connecting to %s
+
+
+
+
+ Notify me of new comments via email. Notify me of new posts via email.
+ 
+
+
+
+Δ 
+
+
+
+
+
+
+
+Search for:
+
+
+
+ 
+ 
+
+
+
+
+Archive
+
+December 2019
+June 2019
+February 2019
+September 2018
+July 2018
+June 2018
+March 2018
+February 2018
+December 2017
+November 2017
+June 2017
+May 2017
+April 2017
+August 2016
+July 2016
+
+ 
+
+NavigationHome
+About
+Contact
+ 
+
+
+
+Search for:
+
+
+
+ 
+
+
+Blog at WordPress.com.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+Follow
+
+
+Following
+
+
+
+
+
+
+
+				publicwork			
+
+
+
+
+
+
+
+
+
+ 
+
+												Sign me up											
+
+
+
+
+											Already have a WordPress.com account? Log in now. 
+
+
+
+
+
+
+ 
+
+
+
+
+
+				publicwork			
+
+
+
+ Customize
+
+
+
+
+Follow
+
+
+Following
+
+
+Sign up
+Log in
+Copy shortlink
+Report this content
+
+
+											View post in Reader										
+
+
+Manage subscriptions
+
+Collapse this bar
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Loading Comments...
+
+
+
+ 
+
+
+Write a Comment...
+
+
+
+
+Email (Required)
+
+
+
+Name (Required)
+
+
+
+Website
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+%d bloggers like this:		
+
+
+ 
+
+
+
+

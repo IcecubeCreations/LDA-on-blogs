@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width initial-scale=1">
+  <link rel="icon" href="/images/avatar_blue.png">
+  <title>Jakarta EE 8: JsonCollectors And The OOP Alternative</title>
+  <meta name="description" content="A short overview of Jakarta EE 8's JsonCollectors and an OOP alternative for JavaEE 7 and below.">
+  
+  <!--Twitter meta tags, so the tweet contains a nice preview of the article-->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@amihaiemil">
+  <meta name="twitter:creator" content="@amihaiemil">
+  <meta name="twitter:title" content="Jakarta EE 8: JsonCollectors And The OOP Alternative">
+  <meta name="twitter:description" content="A short overview of Jakarta EE 8's JsonCollectors and an OOP alternative for JavaEE 7 and below.">
+  <meta name="twitter:image" content="https://amihaiemil.github.io/images/mouse_in_the_house2.png">
+  <!-- OpenGraph tags, so other platforms like Facebook, also display the shared post nicely-->
+  <meta property="og:url" content="/2017/10/16/javaee8-jsoncollectors-oop-alternative.html" />
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="Jakarta EE 8: JsonCollectors And The OOP Alternative" />
+  <meta property="og:description" content="A short overview of Jakarta EE 8's JsonCollectors and an OOP alternative for JavaEE 7 and below." />
+  <meta property="og:image" content="https://amihaiemil.github.io/images/mouse_in_the_house2.png" />
+  
+  <meta property="fb:app_id" content="142729202995465"/>
+
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/font-awesome.min.css">
+  <link rel="canonical" href="https://www.amihaiemil.com/2017/10/16/javaee8-jsoncollectors-oop-alternative.html">
+  <link rel="alternate" type="application/atom+xml" title="Mihai's Programming Blog" href="https://www.amihaiemil.com/feed.xml" />
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+  <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-63326627-2', 'auto');
+      ga('send', 'pageview');
+  </script>
+  <script
+      src="https://code.jquery.com/jquery-3.4.1.min.js"
+      integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+      crossorigin="anonymous"
+  ><!--JQuerry for lastUpdated.js-->
+  </script>
+  <script src="/js/lastUpdated.js"></script>
+</head>
+
+
+  <body>
+    <header class="site-header">
+
+  <div class="wrapper">
+    <div class="centered">
+      <img src="/illustrations/full_banner.png" alt="Puppeteer vs. Engineer" class="photo">
+      <ul class="horizontal-list">
+        <li>
+          <a target="_blank" title="Follow me on Github" href="https://www.github.com/amihaiemil">
+            <i class="fa fa-github fa-lg" aria-hidden="true"></i>
+          </a>
+        </li>
+        <li>
+          <a target="_blank" title="Follow me on Twitter" href="https://www.twitter.com/amihaiemil">
+            <i class="fa fa-twitter fa-lg" aria-hidden="true"></i>
+          </a>
+        </li>
+        <li>
+          <a target="_blank" title="Join the Telegram chat" href="https://t.me/joinchat/FWpjdw2BFLHmNsV1qAXeag">
+            <i class="fa fa-telegram fa-lg" aria-hidden="true"></i>
+          </a>
+        </li>
+        <li>
+          <a title="Feel free to drop me a line" href="mailto:amihaiemil@gmail.com">
+            <i class="fa fa-envelope fa-lg" aria-hidden="true"></i>
+          </a>
+        </li>
+        <li>
+          <a target="_blank" title="Subscribe to my RSS feed" href="https://amihaiemil.github.io/feed.xml">
+            <i class="fa fa-rss fa-lg" aria-hidden="true"></i>
+          </a>
+        </li>
+        <li>
+          <a target="_blank" title="Sponsor me on Github" href="https://github.com/sponsors/amihaiemil">
+            <i class="fa fa-heart fa-lg" aria-hidden="true"></i>
+          </a>
+        </li>
+      </ul>
+    </div>
+    <!-- <a class="site-title" href="/">amihaiemil's programming blog</a> -->
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <svg viewBox="0 0 18 15">
+          <path fill="#424242" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+          <path fill="#424242" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484 h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+          <path fill="#424242" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+        </svg>
+      </a>
+
+      <div class="trigger">
+        <a class="page-link" href="/">Home</a>
+        <a class="page-link" href="/projects.html">Projects</a>
+        <a class="page-link" href="/hireme/hire.html">Hire me!</a>
+        <a class="page-link" href="/aboutme/about.html">About</a>
+      </div>
+    </nav>
+    <nav class="site-nav-search">
+      <a class="menu-icon fa fa-search fa-lg"></a>
+      <div class="search-mobile">
+        <!--div where the search widget is generated-->
+        <div id="elasticlunr-search-widget"></div>
+      </div>
+    </nav>
+  </div>
+
+</header>
+
+    
+        <!-- facebook Javascript SDK-->
+        <div id="fb-root"></div>
+        <script>(function(d, s, id) {
+            var js, fjs = d.getElementsByTagName(s)[0];
+            if (d.getElementById(id)) return;
+            js = d.createElement(s); js.id = id;
+            js.src = "//connect.facebook.net/en_US/sdk.js#xfbml=1&version=v2.8";
+            fjs.parentNode.insertBefore(js, fjs);
+            }(document, 'script', 'facebook-jssdk'));
+        </script>
+        <!-- Twitter JavascriptSDK-->
+        <script>
+          window.twttr = (function(d, s, id) {
+              var js, fjs = d.getElementsByTagName(s)[0],
+              t = window.twttr || {};
+              if (d.getElementById(id)) return t;
+              js = d.createElement(s);
+              js.id = id;
+              js.src = "https://platform.twitter.com/widgets.js";
+              fjs.parentNode.insertBefore(js, fjs);
+              t._e = [];
+              t.ready = function(f) {
+                  t._e.push(f);
+              };
+             return t;
+          }(document, "script", "twitter-wjs"));
+        </script>
+        <!-- VKontakte JS SDK -->
+        <script type="text/javascript" src="https://vk.com/js/api/share.js?95" charset="windows-1251"></script>
+    
+    <div class="page-content">
+      <div class="wrapper">    <!-- Everything inside class "wrapper" so it is centered-->
+        <!--The POST CONTENT goes here, as defined in the post.html Layout-->
+        <div class="post">
+
+  <header class="post-header">
+    <h1 class="post-title">Jakarta EE 8: JsonCollectors And The OOP Alternative </h1>
+    <p class="post-meta">Oct 16, 2017 • tags:
+    
+      <a href="/tag/oop.html"><code><nobr>oop</nobr></code></a>
+    
+      <a href="/tag/jakartaee.html"><code><nobr>jakartaee</nobr></code></a>
+    
+      <a href="/tag/refactoring.html"><code><nobr>refactoring</nobr></code></a>
+     • by <a href="https://www.twitter.com/amihaiemil">amihaiemil</a> •
+    <i class="fa fa-comments" aria-hidden="true"></i>
+    <a class="post-meta" href="/2017/10/16/javaee8-jsoncollectors-oop-alternative.html#disqus_thread">Comments</a>
+    </p>
+  </header>
+
+  <article class="post-content">
+    <p>With <a href="https://jakarta.ee/about/"><strike>Java EE 8</strike></a> Jakarta EE 8 there comes a new version of the JSON-P (JSON Processing) specification, namely version
+1.1. One of the new things this version brings is the utility class <a href="https://javaee.github.io/javaee-spec/javadocs/javax/json/stream/JsonCollectors.html">JsonCollectors</a>.</p>
+
+<p>This class is OK, it provides some useful collectors to manipulate collections of JsonValues and turn them into JsonObjects or JsonArrays. Let’s see how it works and dive into a more OOP alternative (I’m going to examine JsonArray, but this applies to JsonObject as well and probably to the others too).</p>
+
+<figure class="articleimg">
+ <img src="https://amihaiemil.github.io/images/mouse_in_the_house2.png" alt="A Mouse in the House" />
+ <figcaption>
+ Tom &amp; Jerry - A Mouse in the House, by  William Hanna and Joseph Barbera
+ </figcaption>
+</figure>
+
+<p>Straight to the point, with JSON-P 1.1, you can turn a collection of JsonValue into a JsonArray like this:</p>
+
+<figure class="highlight"><pre><code class="language-java" data-lang="java"><span class="nc">List</span><span class="o">&lt;</span><span class="nc">JsonValue</span><span class="o">&gt;</span> <span class="n">values</span> <span class="o">=</span> <span class="o">...;</span>
+<span class="nc">JsonArray</span> <span class="n">array</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="na">stream</span><span class="o">().</span><span class="na">collect</span><span class="o">(</span>
+  <span class="nc">JsonCollectors</span><span class="o">.</span><span class="na">toJsonArray</span><span class="o">()</span>
+<span class="o">);</span></code></pre></figure>
+
+<p>If you work with Java EE 7 and maybe Java 7 instead of Java 8, you would have to do the following:</p>
+
+<figure class="highlight"><pre><code class="language-java" data-lang="java"><span class="nc">List</span><span class="o">&lt;</span><span class="nc">JsonValue</span><span class="o">&gt;</span> <span class="n">values</span> <span class="o">=</span> <span class="o">...;</span>
+<span class="nc">JsonArrayBuilder</span> <span class="n">builder</span> <span class="o">=</span> <span class="nc">Json</span><span class="o">.</span><span class="na">createArrayBuilder</span><span class="o">();</span>
+<span class="k">for</span><span class="o">(</span><span class="nc">JsonValue</span> <span class="n">value</span> <span class="o">:</span> <span class="n">values</span><span class="o">)</span> <span class="o">{</span>
+    <span class="n">builder</span> <span class="o">=</span> <span class="n">builder</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">value</span><span class="o">);</span>
+<span class="o">}</span>
+<span class="nc">JsonArray</span> <span class="n">array</span> <span class="o">=</span> <span class="n">builder</span><span class="o">.</span><span class="na">build</span><span class="o">();</span></code></pre></figure>
+
+<p>Very beautiful and handy. Actually, I’m not the only one writing these examples, you can already
+find a few at a first Google search.</p>
+
+<p>What I didn’t see, however, is an OOP approach. The snippets above answer the question “How do we <em>put</em> these values <em>into</em> an array?”, instead of answering the question “How do we <em>make</em> these values <em>act as</em> an array?”.</p>
+
+<p>It’s a very important difference. In the current approach, you have a few issues:</p>
+
+<ul>
+  <li>Code duplication: everywhere you need an array, you will see those few lines of code/chain of method calls;</li>
+  <li>Static methods: if you don’t want to duplicate those lines of code, you have to put them in a static method somewhere, which probably won’t be unit-tested;</li>
+  <li>Coupling: if Java EE 9 comes and changes the JsonCollectors API, or any of the methods <code class="language-plaintext highlighter-rouge">stream()</code> or <code class="language-plaintext highlighter-rouge">collect(...)</code> changes in the future, you will have to find all the usages and edit your code;</li>
+</ul>
+
+<p>You’ll say that this is a trivial example and it’s nothing to worry about, because there’s
+very little chance for something to break in the future. And you are right, but this is a classic case of “let’s turn X into Y”, rather than “let’s add a new implementation of Y, based on X”, which would be the correct object-oriented way!</p>
+
+<p>So, I ask myself, why didn’t the JSON-P guys think of this? Why did they struggle to implement Collectors and other rocket stuff, instead of simply providing the following implementation of JsonArray?</p>
+
+<figure class="highlight"><pre><code class="language-java" data-lang="java"><span class="kn">package</span> <span class="nn">javax.json</span><span class="o">;</span>
+
+<span class="cm">/**
+ * JsonArray from a collection of JsonValues.
+ * This is an alternative to having a static method somewhere, which calls the builder
+ * and returns a JsonArray.
+ *
+ * Instead of having the following in your code:
+ *
+ * JsonArray arr = buildArray(value1, value2, value3);
+ *
+ * you will have the following
+ *
+ * JsonArray arr = new CollectedJsonArray(value1, value2, value3);
+ */</span>
+<span class="kd">public</span> <span class="kd">final</span> <span class="kd">class</span> <span class="nc">CollectedJsonArray</span> <span class="kd">implements</span> <span class="nc">JsonArray</span> <span class="o">{</span>
+
+    <span class="cm">/**
+     * Collected array.
+     */</span>
+    <span class="kd">private</span> <span class="kd">final</span> <span class="nc">JsonArray</span> <span class="n">collected</span><span class="o">;</span>
+
+    <span class="kd">public</span> <span class="nf">CollectedJsonArray</span><span class="o">(</span><span class="nc">JsonValue</span><span class="o">...</span> <span class="n">values</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">JsonArrayBuilder</span> <span class="n">builder</span> <span class="o">=</span> <span class="nc">Json</span><span class="o">.</span><span class="na">createArrayBuilder</span><span class="o">();</span>
+        <span class="k">for</span><span class="o">(</span><span class="nc">JsonValue</span> <span class="n">value</span> <span class="o">:</span> <span class="n">values</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">builder</span> <span class="o">=</span> <span class="n">builder</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">value</span><span class="o">);</span>
+        <span class="o">}</span>
+        <span class="k">this</span><span class="o">.</span><span class="na">collected</span> <span class="o">=</span> <span class="n">builder</span><span class="o">.</span><span class="na">build</span><span class="o">();</span>
+    <span class="o">}</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="nc">JsonObject</span> <span class="nf">getJsonObject</span><span class="o">(</span><span class="kt">int</span> <span class="n">i</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="k">this</span><span class="o">.</span><span class="na">collected</span><span class="o">.</span><span class="na">getJsonObject</span><span class="o">(</span><span class="n">i</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="nc">JsonArray</span> <span class="nf">getJsonArray</span><span class="o">(</span><span class="kt">int</span> <span class="n">i</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="k">this</span><span class="o">.</span><span class="na">collected</span><span class="o">.</span><span class="na">getJsonArray</span><span class="o">(</span><span class="n">i</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="c1">//the other methods of JsonArray, delegated to this.collected.</span>
+
+<span class="o">}</span></code></pre></figure>
+
+<p>I wrote this class myself. It is simple, API compliant and doesn’t care who is the JSON-P provider. Yet it is painful to write, because you have to implement all those methods and delegate the work to <code class="language-plaintext highlighter-rouge">this.collected</code>. Then, there should be some unit tests for it. I believe that this class should have been shipped with JSON-P 1.1. It is a mere wrapper, it has just a few lines in the ctor, but it spares our application of coupling, static methods and untested code.</p>
+
+<p>What do you think? How would you have implemented it?</p>
+
+  </article>
+
+  <!-- If the POST is shareable, the div with share buttons appears right underneath-->
+        
+          <div class="share_buttons" style="vertical-align: top; line-height: 10px;">
+            <span
+              class="fb-share-button"
+              data-href="/2017/10/16/javaee8-jsoncollectors-oop-alternative.html"
+              data-layout="button_count"
+              data-size="small"
+              data-mobile-iframe="true">
+              <a
+               class="fb-xfbml-parse-ignore"
+               target="_blank"
+               href="https://www.facebook.com/sharer/sharer.php?u=/2017/10/16/javaee8-jsoncollectors-oop-alternative.html&amp;src=sdkpreparse">
+               Share
+              </a>
+            </span>
+            <span class="twitter">
+              <a
+                class="twitter-share-button"
+                href="https://twitter.com/intent/tweet?text=Jakarta EE 8: JsonCollectors And The OOP Alternative, by @amihaiemil:  ">
+                Tweet
+              </a>
+            </span>
+            <span class="linkedin">
+               <script src="//platform.linkedin.com/in.js" type="text/javascript"> lang: en_US</script>
+               <script type="IN/Share" data-url="/2017/10/16/javaee8-jsoncollectors-oop-alternative.html" data-counter="right"></script>
+            </span>
+            <span class="hackernews">
+              <script src="//hnbutton.appspot.com/static/hn.min.js" async defer></script>
+              <a href="http://news.ycombinator.com/submit" class="hn-share-button">Submit on HackerNews</a>
+            </span>
+            <br/><br/>
+            <span class="vkontakte">
+              <script type="text/javascript"><!--
+                 document.write(VK.Share.button(false,{type: "round", text: "Share"}));
+                 -->
+              </script>
+            </span>
+            <br>
+            <span class="reddit">
+              <a href="//www.reddit.com/submit" onclick="window.location = '//www.reddit.com/submit?url=' + encodeURIComponent(window.location); return false"> <img src="//www.redditstatic.com/spreddit7.gif" alt="submit to reddit" border="0" /> </a>
+            </span>
+          </div>
+        
+</div>
+
+        <!--HERE embed the tweet and remark if they exist-->
+        
+      </div>
+    </div>
+
+    <div class="wrapper centered">
+          <p>
+            Use <a href="https://help.disqus.com/customer/portal/articles/665057-syntax-highlighting">syntax highlighting</a> in your comments, to make them
+            more readable.
+          </p>
+      </div>
+<div class="wrapper" id="disqus_thread"></div>
+    <script type="text/javascript">
+        if(!document.location.hostname.includes("localhost")) {
+          var disqus_shortname = 'amihaiemil';
+          var disqus_identifier = "/2017/10/16/javaee8-jsoncollectors-oop-alternative.html";
+
+          (function() {
+              var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+              dsq.src = 'https://' + disqus_shortname + '.disqus.com/embed.js';
+              (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+          })();
+        }
+    </script>
+
+    <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    <a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+    <footer class="site-footer">
+  <div class="centered">
+    © amihaiemil.com 2016-2020
+    <span>Illustrated by <a target="_blank" href="https://www.facebook.com/andreeaillustration/">Andreea</a></span>
+    <span>Website last updated at: <span id="lastupdated"></span></span>
+  </div>
+</footer>
+
+    <script id="dsq-count-scr" src="//amihaiemil.disqus.com/count.js" async></script>
+    <!--Include ElasticLunr.js and the script indexing all the posts.-->
+<script src="/js/elasticlunr.min.js"></script>
+<script src="/js/indexPosts.js"></script>
+
+    <script
+        type="text/javascript"
+        id = "elnr-sw-script"
+        size="3"
+        placeholder="Enter keywords"
+        src="/js/elasticlunr/elasticlunr-search-widget.min.js"> <!--ElasticLunr Search Widget-->
+    </script>
+  </body>
+
+</html>

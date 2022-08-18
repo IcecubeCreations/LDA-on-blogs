@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang='en'>
+
+<head>
+  <title>
+    Benefits of Microservices - Choreography over Orchestration, Low Coupling and High Cohesion
+  </title>
+  <meta charset='utf-8'>
+  <meta content='Oliver Wolf' name='author'>
+  <meta content='Why to use microservices and why they are a good fit for agile development' name='description'>
+  <meta content='width=device-width, initial-scale=1.0' name='viewport'>
+  <meta content='71821C3E251AB8B91C5621381E9CE901' name='msvalidate.01'>
+  <meta content='f6pLo0Bo6XxRell4NG5Dbf5fVEgqPW1KQ6NW8fJM32E' name='google-site-verification'>
+  <link rel="icon" type="image/png" href="/assets/favicon/favicon-32x32-38d3450867d35a672e3680418da55e73216a4ec2527b61632a5e791cafe854c6.png" sizes="32x32">
+  <link rel="icon" type="image/png" href="/assets/favicon/favicon-16x16-317d860b1916cd45f944b507f8aa2a7209b10b619d1c03caece1ac87989f6660.png" sizes="16x16">
+  <link rel="manifest" href="/favicon/manifest.json">
+  <link rel="mask-icon" href="/favicon/safari-pinned-tab.svg" color="#5bbad5">
+  <link rel="shortcut icon" href="/assets/favicon/favicon-4b400db5128e973df8343ad2da4e4be1d092388f1b8421f2ea919940a29e34a6.ico">
+  <meta name="msapplication-TileColor" content="#da532c">
+  <meta name="msapplication-config" content="/favicon/browserconfig.xml">
+  <meta name="theme-color" content="#ffffff">
+
+  <link rel="alternate" type="application/atom+xml" title="specify.io - Software System Articles" href="https://specify.io/rss.xml" />
+  <link rel="stylesheet" media="all" href="/assets/application-a1efae2b5ced7a0a74d5a1bfcd53b0904cccfb36c726d111916f4de9bc0112fc.css" />
+  <link href='https://fonts.googleapis.com/css?family=Rubik|Patua+One|Gloria+Hallelujah' rel='stylesheet' type='text/css'>
+  <link href="https://specify.io/concepts/microservices" rel="canonical" />
+</head>
+
+<body>
+  <header class='main-header'>
+    <div class='logo'>
+      <a href='/'>specify.io</a>
+    </div>
+  </header>
+  <main>
+    <article class='document'>
+      <header>
+        <h1>
+          Introduction into Microservices
+        </h1>
+      </header>
+      <div class='detailed-contributors'>
+        <div class='avatars'>
+          <a href='https://twitter.com/WolfOliver' target='_blank'>
+            <img alt="Oliver Wolf" src="/assets/avatar-ow-2e65e0b6cdef2dca9473358b5cd1d1e358ff0576936a2b4a5674c4ab8b0da1e9.jpg" />
+          </a>
+        </div>
+        <span class='author'>
+          <b>Oliver Wolf</b>,
+          <span style='max-width: 500px;' class='bio'>
+            Currently working on
+            <a href='https://www.monsterwriter.app'>MonsterWriter</a> - The most enjoyable way to write a thesis, paper, article or blog post.
+          </span>
+        </span>
+      </div>
+      <h2>Table of Content</h2>
+      <nav class='toc'>
+        <ul>
+          <li>
+            <a href='#introduction'>Introduction</a>
+          </li>
+          <li>
+            <a href='#p1-min-cost-of-change'>Purpose 1: Minimize Costs of Change</a>
+          </li>
+          <li class='second-level'>
+            <a href='#cohesion-system-boundaries'>Enforced cohesion because of hard system boundaries</a>
+          </li>
+          <li class='second-level'>
+            <a href='#coupling-high-cohesion'>Lower coupling because of high cohesion</a>
+          </li>
+          <li class='second-level'>
+            <a href='#choreography'>
+              Lower coupling because of choreography is preferred over orchestration
+            </a>
+            <span class='toc-note'>
+              <a href='#choreography'>
+                &nbsp;&nbsp;&nbsp;"<strong>orchestration vs. choreography</strong>" is explained here
+                <span class='arrow'>&#10548;</span>
+              </a>
+            </span>
+          </li>
+          <li class='second-level'>
+            <a href='#smaller-code-bases'>Smaller and cleaner code bases because of separated services</a>
+          </li>
+          <li class='second-level'>
+            <a href='#smaller-teams'>Smaller teams because of smaller code bases</a>
+          </li>
+          <li class='second-level'>
+            <a href='#interim-conclusion'>Interim conclusion</a>
+          </li>
+          <li>
+            <a href='#Reuse'>Purpose 2: Encourage Generalization, Replaceability and Reuse</a>
+          </li>
+          <li class='second-level'>
+            <a href='#decompose-actions'>Decomposition Dimension 1: Actions on entities</a>
+          </li>
+          <li class='second-level'>
+            <a href='#decompose-aspects'>Decomposition Dimension 2: Aspects of an action</a>
+          </li>
+          <li>
+            <a href='#ops-efficiency'>Purpose 3: Increase Operations Efficiency</a>
+          </li>
+          <li>
+            <a href='#ops-complexity'>Risk 1: Increase Operations Complexity</a>
+          </li>
+          <li>
+            <a href='#distributed-monolith'>Risk 2: Distributed Monolith</a>
+          </li>
+        </ul>
+      </nav>
+      <article class='concept'>
+        <h2 id='introduction'>Introduction</h2>
+        <p>
+          Most people think a microservice architecture is good for building scalable applications. This isn’t false but we should have a closer look at which dimension this architecture style scales at its best. The dimension that comes into
+          people’s mind first is the dimension of load. This means it should be possible to add additional resources to keep the performance the same when workload increases. In fact, this is not for what microservices are good for in the first
+          place.
+        </p>
+        <p>
+          The dimension the microservice architecture scales is the functional dimension. In other words, it is easy to introduce new functions and qualities at any stage of the product. This leads to the consideration that it’s simply possible to
+          react to imminent load problems with new requirements.
+        </p>
+        <p>
+          This articles explain the purposes and risks of microservice architectures. It further gives some hints on how an architecture must look like to met these purposes. At some points it also compares microservice to traditional service
+          oriented architectures (SOA).
+        </p>
+        <h2 id='p1-min-cost-of-change'>Purpose 1: Minimize Costs of Change</h2>
+        <aside class='details code-note'>
+          <div class='lable usecase-lable'>
+            Purpose
+          </div>
+          <span>
+            Microservices are intended to scale according to new requirements.
+          </span>
+        </aside>
+        <p>
+          Minimizing the costs for new or changed requirements is the major purpose of the microservice architecture style. This benefit comes directly from the “single responsibility principle”. The microservices pattern prescribe radical rules to
+          enforce this principle in order to maximize its benefits.
+        </p>
+        <p>
+          To prevent that code is added where it doesn’t belong to and to ensure changeability, the microservice pattern recommends that:
+        </p>
+        <ul>
+          <li>different responsibilities are placed in different services</li>
+          <li>each service has its own code repository</li>
+          <li>each instance of a microservice is executed as a dedicated process</li>
+          <li>inter service communication is only allowed through a network connection. In addition, services must use its official API to talk to each other: it is not allowed that one service access the data of database that has been written by
+            another service. <b>Each service must have its own logical database schema!</b></li>
+          <li>the protocol used for communication must be technology agnostic (interoperable). This means a service should not assume that another service is written in a specific programming language.</li>
+          <li>choreography should be preferred over orchestration</li>
+        </ul>
+        <p>
+          Some of these principles might remind us on a traditional service oriented architecture (SOA). In fact, each microservice architecture is a service oriented architecture, <b>but not the other way around</b>. There are some discussions
+          whether
+          <a href='http://intellyx.com/2015/07/20/are-microservices-soa-done-right/' target='_blank'>microservices are SOA done right</a>.
+        </p>
+        <p>The difference that makes a service oriented architecture a microservice architecture is, you guessed it, a smaller services size and lightweight protocols. The smaller service size is a result of applying the first principle from the list
+          above: place different responsibilities into different services.</p>
+        <p>
+          Later in this article, we’ll have a closer look on how to decide which responsibilities goes together into one service and which should be better separated. For now, we assume that a well done microservice architecture is in place and
+          examine how each of the rules above contributes to a lower
+          <a href='http://www.agilemodeling.com/essays/costOfChange.htm' target='_blank'>costs of change</a>.
+        </p>
+        <h3 class='h3-small' id='cohesion-system-boundaries'>Enforced cohesion because of hard system boundaries</h3>
+        <p>Cohesion in software architecture is a measure how related the responsibilities of a module are [SAiP, S. 121]. So when a module has responsibilities that are strongly related to each other, this module has a high cohesion.</p>
+        <p class='note important-note'>
+          <b>Attention:</b> Don’t fall into the trap and put related responsibilities into different services!
+        </p>
+        <p>Because different responsibilities are placed in different code repositories, it is much harder to place new code into modules to which they don’t belong to by design. This is a common problem in traditional applications:</p>
+        <p>Developers will eventually ignore or oversee boundaries of subsystems due to time pressure or insufficient understanding of the larger code base. As a consequence of that, related logic is distributed across system boundaries and it is
+          much harder to maintain and extend the software. Subsequently the test suite gets also more complex and this is another reason why it's harder to ensure that everything is still working after a code change.</p>
+        <h3 class='h3-small' id='coupling-high-cohesion'>Lower coupling because of high cohesion</h3>
+        <p>
+          &quot;Low coupling often correlates with high cohesion, and vice versa&quot;
+          [SADCW]. In a good designed microservice architecture the dependencies between services are minimized. One reason for that is the same as for the enforced cohesion:
+        </p>
+        <p>It is hard for developers to introduce new communication paths without to talk to the developers of the other services. Even if there is only one developer involved, he will be more thoughtful in introducing new dependencies between two
+          services then between modules within the same code base.</p>
+        <h3 class='h3-small' id='choreography'>Lower coupling because of choreography</h3>
+        <p>Another driver for lower coupling is that in a microservice architecture choreography is preferred over orchestration. When a service oriented architecture uses an orchestration pattern for communication, there are point-to-point
+          connection between the services. Point-to-point means that one service calls the API of another service which results in a web of communication paths between all services. Integrating, changing or removing services from this web is hard
+          since you have to be aware of each connection between the services.</p>
+        <aside class='details code-note'>
+          <span>
+            <b>On the left</b> site an orchestration with point-to-point conncetions is shown.</br>
+            <b>On the right</b> site a choreography pattern is shown where each service waits for events to act on.
+          </span>
+        </aside>
+        <figure>
+          <img alt="comparison between the orchestration pattern and the choreography pattern" src="/assets/orchestration-vs-choreography-097566bf059109c51c8a95faaf3ea77092a626c2a63bc5f06ae0a7ade4a31378.png" />
+          <figcaption>
+            Orchestration vs. Choreography, Source:
+            <cite>
+              <a href='https://www.thoughtworks.com/de/insights/blog/scaling-microservices-event-stream' target='_blank'>www.thoughtworks.com</a>
+            </cite>
+          </figcaption>
+        </figure>
+        <p>Applying a choreography pattern means that one service doesn’t talk to another service in order to instruct an action. Instead each service is observing its environment and acts on events autonomous. In real live this looks like this:</p>
+        <p>Services are connected to a message bus and subscribe channels they are interested in. Once an event series occurs that matters of the service, the service performs the appropriate action. Now it is easy to add new services to the
+          architecture; You simply have to connect them to the message bus. In the worst case you must ensure that the other services emit the events that the new service requires. But adding addional events or extending the payload of existing
+          events won’t break existing logic.</p>
+        <aside class='details code-note'>
+          <span>
+            A more concreate example of <strong>orchestration vs choreography</strong>.
+          </span>
+        </aside>
+        <figure>
+          <img alt="microservices orchestration vs choreography examples" src="/assets/orchestration-vs-choreography-examples-88fe81d21b600c136f594d43421e4f9576552116c178e4fb7e7cf2b8fc5c065f.png" />
+          <figcaption>
+            <strong>Orchestration vs. Choreography</strong> Examples, Original examples published in:<br />
+            <cite>
+              <a href='http://buildingmicroservices.com' target='_blank'>Building Microservices by Sam Newman, O'Reilly</a>
+            </cite>
+          </figcaption>
+        </figure>
+        <p class='note'><b>Note:</b> When it comes to create/read/update/delete entities the REST protocol should still be a consideration. The service that handles the REST call could then trigger an event that a new entity was
+          created/updated/deleted.</p>
+        <p>Applying another rule from the list above will result in an even lower coupling: When technology agnostic protocols are used, different services can be developed in different technologies. So it is possible to pick the best suited
+          technologies for each service/team.</p>
+        <p>In the end a lower coupling allows to replace, remove or add new services when requirements change without having the fear that some communication paths have been oversee. So, a lower coupling allows to make changes to the architecture at
+          a later state with less effort.</p>
+        <h3 class='h3-small' id='smaller-code-bases'>Smaller and cleaner code bases because of separated services</h3>
+        <p>Each service has a small code base and so it is easier for developers to extend or modify a service. Even when a developer hasn’t worked on a service for a while or when a developer is new in the project, the smaller code bases makes it
+          possible to be productive right from the beginning.</p>
+        <aside class='details code-note'>
+          <span>
+            More source code causes much more errors
+          </span>
+        </aside>
+        <figure>
+          <img alt="more source code causes much more errors" width="500" src="/assets/frist-law-of-software-quality-16c4136db0c9403f4e846cb628ed5b367b9630487acb53f69400a4e6b9fb2d70.png" />
+          <figcaption>
+            Source:
+            <cite>
+              <a href='https://twitter.com/mmrichards/status/602949000690466816' target='_blank'>twitter.com/mmrichards/..</a>
+            </cite>
+          </figcaption>
+        </figure>
+        <p>In addition, removing dead code to clean up the code base is much simpler in smaller code bases. In traditional applications developers are worried about removing unused code because they fear site effects. Furthermore, because of the
+          simplicity the likelihood to introduce errors is also reduced.</p>
+        <p>The final point of smaller code bases is that the IDE loads faster :)</p>
+        <h3 class='h3-small' id='smaller-teams'>Smaller teams because of smaller code bases</h3>
+        <p>
+          The people which develop and maintain a service can be organized in a small team where each team maintains and/or operates one service (or a small set of services).
+          <a href='https://spin.atomicobject.com/2012/01/11/small-teams-are-dramatically-more-efficient-than-large-teams/' target='_blank'>Smaller teams minimize management overhead within the teams and will increase productivity dramatically</a>.
+        </p>
+        <h3 class='h3-small' id='interim-conclusion'>Interim conclusion</h3>
+        <p>Because a microservice architecture is made for adding requirements at any time this architecture style is very good fit for agile development processes. It is possible to implement a minimum viable product, deliver it to the user and than
+          extend the system over time.</p>
+        <figure>
+          <blockquote>
+            <p>
+              "Applying a microservice architecture is not about building the perfect system instead it is about to build a framework in which a good system can emerge over time as the understanding grows." [bms, S. 15]
+            </p>
+          </blockquote>
+        </figure>
+        <p>However, a still existing problem is that responsibilities are assigned to the wrong service by design. When it comes to design a microservice architecture many people don’t know how to divide a monolithic problem into multiple
+          (micro)services. And in fact, when the services are too big or to small, the advantages are gone and problems arise. This then bothers developers and also the managers who decided to invest into this architecture style.</p>
+        <p class='note important-note'>
+          <b>Hint</b>: Making services too small is common pitfall. This antipattern is called “nanoservices”.
+        </p>
+        <p>
+          So, lets have a look at the most asked question in discussions about microservices: <b>How small a service should be?</b> The following section
+          &quot;<a href='#Reuse'>
+            encourage Generalization, Replaceability and Reuse
+          </a>&quot;
+          should give you an idea on how to approach this problem.
+        </p>
+        <h2 id='Reuse'>Purpose 2: Encourage Generalization, Replaceability and Reuse</h2>
+        <aside class='details code-note'>
+          <div class='lable usecase-lable'>
+            Purpose
+          </div>
+          <span>
+            In microservices the lesson learned from SOA are applied to fulfil the promise of reuse.
+          </span>
+        </aside>
+        <p>
+          Reusing services is an old idea and in service oriented architecture (SOA) this is a fundamental goal. The microservice architecture style promotes the following principle to reach the best reusability for a single service:
+        </p>
+        <ul>
+          <li>Build smaller services doing one thing well. This is similar to the rule from the section above: Different responsibilities should be placed in different services.</li>
+        </ul>
+        <p>A typical show stopper in discussion about reusing an existing service is its complexity and that the existing solution does much more then actual required. Often you hear statements like “this is a simple problem we better build our own
+          solution instead of learning how to use an existing one”. To make things worse a complex software goes along with a complex documentation. How often did you hear a colleague complaining about a documentation?</p>
+        <p>
+          There are some rules of thumb out there how small a microservice should be:
+        </p>
+        <ul>
+          <li>
+            <cite>
+              &quot;<a href='http://rea.tech/micro-services-what-even-are-they/' target='_blank'>
+                The service can be rewritten and redeployed in 2 weeks.
+              </a>&quot;
+              , Jon Eaves
+            </cite>
+          </li>
+          <li>
+            <cite>
+              &quot;<a href='https://vimeo.com/29719577' target='_blank'>
+                It must be possible to feed a team that maintains a service with two pizzas.
+              </a>&quot;
+              , Werner Vogels
+            </cite>
+          </li>
+        </ul>
+        <p>These are good rules of thumb and one could argue that these are extreme examples. Two weeks two rewrite a service is a desirable time range but according to the pizza example I must always work in a one-man team.</p>
+        <p>To get a well designed microservice architecture we should not ask how big a service should be, instead we should ask: <b>which responsibilities should go into the same service?</b></p>
+        <p>My opinionated answer to this is that responsibilities should be grouped in a way so that the <b>amount and size of domain specific services is minimized</b>. Domain specific services, in this context, are services that are specific to the
+          problem domain and that it's unlikely to find a scenario for reusing them in other projects.</p>
+        <p class='note important-note'>
+          Conversely this means: The amount of reused or reusable services should be maximized.
+        </p>
+        <p>In order master that challenge, I like to think of two dimensions of decomposition.</p>
+        <h3 class='h3-small' id='decompose-actions'>Decomposition Dimension 1: Actions on entities</h3>
+        <p>Actions that requires access to the same database records should go into the API of same service. For example, creating, reading, updating and deleting an entity (e.g. a user) should be provided by the API of the same service.</p>
+        <p class='note'><b>Recap:</b> It’s a no-go that more then one service accesses the same database since it breaks up cohesion (see section ‘Purpose 1: Minimize Costs of Change’). When a services A requires information of service B, service A
+          must use the API of service B.</p>
+        <p>Furthermore, entities that have a strong relation to each other are good candidates to be managed by the same services. From the perspective of reusing a service: When you can’t think of a scenario where you use an entity without the
+          other, it’s an indication that those entities should be better managed by the same service.</p>
+        <h3 class='h3-small' id='decompose-aspects'>Decomposition Dimension 2: Aspects of an action</h3>
+        <p>Just because an action is provided by the API of one service it doesn’t mean that every aspect of that action must be executed by that service. It is often possible to decompose a domain specific action into one or more generic actions. In
+          such cases we should think to leave those aspects of an action to other services.</p>
+        <p><i>A simple example</i>: When a new user signs up at an online shop, an email to this user should be send. It is a good idea to use an email service to send out those emails. Why? In case the layout of all emails should be changed each
+          service that sends emails must be changed. Sending emails is such a generic problem that there are tons of services out there that can be reused.</p>
+        <p><i>A more complex example</i>: When a customer of an online shops views a product the shop system should remember this in order to generate user specific advertisements. In this example, we have a service that manages products. Putting the
+          logic to generate user specific advertisements would blow up the complexity of the product service. Instead we should make a research which off-the shelf software can perform such user specific advertisements and use this system along with
+          the product service. Whenever product information gets requested by an user the product service will notify the advertisement system. FYI: When an user opens a page on amazon about 200 services are called to perform this action (see [WV]).
+        </p>
+        <p><i>Another example</i>: Imagine a fitness tracker wristband that records and analyzes your vitality. Because of the limited disk space and computation power, it sends your vitality data (and maybe your current position) to a microservice
+          architecture. One service acts as an endpoint and is responsible for receiving the data records from the wristbands. To keep the first service simple, this service is just responsible to receive and dispatch the data records. To store and
+          analyze the heart rate we need something like a “heart rate service” that is able to calculate the average heart rate of a given time period in the past (because we want to display this information to the user). Making a generalization step
+          before implementing a heart rate service can save us a lot of work. The heart rate service is actually a time series database that can be used off the shelf.</p>
+
+        <h2 id='ops-efficiency'>Purpose 3: Increase Operations Efficiency</h2>
+        <aside class='details code-note'>
+          <div class='lable usecase-lable'>
+            Purpose
+          </div>
+          <span>
+            Only scale the bottlenecks.
+          </span>
+        </aside>
+        <p>
+          In sum the footprint of an microservice architecture is usually bigger then the footprint of a monolithic application. This is because in a microservice architecture each service must run as a separated process. This means each instance of
+          a service requires its own runtime (e.g. JVM, Ruby interpreter, etc.).
+        </p>
+        <p class='note important-note'>
+          <b>Hint</b>: The
+          <a href='/concepts/serverless-architecture'>serverless architecture</a>
+          pattern mitigates this costs by using the same runtime for different services.
+        </p>
+        <p>
+          But there is a break-even point when it comes to horizontal scaling. When scaling a monolithic application horizontally you must install the whole monolith multiple times. This is a kind of waste because often only a small part of the
+          application becomes the bottleneck. With a microservice architecture you can only scale those part that actually have performance issues. For systems under <strong>constant high load</strong> the hardware resources are cheaper when a
+          microservice architecture is in place.
+        </p>
+        <h2 id='ops-complexity'>Risk 1: Increase Operations Complexity</h2>
+        <aside class='details code-note'>
+          <div class='lable risk-lable'>
+            Risk
+          </div>
+          <span></span>
+        </aside>
+        <p>
+          One disadvantage of the microservice architecture is obvious: It is necessary to operate much more applications than just one or two. Mature organizations use container (e.g. Docker), PaaS (e.g.
+          <a href='/systems/cloudfoundry/features-and-usecases'>Cloud Foundry</a>)
+          technologies and continuous delivery methodologies to mitigate this drawback.
+        </p>
+        <h2 id='distributed-monolith'>Risk 2: Distributed Monolith</h2>
+        <p>
+          In case your architecture has a bad cohesion you will multiply all problems by distributing your application across different microservices (see [JS]).
+        </p>
+        <h2>External Sources</h2>
+        <p class='sources'>
+          [SAiP] Len Bass, Paul Clements, Rick Kazman; Software Architecture in Practice, Addison Wesley
+        </p>
+        <p class='sources'>
+          [bms] Sam Newman; Building Microservices, O'Reilly
+        </p>
+        <p class='sources'>
+          [SADCW] John W. Satzinger System Analysis and Design in a Changing World, Key Facts
+        </p>
+        <p class='sources'>
+          [WV] Talk; Werner Vogels;
+          <a href='https://vimeo.com/29719577'>Amazon and the Lean Cloud</a>
+        </p>
+        <p class='sources'>
+          Blobpost; Jon Eaves;
+          <a href='http://rea.tech/micro-services-what-even-are-they/'>Micro services, what even are they?</a>
+        </p>
+        <p class='sources'>
+          Blogbost; Carl Erickson;
+          <a href='https://spin.atomicobject.com/2012/01/11/small-teams-are-dramatically-more-efficient-than-large-teams/'>Small Teams Are Dramatically More Efficient than Large Teams</a>
+        </p>
+        <p class='sources'>
+          Blogpost; Jean D'Amore;
+          <a href='https://www.thoughtworks.com/de/insights/blog/scaling-microservices-event-stream'>Scaling Microservices with an Event Stream</a>
+        </p>
+        <p class='sources'>
+          Blogpost; Jason Bloomberg;
+          <a href='http://intellyx.com/2015/07/20/are-microservices-soa-done-right/'>Are Microservices ‘SOA Done Right’?</a>
+        </p>
+        <p class='sources'>
+          Webpage; agilemodeling;
+          <a href='http://www.agilemodeling.com/essays/costOfChange.htm'>Examining the Agile Cost of Change Curve</a>
+        </p>
+        <p class='sources'>
+          Tweet of an unknow talk:
+          <a href='http://rea.tech/micro-services-what-even-are-they/'>https://twitter.com/mmrichards/status/602949000690466816</a>
+        </p>
+        <p class='sources'>
+          [JS] Webpage; Jan Stenberg;
+          <a href='https://www.infoq.com/news/2016/02/services-distributed-monolith'>Microservices Ending up as a Distributed Monolith</a>
+        </p>
+      </article>
+    </article>
+    <aside class='related-resources'>
+      <article>
+        <h2>Related Articles:</h2>
+        <div class='document'>
+          <p>
+            <a href='/systems/cloudfoundry/features-and-usecases' title='Cloud Foundry - An open source platform as a service to run microserices'>
+              Cloud Foundry - A platform to run microservices
+            </a>
+          </p>
+        </div>
+        <div class='document'>
+          <p>
+            <a href='/systems/consul/features-and-usecases' title='Consul - An open source system for service discovery'>
+              Consul - An open source system for service discovery
+            </a>
+          </p>
+        </div>
+        <div class='document'>
+          <p>
+            <a href='/how-tos/concourse-ci-continious-integration-and-delivery-of-microservices' title='Continuous Delivery of a Microservice Architecture using Concourse.ci, Cloud Foundry and Artifactory'>
+              Concourse.ci Tutorial - Continuous Delivery of a Microservice Architecture using Concourse.ci, Cloud Foundry and Artifactory
+            </a>
+          </p>
+        </div>
+      </article>
+    </aside>
+
+  </main>
+  <footer>
+    <a href='/'>Home</a>
+    |
+    <a href='/imprint'>Imprint</a>
+  </footer>
+</body>
+
+</html>

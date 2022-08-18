@@ -1,0 +1,4901 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+Cloud Integration – Connecting to Messaging Systems using the AMQP Adapter | SAP Blogs
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+Skip to Content
+
+
+
+
+
+
+Home
+Community
+
+
+Ask a Question
+Write a Blog Post
+Login / Sign-up
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+Technical Articles
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel
+ 
+
+November 20, 2019
+25 minute read
+
+
+
+Cloud Integration – Connecting to Messaging Systems using the AMQP Adapter
+
+
+
+138        
+
+30        
+
+21,201        
+
+
+
+This blog describes options for configuring asynchronous message processing using the new AMQP adapter, which is available for customers to connect to messaging systems using the AMQP (Advanced Message Queuing Protocol) protocol. It describes the configuration, prerequisites and limits. The AMQP adapter is available for SAP Cloud Integration customers with the 08-December-2019 release.
+Connecting to Messaging Systems Using the AMQP Adapter
+In many integration scenarios messages or events have to be exchanged between applications or systems via messaging systems. With the new AMQP adapter SAP Cloud Integration can be used as provider or consumer of such messages or events. Cloud Integration can connect to messaging systems using the AMQP (Advanced Message Queuing Protocol) protocol version 1.0 and consume messages or events using the AMQP sender adapter or store messages or events in the message broker using the AMQP receiver adapter. Follow the steps described below to write to or consume from queues and/or topics in the message broker.
+Prerequisite: Messaging System Setup
+To be able to connect to queues or topics in the message broker, you have to create queues and/or topics in the message broker. This needs to be done on the messaging system with the configuration tools provided by the messaging system. 
+In some messaging systems you need to configure a Lock Duration to make sure the message is not consumed multiple times. This timeout must be longer than the expected processing time of the message, otherwise this would lead to duplicate messages.
+Note that the monitoring of queues, topics and messages in the queues or topics can only be executed by using tools provided by the messaging system provider. These monitors are not integrated into Cloud Integration. In SAP Cloud Platform Integration you can monitor the integration flows using the AMQP adapter and the messages send to or consumed from the messaging system. You can find more details about those options in this blog in section ‘Monitoring’.
+ 
+AMQP Receiver Adapter
+The AMQP receiver adapter can be used to send messages from Cloud Integration to queues or topics in an external messaging system. A small sample scenario with a HTTP sender adapter and the AMQP receiver adapter is shown in the picture below. A message is received by the HTTP sender adapter, some headers are defined and conversions in a groovy script are done, the message is then sent to the messaging system via the AMQP adapter:
+
+In the AMQP receiver channel the following configurations have to be made to connect to the messaging system. Note that these settings are very specific to the connected messaging system, some sample settings are listed below in the messaging system specific chapters.
+
+Protocol:
+
+Transport Protocol: Select the protocol the messaging system supports.
+
+TCP
+WebSocket
+
+
+
+
+
+
+
+Connection:
+
+Host: Specify the hostname of the messaging system.
+Port: Specify the port of the messaging system.
+Proxy Type: Select if you want to connect via Cloud Connector (On-Premise) or directly via the Internet, this configuration option is available with version 1.1 of the adapter (available with the January 2020 update). See blog How to connect to an on-premise AMQP server via Cloud Connector for more details.
+Path: For WebSocket specify the access path of the messaging system.
+Connect with TLS: Select if TLS has to be used for the connection.
+Authentication: Select the authentication method the messaging system supports.
+
+SASL (Simple Authentication and Security Layer)
+OAuth2 Client Credentials
+None
+
+
+Credential Name: Select the alias of the deployed user credentials. You need to deploy the respective key name and key as user credentials in the security material section.
+
+
+
+
+
+Processing:
+
+Destination Type: Specify if messages are to be sent to queues or topics in the messaging system.
+
+Topic
+Queue
+
+
+Destination Name: Specify the name of the queue or topic. This value can be dynamically defined using header: ${header.queueabc} or property: ${property.queueabc}.
+Expiration Period: Specify the TTL (Time to Live) for the message. If nothing is specified, the setting for the queue or topic subscription in the messaging system applies. How the defined TTL is interpreted by the messaging system depends on the messaging system.
+Delivery: Specify if the messaging system has to make sure that the message is not lost, even in case of unexpected terminations.
+
+Persistent
+Non-Persistent
+
+
+
+
+
+
+ 
+AMQP Sender Adapter
+The AMQP sender adapter can be used to consume messages in Cloud Integration from queues or topic subscriptions in an external messaging system. A small sample scenario with the AMQP sender adapter and a SOAP receiver adapter is shown in the below picture. A message is consumed by the AMQP sender adapter from the messaging system, some conversions in a groovy script are executed, and then the message is sent to the receiver via the SOAP adapter:
+
+In the AMQP sender channel the following configurations need to be done, sample settings below in the messaging system specific chapters:
+
+Protocol:
+
+Transport Protocol: Select the protocol the messaging system supports.
+
+TCP
+WebSocket
+
+
+
+
+
+
+
+Connection:
+
+Host: Specify the hostname of the messaging system.
+Port: Specify the port of the messaging system.
+Proxy Type: Select if you want to connect via Cloud Connector (On-Premise) or directly via the Internet, this configuration option is available with version 1.1 of the adapter (available with the January 2020 update). See blog How to connect to an on-premise AMQP server via Cloud Connector for more details.
+Path: For WebSocket specify the access path of the messaging system.
+Connect with TLS: Select if TLS has to be used for the connection.
+Authentication: Select the authentication method the messaging system supports.
+
+SASL (Simple Authentication and Security Layer)
+OAuth2 Client Credentials
+None
+
+
+Credential Name: Select the alias of the deployed user credentials. You need to deploy the respective key name and key as user credentials in the security material section.
+
+
+
+
+
+Processing:
+
+Queue Name: Specify the name of the queue or topic subscription to be consumed from.
+Number of Concurrent Processes: Specify the number of processes used for parallel message processing. Note, that the processes are started from each worker node.
+Max. Number of Prefetched Messages: Specify the maximum number of messages to be prefetched by a worker. The default value is set to 5, which means that if there are more than 5 messages in the queue, the first worker fetches 5 messages at once and processes them one after the other; the second worker fetches the next 5 and so on. The allowed value range is 1 to 100. The performance may be increased with this prefetch feature because it reduces the time for additional communications. Consider the following:
+
+If the processing time of the integration flow is longer than only some seconds, consider a lower value for prefetched messages to allow an optimal distribution between the worker nodes. For very long running integration flows (longer than one minute) you may even consider 1 as value for prefetched messages.
+If the processing time of the integration flow is only some milliseconds you may increase the number of prefetched messages to 10 or even higher. But keep the lock timeout in mind (next point).
+Important: You need to keep the lock timeout of the messaging system in mind because the timeout starts with the processing of the first message in the prefetch package. If the package of the prefetched messages takes longer to process than what you’ve specified for the lock timeout, this could lead to duplicate messages!
+For older versions of the AMQP channel this configuration option is not available. In this case, the default value of 5 messages is used.
+
+
+
+
+The Retry Details section will be available with the 10th-May 2020 update.
+
+Max. Number of Retries: Specify the maximum number of retries that shall be executed in case there is an error during processing. Afterwards a different delivery status will be sent to the message broker (see next field).
+Delivery Status After Max. Retries: Select the delivery status that shall be sent to the message broker after the specified retries were executed and the message processing still fails. The following two values are available: REJECTED and MODIFIED_FAILED_UNDELIVERABLE. The message broker can then handle such messages differently.
+
+
+
+
+Retry Configuration
+If an error occurs during the processing of the consumed message in Cloud Integration, the message is not removed from the messaging system, but is retried again immediately as long as the maximum number of configured retries is reached. In case the messaging system does not support a different handling of the message when a different delivery status is sent, the retry may even go on forever.
+There are different options available to handle errors during processing and configure the retry for messages consumed via AMQP:
+
+Use Retry configuration in AMQP sender adapter as described above (available with 10th May 2020 update)
+Retry Configuration based on JMSRedelivered/JMSXDeliveryCount headers in Exception Sub-Process
+Catch Error and configure alternate processing in Exception Sub-Process
+
+If the used messaging system supports dead-lettering and delayed processing based on the delivery status as described for the AMQP sender adapter, then this is the recommended configuration option. If the messaging system does not support dead-lettering or you want to do a more specific handling, like sending a notification to an administrator after a certain number of retries you can use the configuration based on the two headers JMSRedelivered and JMSXDeliveryCount. The third option is the only option if the messaging system does neither support dead-lettering nor the headers.
+Retry Configuration in AMQP Sender Adapter
+If supported by the messaging system use the retry configuration in the AMQP sender adapter as shortly mentioned above.
+The Retry Details section in the AMQP sender adapter will be available with the 10th-May 2020 update.
+
+Max. Number of Retries: Specify the maximum number of retries that shall be executed in case there is an error during processing. Afterwards a different delivery status will be sent to the message broker (see next field).
+Delivery Status After Max. Retries: Select the delivery status that shall be sent to the message broker after the specified retries were executed and the message processing still fails. The following two values are available: REJECTED and MODIFIED_FAILED_UNDELIVERABLE. The message broker can then handle such messages differently.
+
+Most message brokers put messages with delivery status REJECTED into a dead letter queue, but for several message brokers a specific configuration in the message broker is required as well to achieve this. Some message brokers do not react on the delivery status at all. Check out the configuration options of the used message broker. Some specifics are mentioned below in the section about different tested message brokers.
+Executing Retries or Not?
+Answering this question is not as simple as you might expect. Considering the details of the retry mechanism, both options have advantages and disadvantages.
+The AMQP sender adapter will run up to Max. Number of Retries before sending the configured Delivery Status After Max. Retries to the broker. Then it depends on the broker and its configuration how it reacts to this delivery status. Usually, the broker either dead-letters the message or it resends the message to the client.
+
+If the AMQP sender adapter is configured not to execute any retries (Max. Number of Retries = 0), a to-be-redelivered message will be filtered out before the integration flow even starts to be executed. No MPL will be visible for the filtering mechanism, as not a single modeled step is even executed in the first place. This is all fine, if the broker dead-letters the message as a consequence. But this becomes a problem, if the broker simply resends the message anyway (although the AMQP sender adapter signaled to the broker that it cannot (or does not wish to) re-execute this message).
+If the AMQP sender adapter is configured to execute n retries, it will attempt up to n retries and finally sends back the Delivery Status After Max. Retries in case all attempts were unsuccessful. If the broker chooses to send the same message again to the client, the client will (once again) try to process the message with up to n subsequent retries before sending back the Delivery Status After Max. Retries – again.
+
+Let us consider the two worst-case scenarios:
+Scenario 1:
+The integration flow is unable to process the message successfully without user-interaction (or change). That means when re-executing the same message, processing will continue to fail. The AMQP sender adapter is configured not to run any retries. However, the broker resends the message over and over independent of the configured Delivery Status After Max. Retries. The retry attempts will not be visible (i.e. via MPL). But since the broker continues to send this message, the client has to filter it out and this consumes resources, mainly CPU. And even worse, it blocks the processing of subsequent messages from that queue in case of exclusive queues or message groups .
+Exposing these infinite attempts in MPLs would make this transparent while putting the health of your tenant’s database at risk. Fast, infinite retry attempts can flood the database with MPLs, potentially long before you even take notice of this. Hence, Cloud Integration decided to sacrifice transparency for the sake of the healthiness of the database and your tenant.
+Scenario 2:
+The integration flow is unable to process the message successfully without user-interaction (or change). That means when re-executing the same message, processing will continue to fail. The AMQP sender adapter is configured to run n retries (Max. Number of Retries > 0). The adapter will attempt up to n retries and finally sends back the Delivery Status After Max. Retries in case all attempts were unsuccessful. If the broker chooses to send the same message again to the client, the client will (once again) try to process the message with up to n subsequent retries before sending back the Delivery Status After Max. Retries – again. Since the broker resends the same message indefinitely, this results in infinite retry attempts. And since the integration flow allows retry attempts, it is not immediately filtered out. Instead, it is actually being executed and you will see an MPL for this (in RETRY state).
+If this goes on and on without anybody taking notice and acting on this situation, the database can be flooded and the tenant becomes unstable.
+Ways Out of the Misery
+
+Choose a broker that supports dead-lettering and make sure, it is configured to do so based on the Delivery Status After Max. Retries.
+When allowing retries, it is recommended to catch and handle exceptions in an exception subprocess. If you re-raise an exception (i.e. Error end event), the process will fail and the message will be retried. It is advisable to have an automated way of handling the exception successfully (i.e. End event) to avoid infinite retry attempts during a time frame the tenant is not actively observed.
+
+Retry Configuration based on JMSRedelivered/JMSXDeliveryCount
+There is no option to configure a delay in retry processing in the AMQP adapter because this is not supported by the AMQP protocol. One option to delay the retry in error cases is to configure this retry handling in the integration flow using dead letter queues in the messaging system (if this is supported by the messaging system). This can be configured using two headers set by most of the messaging systems:
+
+JMSRedelivered: This header specifies, if the message was redelivered. Value ‘false’ means that this message was delivered for the first time, value ‘true’ tells you that this message was already tried to be delivered before.
+ JMSXDeliveryCount: This header specifies the number of processings for this message. Value 1 means that it is the first attempt to process this message, value 2 means that it is the second attempt, meaning it is the first retry.
+
+Note that these headers are not set or not reliably set by some messaging systems. See below in the messaging system specific section for more details.
+Configure Delayed Retry Processing
+The first step to configure a delayed retry would be to add a Router step and another Receiver to the integration flow consuming the message:
+
+In the Router the route to the second receiver has to be configured in such a way that messages which are consumed for the second time are sent to another queue in the messaging system. The Condition in the Router can be defined by using one of the above-mentioned parameters. In the described sample I use the ‘JMSXDeliveryCount’ header and define the Non-XML expression as ${header.JMSXDeliveryCount} > ‘1’. If the used message broker does not support this header you can use the ‘JMSRedelivered’ header and define the expression as ${header.JMSRedelivered} = ‘true’.
+
+In the AMQP receiver channel a different queue is configured. This queue has to be created in the messaging system. From this queue no integration flow consumes messages, it is only used as storage for the time to the next retry. In my sample I use the queue ‘retryqueue’. 
+
+In the parameters for this queue, it needs to be specified that messages are moved to a dead letter queue after a specific time interval (time to live). This configuration has to be made in the messaging system by using the tools provided by the messaging system.
+Note: If the used message broker supports configuring any queue as dead letter queue, you can directly move the message back to the original processing queue and do not need to do this via explicit process.
+From this dead letter queue we can then consume the message and put it back to the original processing queue. This is done in a separate integration process:
+
+The AMQP sender adapter needs to be configured to consume messages from the dead letter queue of the retry queue or the queue defined as dead letter queue.
+In case Microsoft Azure Service Bus is used as messaging system, the dead letter queue can be accessed by using the following syntax: ‘<queue>/$deadletterqueue’: This may be different for other messaging systems.
+Make sure you select the flag ‘Consume Expired Messages’. This is required because the messages in the dead letter queue are expired because the expiration time is used as the delay time.
+ 
+
+The process writes the message back to the original processing queue via an AMQP receiver adapter so that it can be consumed from there again.
+In addition to these configurations, you need to make sure the header JMSXDeliveryCount or JMSRedelivered is retrieved by the integration flow. For this we configure the header as Allowed Header in the Runtime Configuration of the integration flow:
+
+Now we can deploy the integration flow and test the processing:
+As soon as a message is available in the processing queue in the messaging system, the message is consumed by Cloud Integration. If there is an error during processing, the processing fails and an immediate retry is executed. This retry stores the message in the separate retry queue, where the message is parked for the amount of time configured in the messaging system. As the message is not consumed from this retry queue it is moved to the dead letter queue after the configured time to live.
+As soon as it is available in the dead letter queue the second process consumes the message and stores it to the original processing queue. From there it is consumed and tried to be processed again. The same retry procedure would be triggered if again an error in processing occurs.
+You see, with this we are able to define a kind of retry interval, the message would only be retried after a defined time interval. What is not possible with this configuration is to stop a message after a certain number of retries. How this can be done, we see in the next section.
+Stop Retry Processing after x Retries
+First, we need to introduce a counter that counts the numbers of executed retries. For this we cannot use the JMSXDeliveryCount header set by the messaging system because we move the messages between different queues and so the JMSXDeliveryCount is always reset. We define our own counter in the process that writes the message back to the processing queue. We do this in a small groovy script:
+
+In the script we set a header RetryCount.
+Note that headers with prefix JMS are not allowed, such headers are not forwarded by the messaging systems.
+import com.sap.gateway.ip.core.customdev.util.Message;
+
+import java.util.HashMap;
+
+
+
+def Message processData(Message message) {
+
+    // Get Headers
+
+    map = message.getHeaders();
+
+    retry = map.get("RetryCount");
+
+    if (retry == null) {
+
+          retry = 1;
+
+       }
+
+       else {
+
+          retry = retry + 1; 
+
+       }   
+
+    message.setHeader("RetryCount", retry);
+
+   return message;
+
+
+
+}
+Furthermore, we extend the configuration in the main process that consumes messages from the processing queue by adding an additional Router step:
+
+In this Router step we evaluate the RetryCount header, and if it is greater or equal 5 we do some alternative handling and stop the retries. In my sample I simply write the message to a data store, but any other configuration could be done as well.
+
+As a last step we need to add the RetryCount header in the Allowed Headers in the Runtime Configuration of the integration flow:
+ 
+
+Now we can deploy the updated integration flow and test the processing:
+As soon as a message is available in the processing queue in the messaging system, the message is consumed by Cloud Integration. If there is an error during processing, the processing fails and an immediate retry is executed. This retry stores the message in the separate retry queue, where the message is parked for the amount of time configured in the messaging system. As the message is not consumed from this retry queue it is moved to the dead letter queue after the configured time to live.
+As soon as it is available in the dead letter queue the second process consumes the message, sets the RetryCount header and stores it to the original processing queue. From there it is consumed and as the numbers of executed retries are checked. The message is only retried 4 times; during the 5th retry, the message is written to the data store and the processing stops.
+Note, that when the message broker supports defining the original queue as dead letter queue directly and you skip this additional process, you can increase the RetryCount in the script directly in the main process instead before writing the message to the retry queue.
+Configure Exception Handling for Messaging Systems not Supporting the Headers
+As mentioned already, not all messaging systems support the two headers to configure explicit retry handling. In this case the only option to avoid endless retries that lead to a huge amount of message processing log, is to configure an exception handling in case of an error:
+
+Configure an Exception Subprocess in your integration flow to catch the error. Define an alternate processing for the message in the exception sub-process. In the above case the message is stored to a data store, and afterwards an email is sent to the administrator to analyze the error and process the message differently. In case the message is stored to a data store, like in the above sample, a different integration flow could consume and process these messages. You can for sure also define a different error handling, like storing the message to a different queue (kind of dead letter queue) on the messaging system.
+It is important that you end the Exception Subprocess with a Message End event and not with an Error End event to make sure the message is marked as Completed and is removed from the original queue on the message broker to prevent endless retries.
+Monitoring
+There are different options to monitor the integration flows, the connection to the messaging system and the processed messages.
+AMQP Connection Test 
+The Connectivity Test is available in Operations View in Web UI, in section Manage Security Material. Selecting the Connectivity Test tile from Overview Page opens the test tool offering tests for different protocols. To test the communication to the messaging system, the AMQP option is to be selected.
+
+ 
+Integration Content Monitor
+After the integration flow is deployed it can be found in the Manage Integration Content monitor. There you can check the status of the integration flow.
+
+Poll Status 
+In the Status Details area you may find the status and the details about the current consumption:
+
+If there is an error when consuming messages via the AMQP sender adapter the error would be shown here for the respective integration flow. In the Polling Information the status of the consumption is shown as Failed:
+
+Message Processing Monitor
+Processed messages can be monitored in the Message Processing monitor:
+
+In case of an error when sending the message to the messaging system using the AMQP receiver the errors would appear in this monitor:
+
+Usually, during message processing a dedicated message processing log (mpl) is written for each message (JMS Message ID) consumed from the AMQP server.
+Note, that in case the same integration flow consumes from multiple queues subscribed to the same topic those messages may be contained in the same mpl because the original JMS message id is  used for the creation of the mpl. Because of this, the recommendation when consuming from different queues is to use different integration flows, each for a dedicated queue.
+Messaging System Monitor
+Queues, topics and messages in the messaging system can be monitored using the monitoring tools of the messaging system.
+Mapping of AMQP Headers, Properties and Annotations to Headers in Cloud Integration
+During transforming a AMQP message to a message in Cloud Integration, or vise versa, the following AMQP headers, properties and annotations are mapped to headers in Cloud Integration:
+AMQP Type        AMQP Name                   Header Name in Cloud Integration
+header                  durable                              JMSDeliveryMode
+header                  priority                               JMSPriority
+header                  delivery-count                  JMSXDeliveryCount
+annotation            x-opt-delivery-time       JMSDeliveryTime
+property                message-id                      JMSMessageID
+property                user-id                               JMSXUserID
+property                to                                         JMSDestination
+property               subject                               JMSType
+property               reply-to                              JMSReplyTo
+property                correlation-id                  JMSCorrellationID
+property                absolute-expiry-time    JMSExpiration
+property                creation-time                  JMSTimestamp
+property                group-id                            JMSXGroupID
+property                group-sequence             JMSXGroupSeq
+AMQP application properties are transferred to Camel headers in Cloud Integration runtime with the same name and the other way round. Important is that the application properties are not allowed to start with JMS, else it would not be forwarded into a Camel header.
+ 
+Exclusive Processing
+In general there are two ways to provide exclusive (in-order) processing using an AMQP broker:
+
+Exclusive queues provide a capability that will let only one consumer consume from a given queue at a time. If that particular consumer is stopped or crashes one of the other consumers takes over consuming the messages. This means this also works if the Cloud Integration tenant has multiple worker nodes.
+Message groups are an optional feature of the AMQP 1.0 protocol. Groups are realized by using the AMQP property group-id. If an AMQP producer sets the group-id property at a message and the broker supports message grouping for that queue, all messages from the same message group will be processed one after the other. In our case, if the producer is a Cloud Integration system, you can set the AMQP group-id property by setting the camel header JMSXGroupID (see in the table above).
+
+Note that not all messaging systems support exclusive queues and/or message groups and these feature may have to be activated explicitly for a queue in the messaging system configuration. See below in the messaging system specific section for more details.
+ 
+Connections required for Processing
+For the AMQP adapter you require a permanent minimum of one connections per worker node for consuming messages from a queue because each worker node needs a connection to the message broker. For storing a message to the messaging system the numbers of worker nodes is the maximum of required connections.
+In total this means the numbers of connections per queue is:
+number of worker nodes + parallel requests storing messages to the message broker (maximum: number of worker nodes)
+This means you would need a maximum of 4 connections for one queue for a cluster with two worker nodes.
+ 
+Supported External Messaging Systems
+There are multiple providers of messaging system implementations available. Most of them support AMQP 1.0 and can be connected using the AMQP adapters. The most used messaging systems were tested by SAP Cloud Integration. Note the required settings, configuration options and limitations below.
+SAP Enterprise Messaging/Event Mesh
+The following configuration options are applicable for the SAP Enterprise Messaging:
+
+Connectivity Options: WebSocket over TLS (Port 443 with Path: “/protocols/amqp10ws“)
+Authentication Option: OAuth2 Client Credentials
+Dead Letter Queue Handling based on Delivery Status: Yes, Delivery status REJECTED puts the message to a DLQ after the configured redeliveries. Delivery status MODIFIED_FAILED_UNDELIVERABLE must not be used as it is not supported and can lead to errors during processing. Note, that the dead letter queue and the maximum redeliveries have to be configured in the message broker as well.
+JMSRedelivered/JMSXDeliveryCount supported: JMSRedeliverd: Yes; JMSXDeliveryCount: No
+Exclusive Queues supported: Yes
+Message Groups supported: No
+Queues supported: Yes, queues  need to be accessed using the following syntax in AMQP adapter channel: “queue:<queue name>”
+Topics supported: Yes, topics need to be accessed using the following syntax in AMQP adapter channel: “topic:<topic name>”
+Topic subscriptions supported: Yes, queues can be subscribed to topics.
+
+Size Limitations from SAP Enterprise Messaging
+When using Enterprise Messaging consider the following important restrictions:
+
+Maximum Number of Connections supported per Service Instance: 50
+Maximum Numbers of Connections combined for all Service Instances and subscription (per subaccount): 1000
+
+Taking the above connection requirements in consideration, when using Enterprise Messaging  with the AMQP adapter this means that you should use one service instance per queue.
+For more details check out the documentation.
+Microsoft Azure Service Bus
+The following configuration options are applicable for the Microsoft Azure Service Bus:
+
+Connectivity Options: TLS over TCP (Port 5671)
+Authentication Option: SASL
+Dead Letter Queue Handling based on Delivery Status: Supported, delivery status REJECTED puts the message to a dead letter queue, delivery status MODIFIED_FAILED_UNDELIVERABLE gives the message a deferred status in the messaging system (Message Deferral). Deferred messages stay in the queue, but are not consumed anymore.
+JMSRedelivered/JMSXDeliveryCount supported: Yes
+Exclusive Queues supported: No
+Message Groups supported: No
+Queues supported: Yes
+Topics supported: Yes
+Topic subscriptions supported: Yes, topic subscriptions can be accessed as separate, queue-like entities using the AMQP sender adapter: “[topic name]/subscriptions/[subscription name]”. Multiple subscriptions for a single topic can exist. It is not possible to send to topic subscriptions using the AMQP receiver adapter.
+
+Solace PubSub+
+The following configuration options are applicable for the Solace message broker:
+
+Connectivity Options:
+
+TCP (Port as defined in the Solace broker)
+TLS over TCP (Port as defined in the Solace broker)
+
+
+Authentication Option: SASL
+Dead Letter Queue Handling based on Delivery Status: Supported, but the dead letter queue and the maximum redeliveries have to be configured in the message broker as well. Delivery status REJECTED puts the message to the dead letter queue. Delivery status MODIFIED_FAILED_UNDELIVERABLE must not be used as it is not supported and can lead to errors during processing.
+JMSRedelivered/JMSXDeliveryCount supported: JMSRedeliverd: Yes; JMSXDeliveryCount: No
+Exclusive Queues supported: Yes
+Message Groups supported: No
+Queues supported: Yes
+Topics supported: Yes
+Topic subscriptions supported: Yes, queues can be subscribed to topics.
+
+Apache Qpid Broker-J
+The following configuration options are applicable for the Apache Qpid Broker-J:
+
+Connectivity Options:
+
+TCP (Port as defined in the Qpid broker)
+TLS over TCP (Port as defined in the Qpid broker)
+WebSocket (Port as defined in the Qpid broker)
+WebSocket over TLS (Port as defined in the Qpid broker)
+
+
+Authentication Option: SASL
+Dead Letter Queue Handling based on Delivery Status: Yes, but the dead letter queue and the maximum redeliveries have to be configured in the message broker as well. Delivery status REJECTED puts the message to the dead letter queue after the number of redelivery attempts configured in the messaging system. Delivery status MODIFIED_FAILED_UNDELIVERABLE takes the message out of the processing as long as the connection to the messaging system is established. After restart of the integration flow or the worker node the message would be tried again. After the number of redelivery attempts configured in the messaging system the message is moved to the dead letter queue.
+JMSRedelivered/JMSXDeliveryCount supported: Yes
+Exclusive Queues supported: Yes
+Message Groups supported: Yes
+Queues supported: Yes
+Topics supported: Yes
+Topic subscriptions supported: Yes, queues can be subscribed to topics.
+
+Apache ActiveMQ 5 and Apache ActiveMQ Artemis
+The following configuration options are applicable for the Apache ActiveMQ:
+
+Connectivity Options:
+
+TCP (Port as defined in the ActiveMQ broker)
+TLS over TCP (Port as defined in the ActiveMQ broker)
+
+
+Authentication Option: SASL
+Dead Letter Queue Handling based on Delivery Status: Yes, the dead letter queue, the maximum redeliveries and a redelivery delay can be configured in the message broker as well. Delivery status REJECTED and MODIFIED_FAILED_UNDELIVERABLE put the message to the dead letter queue.
+JMSRedelivered/JMSXDeliveryCount supported: Yes
+Exclusive Queues supported: No
+Message Groups supported: Yes
+Queues supported: Yes
+Topics supported: Yes
+Topic subscriptions supported: Yes, queues can be subscribed to topics.
+
+Note that Amazon MQ Service is based on Apache Active MQ and so, the same configuration options apply. For details see blog How to connect to an Amazon MQ Service using the AMQP Adapter.
+IBM MQ
+In older versions the IBM MQ broker has only limited support for the AMQP protocol, it does not support addressing queues via AMQP protocol, see IBM MQ documentation. Because of this limitation, with IBM MQ versions < 9.2, the AMQP receiver adapter can only be used to write to topics on the IBM MQ broker, but the AMQP sender adapter cannot consume from IBM MQ because only queues are supported for consumption in Cloud Integration. With IBM MQ version 9.2 this limitation does not exist anymore, see Point-to-point support on AMQP channels.
+The following configuration options are applicable for IBM MQ:
+
+Connectivity Options:
+
+TCP (Port as defined in the IBM MQ broker)
+TLS over TCP (Port as defined in the IBM MQ broker)
+
+
+Authentication Option: SASL
+Dead Letter Queue Handling based on Delivery Status: Not supported with AMQP protocol.
+JMSRedelivered/JMSXDeliveryCount supported: Yes (with version >= 9.2).
+Exclusive Queues supported: Yes (with version >= 9.2). Max Number of Prefetched Messages in AMQP sender channel needs to be set to 0.
+
+Note that the Poll status in the deployed artifacts monitor will show an error if multiple workers are running in your tenant. This is because only one consumer is allowed for the exclusive queue, the second worker will get an error when trying to connect.
+
+
+Message Groups supported: No.
+Queues supported: Yes (with version >= 9.2)
+Topics supported: Yes
+Topic subscriptions supported: Yes.
+
+RabbitMQ
+In testing we found that RabbitMQ has problems with AMQP 1.0. Test was done with plugin version 3.8.2, which was the newest version available at this time. This may change with newer plugin versions.
+
+
+
+
+
+
+
+Follow Like 
+RSS Feed
+            
+
+
+
+
+
+
+
+
+ 
+
+
+Alert Moderator
+    
+
+Alerting is not available for unauthorized users
+
+
+
+
+
+
+
+
+Assigned TagsSimilar Blog PostsRelated Questions 
+
+
+
+
+
+/
+
+
+
+
+
+
+      138 Comments      
+
+                You must be Logged on to comment or reply to a post.
+        
+
+
+
+
+
+ 
+
+
+Sven Huberti  
+November 20, 2019 at 1:18 pm
+
+
+
+
+Awesome blog, Mandy! Thanks for the detailed information! ?
+
+
+
+
+Like 2ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Joachim Dyndale 
+November 20, 2019 at 2:45 pm
+
+
+
+
+Excellent write-up. Looking forward to a native adapter for this.
+How would we go about setting/reading message annotations and application properties on messages?
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Joachim Dyndale 
+November 20, 2019 at 3:15 pm
+
+
+
+
+Never mind - from what I hear this isn't supported on launch, but is in your backlog of upcoming features. Looking forward to that then 🙂
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+November 21, 2019 at 7:40 am
+
+
+
+
+Hello Joachim,
+Camel headers in CPI runtime are transferred to AMQP application properties and the other way round on CPI inbound side.
+As for message annotations: we currently transfer the annotation x-opt-delivery-time into the header JMSDeliveryTime, other annotations are not supported. Could you maybe provide some more details on the scenarios you require AMQP message annotations? What kind of support would be required for the intended scenarios? Which annotations are required?
+Best regards,
+Mandy
+ 
+ 
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Joachim Dyndale 
+January 10, 2020 at 4:42 pm
+
+
+
+
+Hi,
+Thanks for the reply.
+In our case, we need to be able to read/write AMQP standard properties, like subject (Label on Azure ServiceBus), as well as application properties (which show up as Custom Properties on Azure ServiceBus) and the message annotation x-opt-scheduled-enqueue-time.
+If everything except the message annotation is currently supported we can use the adapter for some things, so that's good. But we do have some integrations where ScheduledEnqueueTime is used.
+Best regards,
+Joachim
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+January 13, 2020 at 12:57 pm
+
+
+
+
+Hello,
+AMQP property subject is transferred to the JMS property JMSType, which is transferred to a header in CPI. I will extend the blog with the complete list of properties we map shortly.
+x-opt-scheduled-enqueue-time we currently cannot transfer as this is not supported by our underlying open source components. We would have to check if and how we can provide this.
+Best regards,
+Mandy
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+January 13, 2020 at 1:17 pm
+
+
+
+
+see new chapter 'Mapping of AMQP Headers, Properties and Annotations to Headers in Cloud Integration' in the blog.
+Best regards,
+Mandy
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+Bhalchandra Wadekar 
+November 21, 2019 at 9:16 am
+
+
+
+
+Thanks Mandy Krimmel. Looking forward to try out the AMQP Adapter.
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Saicharan Srinivasan 
+December 11, 2019 at 9:13 am
+
+
+
+
+Mandy Krimmel : Is AMQP available for the usage now ?
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+December 11, 2019 at 9:22 am
+
+
+
+
+Not all data centers are updated yet, in the remaining data centers the update is planned for next weekend, afterwards the AMQP adapter is available in all tenants.
+BR,
+Mandy
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+December 12, 2019 at 10:07 am
+
+
+
+
+There is a delay in updating the tenants in EU1 and US2 data centers, this will have to be postponed to January 2020.
+Sorry for the inconvenience,
+Mandy
+
+
+
+
+Like 1ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Saicharan Srinivasan 
+December 12, 2019 at 12:21 pm
+
+
+
+
+Okay Mandy Krimmel . Eager to use it in the integrations. Hope it is quick.
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+December 12, 2019 at 3:17 pm
+
+
+
+
+According to the newest update the update will probably be done in EU1 sometime next week if the problems are solved.
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+December 18, 2019 at 8:32 am
+
+
+
+
+In the meantime all tenants in all data centers are updated and should have the AMQP adapter available.
+BR,
+Mandy
+
+
+
+
+Like 1ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Saicharan Srinivasan 
+January 22, 2020 at 1:38 pm
+
+
+
+
+Thanks Mandy! It works 🙂 Will raise, if we are having some doubt 🙂
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Saicharan Srinivasan 
+January 22, 2020 at 1:43 pm
+
+
+
+
+Also Mandy Krimmel , Is it possible to have prefetch of specified number of messages from the AMQP adapter and return as batch message?
+For example: 
+Is it possible to prefetch 5000 message from Azure service bus Topic and return to CPI as a single batched message ?
+In our case right now, we use Datastore select 5000 message but it has an operational cost, other issues and MPL, so we want to avoid it.
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+January 22, 2020 at 2:03 pm
+
+
+
+
+Unfortunately this is not possible with AMQP protocol.
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+GargiSugur MohanBabu 
+December 19, 2019 at 7:17 pm
+
+
+
+
+Hello Mandy Krimmel. Nice to see New CPI AMQP Adapter. Is this new AMQP adapter is equivalent to JMS Adpater?
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+December 20, 2019 at 7:28 am
+
+
+
+
+No, absolutely not. AMQP adapter can be used to connect to any messaging system via AMQP protocol. JMS adapter can only connect to the internal in CPI embedded messaging.
+BR,
+Mandy
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+Leomilde Almao 
+February 10, 2020 at 4:58 pm
+
+
+
+
+Hi Mandy Krimmel,
+I’m trying to follow up your blog using HTTPS to AMQP but I’m not sure which headers are required
+Can you help me understand the headers properties?
+I'm getting the error below: 
+com.sap.it.rt.adapter.http.api.exception.HttpResponseException: An internal server error occured: AMQP SASL header mismatch value 0, expecting 41. In state: HEADER0.
+Thanks
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+February 10, 2020 at 7:44 pm
+
+
+
+
+Hello,
+I do not really understand your question. Which headers are you referring to?
+If you want to send the message via AMQP to the message broker you do not need to set any headers, the message is sent as is. The headers in the table are only relevant if needed in your scenario. For some scenarios you need to fill specific headers to be transferred as JMS properties.
+For a simple scenario from any sender to AMQP receiver you do not need to care about headers.
+Best regards,
+Mandy
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Leomilde Almao 
+February 11, 2020 at 2:25 pm
+
+
+
+
+Thank you so much Mandy Krimmel I did the changes and I'm facing a different error I will double check cloud connector settings with basis team
+com.sap.it.rt.adapter.http.api.exception.HttpResponseException: An internal server error occured: socks5, password, localhost/127.0.0.1:20004 =>            :61616, status: FORBIDDEN(2)
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+February 11, 2020 at 3:45 pm
+
+
+
+
+This sounds like wrong configuration in cloud connector. The error comes from cloud connector socks proxy.
+Best regards,
+Mandy
+
+
+
+
+Like 1ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+Evgeniy Kolmakov 
+February 11, 2020 at 9:15 am
+
+
+
+
+Hi Leomilde!
+What AMQP provider do you try to connect to?
+I've faced the similar issue recently while tried to send messages to RabbitMQ. The point was that RabbitMQ used AMQP protocol version 0.9.1 by default and CPI AMQP adapter used protocol of version 1.0.
+Enabling plugin for 1.0 version of AMQP protocol on RabbitMQ server resolved the problem.
+Regards, Evgeniy.
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Leomilde Almao 
+February 11, 2020 at 2:22 pm
+
+
+
+
+Hi Evgeniy,
+I'm using OASIS AMQP 1.0
+I did some changes to my iflow (just sending the message as is, no transformations needed) per Mandy suggestions and getting different error now, looks like is a cloud connector issue
+com.sap.it.rt.adapter.http.api.exception.HttpResponseException: An internal server error occured: socks5, password, localhost/127.0.0.1:20004 =>               :61616, status: FORBIDDEN(2)
+I will check agan next week once test connectivity for AMQP is released
+Thanks
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Santosh Velma 
+February 24, 2020 at 11:51 pm
+
+
+
+
+Hi Evgeniy,
+Glad to know that you were able to connect to RabbitMQ server with AMQP1.0. I'm trying to connect but SAP's AMQP Adapter doesn't have a field to provide virtual host/remote host name and my connection to the remote server is failing as the Rabbit MQ server is not able to connect to the correct virtual host.  Can you please tell me what you did to make it work?
+Thanks
+Santosh
+ 
+ 
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Evgeniy Kolmakov 
+February 25, 2020 at 8:48 am
+
+
+
+
+Hi Santosh!
+Maybe I don’t understand your question right, but you set remote host name on appropriate tab of AMQP connection settings:
+
+Regards, Evgeniy.
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+/ 
+
+
+
+
+ 
+
+
+Rodrigo Carramate 
+May 12, 2022 at 3:00 pm
+
+
+
+
+Hello Santosh,
+ 
+By the way did you solve this case?
+ 
+We have a same problem at this time, don't have a field to insert a vhost on an AMQP configuration conection screen.
+ 
+Thank you so much and best regards.
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+Vijaya Palla 
+March 2, 2020 at 9:39 pm
+
+
+
+
+Hi,
+ 
+I am trying to talk to azure service bus using shared key and i deployed shared key as security parameter. I get the below error.
+Exception while processing SASL init: Crededentials objects of kind secure_param are not supported for SASL authentication
+Can you please help, what should i deploy the credentials like.
+ 
+Thanks,
+Vijaya Palla
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+March 3, 2020 at 7:53 am
+
+
+
+
+Hello Vijaya,
+please deploy as credentials and not as secure parameter.
+Best regards,
+Mandy
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+Vijaya Palla 
+March 3, 2020 at 6:45 pm
+
+
+
+
+Thanks Mandy.
+I deployed them as credentials and it worked. I am able to poll and push messages.
+ 
+Thanks,
+Vijaya Palla
+ 
+ 
+Thanks,
+Vijaya Palla
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Saicharan Srinivasan 
+March 6, 2020 at 10:11 am
+
+
+
+
+Mandy Krimmel  : I tried using pass through from Azure service bus Queue named Q1 (with source 5000 message) to Azure Queue named Q2 . But shockingly i received 8000+ messages in Q2. Why is this happening ?
+ 
+Note: 1. Transaction handling was none
+2. Concurrency was 10
+3. I used both persistent and non persistent
+4. But if i use JMS in between, the number is exact ! Is this known bug ?
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+March 6, 2020 at 11:32 am
+
+
+
+
+This sounds like there were issues in consuming and the message is then retried. Have you configured exception handling in the integration flow?
+Transaction Handling is not relevant, AMQP adapter does not share a transaction. Usually if a message is successfully processed the message is removed in the message broker because a successfull acknowledgement is sent back. If there is an error, the message is tried to be consumed again.
+This needs to be checked in detail, this should not happen.
+Could you please open a ticket on LOD-HCI-PI-RT and add the integration flow and a clear error description?
+Thank you,
+Mandy
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mohammed Saifulla Shafiulla  
+May 11, 2020 at 12:18 am
+
+
+
+
+Mandy Krimmel Any idea about Kafka adapter being supported in CPI? From what I know it doesnt implement the AMQP protocol, but has its own custom protocol however still uses TCP for communication.
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+May 11, 2020 at 7:14 am
+
+
+
+
+A dedicated Kafka adapter is indeed on the roadmap. According to the current planning it is targeted for Q1 2021.
+BR,
+Mandy
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+Saicharan Srinivasan 
+June 11, 2020 at 11:40 pm
+
+
+
+
+Mandy Krimmel  Might be silly but what is the syntax for pushing to Topic subscription's deadletter (as a receiver from some other iflow (JMS to AMQP)) ?
+ 
+“In case Microsoft Azure Service Bus is used as messaging system, the dead letter queue can be accessed by using the following syntax: ‘<queue>/$deadletterqueue’”
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+June 15, 2020 at 7:18 am
+
+
+
+
+Hi,
+this syntax makes sense if you want to consume from the deadletter queue, not for pushing towards it. The AMQP sender adapter consumes messages from the queue, and this is what is described there.
+We have not tested how to push to a deadletter queue directly, is there really a use case for this? Usually moving to the deadletter queue is done by the messaging system directly.
+Have you tried with the above syntax? Did you get an error?
+BR
+Mandy
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+Varun Khetan 
+July 10, 2020 at 10:49 am
+
+
+
+
+HI Mandy,
+Thank you for the detailed blog.
+I am trying to configure AMQP Sender Adapter, but after deploying my iFlow i amg etting below error.
+The Integration Flow is not operational.
+Error Details
+[CAMEL][IFLOW][POLL_FAILED] : Polling from amqpwss://enterprise-messaging-messaging-gateway.cfapps.eu10.hana.ondemand.com:443/protocols/amqp10ws/vor1/emsbxvorwerk/1sb/createOrderQueue failed.
+[CAMEL][IFLOW][EXCEPTION] : javax.jms.JMSException: Invalid handshake response getStatus: 404 Not Found
+[CAMEL][IFLOW][CAUSE] : Cause: org.apache.qpid.jms.provider.exceptions.ProviderIOException: Invalid handshake response getStatus: 404 Not Found
+[CAMEL][IFLOW][CAUSE] : Cause: java.io.IOException: Invalid handshake response getStatus: 404 Not Found
+[CAMEL][IFLOW][CAUSE] : Cause: io.netty.handler.codec.http.websocketx.WebSocketHandshakeException: Invalid handshake response getStatus: 404 Not Found
+Polling Information
+Adapter URI:
+Continuous Consumption
+amqpwss://enterprise-messaging-messaging-gateway.cfapps.eu10.hana.ondemand.com:443/protocols/amqp10ws/vor1/emsbxvorwerk/1sb/createOrderQueue
+Consumption Status:
+Failed
+Invalid handshake response getStatus: 404 Not Found
+Can you please help me figuring out if i am missing any configuration?
+AMQP Sender Adapter Configuration: -
+Host: enterprise-messaging-messaging-gateway.cfapps.eu10.hana.ondemand.com
+Port: - 443
+Path: - /protocols/amqp10ws/vor1/emsbxvorwerk/1sb
+Proxy Type: - Internet
+Queue Name :- createOrderQueue
+ 
+Note: - Test Conenctivity with AMQP works in SCPI with SAP Enterprise Messaging.
+Thanks,
+Varun
+ 
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+July 10, 2020 at 11:17 am
+
+
+
+
+Hello Varun,
+the Path sounds strange to me, it /protocols/amqp10ws/vor1/emsbxvorwerk/1sb the path that you also see in the service key of enterprise messaging for the AMQP connection? Usually it is only /protocols/amqp10ws.
+404 means that under the given address no service can be found.
+Best regards,
+Mandy
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+Varun Khetan 
+July 10, 2020 at 11:55 am
+
+
+
+
+Hi Mandy,
+Thank you for your reply.
+Yes in the Service Keys i can only see this /protocols/amqp10ws. But i added the namepace from the Queue which is “vor1/emsbxvorwerk/1sb/createOrderQueue”. Is this not needed to be done?
+Well i also tried with another AMQP adapter configuration and now i am getting this error.
+
+
+The Integration Flow is not operational.
+
+
+
+
+
+Error Details
+
+
+
+
+
+
+
+
+[CAMEL][IFLOW][POLL_FAILED] : Polling from amqpwss://enterprise-messaging-messaging-gateway.cfapps.eu10.hana.ondemand.com:443/protocols/amqp10ws/createOrderQueue failed.   [CAMEL][IFLOW][EXCEPTION] : org.apache.qpid.jms.JmsConnectionRemotelyClosedException: invalid sender address (220034) [condition = amqp:internal-error]     [CAMEL][IFLOW][CAUSE] : Cause: org.apache.qpid.jms.provider.exceptions.ProviderConnectionRemotelyClosedException: invalid sender address (220034) [condition = amqp:internal-error]
+
+
+
+
+
+
+AMQP Sender Adapter Configuration: –
+Host: enterprise-messaging-messaging-gateway.cfapps.eu10.hana.ondemand.com
+
+
+Port: – 443
+Path: – /protocols/amqp10ws
+Proxy Type: – Internet
+Queue Name :- createOrderQueue
+ 
+
+Regards,
+Varun
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Varun Khetan 
+July 10, 2020 at 12:40 pm
+
+
+
+
+Hi Mandy,
+It works now. 🙂
+I changed the queue name to "queue:vor1/emsbxvorwerk/1sb/createOrderQueue"
+ 
+Continuous Consumption
+amqpwss://enterprise-messaging-messaging-gateway.cfapps.eu10.hana.ondemand.com:443/protocols/amqp10ws//queue:vor1/emsbxvorwerk/1sb/createOrderQueue
+
+
+Consumption Status: Successful
+
+
+
+
+Appreciate you support anyway!!
+
+Regards,
+Varun
+
+
+
+
+Like 1ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+July 10, 2020 at 1:02 pm
+
+
+
+
+Thank you for confirming that it works now 🙂
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Varun Khetan 
+July 13, 2020 at 9:58 am
+
+
+
+
+Hello Mandy,
+In the blog above you have mentioned that SAP Enteprise messaging does not have the capability of Dead Letter Queue Handling.
+So what i am trying to do is to achieve this behavior: -
+
+I have an Sender AMQP Iflow in SCPI with createOrderQueue.
+If an exception occur to deliver this message, i have added an Exception Sub process to put this message in an createOrderRetryQueue.
+Now i want to poll a message from this createOrderRetryQueue, but after an internal of 5 mins.
+
+So what i am trying to do is, creating another iFlow with a Start timer event, which runs every 5 mins and look for messages in the createOrderRetryQueue.
+Can you please let me know how can i use Start Timer event with an combination of Sender AMQP adapter (which can poll the message from the retry queue)?
+ 
+Regards,
+Varun
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+Nghia Than 
+July 21, 2020 at 9:46 am
+
+
+
+
+Hello Mandy Krimmel,
+Thank you for the detailed blog.
+I am trying to configure AMQP Receiver adapter. I am using the ActiveMq local in my computer. Here is my Iflow
+
+Then i have this error when raise outbound IDOC in SAP ECC:
+
+ 
+This is about the header setting. Could you give me an solution about this?
+Thanks and best regards,
+Nghia
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+/ 
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+July 21, 2020 at 10:57 am
+
+
+
+
+Hi,
+this means there is an error when calling the ActiveMQ server.
+Have you tried the AMQP connection test? Can the server be reached at all?
+Are the credentials correct?
+You should check in the logs of the active mq server, maybe you find some more details there.
+BR
+Mandy
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Nghia Than 
+July 22, 2020 at 4:54 am
+
+
+
+
+Thanks Mandy! It works
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+Varun Khetan 
+August 4, 2020 at 2:30 pm
+
+
+
+
+Hi Mandy,
+I am trying to use REST services of Enterprise Messaging using http adapter in SCPI.
+I can successfully get the access token, but when i make a call for consumption API i am getting below error.
+URL being used in SCPI HTTP adapter: –
+https://enterprise-messaging-pubsub.cfapps.eu10.hana.ondemand.com/messagingrest/v1/queues/vor1%2Femsbxvorwerk%2F1sb%2FcreateOrderErrorQueue/messages/consumption
+
+
+
+Error Details
+
+
+
+
+
+
+
+org.apache.camel.component.ahc.AhcOperationFailedException: HTTP operation failed invoking https://enterprise-messaging-pubsub.cfapps.eu10.hana.ondemand.com/messagingrest/v1/queues/vor1/emsbxvorwerk/1sb/createOrderErrorQueue/messages/consumption with statusCode: 404
+
+
+
+
+I have set the header property for Authorization: Bearer <accessToken>
+Can you please let me know if the URL for consumption API used is in a correct format or else what is needed to be changed?
+Regards,
+Varun
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+August 4, 2020 at 2:41 pm
+
+
+
+
+Hello,
+please make sure you use URL encoding for the queue name, see: https://help.sap.com/viewer/bf82e6b26456494cbdd197057c09979f/Cloud/en-US/577ea7ce5cef4e2ea974c03d5549b3ff.html
+Best regards,
+Mandy
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Varun Khetan 
+August 4, 2020 at 2:44 pm
+
+
+
+
+Hi,
+Yes in the SCPI HTTP address i am using the URL encoding like below.
+https://enterprise-messaging-pubsub.cfapps.eu10.hana.ondemand.com/messagingrest/v1/queues/vor1%2Femsbxvorwerk%2F1sb%2FcreateOrderErrorQueue/messages/consumption
+
+HTTP configuration
+ 
+Regards,
+Varun
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+/ 
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+August 5, 2020 at 8:15 am
+
+
+
+
+I would suggest to open a ticket on component BC-CP-EM-MES.
+I don’t see what could be the problem, but I also did not try this via HTTP adapter. I only setup the scenario using the AMQP adapter.
+Please share the solution here so that also the other readers would know.
+Best regards,
+Mandy
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Varun Khetan 
+August 5, 2020 at 9:35 am
+
+
+
+
+As suggested ticket is raised with SAP. Will keep updated on the solution proposed.
+Regards,
+Varun
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Varun Khetan 
+August 7, 2020 at 7:26 am
+
+
+
+
+Hi Mandy,
+In order to use EM REST service using SCPI HTTP adapter, then we need to Triple encode the Queue Name.
+Tripple encode required
+Our iFlow wasn’t working with the same URL, the CPI was automatic resolving the encoded path to slashes, and therefore we got http 404 error back from Enterprise Messaging Service.
+“Instead of using %2F in the URL, please use %2525252F. “%25” is the encoding for the character “%”. Since, HTTP receiver does decoding three times, after first time decoding, URL will contain %25252F ,after the second time, it will be %252F and finally “%2F” which is the required entity in the URI.
+Example URL: -
+https://enterprise-messaging-pubsub.cfapps.eu10.hana.ondemand.com/messagingrest/v1/queues/vor1%2525252Femsbxvorwerk%2525252F1sb%2525252FcreateOrderErrorQueue/messages/consumption
+ 
+Regards,
+Varun
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+Abdul Musavir  
+August 9, 2020 at 12:52 pm
+
+
+
+
+Hi Mandy
+I'm trying to connect to Rabbit MQ hosted on Cloud foundry as a service. But unfortunately the connection is not established from SAP CPI (AMQP) - Connection test to Rabbit MQ.
+My below query is
+
+How to get the host name of Rabbti MQ  ( this is being used as a service in Cloud foundry) - I tried checking the environment variables of the Rabbit MQ service instance. But the Host name assigned in the environmental variable is not going through. The error is - No route found for the host mentioned.
+The SCPI is hosted in neo system - Is it possible to connect to Rabbit MQ hosted on Cloud foundry in different region ?
+
+Your help is highly appreciated
+ 
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+August 9, 2020 at 3:26 pm
+
+
+
+
+Hello,
+yes, the AMQP adapter can connect to any messaging system that can be reached via the internet or via the Cloud Connector in an on-premise landscape. Also from the Neo landscape.
+How to address the Rabbit MQ in CF and if this is possible at all:
+
+Check that AMQP version 1.0 is supported at all by this message broker.
+Check the documentation how to address the broker via AMQP
+Maybe open a support question on Rabbit MQ on CF.
+
+Please update this comment when you were able to solve your problem.
+Best regards,
+Mandy
+ 
+ 
+
+ 
+
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+Nghia Than 
+October 1, 2020 at 8:52 am
+
+
+
+
+Hi Mandy,
+I have send the message from SAP to activeMQ using the AMQP adapter and  the message is send. But the body has some text come from the message header:
+Do you know how to remove these text?
+Many thanks,
+Nghia
+ 
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+/ 
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+October 1, 2020 at 11:15 am
+
+
+
+
+Hello,
+I don't completely understand your question. You get the message in activeMQ, but there the message does not only contain the payload, but also some headers from SAP within the message body? Is this correct? We did never encounter something like this, that is actually very strange. Or maybe its only an issue on the UI showing the message? So that also headers are shown along with the message?
+Best regards,
+Mandy
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+Raffael Herrmann 
+October 5, 2020 at 7:50 pm
+
+
+
+
+Hello Mandy,
+first - thanks for the great blog! I have configured the AMQP sender including retry-handling (3 retries). So far everything works as expected, but there's one confusing detail. If a message fails at first try, it will be retried. In monitoring the message switches to status "Retry". If it now gets delivery successfully in the first retry, the retry mode "stops" as expected, but the message is still shown as status "Retry" in monitoring. Do I have to set/delete any headers, etc. just before running to the (successful) message end event, to make the monitor aware, that the message's status shall switch from "Retry" to "Success"?
+Even if the flow acts as expected, it's confusing if messages stay in "Retry" status (after they have been "solved"/delivered successfully.)
+Best regards,
+Raffael
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+October 6, 2020 at 5:50 am
+
+
+
+
+Hello Raffael,
+glad you like the blog 🙂
+The status should definitely not stay in Retry mode, it should be updated to completed if the message processing gets completed in the retry.
+Some questions:
+
+what is the messaging system you are using?
+Are you using also a CPI integration flow to send the message to the messaging system or are you using an external tool/application?
+
+best would be if you could open a ticket for this issue on LOD-HCI-PI-RT.
+Thank you,
+Mandy
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Raffael Herrmann 
+October 6, 2020 at 8:02 am
+
+
+
+
+Hi Mandy,
+I use AMQP adapter in combination with SAP Enterprise Messaging. The initial queue is filled via an external NodeJS application (with QOS = 1).
+The interesting part of the flow looks like this:
+
+Messages are read from initial queue. Then in the router ${header.JMSXDeliveryCount} > '1' is checked. If its 1 or smaller the message is passed via ProcessDirect to the handler flow. If it fails over there the AMQP sender recognizes the error, re-sends the message immediately (but with  JMSXDeliveryCount > 1) an then the message is passed to another queue (SapEms2 receiver).
+Since the message arrives in the second queue and the retry mechanism stops after the first retry it looks fine for me. But nevertheless the initial message (which got status "Retry") is stuck in "Retry" status even if the message already arrived in the second queue.
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+/ 
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+October 6, 2020 at 8:19 am
+
+
+
+
+Hi Raffael,
+As written in the blog the header JMSXDeliveryCount is not set reliably by the SAP Enterprise Messaging system, we saw in our tests that they often set it even in case it is the first processing. As stated in the blog you should not configure retry behavior for Enterprise Messaging based on this header as this does not work as expected in all executions. Enterprise Messaging is kind of special here.
+But still, the mpl status is strange. Is the message really deleted from the original queue? did you check in the EMS queue monitor?
+Best regards
+Mandy
+ 
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Raffael Herrmann 
+October 6, 2020 at 9:36 am
+
+
+
+
+Hi Mandy,
+yes, the messages were successfully deleted as shown in the screenshot below. That’s why I’m wondering about the message status.
+
+And yes, I had seen that you wrote JMSXDeliveryCount is not supported by SAP EMS, but since the headers occured in the trace and from my test runs behaved somehow reliable, I though this information may be outdated. But "good" (or should I say sad) to hear, that I just misinterpreted it. 
+I now switched to triggering the retry logic via Exception Subprocess and deactivated AMQP’s retry mechanism completely. Thus the “Retry” status problem is bypassed also. (Nevertheless the error still triggers me, because I simply like to understand why things happen like they happen…)
+At the end I must say that SAP EMS is somehow a big disappointment with all the things missing right now. No reliable retry headers, no dead-letter queues, only 99,5% uptime via SLA, … (By the way – using JMS + Enterprise Messaging from Enterprise Edition is no option right now, because we use the EMS to talk to some NodeJS microservices in the SAP CF environment. As par my understanding JMS+EMS can – sadly – only be used for CPI internal purposes.)
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+/ 
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+October 6, 2020 at 10:50 am
+
+
+
+
+Hello,
+to really understand the mpl behavior and why the status is in retry we would need the textual mpl with log level DEBUG so that we could check what really happend. Maybe some internal JMS headers caused this.
+Was there only this one message processing log? Or was there maybe another one with Completed status?
+It would be good if you could open a ticket on LOD-HCI-PI-RT so that we could check this is more detail. Please attach the textual mpl with DEBUG log level and the integration flow project.
+Thank you,
+Mandy
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Raffael Herrmann 
+October 6, 2020 at 11:10 am
+
+
+
+
+Hi Mandy,
+thanks for your help and input. I'll discuss with the client to open a ticket.
+Regarding your MPL question. There are two MPLs.
+
+Message comes initially via AMQP (=First MPL)
+Initial message is passed via ProcessDirect to another IP in the same IFlow (=Second MPL)
+Message in second IP in same flow fails. AMQP in first IP starts retry. Retried message is written to another queue. Process ends. (=No MPL. All these steps are not part of one of the both forementioned MPLs. A third/another MPL isn't created. Even in trace mode, there's no clue about the retry run. But it ran,otherwise the message would not been transfered to the second queue.)
+
+Note: I understand that raising a ticket is the correct way to go and I don't expect you to answer on the above. I just wanted to point these things out, because you asked for it.
+Best regards,
+Raffael
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+October 6, 2020 at 11:44 am
+
+
+
+
+Hi Raffael,
+thank you for the additional details. The experts for our mpl Logik need to have a look, it could be a combination of AMQP retry and process direct within same integration flow.
+Best regards
+Mandy
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+Chandrasekhar Tarapareddy 
+November 5, 2020 at 8:59 pm
+
+
+
+
+Hi, Are there any plans to make JMS Adapter or AMQP Adapter to connect to fully JMS compatible JMS providers like like IBM MQ,SonicMQ,Active MQ? What JMS providers are currently supported ? Any plans to enhance JMS Adapter similar to what we have in SAP PI/PO stack?
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+November 6, 2020 at 7:06 am
+
+
+
+
+Hello,
+there are currently no such plans in near future. AMQP adapter is the adapter to connect to external messaging systems using AMQP protocol.
+Best regards,
+Mandy
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+Jason Scott  
+November 13, 2020 at 8:38 am
+
+
+
+
+Hi Mandy Krimmel, thanks for this really detailed blog post.
+I am trying to connect the AMQP sender adapter to a cloud platform enterprise messaging instance but cannot work out the adapter parameters.
+ 
+Is there any documentation on what to enter for:
+
+host
+port
+path
+authentication
+credential name?
+
+ 
+I assume I can get these from the enterprise messaging instance service key - but which bits?
+ 
+Regards,
+Jason
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+November 13, 2020 at 8:46 am
+
+
+
+
+Hi,
+yes, those are the details from the Enterprise Messaging service instance/key.
+You need the bit for the AMQP access, section amqp10ws in the service key.
+BR
+Mandy
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+Varun Khetan 
+February 1, 2021 at 2:29 pm
+
+
+
+
+Hi Mandy,
+Hope you are doing well!
+I am connecting Enterprise Messaging Queue, using the SCPI AMQP Websocket receiver Adapter.
+But sometimes when the SCPI Iflow tries to send the message to the AMQP receiver adapter, it give the below error.
+Uncategorized exception occurred during JMS processing; nested exception is org.apache.qpid.jms.JmsConnectionRemotelyClosedException: client failed (220012) [connection rejected (too much connections)] [condition = amqp:internal-error]
+MPL ID: AGAYDBMRvpyfwsqUF7TjEgNpaU7h
+ 
+Can you please let me know why such errors are observed?
+Please let me know if you need any more details.
+ 
+Thanks.
+Varun
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+February 2, 2021 at 9:09 am
+
+
+
+
+Hello Varun,
+looks like too many connections are opened in parallel to Enterprise Messaging.
+Maybe you sent too many in parallel or have too many consumers configured? See the connections chapter and check your configuration in enterprise messaging. Default connections is only 10 per service instance.
+BR,
+Mandy
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Varun Khetan 
+February 2, 2021 at 9:39 am
+
+
+
+
+Hello Mandy,
+Thank you or your response.
+Actually i need some help in understanding the resource allocation part, was not that clear by reading the Chapters.
+My current setup is like below: -
+
+I have 1 Enterprise Messaging Subdomain.
+Under this Subdomain, i have created 5 Message Clients.
+Each message Client is configured like below screenshot.
+
+Also this setting.
+
+
+7. One Message Client for example have following this configured
+
+2 Active Webhooks configured.
+1  Sender for Topic. Which sends the message to the topic
+1 SCPI Scheduler Interface, which does every 30 seconds polling on the Queue, using the REST consumer service.
+
+ 
+Please let me know for such setup how much resource allocation should be done.
+ 
+Also whats the refresh rate of these resource?
+ 
+Thanks,
+Varun
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+/ 
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+February 2, 2021 at 10:41 am
+
+
+
+
+Hello,
+if you have 10 connections only in the message client, this means only 10 connections are allowed in parallel. You should increase the number of connections.  Do you know how many worker nodes are running for your Cloud Integration cluster as this number counts into the required connection.
+Maybe this link help you: Syntax for Service Descriptor - SAP Help Portal
+With Webhooks you confuse me, I thought we speak about connection via AMQP? If you use webhooks via HTTP the size recommendations in this blog are not equally relevant.
+Best regards
+Mandy
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Varun Khetan 
+February 2, 2021 at 11:21 am
+
+
+
+
+Hi Mandy,
+Currently in 1 service Instance (with resources units = 10) i have below SCPI Iflow's running.
+
+Four AMQP receiver adapters.
+Scheduler Iflow, which is calling REST OAUTH Token and Consumption service of Enterprise Messaging every 30 seconds.
+
+ 
+Can you please tell me how many connections then should eb configured for such setup?
+Also if i am using REST consumption service, then for each SCPI Iflow will 1 separate connection created?
+ 
+Thanks,
+Varun
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+February 2, 2021 at 12:09 pm
+
+
+
+
+Hello Varun,
+as said, AMQP is here different than REST consumption, because in the AMQP case the Cloud Integration tenant opens the connections (minimum one per worker node as outlined in the blog). For REST the messaging system calls via HTTP to Cloud Integration.
+BR
+Mandy
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Varun Khetan 
+February 4, 2021 at 1:27 pm
+
+
+
+
+HI Mandy,
+So after changing the value of this configuration "Allocated Resource Units" in the Service Descriptor, the error is no more observed.
+Basically by default it was assigned as 10, while creating it. And then we updated this.
+Thanks for your support.
+BR,
+Varun
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+Sindhuja Jayapandiyan 
+April 20, 2021 at 8:47 am
+
+
+
+
+Hi Mandy Krimmel ,
+ 
+We are using AMQP receiver adapter in iflow to connect to Azure service Bus Topic. If the topic is down and adapter sends message, we are not getting notified since asynchronous. At the same time, message is also in successful status in our monitoring end. So, we are not aware of the message status in receiver end. To avoid this, what can be done. Please suggest some ideas.
+ 
+Regards,
+Sindhuja.
+ 
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+April 21, 2021 at 2:34 pm
+
+
+
+
+Hello Sundhuja,
+do I get your statement right that the message in Cloud Integration is completed even if the topic was not available? There was no error in Cloud Integration? And what happened to the message in Azure service bus? The question is what acknowledgement was provided back to Cloud Integration? If no error is given back Cloud Integration would rank this message as successfully delivered.
+Regards
+Mandy
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+Sindhuja Jayapandiyan 
+April 26, 2021 at 2:57 pm
+
+
+
+
+Hi  Mandy Krimmel,
+ 
+Yes, exactly!!! There was no error in Cloud integration even though the topic was down. To avoid this situation, what could be done for error handling  so that , our Cloud integration will be notified about the status?
+ 
+Regards,
+Sindhuja.
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+April 28, 2021 at 6:11 am
+
+
+
+
+Hello Sindhuja
+The question is what acknowledgement was provided back to Cloud Integration? If no error is given back, Cloud Integration would rank this message as successfully delivered. Is there anything in the logs of the Azure service bus?
+Regards
+Mandy
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+Lars Vlyminckx 
+May 7, 2021 at 12:57 pm
+
+
+
+
+Hi Mandy
+Is it possible to fill in the Credential Name dynamically?
+What I mean is we have multiple AMQP systems with of course different credential names and queue names. So I can use ${property.Destination_Name} for the Destination Name.
+Sadly it isn't possible for Credential Name because then I get this error: 
+
+Error Details
+
+com.sap.it.rt.adapter.http.api.exception.HttpResponseException: An internal server error occured: No credentials object with alias "${property.Credential_Name}" found. The MPL ID for the failed message is : AGCVNLyhL985rzuitfwREyYKND_t For more details please check tail log.
+
+Do you have any idea on how to fix this?
+Or do I need to add all of them as a receiver?
+
+Thanks in advance
+
+Regards
+Lars
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+May 12, 2021 at 8:01 am
+
+
+
+
+Hello Lars,
+neither the AMQP server nor the credentials can be set dynamically, this is not possible because the Connection Factory has to be started during iFlow startup. This not possible dynamically.
+If you need to connect to multiple AMQP systems you would have to create dedicated AMQP channels.
+Best regards,
+Mandy
+ 
+
+
+
+
+Like 1ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+Nishant Kathuria 
+May 8, 2021 at 12:02 am
+
+
+
+
+Mandy,
+I see your comments in the blog regarding limitation around consuming messages from IBM MQ. However the url in your blog points to a community site for IBM that seems to provide configuration steps in IBM MQ that resolve this limitation
+do you think this is a plausible way for cloud integration to consume messages from IBM MQ
+Thanks
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+May 10, 2021 at 6:44 am
+
+
+
+
+Hello,
+the page describes how to use the AMQP client to consume from topic objects, but as Cloud Integration does not support consuming from topics, this does not help for the consumption side. For the receiving side this is ok, there you can send messages from Cloud Integration to IBM. But the other direction is not possible.
+Best regards
+Mandy
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+Jon Prow 
+May 19, 2021 at 10:57 am
+
+
+
+
+Hi Mandy,
+ 
+Microsoft Azure Service Bus - what is the challenge with sending to topic subscriptions using the AMQP receiver adapter? Are there any plans to add this functionality and are there known workarounds?
+ 
+Thanks.
+-Jon
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+May 19, 2021 at 5:59 pm
+
+
+
+
+Hello Jon,
+in our tests there were issues when trying to connect to topic subscriptions via the AMQP provider.
+What you should do is writing to topics or directly to queues, both works, you don't require topic subscriptions in this direction.
+Best regards,
+Mandy
+
+
+
+
+Like 1ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+Vidyadhar Kurmala 
+June 2, 2021 at 7:41 pm
+
+
+
+
+Hi Mendy,
+Thank you for the blog and detailed explanation which helped me to understand better!
+AMQP sender adapter throwing an error while consuming the topic subscription. I read help.sap and as well as your blog, both says "Specify the name of the queue or topic subscription to consume from." in queue name field on processing tab.
+I tried with multiple options and every option giving me same error as "message entity could not found".
+
+Subscription name only ( demo1)
+topic/subscription name ( kv_test_topic/demo1)
+namespace/topic/subscription name ( sb_dev/kv_test_topic/demo1)
+
+Could you please help me to resolve this issue?
+here is the error screenshot:
+
+AMQP sender adapter screenshot with Option 3:
+
+ 
+Azure topic subscription screenshot:
+
+ 
+Regards,
+Vidyadhar
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+/ 
+
+
+
+
+ 
+
+
+Vidyadhar Kurmala 
+June 4, 2021 at 6:09 pm
+
+
+
+
+Hi Mendy,
+ 
+I have just seen in the above comments that Azure Topic Subscriptions are not available yet  to connect with AMQP sender adapter.. please let us know once this feature is available in Cloud Integration. I apologize for my question/comments and Thank you in advance!
+ 
+Regards,
+Vidyadhar K
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+June 8, 2021 at 8:20 am
+
+
+
+
+This is not a limitation of the AMQP sender adapter, but on the Azure broker.
+What you should do is writing to topics or directly to queues, and consume from the queue.
+Best regards
+Mandy
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Vidyadhar Kurmala 
+June 11, 2021 at 4:58 pm
+
+
+
+
+There is no such limitation on Azure broker, since other middle wares are able to read/consume the messages directly from AZURE TOPIC Subscription. I believe there are some connectivity issues while reading/consuming the Azure topic subscriptions and we need to wait until this is fixed on Cloud Integration AMQP sender adapter.
+
+Here is the payload that has received to Middleware on Sender Adapter:
+ 
+
+ 
+Regards,
+Vidyadhar K
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+/ 
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+June 14, 2021 at 8:01 am
+
+
+
+
+Sorry, for my last reply. In the AMQP sender adapter this is already supported, I mixed sender and receiver. See in the blog:
+<<
+
+Topic subscriptions supported: Yes, topic subscriptions can be accessed as separate, queue-like entities using the AMQP sender adapter: “[topic name]/subscriptions/[subscription name]”. Multiple subscriptions for a single topic can exist. It is not possible to send to topic subscriptions using the AMQP receiver adapter.
+
+>
+If this does not work, I would suggest you open a ticket on LOD-HCI-PI-RT.
+Best regards
+Mandy
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Vidyadhar Kurmala 
+June 14, 2021 at 3:30 pm
+
+
+
+
+Finally Azure Topic Subscriptions are able to consume by Sender AMQP adapter with this syntax:
+Topic Name/subscriptions/Subscription Name i.e. no [ ] on Topic and Subscription Names.
+Thank you very much for your help! 
+AMQP Sender screenshot with correct configuration for consuming topic subscription:
+
+Consumption successful log:
+
+Regards,
+Vidyadhar K
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+/ 
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+Patricia Suing 
+June 9, 2021 at 7:24 am
+
+
+
+
+Hi,
+ 
+I am currently trying to connect my ActiveMQ to CPI. However, I can't see the AMQP URL and in the ActiveMQ it says that it is Localhost. Is there any configuration I am missing to see the AMQP URL?
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+June 9, 2021 at 8:14 am
+
+
+
+
+Where you don's see the AMQP URL? And what did you configure? I don't understand your question, sorry.
+BR
+Mandy
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Patricia Suing 
+June 9, 2021 at 11:43 pm
+
+
+
+
+Below is the ActiveMQ server I am trying to connect to CPI. I figured I should use an AMQP Adapter. I am trying to ping this one: <localhost>:61616 under the AMQP connectivity test of CPI but the connection is refused.
+I am not sure if I can ping this directly or should it  be connected first to cloud connector.
+Also if I am pinging the correct one because as you can see in the screenshot below, the connector AMQP is blank.
+
+
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+/ 
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+June 10, 2021 at 5:57 am
+
+
+
+
+localhost means the localhost the Cloud Integration system is running on, so this is definitely wrong. You need to check under which hostname the activeMQ server can be reached and this has to be used in Cloud Integration.
+BR
+Mandy
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Patricia Suing 
+June 11, 2021 at 1:34 am
+
+
+
+
+Do you know where in ActiveMQ can I found the hostname? Thank you!
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+June 11, 2021 at 1:48 pm
+
+
+
+
+The hostname is the name of the server where you installed ActiveMQ. If this is also shown somewhere in ActiveMQ I do not know.
+BR
+Mandy
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mitchell Rust 
+July 1, 2021 at 5:29 pm
+
+
+
+
+Hi Mandy, great article, thank you for sharing.
+When trying to connect the Azure Service Bus, we are trying to use the SASL credential over the TCP protocol as that is what you've defined in your article as the required credential method.
+Unfortunately, when trying to create credentials, we are not able to define a new SASL credential. See the screenshot for the list of available credential types:
+
+ 
+Do you know where we can create our credential object for the request? Also, is there a reason we can't use OAuth2 credentials? Thank you for your help!
+ 
+Mitchell
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+/ 
+
+
+
+
+ 
+
+
+Mitchell Rust 
+July 1, 2021 at 9:40 pm
+
+
+
+
+For anyone looking for an answer, I was able to figure it out.
+Azure Service Bus uses SAS tokens in order to authorize requests to queues/topics. In order to use this credential type in CPI, you must create a User Credentials object, with the username being populated with the SharedAccessKeyName and the password populated with the SharedAccessKey.
+This credential, when paired with the TCP protocol and SASL authentication selected, allows for us to connect to Azure Service Bus. We did not attempt this with a WebSocket protocol connection, however I assume that it will work the same.
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+July 2, 2021 at 5:28 am
+
+
+
+
+It is correct, you need to select type User Credentials, I will make this clearer in the blog.
+Thank you,
+Mandy
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+Neha Verma 
+August 2, 2021 at 2:54 pm
+
+
+
+
+Hi Mandy,
+Can we use AMQP adapter in SAP PO 7.5 (On Premise) to connect to Azure Service Bus (On Cloud) ?
+Is it available as an add-on from SAP end or we need to buy it from outside?
+Thanks
+Neha
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Oliver Deckert  
+August 2, 2021 at 3:34 pm
+
+
+
+
+Hi Neha,
+AMQP Adapter is available in PO 7.5 as standard Cloud Integration Content Adapter.
+Best Regards,
+Oliver
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Neha Verma 
+August 3, 2021 at 8:15 am
+
+
+
+
+Hi Oliver,
+Can you give me link from where I can download this content from SAP marketplace. I am not able to find this.
+Thanks
+Neha
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Oliver Deckert  
+August 3, 2021 at 8:21 am
+
+
+
+
+I don't know what 'content' you refer to - AMQP Adapter is a technical capability / adapter which you can use to build your own content
+Best Regards,
+Oliver
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Neha Verma 
+August 3, 2021 at 9:12 am
+
+
+
+
+I am not able to see this adapter in my ID adapter list. I have to add this first in my PO landscape. But I am not able to find this in marketplace.
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Oliver Deckert  
+August 3, 2021 at 9:29 am
+
+
+
+
+I don't get what you mean with "my ID adapter list" - there is nothing in the marketplace
+You have to use a product profile >=SP18 for modeling. Check Tenant Settings --> Product Profile in the Web UI for enabled profiles.
+Best Regards,
+Oliver
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+Neha Verma 
+August 4, 2021 at 10:46 am
+
+
+
+
+Hi Oliver,
+We don't own any CPI tenant to use Cloud Integration Content in SAP PO 7.5. Still we want to use AMQP adapter for connecting Azure Service Bus (On Cloud) to SAP PO (On premise). Is there any way from where we can download the integration package for AMQP and use it in PO ?
+Thanks
+neha
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Oliver Deckert  
+August 4, 2021 at 1:00 pm
+
+
+
+
+there is no integration package for AMQP - the blog here is about the AMQP Adapter as part of Cloud Integration Runtime
+if you do not have Cloud Integration Runtime then you actually should not follow this blog
+for standard PO runtime there are third party adapters, but for these you have to buy a license (from the company providing the adapter)
+Best Regards,
+Oliver
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+Pavan G 
+September 6, 2021 at 10:46 am
+
+
+
+
+Hi Mandy Krimmel ,
+Hope you are doing well!
+Thanks for the detailed blog.
+The retry is happening at every 1hour hour after the first retry in our production system. SAP suggested your blog to implement the same and reduce the retry interval time however we want.
+I have followed your blog and done the configurations too. Is there any changes done to the syntax: ‘<queue>/$deadletterqueue’.We are trying to consume the messages from Microsoft ASB deadletter queue and the flow is not consuming any messages.
+
+
+Regards,
+Pavan
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+/ 
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+September 6, 2021 at 11:06 am
+
+
+
+
+No, we have not done any changes on our side. Maybe Microsoft has done some changes on their side. Did you check the log files in Cloud Integration if there are any errors when trying to consume?
+What is the poll status in the artifacts monitor for this flow?
+One more idea: did you check for the status of the messages in the dead letter queue? If it is deferred, the messages will not get consumed anymore: Azure Service Bus - message deferral - Azure Service Bus | Microsoft Docs
+Best regards
+Mandy
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Pavan G 
+September 6, 2021 at 5:46 pm
+
+
+
+
+Hi Mandy Krimmel ,
+I am able to send the message to retryqueue after max retry. I have enabled the dead lettering on the retryqueue and it will move the message to dead letter.
+As per the blog, the syntax is also correct and my iflow deployed successfully and I don't see any errors.
+This message from deadletter queue should goto actual queue and it should repeat for max retries(5) which is not happening.
+
+ 
+Please let me know if I am missing anything.
+Regards,
+Pavan
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+/ 
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+September 6, 2021 at 8:24 pm
+
+
+
+
+please check the status of the messages in the Azure Service Bus. Maybe they have a deferred status? Did this work before?
+In general the configuration looks good.
+BR
+Mandy
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Pavan G 
+September 7, 2021 at 8:09 am
+
+
+
+
+Hi Mandy Krimmel
+Thanks for response.
+The messages in ASB are not deferred, if it does then it won't be moved to deadletterqueue. The deffered messages will remain in main queue(source).
+In my case, the messages are sent to deadletterqueue. Its just that messages are not being consumed from deadletterqueue. There is no error in the Iflow as well.
+I even deleted and created the fresh queue and the iflow but, no luck.
+
+
+
+ 
+Regards,
+Pavan
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+/ 
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+September 7, 2021 at 8:16 am
+
+
+
+
+Are you on Neo or CF? If you are on neo, could you please check the system log for issues in the log file.
+Best regards
+Mandy
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Pavan G 
+September 7, 2021 at 8:35 am
+
+
+
+
+We are on CF and have raised and incident to SAP. I want just make sure that I didn't miss anything before going to them.
+Regards,
+Pavan
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+September 7, 2021 at 11:03 am
+
+
+
+
+Ok, then let us see what the response in the ticket is.
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Pavan G 
+September 15, 2021 at 9:36 am
+
+
+
+
+Hi Mandy Krimmel ,
+I checked the messages in Service Bus Explorer and found the messages are getting expired and going to deferred status. I am not sure how to set some time delay in Azure Service Bus to move the messages from Main to dead letter queue after a certain time.
+I am think for below options to delay the retry:
+*Move the messages from Main to dead letter queue after a certain time.
+*Scheduled the messages for a certain time and move it Main queue.
+Do you know any properties we can set in Content Modifier to schedule the messages in ASB ?
+I tried with the below properties but no luck.
+
+ScheduledEnqueueTimeUtc
+x-opt-scheduled-enqueue-time
+x-opt-delivery-delay
+JMSDeliveryTime
+x-opt-delivery-time
+
+Any leads from your end will be really helpful.
+ 
+Thanks,
+Pavan
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+September 15, 2021 at 9:47 am
+
+
+
+
+Hello Pavan,
+I think you are already in discussion with my colleague via ticket, right?
+It looks like there was a change on Azure side so that those messages get a deferred status now and cannot be consumed anymore from the DLQ. We are following up with Azure on this. But this unfortunately leads to the fact that there currently is no option to configure a retry delay with Azure.
+I will let you know once we get feedback from Azure on this issue.
+Best regards,
+Mandy
+
+
+
+
+Like 1ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+Jacques Otto 
+November 3, 2021 at 11:37 am
+
+
+
+
+Hi There,
+ 
+I had a question, is there any way to only read the queue once the queue reaches for example 100 messages? Not trigger a message for every message that enters the queue immediately?  Or perhaps schedule the reading of the queue?
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+November 3, 2021 at 11:56 am
+
+
+
+
+No, this is not possible.
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+Rami Bleibel 
+December 8, 2021 at 3:50 pm
+
+
+
+
+ 
+Hi There,
+I am trying to develop a simple iflow to test AMQP adapter with AWS ActiveMQ. I was able to connect and write a message (Hello) , but the message had more info. Is this extra data part of the adapter?
+ 
+
+
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+/ 
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+December 9, 2021 at 7:21 am
+
+
+
+
+Hello,
+this is how ActiveMQ handles messages that are received via AMQP protocol. They show them in their monitor with all the AMQP properties (from AMQP protocol) and application properties (transferred Camel headers). If the message is read again via AMQP this works perfectly well. It just shows those additional attributes in the monitor.
+Best regards,
+Mandy
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+Daniel Wagner 
+January 5, 2022 at 12:18 pm
+
+
+
+
+Hi Mandy,
+we're using the AMQP Adapter together with Azure Service Bus and are encountering interoperability issues with .NET consumers. The messages published by SAP CI AMQP Adapter, which should contain plaintext JSON body can't be decoded by the .NET consumers due to some strange serialization behavior of SAP CI.
+The exception in the .NET consumer is "Value cannot be retrieved using the Body property.Use GetRaw Amqp Message to access the underlying Amqp Message object."
+Do you have any hints where to look at?
+ 
+Best regards,Daniel
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+January 5, 2022 at 12:49 pm
+
+
+
+
+Hello Daniel,
+there is nothing known, at least not to me. I would suggest to open a ticket on LOD-HCI-PI-CON-SOAP. Please attach the complete error details and the detailed information about the scenario.
+Best regards
+Mandy
+
+
+
+
+Like 1ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Daniel Wagner 
+January 5, 2022 at 1:00 pm
+
+
+
+
+Hello Mandy,
+thanks for your quick response. We'll take a thorough look at the flows. Just to give a bit more information, the message body in Service Bus Explorer looks like this:
+
+ 
+ 
+Service Bus Explorer screenshot
+ 
+I'm sure the content-type can be configured somehow, what's more confusing is the @..string... header in the payload of the message. I suspect this leads to the exceptions on the consumer side.
+We expected content-type applicaton/json and a payload in UTF-8 containing only the plain JSON document as body.
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+/ 
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+January 11, 2022 at 7:19 am
+
+
+
+
+Hello,
+we have no details how Microsoft handles the messages internally and how the .NET consumer works. It may be worth to try different configuratios of the 'Message Type' setting in the AMQP receiver.  Per Default Strings are sent as String Messages, other types use binary messages.
+Best regards
+Mandy
+
+
+
+
+Like 1ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Daniel Wagner 
+January 12, 2022 at 12:51 pm
+
+
+
+
+Hello Handy,
+your comment together with a hint on Stack Overflow https://stackoverflow.com/questions/70654619/azure-service-bus-interoperability-between-apache-camel-based-producer-and-net from a Microsoft Engineer led us to the solution. Although we tried to send a plaintext JSON the `Message Type` has to be set to `Binary` - leaving `Auto` or setting `Text` resulted in an encoding which isn't interoperable with .NET libraries.
+ 
+
+The only thing we couldn't find out yet is how the `Content-Type` property can be set, which is set to application/octet-stream by the AMQP Adapter:
+
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+/ 
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+January 13, 2022 at 1:18 pm
+
+
+
+
+Hello,
+you may use the header SAP_AMQP_CONTENT_TYPE to set the content-type. Please be aware that this may not always work with all brokers.
+Best regards
+Mandy
+
+
+
+
+Like 2ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Moritz Feuerbach 
+January 19, 2022 at 8:14 am
+
+
+
+
+Dear Mandy,
+is there any place in the SAP Help or SAP Notes where all available header parameters for the AMQP adapter are documented by SAP?
+Kind regards,
+Moritz
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+January 19, 2022 at 9:25 am
+
+
+
+
+Hello,
+we will document the headers and properties in the help documentation, seems this is currently missing.
+Best regards
+Mandy
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+Finance JAZZ 
+February 9, 2022 at 8:40 am
+
+
+
+
+Hello Mandy
+ 
+First of all thanks a lot for this incredibly helpful blog , I learnt too much from it .
+ 
+I'm working with AMQP adapter to consume Azure Bus message and in general it works fine ! However what seems complicate and eventually blocking for me is that in my Azure bus there are 'custom' or 'personnalised' data and I'm not sure if I can handle this data as well? if Yes would you please give a hint ?
+ 
+Again thanks a lot .
+ 
+Regards
+Lamia
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+February 22, 2022 at 11:38 am
+
+
+
+
+Hello Lamia,
+as this is an AMQP adapter, AMQP headers, properties, annotations and application properties can be transported via the AMQP protocol. Question would be if your custom data can be transported via one of those attributes? Or as part of the payload.
+Best regards
+Mandy
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+Keith Gan 
+March 21, 2022 at 11:09 am
+
+
+
+
+Mandy Krimmel does the AMQP adapter able to consume On-premise Weblogic JMS messaging through JNDI?
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+March 21, 2022 at 11:20 am
+
+
+
+
+No, this is not possible with the AMQP adapter. The AMQP adapter only supports connectivity via AMQP protocol.
+Best regards
+Mandy
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+Darrell Tunnell 
+April 1, 2022 at 12:19 pm
+
+
+
+
+Azure Service Bus - Message lock duration cannot be increased beyond 5 minutes.
+This AMQP adaptor doesn't renew locks. Blog says you have to set message lock duration to more than CPI processing time to avoid duplicate messages. This makes this adaptor not usable for us.
+1. You can't guarantee CPI flow processing time. An unexpected delay during the integration could come from a downstream service beyond our control - perhaps it is being slow today. Perhaps the infrastructure that runs CPI has something being done to it by CPI causing a temp slow down. Things happen that impact processing time all the time.2. You can't increase azure service bus message locks beyond 5 minutes.
+Outcome: If there is any risk that flows might run longer than 5 mins, you can't use this adaptor with Azure Service Bus. Perhaps you should mention this constraint to save others finding out the hard way. Perhaps other messaging systems have similar constraints on max message lock time.
+Lastly the symptom isn't just duplicate messages. When the lock is lost after 5 mins, the message re-appears on the queue and can be processed concurrently by another flow (so it's not just duplication but concurrency). This can happen over and over again, multiple flows processing the same message, all running to completion, however as they complete after the lock is lost (5 minutes) the message never gets completed and this will repeat until its dead lettered or expired. The result is that when you have a flow that persistently runs longer than the message lock time, you end up with a spiralling volume of flows being kicked off to process the same message, and the end result of all that processing is the message will eventually be dead lettered (assuming you have configured dead lettering)
+ 
+When testing you may not notice this, for example if your flow is completing within the lock period (5 mins) all will appear well. When you come to test later with perhaps a larger workload, as soon as the flow runs for longer than 5 mins you'll discover this issue, and at that point you realise the whole approach you may have invested in thus far is not viable with the adaptor.
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+April 1, 2022 at 5:19 pm
+
+
+
+
+Hello,
+if the timeout in the Azure service bus server cannot be configured to a higher value this may indeed be a problem. I was not aware of this. But usually processes should be configured to not run that long. In case you have such long running scenarios it could maybe make sense to use the internal JMS adapter to directly store the message there and further process from there. This process should be finished quite fast.
+Thank you for sharing this details,
+Mandy
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+shyam singh 
+May 18, 2022 at 10:59 am
+
+
+
+
+Hi Mandy,
+Event Mesh prototype was working with Cloud Integration earlier.
+But now I am getting the below error:
+com.sap.it.rt.adapter.http.api.exception.HttpResponseException: An internal server error occured: target (topic/queue) forbidden (220056) [condition = amqp:not-allowed].
+Any pointers would be really helpful
+Thanks
+Shyam
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+
+
+ 
+
+
+Mandy Krimmel Blog Post Author  
+May 18, 2022 at 11:47 am
+
+
+
+
+Hello Shyam,
+this sounds like an issue in the Event Mesh service. Maybe the user/pw in the service instance for Event Mesh changed? I would suggest to check there.
+Else you could open a ticket on BC-CP-EM-MES
+Best regards
+Mandy
+
+
+
+
+Like 0ShareRight click and copy the link to share this comment 
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+ 
+
+
+
+
+Find us on
+
+
+
+
+
+
+
+
+
+
+
+
+Privacy
+Terms of Use
+Legal Disclosure
+Copyright
+Trademark
+
+Newsletter
+Support
+
+
+
+ 
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Visual
+Text
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ Insert/edit link
+Close
+
+
+Enter the destination URL
+
+URL
+
+
+
+Link Text
+
+
+
+
+ Open link in a new tab
+
+
+Or link to existing content
+
+
+
+Search
+
+
+
+
+
+
+
+
+
+
+
+
+No search term specified. Showing recent items.
+Search or use up and down arrow keys to select an item.
+
+
+
+
+
+
+
+
+
+
+Cancel
+
+
+
+
+
+
+
+  
+
+

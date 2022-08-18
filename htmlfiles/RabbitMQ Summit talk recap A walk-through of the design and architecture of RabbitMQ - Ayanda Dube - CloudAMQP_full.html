@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='utf-8'>
+<title>RabbitMQ Summit talk recap: A walk-through of the design and architecture of RabbitMQ - Ayanda Dube - CloudAMQP</title>
+<meta content='As the use of RabbitMQ grows, there&#39;s a growing need for its operators and engineers to have a good understanding and appreciation of its internal design, and how its sub-components interact to meet the various messaging requirements in industry. In this talk I walk through the internal design of RabbitMQ, explaining some of the key components which attribute to its robustness and reputation of being a world leading and well trusted messaging system.' name='description'>
+<meta content='RabbitMQ, MQ, CloudAMQP, AMQP, hosted RabbitMQ, RabbitMQ hosting, cloud AMQP, message, queues, hosting, cloud, decouple, distrubute, scale, ' name='keywords'>
+<meta content='qP-zj5OL535dQC2SNy0qko_ofW5GWeYpfrE23axJIvE' name='google-site-verification'>
+<link href='https://www.cloudamqp.com/blog/a-walk-through-of-the-design-and-architecture-of-rabbitmq.html' rel='canonical'>
+<link href='/css/cloudamqp.css' rel='stylesheet' type='text/css'>
+<link href='/favicon.ico' rel='icon' type='image/x-icon'>
+<link href='/rss' rel='alternate' title='CloudAMQP Blog feed' type='application/rss+xml'>
+<link href='/changelog/rss' rel='alternate' title='CloudAMQP Changelog feed' type='application/rss+xml'>
+<meta content='width=device-width, initial-scale=1.0' name='viewport'>
+<meta content='RabbitMQ Summit talk recap: A walk-through of the design and architecture of RabbitMQ - Ayanda Dube - CloudAMQP' property='og:title'>
+<meta content='https://www.cloudamqp.com/img/blog/talk-ayanda-dube.jpg' property='og:image'>
+<meta content='CloudAMQP' property='og:site_name'>
+<meta content='website' property='og:type'>
+<meta content='As the use of RabbitMQ grows, there&#39;s a growing need for its operators and engineers to have a good understanding and appreciation of its internal design, and how its sub-components interact to meet the various messaging requirements in industry. In this talk I walk through the internal design of RabbitMQ, explaining some of the key components which attribute to its robustness and reputation of being a world leading and well trusted messaging system.' property='og:description'>
+<meta content='https://www.cloudamqp.com/blog/a-walk-through-of-the-design-and-architecture-of-rabbitmq.html' property='og:url'>
+<meta content='summary_large_image' name='twitter:card'>
+<meta content='@cloudamqp' name='twitter:site'>
+<meta content='RabbitMQ Summit talk recap: A walk-through of the design and architecture of RabbitMQ - Ayanda Dube - CloudAMQP' name='twitter:title'>
+<meta content='As the use of RabbitMQ grows, there&#39;s a growing need for its operators and engineers to have a good understanding and appreciation of its internal design, and how its sub-components interact to meet the various messaging requirements in industry. In this talk I walk through the internal design of RabbitMQ, explaining some of the key components which attribute to its robustness and reputation of being a world leading and well trusted messaging system.' name='twitter:description'>
+<meta content='https://www.cloudamqp.com/img/blog/talk-ayanda-dube.jpg' name='twitter:image'>
+<script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-29704653-1', 'auto');
+  ga('set', 'anonymizeIp', true);
+  ga('send', 'pageview');
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+</head>
+<body>
+<script src='/js/jquery-3.6.0.min.js' type='text/javascript'></script>
+<script src='/js/popper.min.js' type='text/javascript'></script>
+<script src='/js/bootstrap.min.js' type='text/javascript'></script>
+<nav class='navbar navbar-expand-md navbar-light'>
+<div class='container'>
+<a class='navbar-brand' href='/'>
+<img class='logo' src='/img/cloudamqp-logo.png'>
+CloudAMQP
+</a>
+<button aria-controls='camqpnavbar' aria-expanded='false' aria-label='Toggle navigation' class='navbar-toggler navbar-toggler-right' data-target='#camqpnavbar' data-toggle='collapse' type='button'>
+<span class='navbar-toggler-icon'></span>
+</button>
+<div class='collapse navbar-collapse' id='camqpnavbar'>
+<ul class='navbar-nav mx-auto'>
+<li class='nav-item'>
+<a class='nav-link' href='/tour.html'>Tour</a>
+</li>
+<li class='nav-item'>
+<a class='nav-link' href='/plans.html'>Pricing</a>
+</li>
+<li class='nav-item'>
+<a class='nav-link' href='/docs/index.html'>Documentation</a>
+</li>
+<li class='nav-item'>
+<a class='nav-link' href='/support.html'>Support</a>
+</li>
+<li class='nav-item active'>
+<a class='nav-link' href='/blog/index.html'>Blog</a>
+</li>
+</ul>
+<ul class='navbar-nav'>
+<li class='nav-item'>
+<a class='nav-link' href='https://customer.cloudamqp.com/'>Login</a>
+</li>
+<li class='nav-item'>
+<a class='btn btn-outline-secondary' href='https://customer.cloudamqp.com/signup'>
+<span class='d-md-none d-lg-inline'>Get Started</span>
+<span class='d-none d-md-inline d-lg-none'>Start</span>
+</a>
+</li>
+</ul>
+</div>
+</div>
+</nav>
+<section class='blog'></section>
+<div class='blog-header text-center' style='background-image: url(/img/blog/summit2018.jpg);'>
+<div class='blog-title' style='background-color: rgba(170, 83, 33, 0.8);'>
+<h1>RabbitMQ Summit talk recap: A walk-through of the design and architecture of RabbitMQ - Ayanda Dube</h1>
+<p class='post-meta'>
+<i aria-hidden='true' class='fa fa-clock-o'></i>
+<time datetime='2018-12-10'>
+2018-12-10
+</time>
+</p>
+</div>
+</div>
+<section class='blog-post'>
+<div class='container'>
+<div class='row'>
+<div class='col-lg-9 col-md-8 col-sm-12 blog-content'>
+<div class='lead'>
+<p>
+RabbitMQ Summit 2018 was a one day conference which brought light to RabbitMQ
+from a number of angles. Among others, Ayanda Dube  talked about the internal
+design of RabbitMQ.
+</p>
+</div>
+<p>
+As the use of RabbitMQ grows, there's a growing need for its operators and
+engineers to have a good understanding and appreciation of its internal design,
+and how its sub-components interact to meet the various messaging requirements
+in industry. In this talk I walk through the internal design of RabbitMQ,
+explaining some of the key components which attribute to its robustness and
+reputation of being a world leading and well trusted messaging system.
+</p>
+<iframe allow='accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture' allowfullscreen='' frameborder='0' height='315' src='https://www.youtube.com/embed/sRiLP5Pkqj0?rel=0&amp;showinfo=0&amp;autoplay=1&amp;list=PLDUzG2yLXrU4Lz33ZzSdHyfqdHJ8Zum5A' width='660'></iframe>
+<h2>
+A walk-through of the design and architecture of RabbitMQ
+</h2>
+<p>
+I'm going to talk about a challenging topic. Saskia approached me and
+said, "Hey, Ayanda, we're having a RabbitMQ Summit with CloudAMQP. Can you
+do a talk?" This was just after I had done a meetup where I spoke and I
+thought I could re-use that talk for this event.
+</p>
+<p>
+And then, after working with a whole various number of customers, I noticed
+that there's a need for people to understand the internals of RabbitMQ. I was
+like, "Why not have a talk which is going a bit deeper on the internals of RabbitMQ?"
+So today I'm going to try and explain the internal design. Well, attempt to explain it. Because it's not easy.
+</p>
+<p>
+With engineering, there's a common problem. There's an ever-present need
+for efficient communication, be it hardware, RF communication, or software,
+you always have two entities that just want to communicate efficiently. I
+think RabbitMQ meets this need for applications very effectively.
+</p>
+<p>
+You've just got two applications. Simple case, two applications that want
+to communicate and we plug in RabbitMQ in there.
+</p>
+<h3>
+Quote
+</h3>
+<p>
+Just a quote, before I start. There was a gentleman called Frederick
+Barnard. I'm sure you've heard this quote.
+</p>
+<blockquote>
+"A picture is worth a thousand  words."
+</blockquote>
+<p>
+I was trying to justify my slides. Then, I came up with a quote as well that's nice.
+</p>
+<blockquote>
+"A software system diagram is worth a thousand lines of code."
+</blockquote>
+<p>
+That's by me (last night). You will see why.
+</p>
+<h3>
+Initialization: Start scripts
+</h3>
+<p>
+We start with, you download RabbitMQ. You install it on your server. The
+directory structure is generally this.
+</p>
+<p>
+You have your scripts directory. In your scripts directory, you've got the
+RabbitMQ server script which is basically what starts everything up. You
+can check this out and just follow along as well.
+</p>
+<img alt='RabbitMQ Initialization - Start Scripts' class='img-fluid mb-2' src='/img/blog/rmqs-ad-init.jpg'>
+<div class='text-center mb-4'>
+<small>
+RabbitMQ Initialization - Start Scripts, by
+<a href='https://twitter.com/dube_aya' rel='noopener' target='_blank'>Ayanda Dube</a>.
+<a href='https://www.slideshare.net/RabbitMQ-summit/a-walkthrough-of-the-design-and-architecture-of-rabbitmq-ayanda-dube-125711827' rel='noopener' target='_blank'>All slides</a>
+</small>
+</div>
+<p>
+What does the Rabbit script do? Basically, it'll execute the RabbitMQ script
+which will basically initialize your environment variables. It will set
+some default environment variables. You can override these on your OS,
+which I'm sure most of you guys have done. After that, it will execute the
+erl command which will basically kickoff the Erlang node. That's the
+startup.
+</p>
+<h3>
+Initialization: Erlang Node
+</h3>
+<p>
+If you look at the scrip. You will find the
+<code>erl</code>
+command somewhere down the
+Rabbit server script. Part of that command, you've got all the arguments
+that would pass through that for node startup. One of the arguments is the
+<code>RABBITMQ_START_RABBIT</code>
+environment variable. If you navigate to where that
+is, you'll notice that that that argument sets a boot module. The
+<code>-s</code>
+argument will execute that module and that function. Basically, the
+function that will be executed will be
+<code>Rabbit:boot()</code>
+like based on the argument. Basically, that's what starts Rabbit.
+</p>
+<h3>
+Initialization: Boot
+</h3>
+<img alt='RabbitMQ Initialization - Boot Sequence' class='img-fluid mb-2' src='/img/blog/rmqs-ad-boot.jpg'>
+<div class='text-center mb-4'>
+<small>
+RabbitMQ Initialization - Boot Sequence, by
+<a href='https://twitter.com/dube_aya' rel='noopener' target='_blank'>Ayanda Dube</a>.
+<a href='https://www.slideshare.net/RabbitMQ-summit/a-walkthrough-of-the-design-and-architecture-of-rabbitmq-ayanda-dube-125711827' rel='noopener' target='_blank'>All slides</a>
+</small>
+</div>
+<p>
+And then what happens in boot? The first thing which happens in boot is you
+get your application configs updated. This is where your
+<code>rabbitmq.config</code>
+file where you define all your application configs. I think in 3.7, now,
+they get merged with the new config format and you just get one config file
+which is applied as application config. And then, you put a whole bunch of
+other procedures that are carried out. You've got hipe compile options and
+checking cluster consistency.
+</p>
+<p>
+In later versions of RabbitMQ they're planning to have different versions
+being able to run together, so you can have 3.6 node running with a newer
+node, for example.
+</p>
+<p>
+At the moment, if that cluster consistency check fails, you won't be able
+to start your node. And then, Broker Start, obviously. That is the next
+step.
+</p>
+<h3>
+Initialization: Broker start
+</h3>
+<img alt='RabbitMQ Initialization - Broker Start' class='img-fluid mb-2' src='/img/blog/rmqs-ad-start.jpg'>
+<div class='text-center mb-4'>
+<small>
+RabbitMQ Initialization - Broker Start, by
+<a href='https://twitter.com/dube_aya' rel='noopener' target='_blank'>Ayanda Dube</a>.
+<a href='https://www.slideshare.net/RabbitMQ-summit/a-walkthrough-of-the-design-and-architecture-of-rabbitmq-ayanda-dube-125711827' rel='noopener' target='_blank'>All slides</a>
+</small>
+</div>
+<p>
+What happens when you start the broker? It will set up your plugins.
+There's a whole bunch of procedures that are done within that set of
+plugins procedure. It will start all the applications, the dependencies.
+You've got systemd notifications. If you started it as a service. And then,
+you get the log message on your logs.
+</p>
+<h3>
+Initialization: Boot steps
+</h3>
+<p>
+And then, within that applications phase, there's an important step which
+Rabbit does as part of initialization which is executing the boot steps.
+RabbitMQ has got a concept of boot steps.
+</p>
+<p>
+I think, for Erlang developers, if you've worked with start phases and OTP,
+it's a very similar concept but this I find it a bit more flexible because
+you're not tied up to a single application file, as you have with OTP start
+phases.
+</p>
+<p>
+Boot steps are basically going to initialize, run through a number of
+initialization phases. Basically, some of the boot steps. There's quite a
+lot. If you look at the RabbitMQ module, you've got a lot of boot steps
+that are executed. RabbitMQ will just run through all these. Do some
+initialization.
+</p>
+<p>
+Maybe just a couple, just to point out, is you've got your alarming
+infrastructure then that will be initialized. All your memory alarms will
+be part of that. You've got your
+<code>file_handle_cache</code>
+for efficient usage of
+your disk I/O. There's quite a lot. You can go into the Rabbit module and
+see all these.
+</p>
+<p>
+And then, at the end, what you have is you've got more internal boot steps
+which are not part of the initial boot steps. These are like distributed
+across other modules in the codebase. And then, after that, you've got your
+plugin bootsteps. If you do incorporate a boot step in your plugin, that's
+when it will get executed.
+</p>
+<h3>
+Initialization: Internal boot steps
+</h3>
+<p>
+Part of the internal bootsteps that are executed, you've got your
+authentication mechanisms. You've got your queue mirror modes, HA nodes.
+You've got your policy validators that are initialized. You've got a
+priority queue. This is interesting because priority queues are enabled by
+default in RabbitMQ. That is always enabled. We'll get to that at the end.
+If you look at the backing queue module that is used by the queue process.
+You'll notice that it defaults to the priority queue/backing queue
+callback. And then, you've got runtime parameters and other things that are
+initialized.
+</p>
+<h3>
+Initialization: Node state
+</h3>
+<p>
+So, you know that it's initialized. The boot steps have run. You've got you
+alarm processes running, memory monitor, node monitor. You've got your port
+and listeners running, and a whole bunch of other processes that are
+initialized. And then you've got some recovery schemes which are executed
+as part of startup.
+</p>
+<p>
+I think in the newer versions, part of those recovery schemes is to recover
+the vhost. We noticed an interesting issue quite recently that there are
+some cases where that recovery phase was just taking way too long, up to
+eight hours. Thankfully, that was fixed.
+</p>
+<p>
+Basically, this is when your node is initialized. Obviously, there's more
+stuff. I could've added like a whole stack of OTP stuff which is started
+under the hood but we’ll just focus on RabbitMQ.
+</p>
+<p>
+Part of initialization as well, you've got your Mnesia tables that are
+started up. You've got your Rabbit user tables. All the users are stored in
+there. You've got your durable queues. Queues which is basically transient
+and durable queue tables, your vhost, and a whole lot more. The exchanges
+table as well.
+</p>
+<p>
+That's initialization. That's when you know RabbitMQ is started. You
+haven't done anything. It's just all plain, nothing running at the moment,
+in terms of the operations that you're executing against it.
+</p>
+<h3>
+AMQP: Connection establishment
+</h3>
+<p>
+Just to try to explain how stuff works internally we will now look at the
+AMQP operations.
+</p>
+<img alt='AMQP: Connection establishment' class='img-fluid mb-2' src='/img/blog/rmqs-ad-connection-establishment.jpg'>
+<div class='text-center mb-4'>
+<small>
+AMQP: Connection establishment, by
+<a href='https://twitter.com/dube_aya' rel='noopener' target='_blank'>Ayanda Dube</a>.
+<a href='https://www.slideshare.net/RabbitMQ-summit/a-walkthrough-of-the-design-and-architecture-of-rabbitmq-ayanda-dube-125711827' rel='noopener' target='_blank'>All slides</a>
+</small>
+</div>
+<p>
+Our two applications which we mentioned - APP 1 and APP 2, they basically
+need to connect to the nodes and then start interacting. Your node is
+initialized. We'll take the first step, connection establishment.
+</p>
+<h3>
+AMQP Handling: Connection Establishment
+</h3>
+<p>
+This is your application, everything you see in the diagram below: that’s
+the Broker.
+</p>
+<img alt='AMQP Handling: Connection establishment' class='img-fluid mb-2' src='/img/blog/rmqs-ad-broker.jpg'>
+<div class='text-center mb-4'>
+<small>
+AMQP Handling: Broker, by
+<a href='https://twitter.com/dube_aya' rel='noopener' target='_blank'>Ayanda Dube</a>.
+<a href='https://www.slideshare.net/RabbitMQ-summit/a-walkthrough-of-the-design-and-architecture-of-rabbitmq-ayanda-dube-125711827' rel='noopener' target='_blank'>All slides</a>
+</small>
+</div>
+<p>
+When your application connects (AMQP connection establishment) there's two
+phases that take place which are abstracted to the developer. All your
+client libraries will first open. And then, they will engage in AMQP
+handshaking. Internally, in the server, you've got
+<code>RANCH</code>
+which is handling all your TCP details. And then, you've got a lot of acceptors which, for
+each connection request that comes in, it'll handle that request.
+</p>
+<p>
+The reader is actually the process that's going to handle your messages
+coming in from your socket. The moment that is started, it'll will issue a
+<code>connection.start</code>.
+</p>
+<p>
+It will issue a connection start primitive back to the client. The client
+will send back connection.start_ok. Part of that connection.start_ok
+contains your credentials - username and password of the application. Then
+there's connection tuning. And after that, the broker is going to send a
+<code>connection.open_ok</code>.
+That's your AMQP
+<code>connection.open</code>.
+</p>
+<h3>
+AMQP Handling: Connection Establishment
+</h3>
+<p>
+If we then look at what actually happens after the connection is open, in
+terms of the procedures, you have your RabbitMQ reader started. And then,
+you have to wait for messages coming in. Obviously, the first message will
+be the protocol initialization pack which will contain the version, some
+bytes basically which depicts the version, which the client and the server
+need to agree on.
+</p>
+<p>
+Internally, what happens? Rabbit will check those four fields. And then, it
+will match those fields and pick the AMQP version module which it's going
+to use.
+</p>
+<p>
+Once we've set up, and the AMQP version has been agreed on, the connection
+pid is registered. Server properties are set up. If you do a trace, you'll
+see a lot of properties that are negotiated between the client and server.
+</p>
+<h3>
+AMQP Handling: Connection Establishment
+</h3>
+<p>
+Just a brief on the Erlang setup. On the boot phases, you're going to have
+the TCP listener processes and supervisors being added to the RabbitMQ
+supervisor. All of this is being taken care of by
+<code>RANCH</code>.
+</p>
+<p>
+If you know how
+<code>RANCH</code>
+works. Basically, what it does is it's got a whole
+bunch of acceptors which Rabbit sets as 10 by default. This is
+configurable. You can pump this up or reduce it based on your need.
+</p>
+<p>
+Then it will start up the reader setup. Your acceptors get back to the
+accept phase. And then each client connection that comes in: it will set up
+a reader, which is the handler, for that client connection. You can have as
+many readers of the RabbitMQ “reader supervision trees” started as client
+connections come in. That's just a brief on the connection establishment.
+</p>
+<h3>
+AMQP Handling: Channel Creation (Node state)
+</h3>
+<p>
+Next, once you have a connection, you want to open or you created channel.
+Channels in RabbitMQ are internal processes which are going to handle the
+AMQP requests.
+</p>
+<h3>
+AMQP Handling: Channel open
+</h3>
+<img alt='AMQP Handling: Channel Open' class='img-fluid mb-2' src='/img/blog/rmqs-ad-channel-open.jpg'>
+<div class='text-center mb-4'>
+<small>
+AMQP Handling: Channel Open, by
+<a href='https://twitter.com/dube_aya' rel='noopener' target='_blank'>Ayanda Dube</a>.
+<a href='https://www.slideshare.net/RabbitMQ-summit/a-walkthrough-of-the-design-and-architecture-of-rabbitmq-ayanda-dube-125711827' rel='noopener' target='_blank'>All slides</a>
+</small>
+</div>
+<p>
+What happens when you send or connect a
+<code>channel.open</code>
+? The
+<code>channel.open</code>
+request will be handled by your Rabbit reader, like everything else, I
+mean. And then, the channel top-level supervisor will be started. That will
+start another supervisor for the specific channel. Then the channel process
+will be started. The moment you get that channel process started they will
+send back a channel.open message to the already started channel. That's
+just for updating the state of the channel, just setting it to running
+state.
+</p>
+<p>
+After that, the
+<code>channel.open_ok</code>
+is sent to the rabbit writer process. You can go to the code base and actually see all these implementations.
+</p>
+<h3>
+AMQP Handling: Channel open
+</h3>
+<p>
+Let’s explain the procedures which are taken care of during channel
+establishment. Your
+<code>channel.open</code>
+request will propagate through your rabbit
+reader and that frame will get handled.
+</p>
+<img alt='AMQP Handling: Channel Open Process' class='img-fluid mb-2' src='/img/blog/rmqs-ad-channel-open-in-depth.jpg'>
+<div class='text-center mb-4'>
+<small>
+AMQP Handling: Channel Open Process, by
+<a href='https://twitter.com/dube_aya' rel='noopener' target='_blank'>Ayanda Dube</a>.
+<a href='https://www.slideshare.net/RabbitMQ-summit/a-walkthrough-of-the-design-and-architecture-of-rabbitmq-ayanda-dube-125711827' rel='noopener' target='_blank'>All slides</a>
+</small>
+</div>
+<p>
+Here there is a check. You're not permitted to use channel 0. Channel 0 is
+only for setting up the rabbit reader process. If it's not channel 0, then
+it will process the frame.
+</p>
+<p>
+All channels (their PIDs) are stored in the rabbit reader process
+dictionary. And if you do a channel lookup, which is just a RAM store, it
+will check if it’s already existing. If it is, then RabbitMQ basically will
+decode that
+<code>channel.open</code>
+primitive.
+</p>
+<p>
+Initializing the state. This can be sent across different nodes. It will
+forward that message and that will set the channel to a running state. And
+that's when your channel is started. If it didn't exist, it'll create a new
+channel.
+</p>
+<p>
+At the same time there's a check whether the maximum number of permitted
+channels are exceeded or not. If they are, obviously, your
+<code>channel.open</code>
+operation will fail. If they're not, it will start up the channel and then
+come back to all these procedures.
+</p>
+<h3>
+AMQP Handling: Channel open
+</h3>
+<p>
+A channel consists of the supervisor process. If it's a direct channel, you
+will have a rabbit channel process and the rabbit limiter. If it's a
+network channel, which probably most of you are using - you can open direct
+channels/connections.
+</p>
+<p>
+This is the handler for all your commands. The limiter handles all your
+prefetch counts mechanisms. The role of the limiter is to limit the
+interactions between the queue process and the channel in sending out
+traffic.
+</p>
+<p>
+Finally we have the RabbitMQ writer process which issues out commands back
+to your client. And that's channel creation for you.
+</p>
+<h3>
+AMQP Handling: Create/declare an Exchange
+</h3>
+<p>
+Next, you want to create and declare an exchange. What happens when we do
+that? A similar procedure. Your
+<code>exchange.declare</code>
+primitive is sent to the
+rabbit reader, it’s forwarded to the channel. And then, there's a rabbit
+exchange module. Here RabbitMQ will make a lookup in Mnesia, in the
+database, and check if that exchange has already been created. If it's
+there, you get an okey exchange and
+<code>exchange.declare_ok</code>
+operation will be returned back to the client.
+</p>
+<p>
+Moving on. The exchange type will be declared. And then, the exchange is
+inserted into Mnesia, into your database, and
+<code>exchange.declare_ok</code>
+will be returned back to the client. Pretty straightforward.
+</p>
+<h3>
+AMQP Handling: Exchange Declaration
+</h3>
+<p>
+Some checks are done when creating exchanges, to check if the type is
+valid. If it's within the direct topic headers scope - or, if you write your
+own plugin which like the consistent hash exchange. That will be registered
+on startup and the check will be carried out against that.
+</p>
+<p>
+If it doesn't exist, your
+<code>exchange.declare</code>
+operation will fail. Then we check the permissions. “Does the exchange have configuration permission for
+the user?” If it doesn't, it will fail.
+</p>
+<p>
+Basically, it will check for the permissions for the user to create an
+exchange. If the user does have permissions to lookup the exchange. If it's
+there, it will return it. If it's not there, it will create it and insert
+in Mnesia, then return to the client.
+</p>
+<h3>
+AMQP Handling: Queue Declaration
+</h3>
+<p>
+Now, you've got your exchanges. You've got your channel. You’ve got
+exchanges. Now, you want to declare a queue.
+</p>
+<p>
+Queue declaration, how is that handled? When you create a queue, obviously,
+you'll send your queue.declare primitive. Then there's an API for thee
+Rabbit AMQ queue module. That will do a lookup against the database.
+</p>
+<p>
+If the queue is already existing in the database, it will return
+<code>queue.declare_ok</code>.
+That's when you've got the nowait flag set to true. But
+if you had set it to true, it will first confirm that the queue is actually
+created. It will just get some initial statistics from the queue process
+that has been started. It will send out a stat message which goes through a
+bunch of processes called delegates in RabbitMQ.
+</p>
+<p>
+Rabbit has got a pool of processes called delegates. They split commands
+whether they are for a local queue or a remote queue. And then, if it's for
+a remote queue, it will actually ship across the command and execute it on
+the remote node which is more efficient than directly doing remote calls
+from this API.
+</p>
+<p>
+This just return a couple of stats and return your declare_ok. This is
+confirmed that the queue is actually started. Whenever you set that nowait
+flag to false, this is what will happen.
+</p>
+<p>
+If the queue wasn't found in the database, on the initial lookup, it will
+be declared. Your queue name. Is it durable? Auto delete? Your arguments
+that you set from your client application, they'll be propagated to the
+queue supervisor which will start the queue process. And then, the queue
+process will initialize the backing queue which has been configured for
+that queue process.
+</p>
+<p>
+The backing queue actually determines how your queue behaves. You've got a
+process and behind the scenes, there is a backing queue which varies on the
+types of queues that you have. For example, if you've got the priority
+queue. The backing queue will be the priority queue (default) which also
+interacts with the variable queue. Those are just call backs, at the back.
+Then, that will send back your
+<code>queue.declare_ok</code>
+back to your client application.
+</p>
+<h3>
+AMQP Handling: Queue Declaration
+</h3>
+<p>
+If there are any policies that you had set during queue declaration, like
+High Availability policies, those will be set on the queue. And if you've
+got any queue leader location strategies set up, those will be set here.
+</p>
+<p>
+Basically, you compute the node on which the queue is going to reside. If
+it's a mirrored queue, you check the leader queue node. Usually, these are
+the same. That’ll then start up the queue supervisor.
+</p>
+<p>
+This goes through another process called the prequeue process. It will
+check: “Is the queue a leader queue or a follower queue?” If it's a leader
+queue, it will start the leader queue and then initialize it with the
+backing queue, initialize your queue index and the message store.
+</p>
+<p>
+For RabbitMQ 3.7 the message stores are per view host.You'd have a
+transient and a persistent message store. After that, your queue process
+will start. I will send init new. And, thus, the recovery strategy. That's
+mentioned to the queue which will proceed on more initialization steps. So
+there's quite a lot that takes place here. And if it’s a follower, the follower
+queue will be started from the mirror queue - follower process.
+</p>
+<h3>
+AMQP Handling: Bind Queue to Exchange
+</h3>
+<p>
+We’ve got the queues now. Then you want to create a binding between your
+exchange and your queues.
+</p>
+<p>
+Bindings will basically exist in the database, as you're going to see. It's
+not like you've got a direct link between your exchanges and your queue.
+</p>
+<h3>
+AMQP Handling: Queue Exchange Binding
+</h3>
+<p>
+You issue your queue.bind command from your client mentioning your queue
+and your exchange - the source and destination. That will go to your
+channel along to the Rabbit binding module. It will check: “Does that
+binding exist in the rabbit root table?” That's the table which holds all
+your bindings. If there's an element, it will return
+<code>queue.bind_ok</code>.
+If there is nothing, it will write it to your database. There's actually three
+tables there: the
+<code>rabbit_route</code>
+,
+<code>rabbit_durable_route</code>
+, and
+<code>rabbit_semi_durable_route</code>.
+And then, it will return
+<code>queue.bind_ok</code>
+to the client.
+</p>
+<h3>
+AMQP Handling: Queue to Exchange Binding
+</h3>
+<p>
+Initially, a couple of checks for the binding. There is formatting of the
+source and the destination which is your queue name and the exchange name.
+For example, stripping of carriage return characters in your queue names or
+exchange names. And then, it will write permissions for the destination.
+</p>
+<p>
+Then, the Rabbit binding module will validate the binding, check in the
+database and return it. If it wasn't there it will create an entry in the
+database. And then issue it out via the Rabbit writer. That's why the
+channel always has a Rabbit writer.
+</p>
+<p>
+Once you've got your bindings, the next thing is to subscribe the consumer
+to our queues.
+</p>
+<h3>
+AMQP Handling: Consuming
+</h3>
+<img alt='AMQP Handling: Consuming Messages' class='img-fluid mb-2' src='/img/blog/rmqs-ad-consuming.jpg'>
+<div class='text-center mb-4'>
+<small>
+AMQP Handling: Consuming Messages, by
+<a href='https://twitter.com/dube_aya' rel='noopener' target='_blank'>Ayanda Dube</a>.
+<a href='https://www.slideshare.net/RabbitMQ-summit/a-walkthrough-of-the-design-and-architecture-of-rabbitmq-ayanda-dube-125711827' rel='noopener' target='_blank'>All slides</a>
+</small>
+</div>
+<p>
+Here you issue out your basic.consume command. Your Rabbit channel will
+forward the basic.consume command to your queue process via the API. It
+will also mention the Channel PID delimiter. I did mention there are three
+processes for handling your prefetch counts and all that. The moment it
+gets to your queue, the queue will basically interact with this Rabbit
+queue consumer’s API. It's not like consumers are stand-alone processes
+within the server. Everything is happening within that queue process.
+</p>
+<p>
+The request will initialize with the Rabbit limiter and give it the PID to
+activate. Once activated, the Channel PID and the consumer entry will be
+added into a queue (formatted into a record). You've got a small priority
+queue for each consumer that is created for a queue. It’s added into an
+internal queue in the queue process. So, you have a queue of consumers
+which are added.
+</p>
+<p>
+The reason why it's a priority queue is because you can incorporate things
+like consumer priorities. If you want to prioritize your consumers, it'll
+be set within this priority queue in the queue process.
+</p>
+<p>
+Then, the
+<code>basic.consume_ok</code>
+will be returned back to your client application
+and also there are some
+<code>consumer_created</code>
+stats which are created.
+</p>
+<h3>
+AMQP Handling: Message Publish
+</h3>
+<p>
+We've got our consumers now. Everything is set up. We have our channel,
+exchanges and queues. The consumers with their own channels. And now we're
+ready to publish messages from our client application to the consumer.
+</p>
+<img alt='AMQP Handling: Message Publish' class='img-fluid mb-2' src='/img/blog/rmqs-ad-message-publish.jpg'>
+<div class='text-center mb-4'>
+<small>
+AMQP Handling: Message Publish, by
+<a href='https://twitter.com/dube_aya' rel='noopener' target='_blank'>Ayanda Dube</a>.
+<a href='https://www.slideshare.net/RabbitMQ-summit/a-walkthrough-of-the-design-and-architecture-of-rabbitmq-ayanda-dube-125711827' rel='noopener' target='_blank'>All slides</a>
+</small>
+</div>
+<p>
+What happens when you do basic publish? If you push your message, it will
+be formatted by the Rabbit basic API into a delivery payload which is just
+a record. Then there's a route lookup basically looking at “Which queues am
+I going to deliver messages to?”. And for each message, you get a list of
+queues.
+</p>
+<p>
+If your exchange is a direct exchange, you get a single queue there. If
+your exchange is a fanout, you get a list of queues. Or, if you have
+multiple direct bindings which have got the same routing keys, you get
+multiple queues. Everything is based on the type of exchange you choose.
+</p>
+<p>
+The list of queues are then forwarded to your delegates, because these can
+be cross-node calls. Some queue can be local. Some queue can be remote. So
+that delivery record is forwarded to the queue process. This is not
+implemented in the backing queue but there’s a check to see if the message
+is a duplicate. At the moment, it just returns false by default.
+</p>
+<p>
+And then, the first thing which Rabbit will do is the queue process will
+immediately attempt to deliver the message to the consumer. It makes sense
+because if you send a message, the first thing that you want to do is
+quickly check if a consumer can receive it. But if it can't, that's when we
+queue it up. That's the whole queueing theory.
+</p>
+<p>
+There's an attempt to deliver the message and that fails. So the queue
+process will publish the message to the backing queue, to insert it into
+the actual queue message store (queue index). That's what takes place
+there.
+</p>
+<h4>
+Backing Queue
+</h4>
+<p>
+A bit on the on the backing queue: when it receives that publish command.
+Rabbit backing queues are very interesting. Basically, when you get a
+publish command, there’s a check: if it can be stored in the Rabbit queue
+index.
+</p>
+<p>
+If the message payload is less than the queue index embed size, it will be
+stored in the Rabbit queue index. But if it's not, it will be stored in the
+message store. In the message store, you’ve got either transient and the
+persistent mode. Depending on your delivery mode flag. When you publish for
+persistence, it will be stored in in the persistence message store. Else,
+it will be stored in your transient, that will be returned.
+</p>
+<p>
+Then the backing queue uses a message status record which all the actions
+are acted upon, based on what's been updated on this message status record.
+And after storing the message, the message status record is also stored in
+the internal backing queue queues.
+</p>
+<p>
+You've got a whole bunch of queues internally which the backing queue uses.
+You’ve got Q1, Q2, Q3 and Q4. And you've got message classifications called
+ALPHAs, BETAs, GAMMAs. This is based on where the message is going to
+reside.
+</p>
+<p>
+For example, a beta classification in your message exists on the disk and
+its position is held in RAM. When your node goes through memory pressure
+all messages that are in RAM are pushed to your DELTA's, to disk.
+Basically, during paging, that's what will be happening. It is just
+shuffling of messages from certain queues to another queue. That's it. Your
+messages are now going through.
+</p>
+<h3>
+AMQP: Node State
+</h3>
+<p>
+That's why we’ve got messaging now. APP 1 and APP 2 are now communicating,
+That's just an overview of what takes place internally when you’re
+interacting messages from one app to another.
+</p>
+<h3>
+Operations: Clustring
+</h3>
+<p>
+In case you to setup a RabbitMQ cluster you are just telling RabbitMQ that
+you have another node. And what it will just update the Mnesia config with
+that node. The Mnesia will handle everything else under the hood - such as
+authenticating to the other nodes, using Erlang distribution and
+synchronizing. All your tables will be synced across your cluster and all
+your internal routing will be handled across the cluster.
+</p>
+<h3>
+Operations: High Availability (HA) Queues
+</h3>
+<p>
+A quick note on High Availability queues. The moment you set a policy to
+make a queue HA, the backing queue changes to the mirror queue leader
+module. The queue state will be updated dynamically. And then, all your
+synchronization operations will be handled by Erlang distribution.
+</p>
+<p>
+What actually happens is you’ve got your leader queue process which will be
+created. And if you set an HA policy, you get follower queues which are
+created on the other nodes. And as part of creation, the leader queue has
+got a coordinator process which it will use to interact with the GM group,
+basically.
+</p>
+<p>
+This is because the leader queue cannot directly interact with the GM,
+instead it will use that coordinator. Each follower has a GM process which
+handle events and react to events through and publish messages across the
+cluster. This is your clustering, replication and synchronization
+algorithm.
+</p>
+<h3>
+Conclusion: Design and Architecture
+</h3>
+<p>
+I don't think we can strictly define the architecture of Rabbit. There's a
+whole bunch of things that can cause it to change. Plugins are going to
+change how RabbitMQ appears. Version releases are going to introduce new
+design changes. Just by the way you all are going to use it will affect the
+design. Finally, this was an attempt to explain how it works but it is ever
+changing. And everything we've talked about can be found in these two repositories:
+</p>
+<ul>
+<li>
+<a href='https://github.com/rabbitmq/rabbitmq-server/' rel='noopener' target='_blank'>Rabbit Server</a>
+</li>
+<li>
+<a href='https://github.com/rabbitmq/rabbitmq-common/' rel='noopener' target='_blank'>Rabbit Common</a>
+</li>
+</ul>
+<p>
+[Applause]
+</p>
+
+<div class='blog-post-footer social-buttons'>
+<h3>
+Enjoy this article? Don't forget to share it with others. 😉
+</h3>
+<a class='facebook' href='https://www.facebook.com/sharer/sharer.php?u=https://www.cloudamqp.com/blog/a-walk-through-of-the-design-and-architecture-of-rabbitmq.html' rel='noopener' target='_blank'>
+<span class='fa-stack fa-lg'>
+<i class='fa fa-square fa-stack-2x'></i>
+<i class='fa fa-facebook fa-stack-1x fa-inverse'></i>
+</span>
+</a>
+<a class='twitter' href='https://twitter.com/share?text=RabbitMQ Summit talk recap: A walk-through of the design and architecture of RabbitMQ - Ayanda Dube&amp;url=https://www.cloudamqp.com/blog/a-walk-through-of-the-design-and-architecture-of-rabbitmq.html&amp;hashtags=cloudamqp,blog,rabbitmq' rel='noopener' target='_blank'>
+<span class='fa-stack fa-lg'>
+<i class='fa fa-square fa-stack-2x'></i>
+<i class='fa fa-twitter fa-stack-1x fa-inverse'></i>
+</span>
+</a>
+<a class='linkedin' href='https://www.linkedin.com/shareArticle?mini=true&amp;title=RabbitMQ Summit talk recap: A walk-through of the design and architecture of RabbitMQ - Ayanda Dube&amp;url=https://www.cloudamqp.com/blog/a-walk-through-of-the-design-and-architecture-of-rabbitmq.html&amp;source=CloudAMQP' rel='noopener' target='_blank'>
+<span class='fa-stack fa-lg'>
+<i class='fa fa-square fa-stack-2x'></i>
+<i class='fa fa-linkedin fa-stack-1x fa-inverse'></i>
+</span>
+</a>
+<a class='email' href='mailto:?&amp;subject=Check out this blog post from CloudAMQP&amp;body=Hi,%0A%0AI%20just%20found%20this%20blog%20post%20and%20thought%20you%20might%20find%20it%20interesting.%20Check%20it%20out!%0A%0A%22RabbitMQ Summit talk recap: A walk-through of the design and architecture of RabbitMQ - Ayanda Dube%22,%0Ahttps://www.cloudamqp.com/blog/a-walk-through-of-the-design-and-architecture-of-rabbitmq.html'>
+<span class='fa-stack fa-lg'>
+<i class='fa fa-square fa-stack-2x'></i>
+<i class='fa fa-envelope-o fa-stack-1x fa-inverse'></i>
+</span>
+</a>
+<div id='disqus_thread'></div>
+</div>
+</div>
+<div class='col-lg-3 col-md-4 col-sm-12 blog-sidebar text-center'>
+<div class='sidebar-card mb-4'>
+<div class='sidebar-card-block'>
+<img class='img-thumbnail mx-auto img-fluid profile' src='/img/profiles/elinvinka.jpg'>
+<h3>
+Elin Vinka
+</h3>
+<p class='team-role'>
+Developer
+</p>
+</div>
+</div>
+<div class='sidebar-card mb-4'>
+<div class='header-image'>
+<a href='/rabbitmq_ebook.html' onclick='ga(&#39;send&#39;, &#39;event&#39;, &#39;Ebook Download&#39;, &#39;CTA&#39;, &#39;Blog ebook sidebar&#39;);'></a>
+</div>
+<div class='sidebar-card-block ebook-block arrow'>
+<h4 class='ebook-title'>
+<a href='/rabbitmq_ebook.html' onclick='ga(&#39;send&#39;, &#39;event&#39;, &#39;Ebook Download&#39;, &#39;CTA&#39;, &#39;Blog ebook sidebar&#39;);'>Free Ebook</a>
+</h4>
+<p class='ebook-text mt-3 mb-3'>
+"The Optimal
+<br>
+RabbitMQ Guide"
+</p>
+</div>
+<div class='row social-links no-gutters'>
+<div class='col'>
+<a href='/rabbitmq_ebook.html' onclick='ga(&#39;send&#39;, &#39;event&#39;, &#39;Ebook Download&#39;, &#39;CTA&#39;, &#39;Blog ebook sidebar&#39;);'>
+<i aria-hidden='true' class='fa fa-download'></i>
+Download
+<span class='d-none d-md-inline'>your copy</span>
+</a>
+</div>
+</div>
+</div>
+<div class='card mb-4 d-none d-md-block'>
+<a class='twitter-timeline' data-height='500' data-theme='light' data-width='255' href='https://twitter.com/CloudAMQP'>Tweets by CloudAMQP</a>
+<script async='' charset='utf-8' src='//platform.twitter.com/widgets.js'></script>
+</div>
+</div>
+</div>
+</div>
+</section>
+<script src='/js/jquery-3.1.1.min.js' type='text/javascript'></script>
+<script>
+  jQuery(document).ready(function($){
+    var shareWindow = function(url, medium, path) {
+      var width = $(window).width();
+      var height = $(window).height();
+      var H=Math.round((width/2)-(550/2)),
+      G=0;
+      if(height>450) {
+        G=Math.round((height/2)-(450/2));
+      }
+      if (typeof ga === 'function') {
+        ga('send', 'event', 'Share', medium, path);
+      }
+      if (medium == 'email') {
+        window.location.href = url;
+      } else {
+        window.open(url,'','left='+H+',top='+G+',width=550,height=450,personalbar=0,toolbar=0,scrollbars=1,resizable=1');
+      }
+    };
+    $(".social-buttons a").click(function(e){
+      e.preventDefault();
+      shareWindow($(this).attr("href"),$(this).attr("class"), window.location.pathname);
+    });
+  });
+</script>
+<script>
+  var disqus_config = function () {
+  this.page.url = "https://www.cloudamqp.com/blog/a-walk-through-of-the-design-and-architecture-of-rabbitmq.html";
+  this.page.identifier = "https://www.cloudamqp.com/blog/a-walk-through-of-the-design-and-architecture-of-rabbitmq.html";
+  };
+  
+  (function() {
+  var d = document, s = d.createElement('script');
+  s.src = 'https://cloudamqp.disqus.com/embed.js';
+  s.setAttribute('data-timestamp', +new Date());
+  (d.head || d.body).appendChild(s);
+  })();
+</script>
+<section class='mid-cta dark-bg'>
+<div class='container'>
+<div class='row'>
+<div class='col-md-12 text-center'>
+<h2 class='cta-title mb-4'>CloudAMQP - industry leading RabbitMQ as a service</h2>
+<p class='sub-title'>
+Start your managed cluster today. CloudAMQP is 100% free to try.
+</p>
+</div>
+</div>
+<div class='row'>
+<div class='col-md-12 text-center'>
+<p class='mb-0'>
+<a class='btn btn-lg btn-secondary mt-4 pr-5 pl-5' href='https://customer.cloudamqp.com/signup' onclick='ga(&#39;send&#39;, &#39;event&#39;, &#39;Blog general&#39;, &#39;CTA&#39;, &#39;RabbitMQ Summit talk recap: A walk-through of the design and architecture of RabbitMQ - Ayanda Dube&#39;);'>Start your FREE plan today!</a>
+</p>
+</div>
+</div>
+</div>
+</section>
+<section class='customers'>
+<div class='container'>
+<div class='row'>
+<div class='col-md-12 text-center'>
+<h2 class='title mb-4'>
+<span>13,000+</span>
+users including these smart companies
+</h2>
+</div>
+</div>
+<div class='row'>
+<div class='col-lg-2 col-md-4 col-sm-6 col-6 customer-logo mb-3'>
+<div>
+<img alt='DraftKings' class='img-fluid' src='/img/customers/logo-draftkings.jpg'>
+</div>
+</div>
+<div class='col-lg-2 col-md-4 col-sm-6 col-6 customer-logo mb-3'>
+<div>
+<img alt='Mozilla' class='img-fluid' src='/img/customers/logo-mozilla.jpg'>
+</div>
+</div>
+<div class='col-lg-2 col-md-4 col-sm-6 col-6 customer-logo mb-3'>
+<div>
+<img alt='Docker' class='img-fluid' src='/img/customers/logo-docker.jpg'>
+</div>
+</div>
+<div class='col-lg-2 col-md-4 col-sm-6 col-6 customer-logo mb-3'>
+<div>
+<img alt='Heroku' class='img-fluid' src='/img/customers/logo-heroku.jpg'>
+</div>
+</div>
+<div class='col-lg-2 col-md-4 col-sm-6 col-6 customer-logo mb-3 d-none d-sm-block'>
+<div>
+<img alt='Discovery' class='img-fluid' src='/img/customers/logo-discovery.jpg'>
+</div>
+</div>
+<div class='col-lg-2 col-md-4 col-sm-6 col-6 customer-logo mb-3 d-none d-sm-block'>
+<div>
+<img alt='Salesforce' class='img-fluid' src='/img/customers/logo-salesforce.jpg'>
+</div>
+</div>
+</div>
+</div>
+</section>
+<script src='/js/anchor-titles.js' type='text/javascript'></script>
+<link href='/prettify/prettify.css' rel='stylesheet' type='text/css'>
+<script src='/prettify/prettify.js' type='text/javascript'></script>
+
+<footer class='dark-bg hidden-print'>
+<div class='footer-top pt-5 pb-4'>
+<div class='container'>
+<div class='row justify-content-center'>
+<div class='col-md-3 col-sm-3 col-6 hidden-print'>
+<h4>Menu</h4>
+<ul class='quicklinks list-unstyled'>
+<li>
+<a href='/'>Home</a>
+</li>
+<li>
+<a href='/tour.html'>Tour</a>
+</li>
+<li>
+<a href='/plans.html'>Pricing</a>
+</li>
+<li>
+<a href='/docs/index.html'>Documentation</a>
+</li>
+<li>
+<a href='/support.html'>Support</a>
+</li>
+<li>
+<a href='/blog/index.html'>Blog</a>
+</li>
+<li>
+<a href='/customers.html'>Customers</a>
+</li>
+<li>
+<a href='/about_us.html'>About Us</a>
+</li>
+</ul>
+</div>
+<div class='col-md-3 col-sm-3 col-6 hidden-print'>
+<h4>Resources</h4>
+<ul class='quicklinks list-unstyled'>
+<li>
+<a href='/changelog.html'>Changelog</a>
+</li>
+<li>
+<a href='/docs/faq.html'>FAQ</a>
+</li>
+<li>
+<a href='/legal/legal_and_policies.html'>Legal and Policies</a>
+</li>
+<li>
+<a href='/legal/security_and_compliance.html'>Security and Compliance</a>
+</li>
+<li>
+<a href='https://status.cloudamqp.com/' target='_new'>Status</a>
+</li>
+</ul>
+</div>
+<div class='col-md-3 col-sm-3 col-6 hidden-print'></div>
+<div class='col-12 col-sm-3 col-md-3 ml-auto mx-auto text-center support-call-out'>
+<h4 class='mt-3 mt-md-0 mb-3'>Need help?</h4>
+<a class='btn btn-xl btn-secondary mb-3 hidden-print' href='/support.html'>Contact Support</a>
+<p class='opening-hours hidden-print'>Open 24 hours a day, 7 days a week.</p>
+<h4 class='mt-4 mb-2'>Talk to Sales</h4>
+<ul class='quicklinks list-unstyled mb-2'>
+<li>
+<a href='tel:+01-812-461-6841'>+1 812 461 6841</a>
+</li>
+</ul>
+<p class='opening-hours hidden-print'>Sales inquiries only. Open: 8-5 CST</p>
+</div>
+</div>
+</div>
+</div>
+<div class='footer-bottom pt-4'>
+<div class='container'>
+<div class='row justify-content-center'>
+<div class='col-12 col-xl-3 col-lg-4 col-md-5 mb-4 mb-md-0'>
+<h4>Brought to you by</h4>
+<a class='codes-link' href='https://www.84codes.com' rel='noopener' target='_blank'>
+<img alt='84codes' class='logo mb-0' src='/img/84codes-logo.png'>
+<span>www.84codes.com</span>
+</a>
+</div>
+<div class='col-12 col-xl-3 col-lg-4 col-md-5 ml-auto'>
+<h4>Our Services</h4>
+<div class='dropdown'>
+<a aria-expanded='false' aria-haspopup='true' class='btn btn-secondary dropdown-toggle' data-toggle='dropdown' href='#' id='dropdownMenuLink' role='button'>
+<img alt='CloudAMQP' src='/img/logo-cloudamqp-footer.png'>
+</a>
+<div aria-labelledby='dropdownMenuLink' class='dropdown-menu'>
+<a class='dropdown-item' href='https://www.cloudkarafka.com/' rel='noopener' target='_blank'>
+<strong>CloudKarafka</strong>
+&ndash; Apache Kafka
+</a>
+<a class='dropdown-item' href='https://www.elephantsql.com/' rel='noopener' target='_blank'>
+<strong>ElephantSQL</strong>
+&ndash; PostgreSQL
+</a>
+<a class='dropdown-item' href='https://www.cloudmqtt.com/' rel='noopener' target='_blank'>
+<strong>CloudMQTT</strong>
+&ndash; MQTT
+</a>
+</div>
+</div>
+</div>
+</div>
+<div class='row'>
+<div class='col-md-12 text-center pt-3 pb-3'>
+<hr>
+<p class='mb-0'>© Copyright 2011-2022 CloudAMQP. RabbitMQ and the RabbitMQ Logo are trademarks of VMware, Inc.</p>
+</div>
+</div>
+</div>
+</div>
+</footer>
+<script>
+  !function(e,t,n){function a(){var e=t.getElementsByTagName("script")[0],n=t.createElement("script");n.type="text/javascript",n.async=!0,n.src="https://beacon-v2.helpscout.net",e.parentNode.insertBefore(n,e)}if(e.Beacon=n=function(t,n,a){e.Beacon.readyQueue.push({method:t,options:n,data:a})},n.readyQueue=[],"complete"===t.readyState)return a();e.attachEvent?e.attachEvent("onload",a):e.addEventListener("load",a,!1)}(window,document,window.Beacon||function(){});
+  window.Beacon('init', 'ff675097-ec55-404b-999e-a3d16efa5340')
+</script>
+</body>
+<script>
+  function follow () {
+    var footerHeight = document.querySelector('footer').offsetHeight
+    var viewHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0)
+    window.scrollTo(0, document.body.scrollHeight - viewHeight - footerHeight);
+  }
+</script>
+</html>

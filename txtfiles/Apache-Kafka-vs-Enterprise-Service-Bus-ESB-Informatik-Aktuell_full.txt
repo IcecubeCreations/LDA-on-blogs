@@ -1,0 +1,173 @@
+
+
+
+
+
+
+Apache Kafka vs. Enterprise Service Bus (ESB) | Informatik Aktuell
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Über uns | Media | Kontakt | Impressum
+
+
+
+
+
+
+
+
+     
+
+
+
+EntwicklungMethodenProgrammiersprachenBetriebDatenbankenServerSicherheitSpeicherNetzwerkeVirtualisierungVerfügbarkeitKünstliche IntelligenzManagement und RechtProjektmanagementDigitalisierungIT-RechtIT-SelbständigeNewsTermineIT-JobsIT-Bücher
+
+
+
+
+
+
+
+
+Künstliche IntelligenzDigitalisierungAgileNachhaltigkeitDevOpsMicroservicesCloudIoTIT-SecurityDatenbankenJava
+
+
+☰EntwicklungBetriebManagement und RechtNewsIT-JobsIT-BücherNewsletter
+
+
+
+
+
+AutorKai WähnerKai Wähner ist als Technology Evangelist bei Confluent tätig. Seine Schwerpunkte liegen in den Bereichen Big Data Analytics, Machine… >> Weiterlesen
+
+NewsletterUnser Newsletter informiert Sie regelmäßig und kostenlos über Neuigkeiten, Artikel und Veranstaltungen zu aktuellen IT-Themen. 
+
+Nachrichten28.03.2022OSAD 2022 – Call for Papers der Hybrid-Veranstaltung ist eröffnetOpen Source Automation Days: Die herstellerunabhängige Open Source Konferenz findet vom 4.10. bis 6.10.2022 vor Ort und virtuell statt. >> Weiterlesen21.03.2022IT-Tage – Konferenz 2022: Call for Papers (CfP)Jetzt Vortragsvorschläge für die Jahres-Konferenz des Fachmagazins Informatik Aktuell einreichen. Sub-Konferenzen: Software-Entwicklung,… >> Weiterlesen09.02.2022Von Java nach Kotlin migrieren: Einführung mit Praxis-BeispielenKotlin hat sich als moderne Java-Alternative mit vielen Vorzügen etabliert und deshalb überlegen viele Entwickler zu Kotlin zu wechseln. Ist… >> Weiterlesen
+
+
+
+
+
+
+
+
+
+
+ » Entwicklung » Programmiersprachen
+
+  
+
+                Kai Wähner
+
+            
+18. September 2018
+Apache Kafka vs. Enterprise Service Bus (ESB) – Doch nur eine Hassliebe?
+			© envfx / Fotolia.com
+		Typischerweise wurde ein Enterprise Service Bus (ESB) oder andere Integrationslösungen wie Extract-Transform-Load (ETL) verwendet, um Systeme zu entkoppeln. Die immense Anzahl von Konnektoren sowie die Anforderung, dass Anwendungen die Daten gleichzeitig senden und empfangen, führen jedoch dazu, dass Systeme immer miteinander verflochten waren. Entwicklungsprojekte haben daher viele Abhängigkeiten von anderen Systemen und nichts kann wirklich entkoppelt werden. Dieser Artikel zeigt, warum so viele Unternehmen das Open-Source-Ökosystem von Apache Kafka für die erfolgreiche Integration verschiedener Legacy- und moderner Anwendungen nutzen. Außerdem betrachten wir die Unterschiede, aber auch die Möglichkeiten, bestehende Integrationslösungen wie ESB- oder ETL-Tools zu ergänzen.Warum sind Integrationen notwendig?  Eine unendliche GeschichteEgal in welchem Unternehmen Sie arbeiten, egal wann Ihr Unternehmen gegründet wurde, Sie werden die Anforderung haben, Ihre Anwendungen miteinander zu integrieren, um Ihre Geschäftsprozesse zu implementieren.Dazu gehören viele verschiedene Faktoren:Technologien (Standards wie SOAP, REST, JMS, MQTT, Datenformate wie JSON, XML, Apache Avro oder Protocol Buffers, offene Frameworks wie Nginx oder Kubernetes und proprietäre Schnittstellen wie EDIFACT oder SAP BAPI),Programmiersprachen und Plattformen wie Cobol, Java, .NET, Go oder Python,Anwendungsarchitekturen wie Monolith, Client Server, Service-orientierte Architektur (SOA), Microservices oder Serverless undKommunikationsparadigmen wie Batch Processing, (nahezu) Echtzeit, Request-Response, Fire-and-Forget, Pub-Sub, kontinuierliche Abfragen und Rückspulen.
+
+			Abb. 1: Chaotische Unternehmensarchitektur. © Kai Wähner
+		
+			Abb. 2: Lösung der Spaghetti-Architektur mit zentraler, integrierter Box in der Mitte. © Kai Wähner
+		Viele Unternehmensarchitekturen sind etwas chaotisch – in etwa so wie in Abb. 1. Jedes Unternehmen muss diese Spaghetti-Architekturen lösen. Je nach Jahrzehnt haben Sie entweder so etwas wie ein ETL-Tool zum Aufbau von Batch-Pipelines oder einen ESB zum Entwurf einer SOA gekauft. Einige Produkte haben auch ihren Namen geändert. Heute werden Ihnen Dinge wie Middleware Messaging, eine Integrationsplattform, Microservice Gateway oder API-Management angeboten. Das Branding und der Produktname spielen keine Rolle. Sie sehen immer das gleiche Bild als eine Lösung, um von Ihrer Spaghetti-Architektur wegzukommen und in der Mitte eine zentrale, integrierte Box zu installieren – in etwa so wie in Abb. 2.Das hat in der Praxis leider selten gut funktioniert. Die meisten SOA-Projekte der letzten zwei Jahrzehnte sind gescheitert. Anstatt dafür ein ETL-Tool oder ESB zu verwenden, setzen Unternehmen nun auf eine Streaming-Plattform, um dieses Problem zu lösen. Ist das die nächste Blase auf dem Markt? Nur ein neuer Begriff? Oder hat sich wirklich etwas geändert, um eine erfolgreiche Integration in einem Unternehmen zu ermöglichen – ob Sie nun Legacy-Mainframes, Standardanwendungen wie CRM und ERPs, moderne Microservices, die mit jeder Programmierplattform erstellt wurden, oder Public Cloud Services integrieren? Warum migrieren Unternehmen jetzt zu Apache Kafka, um diese Streaming-Plattform aufzubauen? Warum sind alle so zufrieden, dass Kafka ein beliebtes Thema auf Konferenzen, technischen Vorträgen und in Blogbeiträgen ist? Und wie verhält es sich im Vergleich zu ESB- oder ETL-Tools?Die nächsten Abschnitte werden all diese Fragen beantworten und die Gründe und Unterschiede zwischen dem Open-Source-Ökosystem von Apache Kafka und anderen bestehenden Integrationslösungen erläutern.
+
+Event-getriebene Verarbeitung und Streaming als Schlüsselkonzept in der UnternehmensarchitekturEine Streaming-Plattform nutzt Events – also Ereignisse – als Kernprinzip. Man sieht diese Events im steten (Daten-)Fluss und Verarbeiten der Daten, während sie in Bewegung sind.Viele Konzepte wie Event Sourcing oder Design Patterns wie Enterprise Integration Patterns (EIPs) basieren auf einer event-getriebenen Architektur. Merkmale einer Streaming-Plattform sind beispielsweise:Event-basierter Datenfluss als Grundlage für (nahezu) Echtzeit- und Batch-Verarbeitung. In der Vergangenheit wurde alles auf Datenspeichern (Data at Rest) aufgebaut, was es unmöglich machte, flexible, agile Dienste zu entwickeln, um auf Daten zu reagieren, solange sie relevant sind.Skalierbares zentrales Nervensystem für Events zwischen beliebig vielen Quellen und Senken. "Zentral" meint hier nicht ein oder zwei große Boxen in der Mitte, sondern eine skalierbare, verteilte Infrastruktur, die so konzipiert ist, dass sie ohne Ausfallzeiten auskommt, den Ausfall von Knoten und Netzwerken bewältigt und Upgrades durchführen kann. Verschiedene Versionen der Infrastruktur (wie Kafka) und Anwendungen (Business Services) können agil und dynamisch eingesetzt und verwaltet werden.Integrationsmöglichkeit für Anwendungen und Systeme aller Art: Technologie spielt keine Rolle, denn es kann alles verbunden werden: Programmiersprache, APIs wie REST, offene Standards, proprietäre Tools und Legacy-Anwendungen. Die Verarbeitungsgeschwindigkeit spielt keine Rolle. Daten einmal konsumieren oder mehrmals konsumieren. Oder auch noch einmal vollständig von Anfang konsumieren (z. B. neue Anwendung hinzufügen, verschiedene maschinelle Lernmodelle mit den gleichen Daten trainieren).Verteilte Speicherung zur Entkopplung von Anwendungen: Versuchen Sie nicht, Ihre eigene Streaming-Plattform mit Ihrem bevorzugten traditionellen Messaging-System und In-Memory-Cache/Data Grid zu erstellen. Es steckt viel Komplexität dahinter und eine Streaming-Plattform hat diese Funktionalität direkt eingebaut. So können Sie z. B. den Zustand eines Microservice speichern, ohne eine separate Datenbank zu benötigen.Zustandsloser Service und zustandsbehaftete Geschäftsprozesse: Geschäftsprozesse sind typischerweise zustandsbehaftete Prozesse. Sie müssen oft mit Events und Zustandsänderungen implementiert werden, nicht mit Remote Procedure Calls und Request-Response-Style. Design Patterns wie Event Sourcing und CQRS helfen dabei, dies in einer event-getriebenen Streaming-Architektur umzusetzen.Vorteile einer Streaming-Plattform in der UnternehmensarchitekturEine Streaming-Plattform schafft enorme Vorteile für Ihre Unternehmensarchitektur:Große und elastische Skalierbarkeit hinsichtlich Knoten, Volumen und Durchsatz: alles auf handelsüblicher Hardware, in beliebigen Public-Cloud-Umgebungen oder über hybride Implementierungen.Flexible Architektur: Zum Aufbau kleiner Services, großer Dienste, manchmal sogar Monolithen.  Event-getriebene Microservices: Asynchron angebundene Microservices modellieren komplexe Geschäftsabläufe und verschieben Daten dorthin, wo sie benötigt werden.Offenheit ohne Bindung an eine spezielle Technologie oder ein spezielles Datenformat: Der nächste neue Standard, Protokoll, Programmiersprache oder Framework kommt bestimmt. Die zentrale Streaming-Plattform ist offen, auch wenn einige Datenquellen oder -ziele ein proprietäres Datenformat oder -technologie verwenden.Unabhängige und entkoppelte Business Services, verwaltet als Produkte, mit eigenem Lebenszyklus hinsichtlich Entwicklung, Test, Bereitstellung und Überwachung: Lose Kopplung ermöglicht eine unabhängige Verarbeitungsgeschwindigkeit zwischen verschiedenen Herstellern und Verbrauchern, On-/Offline-Modi und des "Backpressure Handlings".Mandantenfähigkeit, um sicherzustellen, dass nur der richtige Benutzer verschiedene Datenströme in einem einzigen Cluster erstellen, beschreiben und lesen kann.Automatisiertes Build und Deployment mit Konzepten wie Container, DevOps, etc., wo immer nötig, ob vor Ort, in der Public Cloud oder in einer hybriden Umgebung.Diese Eigenschaften bilden die Grundlage für eine Streaming-Plattform, den Beginn Ihrer erfolgreichen digitalen Transformation. Mit Services, die eine begrenzte Anzahl von Funktionen implementieren, und Services, die unabhängig voneinander entwickelt, bereitgestellt und skaliert werden, erhalten Sie kürzere Zeit bis zum Ergebnis und mehr Flexibilität. Dies ist nur mit einer Streaming-Plattform mit den oben genannten Eigenschaften möglich.
+Anwendungsfälle für eine Streaming-PlattformHier sind einige generische Szenarien, wie Sie eine Streaming-Plattform mit den oben beschriebenen Eigenschaften nutzen können:Event-getriebene Verarbeitung großer Datensätze (z. B. Logs, IoT-Sensoren, Social Feeds),Geschäftskritische Echtzeitanwendungen (z. B. Zahlungen, Betrugserkennung, Kundenerfahrung),Entkoppelte Integration zwischen verschiedenen Legacy-Anwendungen und modernen Anwendungen,Microservices-Architektur oderAnalytics (z .B. für Data Science, Machine Learning).Producer und Consumer verschiedener Anwendungen sind wirklich entkoppelt. Sie skalieren unabhängig in ihrer Geschwindigkeit und ihren Anforderungen. Sie können im Laufe der Zeit neue Anwendungen hinzufügen, sowohl auf der Produzenten- als auch auf der Konsumentenseite. Oft muss ein Ereignis von vielen unabhängigen Anwendungen konsumiert werden, um den Geschäftsprozess abzuschließen. Beispielsweise benötigt eine Hotelzimmerreservierung eine sofortige Erkennung von Zahlungsbetrug in Echtzeit, die Möglichkeit, die Buchung über alle Backend-Systeme in nahezu Echtzeit abzuwickeln, und eine Chargenanalyse über Nacht, um Kunden 360, After Sales, Hotellogistik und andere Geschäftsprozesse zu verbessern.Während einige Prozesse Echtzeitverarbeitung benötigen, müssen Sie auch in der Lage sein, Batch-Prozesse zu unterstützen. Sie müssen die Daten sogar häufiger wiederverwenden, als Sie am Anfang denken, z. B. wenn eine Anwendung längere Zeit nicht verfügbar ist, A/B-Tests mit verschiedenen Versionen einer Anwendung, Hinzufügen einer neuen Anwendung, die die Daten von Grund auf konsumieren muss, oder Erstellen verschiedener Analysemodelle durch maschinelles Lernen auf der Grundlage derselben Datensätze.Denken Sie an einige weitere Anwendungsfälle, die Sie mit einer echten, entkoppelten und skalierbaren Streaming-Plattform erstellen können:Verkaufen, bevor der Kunde das Geschäft verlässt,Abbruch einer Transaktion vor dem Betrug,Austausch eines Teils einer Fertigungsmaschine vor dem Bruch,Benachrichtigung der Kunden bei Verspätung eines Fluges oder Zuges (plus Zusendung von Updates, Umbuchungen oder Gutscheinen) oderWas auch immer – die Liste geht weiter...
+In einem Schwung von Batch zu Realtime?Jetzt verstehen Sie den Mehrwert einer wirklich entkoppelten, skalierbaren Streaming-Plattform. Müssen Sie diese nun als zentrale Datenplattform sofort für alle Ihre Anwendungen einführen?Vorsicht! Kein alteingesessenes Unternehmen hat jemals einen "Big Bang", also die sofortige Umstellung aller Systeme, erfolgreich durchgeführt. Legacy-Anwendungen gibt es überall. Gehen Sie Schritt für Schritt vom Pre-Streaming zur Streaming-Plattform. Wenn Sie aus dem Mainframe-Zeitalter kommen, dann werden Sie vielleicht sogar Batch- und Non-Streaming-Anwendungen für immer behalten (oder realistischerweise zumindest für die nächsten 20-30 Jahre). Das ist in Ordnung. Sie müssen nur die Events aus diesen Systemen in das event-getriebene zentrale Nervensystem bringen.
+
+			Abb. 3: Streaming-Reifegradmodell. © Kai Wähner
+		In Abb. 3 sehen Sie das Streaming-Reifegradmodell, mit dem wir die aktuelle Situation und Planung in Großunternehmen ermitteln.Wo sind Sie heute?Pre-Streaming (Batch oder Legacy)Interesse (Erste Proof-of-Concepts oder Piloten)Early Production (Einige eigenständige Projekte in der Produktion)Integriertes Streaming (Streaming-Plattform mit verschiedenen Projekten in der Produktion)Streaming Plattform (Streaming-Unternehmen mit meist event-basierten Anwendungen)Die meisten traditionellen Unternehmen beginnen ihre Reise in der Pre-Streaming-Phase. Das ist völlig in Ordnung. Der nächste Abschnitt erklärt, warum fast jede erfolgreiche Umwandlung in eine Streaming-Plattform das Apache-Kafka-Ökosystem als eine wichtige architektonische Komponente nutzt.
+Einführung des Apache-Kafka-Ökosystems als Streaming-PlattformOft sind die Leute mit Apache Kafka vertraut, da es ein sehr erfolgreiches Open-Source-Projekt war, das bei LinkedIn für Log Analytics mit großen Datenmengen erstellt wurde. Das war der Anfang von Kafka und nur einer von vielen Anwendungsfällen heute. Kafka entwickelte sich von einfachem Data Ingestion zu einer Echtzeit-Streaming-Plattform für alle zuvor diskutierten Anwendungsfälle. Viele Projekte konzentrieren sich auf die Entwicklung unternehmenskritischer Anwendungen rund um Kafka. Diese müssen rund um die Uhr verfügbar sein. Wenn Kafka ausgefallen ist, funktionieren Ihre Geschäftsprozesse nicht mehr.Kafka ist einzigartig, weil es Messaging, Speicherung und Verarbeitung von Ereignissen in einer Plattform vereint. Dies geschieht in einer verteilten Architektur mit einem verteilten Commit-Log und Topics, die in mehrere Partitionen aufgeteilt sind, wie in Abb. 4 gezeigt.
+			Abb. 4: Verteilte Architektur mit einem verteilten Commit-Log und Topics, die in mehrere Partitionen aufgeteilt sind. © Kai Wähner
+		
+Mit dieser verteilten Architektur unterscheidet sich Kafka von bestehenden Integrations- und Messaging-Lösungen. Es ist nicht nur massiv skalierbar und auf hohen Durchsatz ausgelegt, es können auch unterschiedliche Consumer Daten unabhängig voneinander und in unterschiedlichen Geschwindigkeiten lesen.Dies ist der Grund für den großen Erfolg von Apache Kafka in fast jedem größeren Unternehmen auf diesem Planeten.Anwendungen erzeugen kontinuierlich Ereignisse, während andere Anwendungen diese Ereignisse konsumieren und verarbeiten können, wann immer Sie wollen. Da alle Ereignisse gespeichert werden, können sich Anwendungen in diesen Stream einklinken und nach Bedarf konsumieren – in Echtzeit, nahezu in Echtzeit oder im Batch-Modus. Dies bedeutet, dass Sie Systeme wirklich entkoppeln und eine korrekte agile Entwicklung ermöglichen können. Darüber hinaus kann ein neues System, welches ein altes System ablösen soll, ein Topic abonnieren und historische Daten bis zum jetzigen Zeitpunkt konsumieren, bevor bestehende Systeme ordnungsgemäß außer Betrieb genommen werden.Kafka bietet eine Streaming-Plattform für Messaging, Speicherung und Verarbeitung mit wichtigen Charakteristiken wie Skalierbarkeit, Fehlertoleranz, hohem Datendurchsatz und Technologie-Unabhängigkeit.Dies ist der Grund für den großen Erfolg von Apache Kafka in fast jedem größeren Unternehmen auf diesem Planeten.
+Sollen wir unsere bestehenden MQ- und ESB-Deployments ersetzen?Jüngere Unternehmen wie Netflix, LinkedIn und Zalando bauten ihre gesamte Infrastruktur auf Kafka auf. Ältere Unternehmen haben nicht so viel Glück, weil sie über eine Vielzahl von Mainframes, Monolithen und Legacy-Technologien verfügen. Doch wie gesagt, ein "Big Bang" ist nicht der richtige Weg, um erfolgreich zu sein. Es ist so, als würde man sein Haus umgestalten. Obwohl es theoretisch sinnvoll ist, es von Grund auf neu zu bauen, ist es oft praktischer, das Haus zu erweitern, bestimmte Räume zu verändern oder neu zu dekorieren.Es ist schwierig, geschäftskritische Anwendungen auszutauschen und zu ersetzen, die tief in andere Anwendungen integriert sind, die stabil laufen und von einem erfahrenen Team bedient werden. Allerdings kann es manchmal kostengünstiger sein, alte Architekturen zu ersetzen, so wie es manchmal Sinn macht, ein Haus von Grund auf umzugestalten. Dies war der Fall bei der Sberbank, der größten Bank Russlands, die ihr gesamtes Kernbankensystem um Kafka als zentrales Nervensystem herum aufgebaut hat.ETL und ESB verfügen über gute Tools für das grafische Mapping und die komplexe Integration mit SOAP, EDIFACT, SAP BAPI, COBOL, etc. – Glauben Sie mir: Sie wollen den Code dafür nicht selbst schreiben. Die Integration läuft bereits, ist bezahlt und integriert. Daher sind bestehende MQ- und ESB-Lösungen, die bereits in Ihre bestehende Welt integriert sind, keine Konkurrenz für Apache Kafka. Vielmehr sind sie komplementär! Nutzen Sie sie wie in der Vergangenheit, um sich in die alte Welt zu integrieren. Sie können folgendes verwenden, um Kafka damit zu verbinden:Confluent's JMS Connector für IBM MQ und andere JMS-Broker.Kafka Connect CDC Connector für Mainframe und Datenbanken.ESB- oder ETL-Tools, die sich in bestehende Protokolle (SOAP, EDIFACT, etc.) und Anwendungen (SAP, Siebel, etc.) integrieren lassen. Alle diese Werkzeuge haben inzwischen auch Kafka-Konnektoren.Manche traditionelle Messaging Broker haben inzwischen auch einen Proxy zu Kafka. Obwohl deren Hersteller vor einiger Zeit alle gesagt haben, dass man keine universelle Messaging-Plattform aufbauen kann, integrieren sich traditionelle Messaging-Broker jetzt in Kafka und andere Standards wie MQTT, um nicht in Vergessenheit zu geraten.Kafkas offizielle Low-Level-Client-APIs wie Java, .NET, Go und Python implementieren eine direkte Integration, wenn keine andere bessere oder sinnvollere Integrationsoption verfügbar ist.Als letzte Anmerkung – nachdem ich die Verwendung von ESB- und ETL-Tools in der Kafka-Welt erklärt habe – zitiere ich ThoughtWorks, um Sie daran zu erinnern, nicht zu versuchen, einen neuen ESB um Kafka herum zu bauen:"Some organizations recreate ESB antipatterns with Kafka by centralizing the Kafka ecosystem components – such as connectors and stream processors – instead of allowing these components to live with product or service teams. This reminds us of seriously problematic ESB antipatterns, where more and more logic, orchestration and transformation were thrust into a centrally managed ESB, creating a significant dependency on a centralized team. We’re calling this out to dissuade further implementations of this flawed pattern." [1]Apache Kafka und sein Ökosystem ist als verteilte Architektur mit vielen intelligenten Funktionen konzipiert, die einen hohen Durchsatz, hohe Skalierbarkeit, Fehlertoleranz und Failover ermöglichen! Lassen Sie die Produkt- oder Serviceteams ihre Anwendungen mit Kafka Streams, KSQL und jeder anderen Kafka-Client-API erstellen. Integrieren Sie Kafka mit ESB- und ETL-Tools, wenn Sie deren Funktionen für eine spezifische Legacy-Integration benötigen. Ein ESB- oder ETL-Prozess kann für Apache Kafka wie jeder andere Kafka-Producer oder Consumer-API eine Datenquelle oder ein Datenziel sein. Oftmals ist die Integration mit Altsystemen, die ein solches Tool verwenden, ohnehin schon aufgebaut und läuft. Derzeit haben alle diese Tools einen Kafka Connektor, weil der Markt sie so antreibt. Sie müssen also nur die bestehende Integration mit dem Kafka Connector kombinieren und schon haben Sie eine flexible, skalierbare und hochverfügbare Integration zwischen bestehenden und zukünftigen Technologien und Anwendungen durch Kafka.
+QuellenThoughtWorks: Recreating ESB antipatterns with Kafka 
+
+AutorKai WähnerKai Wähner ist als Technology Evangelist bei Confluent tätig. Seine Schwerpunkte liegen in den Bereichen Big Data Analytics, Machine Learning, Microservices, Internet of Things und Blockchain.  >> Weiterlesen
+Das könnte Sie auch interessieren Ist Kotlin das erfolgreichere Scala? Der Raspberry Pi Pico Python: Eine schicke Oberfläche für intelligente Skripte Weshalb Infrastruktur-Code nicht nur Konfiguration ist Apache CXFs unterschätzte Stärke RAD für webbasierte Business-Anwendungen mit Java
+
+
+Kommentare (0)
+
+
+
+
+
+			Neuen Kommentar schreiben
+		
+
+
+
+
+
+
+
+
+
+
+
+
+
+Name:
+E-Mail-Adresse:
+Nicht ausfüllen!
+Kommentar:
+
+
+
+					Ich verstehe und akzeptiere die Datenschutzbestimmungen.
+				
+
+
+
+
+
+
+
+
+
+
+
+
+Newsletter► Aktuelle Artikel ► Aktuelle Nachrichten ► Aktuelle Konferenztermine
+
+KategorienStartseiteManagementEntwicklungBetrieb
+
+ServiceAktuelle MeldungenKonferenzkalenderIT-JobsSitemap
+
+InformationImpressumÜber UnsMediaDatenschutzNutzungsbedingungenKontakt
+
+Folgen Sie uns     
+
+Partner
+
+
+  
+
+    © Alkmene Verlag GmbH 2022
+
+  
+
+
+
+

@@ -1,0 +1,109 @@
+
+
+Apache Camel - ESB Vergleich #2 - predic8EntwicklungBranchenSSOSchnittstellenESB EinführungBeispiel ClientsBeratungAnwendungsintegrationAPI ReviewSchulungWebinareMicroservicesIntegrationREST APIsBig DataSOAOnsiteKursmaterialAGBsTeilnahme FAQBewertungenTermineTermine nach DatumRaumanforderungenReferenzenFallstudienAppsSOAAppsWeb 2.0SonstigesVeröffentlichungenMicroservicesKubernetes & DockerRESTSecurityOpen Source IntegrationMobileEnterpriseIoTJavaScriptSOA & Web ServicesVorträgeAutorenVideoOpen SourceAPI GatewaySOA MonitorService VirtualisierungVirtuelle ServicesKontaktHotelsAnreiseFreizeittippsJobsSenior Java Entwickler w/m/dJava Entwickler m/w/dJava Student m/w/dKubernetes-Administrator m/w/dFreiberufler m/w/dBachelorarbeitenBewerbung als CoderInhalt der BewerbungAzubi Fachinformatiker w/m/dApache Camel - Open Source Integration Vergleich Teil 2
+
+        Dieser Artikel ist Teil einer Reihe, die Open Source Integrations Werkzeuge vorstellt und vergleicht. Den Anfang macht mit diesem Artikel Apache Camel, da Camel auch im ServiceMix, JBoss Fuse und Talend ESB zum Einsatz kommt.
+      
+
+      Apache Camel ist ein auf den „Enterprise Integration Patterns“ basierendes Integration Framework. Enterprise Integration Patterns werden im gleichnamigen Buch von Gregor Hophe und Bobby Woolf beschrieben.  Wer das Buch noch nicht hat, sollte es sich unbedingt besorgen. Das Buch ist eine Bibel für alle, die Systeme und Anwendungen verbinden möchten.
+    
+      Camel ist kein Server und keine Plattform, es ist ein Framework und steht dem Entwickler in Form von Bibliotheken zur Verfügung. Die Bibliotheken sind schlank und können leicht in eigene Projekte z.B. über eine Maven Abhängigkeit integriert werden. Es wäre aber falsch, Camel auf eine Bibliothek zu reduzieren. Alle Eigenschaften eines ausgewachsenen Enterprise Service Bus mit Deployment, Überwachung und garantierter Zustellung lassen sich auch mit Camel durch die Kombination mit weiteren Projekten realisieren. Beispielsweise kommt oft der ActiveMQ als Message Broker und als Runtime Tomcat, Spring Boot oder der ServiceMix zum Einsatz.
+    1. Entwicklung
+      Integrationsabläufe, die Routen, werden in Camel mit einer Domain spezifischen Sprache z.B. in Java, Scala oder XML beschrieben. Wie das in der Praxis aussieht soll ein Beispiel verdeutlichen. Das folgende Listing zeigt eine mit der Java DSL realisierte Route die einen Endpunkt für Kontaktlisten im JSON Format bereitstellt. Die Kontakte der Liste werden gesplittet und die privaten Kontakte in einem Verzeichnis, die Geschäftskontakte in einer Message Queue abgelegt. Die Java DSL ist eine fluent Language bei der Methodenaufrufe aneinander gehängt werden. Der Code Route lässt sich vom Java Compiler übersetzen und drückt doch gut verständlich den Integrationsablauf aus:
+    
+
+        from("jetty:http://localhost:8000/in/")
+          .split().jsonpath("$.kontakte[*]")
+          .choice() 
+            .when(simple("${body[art]} == 'private'"))
+              .marshal().json()
+              .to("file:private")
+            .otherwise()
+              .marshal().xstream()
+              .to("file:business")
+          .end();
+      
+Der Endpunkt nimmt JSON Nachrichten wie die folgende über HTTP entgegen:
+
+        {
+          "kontakte" : [
+            {
+              "name": "Franz",
+              "art": "private"
+            },
+            {
+              "name": "Peter",
+              "art": "business"
+            }
+          ]
+        }
+      
+Über den JSON Path Ausdruck:
+
+        $.kontakte[*]
+      
+
+      wird die Nachricht in einzelne Nachrichten mit jeweils einem Kontakt aufgespaltet. Die Erstellung des JSON Path Ausdrucks und des Skriptes für die Ermittlung privater Kontakte:
+    
+
+        ${body[art]} == 'private'
+      
+
+      muss vom Entwickler auch in anderen Produkten mit graphischem Editor vorgenommen werden. Dort werden dieselben Ausdrücke in Feldern der graphischen Editoren angegeben.
+    
+      Entwicklungsumgebungen unterstützen bei der Entwicklung von Routen mit Code Vervollständigung und Fehlerkorrektur wie der Screenshot am Beispiel von IntelliJ zeigt.
+
+    Abbildung 1: Komfortables Editieren von Camel Routen mit Code Vervollständigung in
+        Intellij
+
+      Obwohl oder gerade weil im Code gearbeitet wird, bekommt der Entwickler eine gute Unterstützung bei der Erstellung von Routen.
+    2. Konnektoren
+      Für Apache Camel gibt es viele Konnektoren mit Unterstützung selbst für exotische Protokolle und Formate.
+    
+      Business Konnektoren gibt es u.a. für Salesforce und SAP, aber die Auswahl ist wesentlich eingeschränkter als für Mule oder Talend. Viele Business Anwendungen bieten eine Web Services oder REST Schnittstelle und lassen sich mit jedem Integrationswerkzeug ansprechen. SAP Funktionsbausteine können per Web Service aufgerufen werden und Salesforce bietet sowohl Web Services als auch eine REST Schnittstelle an. Die Mehrzahl der Business Anwendungen verfügen über mit WSDL oder Swagger beschriebene Schnittstellen und können daher auch ohne einen Business Konnektor komfortabel angesprochen werden.
+    3. Mapping
+      Camel enthält keinen graphischen Mapper um Datenformate von Quellformaten auf Zielformate abzubilden. Die Transformation einer Nachricht von Format A nach Format B erfolgt in Camel mit Hilfe des EIP Musters Message Translator für das es gleich mehrere Umsetzungen gibt:
+      Skriptsprache z.B. Simple, GroovyTemplating  z.B. Velocity, XQueryJavaDozer ( JavaBean Mapping Framework)GroovyXSLT
+
+      Einige meiner Kollegen schreiben lieber ein kurzes Groovy Skript anstatt einer XSLT Transformation. Der Groovy Code ist oft kürzer und aussagekräftiger. Darüber hinaus sind in Groovy Berechnungen oder Umwandlungen in andere Formate wie JSON leichter realisierbar.
+    
+      Wer mit Camel einen graphischen Mapper einsetzen möchte kann sich den auf Camel basierenden Talend ESB ansehen bei dem man die Camel Routen mit dem ETL Transformer kombinieren kann.
+    4. Management und Monitoring
+      Camel Routen können über die Java Management Extensions kurz JMX verwaltet werden. Die
+                                         Anzahl der verarbeiteten, fehlerhaften sowie gerade sich in Ausführung befindlichen Nachrichten können als Statistiken ausgelesen werden. Performanz Daten stehen ebenfalls zur Verfügung. Über JMX kann auch mit der populären hawt.io Management
+      Konsole
+                                                                                                                                                                                                                                                                            Camel überwacht werden. Hawt.io ist nicht Bestandteil von Camel. Hawt.io entwickelt sich zur universellen Konsole für Java Server. Es gibt Plugins u.a. für JBoss, ActiveMQ, ... und natürlich auch für Camel.
+    
+      Der Screenshot zeigt die graphische Visualisierung der Route von weiter oben.Abbildung 2: Visualisierung von Camel Routen mit hawt.ioDie Visualisierung von hawt.io unterstützt auch Debugging und Tracing. In der Abbildung
+      unten sieht sieht man den Inhalt einer Nachricht zum Zeitpunkt, als die Nachricht vom
+      Marhsal Schritt bearbeitet wurde.Abbildung 3: Tracing von Nachrichten mit Camel
+      Der nächste Screenshot zeigt Statistiken zu jedem einzelnen Schritt einer Route. Das
+      Finden von Hot-Spots, die am meisten zu langen Laufzeiten beitragen wird damit zum
+      Kinderspiel.Abbildung 4: Profiling von Camel Routen mit Hawt.io5. Deployment
+      Camel selbst enthält nur ein Java API um Routen zu starten aber keine Laufzeitumgebung. Dafür können Camel Routen in fast alle Laufzeitumgebungen installiert werden. Mögliche Deployments für Camel sind:
+
+      Java Code in einer Java VMSpring FrameworkDienst des Betriebssystems, der eine Java VM startetWeb AnwendungenApplication ServerSpring Boot AnwendungenDocker ContainerOSGi Runtimes
+
+      Die Produkte von JBoss und Talend kommen bereits mit einer mächtigen Laufzeitumgebung für Camel Routen.
+    6. Performanz und Speicherverbrauch
+      Der Footprint für die Ausführung einer Camel Route ist sehr gering in der Größenordnung von wenigen Megabytes. Die verwendeten Konnektoren und Muster, besonders aufwendige Transformationen bestimmen die Performanz von Camel weit mehr als das Framework selbst. Über das Profiling können Performance Hotspots leicht gefunden und optimiert werden.
+    7. Fazit
+      Mit den folgenden Eigenschaften war Camel seiner Zeit voraus und hat Integrationslösungen und zahlreiche andere Projekte beeinflusst:
+
+      Beschreibung von Integrationsrouten mit einer auf Java basierenden problembezogenen Sprache (DSL).Funktionale Programmierung für die Implementierung von Intergration Patterns. Beispielsweise den Aggregator für das Erzeugen einer aggregrierten Nachricht aus mehreren einzelnen Nachrichten.Modularer Aufbau auf der Basis des Spring FrameworksVerzicht auf ein kanonisches Datenformat. Camel kann intern nicht nur mit XML sondern auch mit JSON, Java Objekten oder beliebigen anderen Formaten arbeiten. Die Konvertierung von CSV Zeilen in Java Objekte oder die von XML nach JSON führt Camel automatisch über Konnektoren durch. Bei jedem Arbeitsschritt kann sich der Entwickler für das für die Aufgabe passende Format entscheiden.
+
+      Camel ist schlank und gleichzeitig eines der mächtigsten oder vielleicht sogar das mächtigste Werkzeug für die Integration. Kommerzielle Produkte wie Talend ESB und JBoss Fuse basieren auf Apache Camel.
+    
+      Apache Camel hat mit Abstand die größte Community und größte Verbreitung aller hier betrachteten Werkzeuge.
+    
+      Für nicht Programmierer ist Camel das falsche Werkzeug. Wer nicht programmieren kann und sich auch nicht mit der Java Plattform auskennt kommt aber auch nicht mit allen anderen hier betrachteten Open Source Projekten zurecht und sollte sich das Angebot kommerzieller closed Source Anbieter ansehen.
+    
+      Wer bereits über Java Kenntnisse verfügt, gewöhnt sich schnell an die Java DSL und kann sich eine andere Arbeitsweise kaum noch vorstellen.
+    
+        Weitere Folgen
+      
+ESB VergleichApache NifiServiceMixTalend ESBJBoss Fuse ESBMule ESBWSO2 ESBSpring Integration
+Video zu Apache Camel
+
+IntegrationMicroservicesApache CamelOpen SourceESBArtikelFrameworkWebinareREST APIsMicroservicesAPI SicherheitIntegration mit Apache CamelKubernetes für ManagerKubernetes WorkshopApache ArtemisArtikelREST, GraphQL & gRPC im VergleichService Mesh: Einführung & Vergleich von Istio und LinkerdMicroservices mit Spring Boot & CloudAPI ManagementCamel, Nifi, JBoss Fuse, Mule
+                & Talend ESB im VergleichBlogUnterschied zwischen API Gateway und Service MeshMinimale Größe eines MicroserviceSitemapJobsImpressumDatenschutzerklärung© 2021 predic8 GmbH Bonn (0228) 5552576-0

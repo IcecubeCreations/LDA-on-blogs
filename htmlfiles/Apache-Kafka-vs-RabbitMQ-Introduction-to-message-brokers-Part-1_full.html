@@ -1,0 +1,705 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="utf-8" /><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><!--metatextblock--><title>Apache Kafka vs RabbitMQ. Introduction to message brokers. Part 1</title><meta name="description" content="Message brokers are especially important for data analytics and business intelligence. We will look at 2 big data tools: Apache Kafka and Rabbitmq." /><meta name="keywords" content="Apache Kafka, RabbitMQ, message brokers, messaging tools, queue manager, data integration " /><meta property="og:url" content="https://freshcodeit.com/blog-introduction-to-message-brokers-part-1-apache-kafka-vs-rabbitmq" /><meta property="og:title" content="Introduction to message brokers. Part 1: Apache Kafka vs RabbitMQ" /><meta property="og:description" content="The development of message brokers is especially important for data analytics and business intelligence. We will look at 2 big data tools: Apache Kafka and Rabbit MQ. " /><meta property="og:type" content="website" /><meta property="og:image" content="https://static.tildacdn.com/tild3265-3462-4131-b662-363939396132/brunch.png" /><link rel="canonical" href="https://freshcodeit.com/blog-introduction-to-message-brokers-part-1-apache-kafka-vs-rabbitmq"><!--/metatextblock--><meta property="fb:app_id" content="257953674358265" /><meta name="format-detection" content="telephone=no" /><meta http-equiv="x-dns-prefetch-control" content="on"><link rel="dns-prefetch" href="https://ws.tildacdn.com"><link rel="dns-prefetch" href="https://static.tildacdn.com"><link rel="shortcut icon" href="https://static.tildacdn.com/tild3764-6163-4131-a662-313731643630/favicon.ico" type="image/x-icon" /><link rel="alternate" type="application/rss+xml" title="Freshcode: Software development company | Agile Development" href="https://freshcodeit.com/rss.xml" /><!-- Assets --><link rel="stylesheet" href="https://static.tildacdn.com/css/tilda-grid-3.0.min.css" type="text/css" media="all" /><link rel="stylesheet" href="https://ws.tildacdn.com/project572703/tilda-blocks-2.14.css?t=1641201130" type="text/css" media="all" /><link rel="preconnect" href="https://fonts.gstatic.com"><link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700&subset=latin,cyrillic" rel="stylesheet"><link rel="stylesheet" href="https://static.tildacdn.com/css/tilda-animation-1.0.min.css" type="text/css" media="all" /><link rel="stylesheet" href="https://static.tildacdn.com/css/tilda-cover-1.0.min.css" type="text/css" media="all" /><link rel="stylesheet" href="https://static.tildacdn.com/css/tilda-slds-1.4.min.css" type="text/css" media="print" onload="this.media='all';" /><noscript><link rel="stylesheet" href="https://static.tildacdn.com/css/tilda-slds-1.4.min.css" type="text/css" media="all" /></noscript><link rel="stylesheet" href="https://static.tildacdn.com/css/tilda-zoom-2.0.min.css" type="text/css" media="print" onload="this.media='all';" /><noscript><link rel="stylesheet" href="https://static.tildacdn.com/css/tilda-zoom-2.0.min.css" type="text/css" media="all" /></noscript><link rel="stylesheet" href="https://static.tildacdn.com/css/tilda-popup-1.1.min.css" type="text/css" media="print" onload="this.media='all';" /><noscript><link rel="stylesheet" href="https://static.tildacdn.com/css/tilda-popup-1.1.min.css" type="text/css" media="all" /></noscript><link rel="stylesheet" href="https://static.tildacdn.com/css/tilda-forms-1.0.min.css" type="text/css" media="all" /><link rel="stylesheet" href="https://static.tildacdn.com/css/tilda-menusub-1.0.min.css" type="text/css" media="print" onload="this.media='all';" /><noscript><link rel="stylesheet" href="https://static.tildacdn.com/css/tilda-menusub-1.0.min.css" type="text/css" media="all" /></noscript><script src="https://static.tildacdn.com/js/jquery-1.10.2.min.js"></script><script src="https://static.tildacdn.com/js/tilda-scripts-3.0.min.js"></script><script src="https://ws.tildacdn.com/project572703/tilda-blocks-2.7.js?t=1641201130"></script><script src="https://static.tildacdn.com/js/lazyload-1.3.min.js" charset="utf-8" async></script><script src="https://static.tildacdn.com/js/tilda-animation-1.0.min.js" charset="utf-8" async></script><script src="https://static.tildacdn.com/js/tilda-cover-1.0.min.js" charset="utf-8" async></script><script src="https://static.tildacdn.com/js/tilda-events-1.0.min.js" charset="utf-8" async></script><script src="https://static.tildacdn.com/js/tilda-slds-1.4.min.js" charset="utf-8" async></script><script src="https://static.tildacdn.com/js/hammer.min.js" charset="utf-8" async></script><script src="https://static.tildacdn.com/js/tilda-zoom-2.0.min.js" charset="utf-8" async></script><script src="https://static.tildacdn.com/js/tilda-forms-1.0.min.js" charset="utf-8" async></script><script src="https://static.tildacdn.com/js/tilda-menusub-1.0.min.js" charset="utf-8" async></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/css/all.min.css" integrity="sha256-h20CPZ0QyXlBuAw7A+KluUYx/3pK+c7lYEpqLTlxjYQ=" crossorigin="anonymous" /><script type="text/javascript">window.dataLayer = window.dataLayer || [];</script><!-- Google Tag Manager --><script type="text/javascript">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':	new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],	j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=	'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);	})(window,document,'script','dataLayer','GTM-NFNC86R');</script><!-- End Google Tag Manager --><script type="text/javascript">if((/bot|google|yandex|baidu|bing|msn|duckduckbot|teoma|slurp|crawler|spider|robot|crawling|facebook/i.test(navigator.userAgent))===false && typeof(sessionStorage)!='undefined' && sessionStorage.getItem('visited')!=='y'){	var style=document.createElement('style');	style.type='text/css';	style.innerHTML='@media screen and (min-width: 980px) {.t-records {opacity: 0;}.t-records_animated {-webkit-transition: opacity ease-in-out .2s;-moz-transition: opacity ease-in-out .2s;-o-transition: opacity ease-in-out .2s;transition: opacity ease-in-out .2s;}.t-records.t-records_visible {opacity: 1;}}';	document.getElementsByTagName('head')[0].appendChild(style);	$(document).ready(function() {	$('.t-records').addClass('t-records_animated');	setTimeout(function(){ $('.t-records').addClass('t-records_visible'); sessionStorage.setItem('visited','y');	},400);	});
+}</script></head><body class="t-body" style="margin:0;"><!--allrecords--><div id="allrecords" class="t-records" data-hook="blocks-collection-content-node" data-tilda-project-id="572703" data-tilda-page-id="5485129" data-tilda-page-alias="blog-introduction-to-message-brokers-part-1-apache-kafka-vs-rabbitmq" data-tilda-formskey="11684db374f1a85ef9bb00361394374b" data-tilda-lazy="yes" data-tilda-project-lang="EN" data-tilda-project-headcode="yes"><!--header--><div id="t-header" class="t-records" data-hook="blocks-collection-content-node" data-tilda-project-id="572703" data-tilda-page-id="3143117" data-tilda-page-alias="header" data-tilda-formskey="11684db374f1a85ef9bb00361394374b" data-tilda-lazy="yes" data-tilda-project-lang="EN" data-tilda-project-headcode="yes"><div id="rec59308137" class="r t-rec t-rec_pb_0 t-screenmin-980px" style="padding-bottom:0px;background-color:#333333; " data-animationappear="off" data-record-type="257" data-screen-min="980px" data-bg-color="#333333"><!-- T228 --><div id="nav59308137marker"></div> <div class="t228__mobile" > <div class="t228__mobile_container"> <div class="t228__mobile_text t-name t-name_md" field="text">&nbsp;</div> <div class="t228__burger"> <span></span> <span></span> <span></span> <span></span> </div> </div> </div><div id="nav59308137" class="t228 t228__hidden t228__positionabsolute " style="background-color: rgba(3,19,35,0.50); height:100px; " data-bgcolor-hex="#031323" data-bgcolor-rgba="rgba(3,19,35,0.50)" data-navmarker="nav59308137marker" data-appearoffset="" data-bgopacity-two="" data-menushadow="" data-bgopacity="0.50" data-menu-items-align="center" data-menu="yes"> <div class="t228__maincontainer t228__c12collumns" style="height:100px;"> <div class="t228__padding40px"></div> <div class="t228__leftside"> <div class="t228__leftcontainer"> <a href="/" style="color:#ffffff;"><img src="https://static.tildacdn.com/tild3533-3561-4363-b730-373532646636/logo.svg" class="t228__imglogo t228__imglogomobile" imgfield="img" style="max-width: 170px; width: 170px; min-width: 170px; height: auto; display: block;" alt="Freshcode"></a> </div> </div> <div class="t228__centerside "> <div class="t228__centercontainer"> <ul class="t228__list t228__list_hidden"> <li class="t228__list_item" style="padding:0 15px 0 0;"><a class="t-menu__link-item" href="#submenu:services" data-menu-submenu-hook="" style="color:#ffffff;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;" data-menu-item-number="1">SERVICES</a> </li> <li class="t228__list_item" style="padding:0 15px;"><a class="t-menu__link-item" href="#submenu:industries" data-menu-submenu-hook="" style="color:#ffffff;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;" data-menu-item-number="2">EXPERTISE</a> </li> <li class="t228__list_item" style="padding:0 15px;"><a class="t-menu__link-item" href="#submenu:blog" data-menu-submenu-hook="" style="color:#ffffff;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;" data-menu-item-number="3">BLOG</a> </li> <li class="t228__list_item" style="padding:0 15px;"><a class="t-menu__link-item" href="#submenu:company" data-menu-submenu-hook="" style="color:#ffffff;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;" data-menu-item-number="4">COMPANY</a> </li> <li class="t228__list_item" style="padding:0 0 0 15px;"><a class="t-menu__link-item" href="/portfolio" data-menu-submenu-hook="" style="color:#ffffff;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;" data-menu-item-number="5">OUR WORK</a> </li> </ul> </div> </div> <div class="t228__rightside"> <div class="t228__rightcontainer"> <div class="t228__right_buttons"><div class="t228__right_buttons_wrap"><div class="t228__right_buttons_but"><a href="/contact" target="" class="t-btn " style="color:#ffffff;background-color:#48d188;border-radius:4px; -moz-border-radius:4px; -webkit-border-radius:4px;font-family:Open Sans;font-weight:300;text-transform:uppercase;"><table style="width:100%; height:100%;"><tr><td>CONTACT US</td></tr></table></a></div> </div></div> </div> </div> <div class="t228__padding40px"></div> </div></div><style>@media screen and (max-width: 980px) { #rec59308137 .t228__leftcontainer { padding: 20px; } #rec59308137 .t228__imglogo { padding: 20px 0; }
+#rec59308137 .t228 { position: static;
+}
+}</style><script> $(window).on('load', function() { if (typeof t228_setWidth !== 'undefined') { t228_setWidth('59308137'); } });
+$(window).on('resize', function() {
+if (typeof t228_setWidth !== 'undefined') { t228_setWidth('59308137');
+} t228_setBg('59308137');
+});
+$(document).ready(function() { t228_highlight(); if (typeof t228__init === 'function') { t228__init('59308137'); } t228_setBg('59308137');
+if (typeof t228_setWidth !== 'undefined') { t228_setWidth('59308137');
+} t228_createMobileMenu('59308137');
+});</script><!--[if IE 8]><style>#rec59308137 .t228 { filter: progid:DXImageTransform.Microsoft.gradient(startColorStr='#D9031323', endColorstr='#D9031323');
+}</style><![endif]--><style>#rec59308137 .t-btn:not(.t-animate_no-hover):hover{ background-color: #34558b !important;	}	#rec59308137 .t-btn:not(.t-animate_no-hover){ -webkit-transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out; transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;	}</style><style>#rec59308137 .t-menu__link-item{ -webkit-transition: color 0.3s ease-in-out, opacity 0.3s ease-in-out; transition: color 0.3s ease-in-out, opacity 0.3s ease-in-out; position: relative;	}
+#rec59308137 .t-menu__link-item::after { content: ''; position: absolute; left: 0;	bottom: 20%;	opacity: 0;	width: 100%;	height: 100%;	border-bottom: 0px solid #ffffff; -webkit-box-shadow: inset 0px -1px 0px 0px #ffffff; -moz-box-shadow: inset 0px -1px 0px 0px #ffffff; box-shadow: inset 0px -1px 0px 0px #ffffff; -webkit-transition: all 0.3s ease; transition: all 0.3s ease;
+}
+#rec59308137 .t-menu__link-item.t-active{ font-weight:300 !important; opacity:1 !important;}
+#rec59308137 .t-menu__link-item.t-active::after {
+opacity: 1;
+bottom: -0px;
+border-bottom: 0px solid #ffffff;
+-webkit-box-shadow: inset 0px -1px 0px 0px #ffffff;
+-moz-box-shadow: inset 0px -1px 0px 0px #ffffff;
+box-shadow: inset 0px -1px 0px 0px #ffffff;
+}
+#rec59308137 .t-menu__link-item:not(.t-active):not(.tooltipstered):hover{ color: #ffffff !important; }
+#rec59308137 .t-menu__link-item:not(.t-active):not(.tooltipstered):hover::after{	opacity: 1;	bottom: -0px;	}
+@supports (overflow:-webkit-marquee) and (justify-content:inherit)
+{ #rec59308137 .t-menu__link-item, #rec59308137 .t-menu__link-item.t-active { opacity: 1 !important; }
+}</style><script type="text/javascript"> $(document).ready(function() { setTimeout(function(){ t_onFuncLoad('t_menusub_init', function() { t_menusub_init('59308137'); }); }, 500); });</script><style> #rec59308137 .t-menusub__link-item{ -webkit-transition: color 0.3s ease-in-out, opacity 0.3s ease-in-out; transition: color 0.3s ease-in-out, opacity 0.3s ease-in-out; } #rec59308137 .t-menusub__link-item.t-active{ color:#48d188 !important; } @supports (overflow:-webkit-marquee) and (justify-content:inherit) { #rec59308137 .t-menusub__link-item, #rec59308137 .t-menusub__link-item.t-active { opacity: 1 !important; } }
+@media screen and (max-width: 980px) { #rec59308137 .t-menusub__menu .t-menusub__link-item { color:#ffffff !important; } #rec59308137 .t-menusub__menu .t-menusub__link-item.t-active { color:#48d188 !important; }
+}</style></div><div id="rec59311693" class="r t-rec t-rec_pb_0 t-screenmin-980px" style="padding-bottom:0px; " data-animationappear="off" data-record-type="257" data-screen-min="980px" ><!-- T228 --><div id="nav59311693marker"></div> <div class="t228__mobile t228__positionfixed" > <div class="t228__mobile_container"> <div class="t228__mobile_text t-name t-name_md" field="text">&nbsp;</div> <div class="t228__burger"> <span></span> <span></span> <span></span> <span></span> </div> </div> </div><div id="nav59311693" class="t228 t228__hidden t228__positionfixed t228__beforeready" style="background-color: rgba(3,19,35,0.80); height:100px; " data-bgcolor-hex="#031323" data-bgcolor-rgba="rgba(3,19,35,0.80)" data-navmarker="nav59311693marker" data-appearoffset="600px" data-bgopacity-two="80" data-menushadow="" data-bgopacity="0.80" data-bgcolor-rgba-afterscroll="rgba(3,19,35,0.80)" data-menu-items-align="center" data-menu="yes"> <div class="t228__maincontainer t228__c12collumns" style="height:100px;"> <div class="t228__padding40px"></div> <div class="t228__leftside"> <div class="t228__leftcontainer"> <a href="/" style="color:#ffffff;"><img src="https://static.tildacdn.com/tild3533-3561-4363-b730-373532646636/logo.svg" class="t228__imglogo t228__imglogomobile" imgfield="img" style="max-width: 170px; width: 170px; min-width: 170px; height: auto; display: block;" alt="Freshcode"></a> </div> </div> <div class="t228__centerside "> <div class="t228__centercontainer"> <ul class="t228__list t228__list_hidden"> <li class="t228__list_item" style="padding:0 15px 0 0;"><a class="t-menu__link-item" href="#submenu:services" data-menu-submenu-hook="" style="color:#ffffff;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;" data-menu-item-number="1">SERVICES</a> </li> <li class="t228__list_item" style="padding:0 15px;"><a class="t-menu__link-item" href="#submenu:industries" data-menu-submenu-hook="" style="color:#ffffff;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;" data-menu-item-number="2">EXPERTISE</a> </li> <li class="t228__list_item" style="padding:0 15px;"><a class="t-menu__link-item" href="#submenu:blog" data-menu-submenu-hook="" style="color:#ffffff;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;" data-menu-item-number="3">BLOG</a> </li> <li class="t228__list_item" style="padding:0 15px;"><a class="t-menu__link-item" href="#submenu:company" data-menu-submenu-hook="" style="color:#ffffff;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;" data-menu-item-number="4">COMPANY</a> </li> <li class="t228__list_item" style="padding:0 0 0 15px;"><a class="t-menu__link-item" href="/portfolio" data-menu-submenu-hook="" style="color:#ffffff;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;" data-menu-item-number="5">OUR WORK</a> </li> </ul> </div> </div> <div class="t228__rightside"> <div class="t228__rightcontainer"> <div class="t228__right_buttons"><div class="t228__right_buttons_wrap"><div class="t228__right_buttons_but"><a href="/contact" target="" class="t-btn " style="color:#ffffff;background-color:#48d188;border-radius:4px; -moz-border-radius:4px; -webkit-border-radius:4px;font-family:Open Sans;font-weight:300;text-transform:uppercase;"><table style="width:100%; height:100%;"><tr><td>CONTACT US</td></tr></table></a></div> </div></div> </div> </div> <div class="t228__padding40px"></div> </div></div><style>@media screen and (max-width: 980px) { #rec59311693 .t228__leftcontainer { padding: 20px; } #rec59311693 .t228__imglogo { padding: 20px 0; }
+#rec59311693 .t228 { position: fixed; top: 64px; }
+}</style><script> $(window).on('load', function() { if (typeof t228_setWidth !== 'undefined') { t228_setWidth('59311693'); } });
+$(window).on('resize', function() {
+if (typeof t228_setWidth !== 'undefined') { t228_setWidth('59311693');
+} t228_setBg('59311693');
+});
+$(document).ready(function() { t228_highlight(); t228_checkAnchorLinks('59311693'); if (typeof t228__init === 'function') { t228__init('59311693'); } t228_setBg('59311693');
+if (typeof t228_setWidth !== 'undefined') { t228_setWidth('59311693');
+} t228_changebgopacitymenu('59311693'); $(window).bind('scroll', t_throttle(function(){t228_changebgopacitymenu('59311693')})); $('#rec59311693 .t228').removeClass('t228__beforeready'); t228_appearMenu('59311693'); $(window).bind('scroll', t_throttle(function(){t228_appearMenu('59311693')})); t228_createMobileMenu('59311693');
+});</script><!--[if IE 8]><style>#rec59311693 .t228 { filter: progid:DXImageTransform.Microsoft.gradient(startColorStr='#D9031323', endColorstr='#D9031323');
+}</style><![endif]--><style>#rec59311693 .t-btn:not(.t-animate_no-hover):hover{ background-color: #34558b !important;	}	#rec59311693 .t-btn:not(.t-animate_no-hover){ -webkit-transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out; transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;	}</style><style>#rec59311693 .t-menu__link-item{ -webkit-transition: color 0.3s ease-in-out, opacity 0.3s ease-in-out; transition: color 0.3s ease-in-out, opacity 0.3s ease-in-out; position: relative;	}
+#rec59311693 .t-menu__link-item::after { content: ''; position: absolute; left: 0;	bottom: 20%;	opacity: 0;	width: 100%;	height: 100%;	border-bottom: 0px solid #ffffff; -webkit-box-shadow: inset 0px -1px 0px 0px #ffffff; -moz-box-shadow: inset 0px -1px 0px 0px #ffffff; box-shadow: inset 0px -1px 0px 0px #ffffff; -webkit-transition: all 0.3s ease; transition: all 0.3s ease;
+}
+#rec59311693 .t-menu__link-item.t-active{ color:#ffffff !important; font-weight:300 !important; opacity:1 !important;}
+#rec59311693 .t-menu__link-item.t-active::after {
+opacity: 1;
+bottom: -0px;
+border-bottom: 0px solid #ffffff;
+-webkit-box-shadow: inset 0px -1px 0px 0px #ffffff;
+-moz-box-shadow: inset 0px -1px 0px 0px #ffffff;
+box-shadow: inset 0px -1px 0px 0px #ffffff;
+}
+#rec59311693 .t-menu__link-item:not(.t-active):not(.tooltipstered):hover{ color: #ffffff !important; }
+#rec59311693 .t-menu__link-item:not(.t-active):not(.tooltipstered):hover::after{	opacity: 1;	bottom: -0px;	}
+@supports (overflow:-webkit-marquee) and (justify-content:inherit)
+{ #rec59311693 .t-menu__link-item, #rec59311693 .t-menu__link-item.t-active { opacity: 1 !important; }
+}</style><script type="text/javascript"> $(document).ready(function() { setTimeout(function(){ t_onFuncLoad('t_menusub_init', function() { t_menusub_init('59311693'); }); }, 500); });</script><style>@media screen and (max-width: 980px) { #rec59311693 .t-menusub__menu .t-menusub__link-item { color:#ffffff !important; } #rec59311693 .t-menusub__menu .t-menusub__link-item.t-active { color:#ffffff !important; }
+}</style></div><div id="rec275076367" class="r t-rec t-rec_pb_0 t-screenmax-980px" style="padding-bottom:0px; " data-animationappear="off" data-record-type="327" data-screen-max="980px" ><!-- T282 --><div id="nav275076367marker"></div><div id="nav275076367" class="t282 t282__beforeready" data-menu="yes" data-appearoffset="0px"> <div class="t282__container t282__positionfixed" style=""> <div class="t282__container__bg" style="background-color: rgba(3,19,35,1); " data-bgcolor-hex="#031323" data-bgcolor-rgba="rgba(3,19,35,1)" data-navmarker="nav275076367marker" data-appearoffset="0px" data-bgopacity="1" data-bgcolor-rgba-afterscroll="rgba(3,19,35,0.80)" data-bgopacity2="0.80" data-menu-shadow="0px 1px 3px rgba(0,0,0,0.)"></div> <div class="t282__container__bg_opened" style="background-color:#031323;"></div> <div class="t282__menu__content t282__col-12"> <div class="t282__logo__container" style="height:64px;"> <div class="t282__logo__content"><a class="t282__logo" href="/" style="color:#ffffff;"><img src="https://static.tildacdn.com/tild3533-3561-4363-b730-373532646636/logo.svg" style="height: 40px;" class="t280__logo__img" imgfield="img" alt=""></a></div> <div class="t282__burger"> <span style="background-color:#ffffff;"></span> <span style="background-color:#ffffff;"></span> <span style="background-color:#ffffff;"></span> <span style="background-color:#ffffff;"></span> </div> </div> </div> </div> <div class="t282__menu__container t282__closed"> <div class="t282__menu__wrapper" style="background-color:#031323;"> <div class="t282__menu"> <div class="t282__menu__items"> <a class="t282__menu__item t-heading t-heading_md t-menu__link-item" href="#submenu:services" data-menu-submenu-hook="" style="color:#ffffff;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;">SERVICES</a> <a class="t282__menu__item t-heading t-heading_md t-menu__link-item" href="#submenu:industries" data-menu-submenu-hook="" style="color:#ffffff;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;">EXPERTISE</a> <a class="t282__menu__item t-heading t-heading_md t-menu__link-item" href="#submenu:insights" data-menu-submenu-hook="" style="color:#ffffff;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;">INSIGHTS</a> <a class="t282__menu__item t-heading t-heading_md t-menu__link-item" href="#submenu:company" data-menu-submenu-hook="" style="color:#ffffff;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;">COMPANY</a> <a class="t282__menu__item t-heading t-heading_md t-menu__link-item" href="/portfolio" data-menu-submenu-hook="" style="color:#ffffff;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;">PORTFOLIO</a> <a class="t282__menu__item t-heading t-heading_md t-menu__link-item" href="/contact" data-menu-submenu-hook="" style="color:#ffffff;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;">CONTACT US</a> </div> </div> </div> </div> <div class="t282__overlay t282__closed"></div></div><script> $(document).ready(function() { $('.t282').removeClass('t282__beforeready'); t282_appearMenu('275076367'); $(window).bind('scroll', t_throttle(function(){t282_appearMenu('275076367')}, 200)); }); $(document).ready(function() { t282_showMenu('275076367'); t282_changeSize('275076367'); t282_highlight(); }); $(window).resize(function() { t282_changeSize('275076367'); }); $(document).ready(function() { t282_changeBgOpacityMenu('275076367'); $(window).bind('scroll', t_throttle(function(){t282_changeBgOpacityMenu('275076367')}, 200)); });</script> <style>#rec275076367 .t-menu__link-item{ -webkit-transition: color 0.3s ease-in-out, opacity 0.3s ease-in-out; transition: color 0.3s ease-in-out, opacity 0.3s ease-in-out; position: relative;	}
+#rec275076367 .t-menu__link-item::after { content: ''; position: absolute; left: 0;	bottom: 20%;	opacity: 0;	width: 100%;	height: 100%;	border-bottom: 0px solid #ffffff; -webkit-box-shadow: inset 0px -1px 0px 0px #ffffff; -moz-box-shadow: inset 0px -1px 0px 0px #ffffff; box-shadow: inset 0px -1px 0px 0px #ffffff; -webkit-transition: all 0.3s ease; transition: all 0.3s ease;
+}
+#rec275076367 .t-menu__link-item.t-active{ color:#ffffff !important; font-weight:300 !important; opacity:1 !important;}
+#rec275076367 .t-menu__link-item:not(.t-active):not(.tooltipstered):hover{ color: #ffffff !important; }
+#rec275076367 .t-menu__link-item:not(.t-active):not(.tooltipstered):hover::after{	opacity: 1;	bottom: -0px;	}
+@supports (overflow:-webkit-marquee) and (justify-content:inherit)
+{ #rec275076367 .t-menu__link-item, #rec275076367 .t-menu__link-item.t-active { opacity: 1 !important; }
+}</style><script type="text/javascript"> $(document).ready(function() { setTimeout(function(){ t_onFuncLoad('t_menusub_init', function() { t_menusub_init('275076367'); }); }, 500); });</script><style>@media screen and (max-width: 980px) { #rec275076367 .t-menusub__menu .t-menusub__link-item { color:#ffffff !important; } #rec275076367 .t-menusub__menu .t-menusub__link-item.t-active { color:#ffffff !important; }
+}</style> <!--[if IE 8]><style>#rec275076367 .t282__container__bg { filter: progid:DXImageTransform.Microsoft.gradient(startColorStr='#D9031323', endColorstr='#D9031323');
+}</style><![endif]--></div><div id="rec276459303" class="r t-rec" style=" " data-animationappear="off" data-record-type="794" ><!-- T794 --><div class="t794" data-tooltip-hook="#submenu:company" data-tooltip-margin="15px" data-add-arrow="on"> <div class="t794__tooltip-menu"> <div class="t794__content"> <ul class="t794__list"> <li class="t794__list_item t-name t-name_xs"><a class="t794__typo t-name t-name_xs" style="color:#031323;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;" href="/about-us" data-menu-item-number="1">ABOUT US</a></li> <li class="t794__list_item t-name t-name_xs"><a class="t794__typo t-name t-name_xs" style="color:#031323;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;" href="/testimonials" data-menu-item-number="2">TESTIMONIALS</a></li> <li class="t794__list_item t-name t-name_xs"><a class="t794__typo t-name t-name_xs" style="color:#031323;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;" href="/news" data-menu-item-number="3">NEWS</a></li> <li class="t794__list_item t-name t-name_xs"><a class="t794__typo t-name t-name_xs" style="color:#031323;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;" href="/team" data-menu-item-number="4">CAREER</a></li> </ul> </div> </div></div><script>$(document).ready(function() { setTimeout(function() { t794_init('276459303'); }, 500);
+});</script><style> #rec276459303 .t794__tooltip-menu { background-color:#ffffff; text-align:left; max-width:300px; border-radius:3px; box-shadow: 0px 0px 7px 0px rgba(0, 0, 0, 0.20); } #rec276459303 .t794__tooltip-menu_top:after { border-top-color: #ffffff; } #rec276459303 .t794__tooltip-menu_bottom:after { border-bottom-color: #ffffff; } #rec276459303 .t794__tooltip-menu_top:before { border-top-color: rgba(0, 0, 0, 0.20);; } #rec276459303 .t794__tooltip-menu_bottom:before { border-bottom-color: rgba(0, 0, 0, 0.20);; } </style><style>#rec276459303 .t794__typo.t-active{ color:#48d188 !important; font-weight:400 !important; opacity:1 !important;}</style><style>#rec276459303 .t794__typo:not(.t-active):hover{ color: #2d91f2 !important; }</style></div><div id="rec276164256" class="r t-rec" style=" " data-animationappear="off" data-record-type="794" ><!-- T794 --><div class="t794" data-tooltip-hook="#submenu:services" data-tooltip-margin="15px" data-add-arrow="on"> <div class="t794__tooltip-menu"> <div class="t794__content"> <ul class="t794__list"> <li class="t794__list_item t-name t-name_xs"><a class="t794__typo t-name t-name_xs" style="color:#031323;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;" href="/services/web-development" data-menu-item-number="1">WEB DEVELOPMENT</a></li> <li class="t794__list_item t-name t-name_xs"><a class="t794__typo t-name t-name_xs" style="color:#031323;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;" href="/services/mobile-development" data-menu-item-number="2">MOBILE DEVELOPMENT</a></li> <li class="t794__list_item t-name t-name_xs"><a class="t794__typo t-name t-name_xs" style="color:#031323;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;" href="/services/ui-ux-design" data-menu-item-number="3">UI/UX DESIGN</a></li> <li class="t794__list_item t-name t-name_xs"><a class="t794__typo t-name t-name_xs" style="color:#031323;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;" href="/services/quality-assurance" data-menu-item-number="4">SOFTWARE TESTING</a></li> <li class="t794__list_item t-name t-name_xs"><a class="t794__typo t-name t-name_xs" style="color:#031323;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;" href="/solutions/staff-augmentation" data-menu-item-number="5">STAFF AUGMENTATION</a></li> <li class="t794__list_item t-name t-name_xs"><a class="t794__typo t-name t-name_xs" style="color:#031323;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;" href="/services/project-management" data-menu-item-number="6">PROJECT MANAGEMENT FLOW</a></li> </ul> </div> </div></div><script>$(document).ready(function() { setTimeout(function() { t794_init('276164256'); }, 500);
+});</script><style> #rec276164256 .t794__tooltip-menu { background-color:#ffffff; text-align:left; max-width:300px; border-radius:3px; box-shadow: 0px 0px 7px 0px rgba(0, 0, 0, 0.20); } #rec276164256 .t794__tooltip-menu_top:after { border-top-color: #ffffff; } #rec276164256 .t794__tooltip-menu_bottom:after { border-bottom-color: #ffffff; } #rec276164256 .t794__tooltip-menu_top:before { border-top-color: rgba(0, 0, 0, 0.20);; } #rec276164256 .t794__tooltip-menu_bottom:before { border-bottom-color: rgba(0, 0, 0, 0.20);; } </style><style>#rec276164256 .t794__typo.t-active{ color:#48d188 !important; font-weight:400 !important; opacity:1 !important;}</style><style>#rec276164256 .t794__typo:not(.t-active):hover{ color: #2d91f2 !important; }</style></div><div id="rec276479219" class="r t-rec" style=" " data-animationappear="off" data-record-type="794" ><!-- T794 --><div class="t794" data-tooltip-hook="#submenu:industries" data-tooltip-margin="15px" data-add-arrow="on"> <div class="t794__tooltip-menu"> <div class="t794__content"> <ul class="t794__list"> <li class="t794__list_item t-name t-name_xs"><a class="t794__typo t-name t-name_xs" style="color:#031323;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;" href="" data-menu-item-number="1">INDUSTRIES</a></li> <li class="t794__list_item t-name t-name_xs"><a class="t794__typo t-name t-name_xs" style="color:#031323;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;" href="/educational-software-development" data-menu-item-number="2">EdTech</a></li> <li class="t794__list_item t-name t-name_xs"><a class="t794__typo t-name t-name_xs" style="color:#031323;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;" href="/healthcare-software-development" data-menu-item-number="3">HealthTech</a></li> <li class="t794__list_item t-name t-name_xs"><a class="t794__typo t-name t-name_xs" style="color:#031323;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;" href="/fintech-software-development" data-menu-item-number="4">FinTech</a></li> <li class="t794__list_item t-name t-name_xs"><a class="t794__typo t-name t-name_xs" style="color:#031323;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;" href="/e-commerce-software-development" data-menu-item-number="5">E-Commerce</a></li> <li class="t794__list_item t-name t-name_xs"><a class="t794__typo t-name t-name_xs" style="color:#031323;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;" href="/food-delivery-software-development" data-menu-item-number="6">Delivery&amp;Logistics</a></li> <li class="t794__list_item t-name t-name_xs"><a class="t794__typo t-name t-name_xs" style="color:#031323;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;" href="/video-streaming-software-development" data-menu-item-number="7">Video Streaming</a></li> </ul> </div> </div></div><script>$(document).ready(function() { setTimeout(function() { t794_init('276479219'); }, 500);
+});</script><style> #rec276479219 .t794__tooltip-menu { background-color:#ffffff; text-align:left; max-width:300px; border-radius:3px; box-shadow: 0px 0px 7px 0px rgba(0, 0, 0, 0.20); } #rec276479219 .t794__tooltip-menu_top:after { border-top-color: #ffffff; } #rec276479219 .t794__tooltip-menu_bottom:after { border-bottom-color: #ffffff; } #rec276479219 .t794__tooltip-menu_top:before { border-top-color: rgba(0, 0, 0, 0.20);; } #rec276479219 .t794__tooltip-menu_bottom:before { border-bottom-color: rgba(0, 0, 0, 0.20);; } </style><style>#rec276479219 .t794__typo.t-active{ color:#48d188 !important; font-weight:400 !important; opacity:1 !important;}</style><style>#rec276479219 .t794__typo:not(.t-active):hover{ color: #2d91f2 !important; }</style></div><div id="rec276190914" class="r t-rec" style=" " data-animationappear="off" data-record-type="794" ><!-- T794 --><div class="t794" data-tooltip-hook="#submenu:solutions" data-tooltip-margin="15px" data-add-arrow="on"> <div class="t794__tooltip-menu"> <div class="t794__content"> <ul class="t794__list"> <li class="t794__list_item t-name t-name_xs"><a class="t794__typo t-name t-name_xs" style="color:#031323;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;" href="" data-menu-item-number="1">SOLUTIONS</a></li> <li class="t794__list_item t-name t-name_xs"><a class="t794__typo t-name t-name_xs" style="color:#031323;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;" href="/services/clojure-development-company" data-menu-item-number="2">CLOJURE DEVELOPMENT</a></li> <li class="t794__list_item t-name t-name_xs"><a class="t794__typo t-name t-name_xs" style="color:#031323;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;" href="/services/javascript-development-company" data-menu-item-number="3">JAVASCRIPT DEVELOPMENT</a></li> <li class="t794__list_item t-name t-name_xs"><a class="t794__typo t-name t-name_xs" style="color:#031323;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;" href="/services/business-intelligence-software-development" data-menu-item-number="4">BUSINESS INTELLIGENCE</a></li> <li class="t794__list_item t-name t-name_xs"><a class="t794__typo t-name t-name_xs" style="color:#031323;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;" href="" data-menu-item-number="5">FOR STARTUPS</a></li> <li class="t794__list_item t-name t-name_xs"><a class="t794__typo t-name t-name_xs" style="color:#031323;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;" href="/services/business-analysis" data-menu-item-number="6">DISCOVERY PHASE</a></li> <li class="t794__list_item t-name t-name_xs"><a class="t794__typo t-name t-name_xs" style="color:#031323;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;" href="/services/mvp-development-for-startups" data-menu-item-number="7">MVP DEVELOPMENT</a></li> <li class="t794__list_item t-name t-name_xs"><a class="t794__typo t-name t-name_xs" style="color:#031323;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;" href="/services/tecnnical-partner-for-your-business" data-menu-item-number="8">CUSTOM SOFTWARE DEVELOPMENT</a></li> </ul> </div> </div></div><script>$(document).ready(function() { setTimeout(function() { t794_init('276190914'); }, 500);
+});</script><style> #rec276190914 .t794__tooltip-menu { background-color:#ffffff; text-align:left; max-width:300px; border-radius:3px; box-shadow: 0px 0px 7px 0px rgba(0, 0, 0, 0.20); } #rec276190914 .t794__tooltip-menu_top:after { border-top-color: #ffffff; } #rec276190914 .t794__tooltip-menu_bottom:after { border-bottom-color: #ffffff; } #rec276190914 .t794__tooltip-menu_top:before { border-top-color: rgba(0, 0, 0, 0.20);; } #rec276190914 .t794__tooltip-menu_bottom:before { border-bottom-color: rgba(0, 0, 0, 0.20);; } </style><style>#rec276190914 .t794__typo.t-active{ color:#48d188 !important; font-weight:400 !important; opacity:1 !important;}</style><style>#rec276190914 .t794__typo:not(.t-active):hover{ color: #2d91f2 !important; }</style></div><div id="rec276488487" class="r t-rec" style=" " data-animationappear="off" data-record-type="794" ><!-- T794 --><div class="t794" data-tooltip-hook="#submenu:blog" data-tooltip-margin="15px" data-add-arrow="on"> <div class="t794__tooltip-menu"> <div class="t794__content"> <ul class="t794__list"> <li class="t794__list_item t-name t-name_xs"><a class="t794__typo t-name t-name_xs" style="color:#031323;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;" href="/blog" data-menu-item-number="1">BLOG</a></li> <li class="t794__list_item t-name t-name_xs"><a class="t794__typo t-name t-name_xs" style="color:#031323;font-size:18px;font-weight:300;font-family:'Open Sans';text-transform:uppercase;" href="/whitepapers" data-menu-item-number="2">WHITEPAPERS</a></li> </ul> </div> </div></div><script>$(document).ready(function() { setTimeout(function() { t794_init('276488487'); }, 500);
+});</script><style> #rec276488487 .t794__tooltip-menu { background-color:#ffffff; text-align:left; max-width:300px; border-radius:3px; box-shadow: 0px 0px 7px 0px rgba(0, 0, 0, 0.20); } #rec276488487 .t794__tooltip-menu_top:after { border-top-color: #ffffff; } #rec276488487 .t794__tooltip-menu_bottom:after { border-bottom-color: #ffffff; } #rec276488487 .t794__tooltip-menu_top:before { border-top-color: rgba(0, 0, 0, 0.20);; } #rec276488487 .t794__tooltip-menu_bottom:before { border-bottom-color: rgba(0, 0, 0, 0.20);; } </style><style>#rec276488487 .t794__typo.t-active{ color:#48d188 !important; font-weight:400 !important; opacity:1 !important;}</style><style>#rec276488487 .t794__typo:not(.t-active):hover{ color: #2d91f2 !important; }</style></div><div id="rec276382156" class="r t-rec" style=" " data-animationappear="off" data-record-type="131" ><!-- T123 --><div class="t123" ><div class="t-container_100 "><div class="t-width t-width_100 ">
+			<style>
+  #rec276479219 .t794__tooltip-menu {
+    max-width: none!important;
+    width: auto;
+  }
+  
+  #rec276479219 .t794__tooltip-menu .t794__content {
+    display: flex!important;
+  }
+  
+  #rec276479219 .t794__tooltip-menu .t794__content > .t794__list:not(:last-child) {
+    margin-right: 20px;
+  }
+  
+  .t794__tooltip-menu .t794__content .t794__list_item {
+    color: #031323;
+    font-weight: bold;
+  }
+  
+  @media screen and (max-width: 980px) {
+    #rec276479219 .t794__tooltip-menu {
+      max-width: 300px!important;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+  
+    #rec276479219 .t794__tooltip-menu .t794__content {
+      flex-direction: column;
+    }
+
+    #rec276479219 .t794__tooltip-menu .t794__content > .t794__list:not(:last-child) {
+      margin-right: 0;
+      margin-bottom: 20px!important;
+    }
+    
+    .t794__tooltip-menu .t794__content .t794__list_item {
+      font-size: 18px;
+    }
+  }  
+</style>
+
+<script>
+  $(document).ready(function () {
+    var $industries = $('#rec276479219 .t794__tooltip-menu .t794__content');
+    var $solutions = $('#rec276190914 .t794__tooltip-menu .t794__content .t794__list');
+
+    $industries.append($solutions);
+    
+    var $firstListItems = $industries.parent().find('.t794__list_item > a[href=""]');
+    $firstListItems.each(function () {
+      $(this).replaceWith(this.childNodes);
+    });
+  });
+</script>
+
+			 
+			</div> </div></div></div><div id="rec207481803" class="r t-rec" style=" " data-animationappear="off" data-record-type="131" ><!-- T123 --><div class="t123" ><div class="t-container_100 "><div class="t-width t-width_100 ">
+			<script> (function(){ window.ldfdr = window.ldfdr || {}; 
+(function(d, s, ss, fs){ fs = d.getElementsByTagName(s)[0]; 
+function ce(src){ var cs = d.createElement(s); cs.src = src; 
+setTimeout(function(){fs.parentNode.insertBefore(cs,fs)}, 1);
+} ce(ss);
+})(document, 'script', 'https://sc.lfeeder.com/lftracker_v1_lYNOR8xeo3b7WQJZ.js');
+})(); </script>
+
+
+			 
+			</div> </div></div></div></div><!--/header--><div id="rec98475339" class="r t-rec" style=" " data-animationappear="off" data-record-type="168" ><!-- cover --><div class="t-cover" id="recorddiv98475339" bgimgfield="img" style="height:100vh; background-image:url('https://static.tildacdn.com/tild3464-6135-4465-b662-636164323437/-/resize/20x/brunch.png');" ><div class="t-cover__carrier" id="coverCarry98475339" data-content-cover-id="98475339" data-content-cover-bg="https://static.tildacdn.com/tild3464-6135-4465-b662-636164323437/brunch.png" data-content-cover-height="100vh" data-content-cover-parallax="fixed" style="height:100vh; "></div> <div class="t-cover__filter" style="height:100vh;background-image: -moz-linear-gradient(top, rgba(0,0,0,0.0), rgba(0,0,0,0.0));background-image: -webkit-linear-gradient(top, rgba(0,0,0,0.0), rgba(0,0,0,0.0));background-image: -o-linear-gradient(top, rgba(0,0,0,0.0), rgba(0,0,0,0.0));background-image: -ms-linear-gradient(top, rgba(0,0,0,0.0), rgba(0,0,0,0.0));background-image: linear-gradient(top, rgba(0,0,0,0.0), rgba(0,0,0,0.0));filter: progid:DXImageTransform.Microsoft.gradient(startColorStr='#fe000000', endColorstr='#fe000000');"></div><div class="t-container"> <div class="t-col t-col_6"> <div class="t-cover__wrapper t-valign_bottom" style="height:100vh;"> <div class="t154 t-align_left" data-hook-content="covercontent"> <div class="t154__uptitle t-uptitle t-uptitle_sm" style="color:#ffcd00;font-size:22px;font-weight:400;font-family:'Open Sans';text-transform:uppercase;" field="subtitle">DEVELOPMENT, 8 min Read</div> <h1 class="t154__title t-title t-title_md" style="color:#ffcd00;font-size:32px;font-weight:400;font-family:'Open Sans';text-transform:uppercase;" field="title"><div style="color:#ffffff;" data-customstyle="yes">I<span style="font-weight: 600;">ntroduction to message brokers. Part 1:</span> <strong><span data-redactor-tag="span" style="font-weight: 700;">Apache Kafka</span></strong> <span style="font-weight: 600;">vs</span> <strong>RabbitMQ</strong><br /></div></h1> <span class="space"></span> </div> </div> </div> </div> </div> </div><div id="rec98475340" class="r t-rec" style=" " data-animationappear="off" data-record-type="602" ><!-- T602 --><div class="t602"> <div class="t602__indicator" style="background:#00e0d1;"></div> </div><script>$(document).ready(function(){ t602_init('98475340');
+}); </script></div><div id="rec183060204" class="r t-rec t-rec_pt_75 t-rec_pb_15" style="padding-top:75px;padding-bottom:15px; " data-record-type="512" ><!-- t512 --><div class="t512"><div class="t-container"> <div class="t-col t-col_11 t-prefix_1 t-item"> <div class="t-cell t-valign_top"> <div class="t512__bgimg t-bgimg" bgimgfield="li_img__1476961779840" data-original="https://static.tildacdn.com/tild3461-3938-4530-b863-386636643934/photo_barmin.png" style="width:160px; height:160px; background-image: url('https://static.tildacdn.com/tild3461-3938-4530-b863-386636643934/-/resizeb/20x/photo_barmin.png');" ></div> </div> <div class="t512__textwrapper t512__textwr_leftpadding t-cell t-valign_top" style=""> <div class="t-name t-name_md t512__bottommargin" style="color:#00fcbb;font-size:22px;font-weight:400;padding-top:30px;font-family:'Open Sans';text-transform:uppercase;" field="li_title__1476961779840"><div style="color:#113dd7;" data-customstyle="yes"><span style="font-weight: 500;"><strong><span data-redactor-tag="span" style="font-weight: 600;">ARTEM BARMIN</span></strong></span></div></div> <div class="t-descr t-descr_sm" style="color:#94a7ae;font-size:22px;font-weight:300;font-family:'Open Sans';" field="li_descr__1476961779840"><a href="https://www.linkedin.com/in/artem-barmin-86131223/" style="" rel="nofollow">Founder/CTO</a><br /></div> </div> </div></div></div></div><div id="rec99105496" class="r t-rec t-rec_pt_45 t-rec_pb_45" style="padding-top:45px;padding-bottom:45px; " data-record-type="127" ><!-- T119 --><div class="t119"><div class="t-container "> <div class="t-col t-col_10 t-prefix_1"><div class="t119__preface t-descr" style="color:#333333;opacity:1;" field="text"><div style="font-size:24px;" data-customstyle="yes">The growing amount of equipment, connected to the Net has led to a new term, <span style="font-weight: 500;">Internet of things</span> (or IoT). It came from the machine to machine communication and means a set of devices that are able to interact with each other. The necessity of improving system integration caused the development of <span style="font-weight: 500;">message brokers</span>, that is especially important for data analytics and business intelligence. In this article, we will look at 2 big data tools: <span style="font-weight: 500;">Apache Kafka </span>and <span style="font-weight: 500;">Rabbit MQ</span>.</div></div></div></div></div></div><div id="rec98475346" class="r t-rec t-rec_pt_0 t-rec_pb_45" style="padding-top:0px;padding-bottom:45px; " data-record-type="128" ><!-- T120 --><div class="t120"> <div class="t-container t-align_left"> <div class="t-col t-col_10 t-prefix_1"> <h2 class="t120__title t-heading t-heading_sm" field="title" style="color:#333333;font-size:22px;font-family:'Open Sans';text-transform:uppercase;"><div style="font-size:24px;font-family:'Open Sans';" data-customstyle="yes"> <strong>Why did message brokers appear?</strong><br /></div></h2> <div class="t120__descr t-descr t-descr_xs" field="subtitle" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="font-size:20px;" data-customstyle="yes"> Can you imagine the current amount of data in the world? Nowadays, about 12 billion "smart" machines are connected to the Internet. Considering about 7 billion people living on the planet, we have almost one-and-a-half device per person. By 2020, their number will significantly increase to <a href="https://www.intel.com/content/dam/www/public/us/en/images/iot/guide-to-iot-infographic.png" rel="nofollow" style="color:rgb(51, 51, 51) !important;text-decoration: none;border-bottom: 1px solid rgb(94, 165, 221);box-shadow: inset 0px -1px 0px 0px rgb(94, 165, 221);-webkit-box-shadow: inset 0px -1px 0px 0px rgb(94, 165, 221);-moz-box-shadow: inset 0px -1px 0px 0px rgb(94, 165, 221);">200 billion</a>, or even more. With technological development, building of "smart" houses and other automatic systems, our everyday life becomes more and more digitized.<br /></div></div> </div> </div></div></div><div id="rec98476481" class="r t-rec t-rec_pt_0 t-rec_pb_45" style="padding-top:0px;padding-bottom:45px; " data-record-type="128" ><!-- T120 --><div class="t120"> <div class="t-container t-align_left"> <div class="t-col t-col_10 t-prefix_1"> <h2 class="t120__title t-heading t-heading_sm" field="title" style="color:#333333;font-size:22px;font-family:'Open Sans';text-transform:uppercase;"><div style="font-size:24px;font-family:'Open Sans';" data-customstyle="yes"> <strong>Message broker use case</strong><br /></div></h2> <div class="t120__descr t-descr t-descr_xs" field="subtitle" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="font-size:20px;" data-customstyle="yes"> As a result of this digitization, <span style="font-weight: 500;">software developers</span> face the problem of successful data exchange. Imagine you have your own application. For example, it's an online store. So, you permanently work in your technological scope, and one day you need to make the application interact with another one. In previous times, you would use simple "in points" of the machine to machine communication. But nowadays we have special <span style="font-weight: 500;">message brokers</span>. They make the process of data exchange simple and reliable. These tools use different protocols that determine the message format. The protocols show how the message should be transmitted, processed, and consumed.<br /></div></div> </div> </div></div></div><div id="rec98475353" class="r t-rec t-rec_pt_0 t-rec_pb_15" style="padding-top:0px;padding-bottom:15px; " data-record-type="128" ><!-- T120 --><div class="t120"> <div class="t-container t-align_left"> <div class="t-col t-col_10 t-prefix_1"> <h2 class="t120__title t-heading t-heading_sm" field="title" style="color:#333333;font-size:22px;font-family:'Open Sans';text-transform:uppercase;"><div style="font-size:24px;text-align:left;" data-customstyle="yes"> <strong>Messaging in a nutshell</strong><br /></div></h2> <div class="t120__descr t-descr t-descr_xs" field="subtitle" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="font-size:20px;" data-customstyle="yes"></div></div> </div> </div></div></div><div id="rec98476931" class="r t-rec t-rec_pt_30 t-rec_pb_30" style="padding-top:30px;padding-bottom:30px; " data-record-type="273" ><!-- t254 --><div class="t254"> <div class="t-container"> <div class="t-row"> <div class="t-col t-col_8 t-prefix_2"> <div class="t254__wrapper"> <div class="t254__icon" style="color: #4daaf4;">“</div> <div class="t254__text t-text t-text_lg" style="" field="text"><em>a message broker translates a message from the formal messaging protocol of the sender to the formal messaging protocol of the receiver</em></div> <div class="t254__author t-text t-text_xs" style="" field="authorname"><strong></strong>Wikipedia</div> </div> </div> </div> </div></div></div><div id="rec98475354" class="r t-rec t-rec_pt_0 t-rec_pb_30" style="padding-top:0px;padding-bottom:30px; " data-record-type="128" ><!-- T120 --><div class="t120"> <div class="t-container t-align_left"> <div class="t-col t-col_10 t-prefix_1"> <h3 class="t120__title t-heading t-heading_sm" field="title" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="text-align:left;" data-customstyle="yes"></div></h3> <div class="t120__descr t-descr t-descr_xs" field="subtitle" style="color:#333333;font-size:22px;font-family:'Open Sans';">Programs like this are essential parts of computer networks. They ensure transmitting of information from point A to point B. <br /></div> </div> </div></div></div><div id="rec99099443" class="r t-rec t-rec_pt_15 t-rec_pb_45" style="padding-top:15px;padding-bottom:45px; " data-record-type="3" ><!-- T107 --><div class="t107"> <div class="t-align_center" itemscope itemtype="http://schema.org/ImageObject"><meta itemprop="image" content="https://static.tildacdn.com/tild6562-6434-4538-b139-623135373536/__2.png"><meta itemprop="caption" content="messaging​ process"> <img src="https://static.tildacdn.com/tild6562-6434-4538-b139-623135373536/-/empty/__2.png" data-original="https://static.tildacdn.com/tild6562-6434-4538-b139-623135373536/__2.png" data-zoomable="yes" data-img-zoom-url="https://static.tildacdn.com/tild6562-6434-4538-b139-623135373536/__2.png" class="t107__width t-width t-width_10 t-img" imgfield="img" alt="messaging​ process" /> <div class="t-container_8"><div class="t-col t-col_8 t107__title t-text" style="font-size:20px;font-weight:500;font-family:'Open Sans';" field="title" itemprop="name">Messaging process<br /></div></div> </div> </div></div><div id="rec98475357" class="r t-rec t-rec_pt_0 t-rec_pb_0" style="padding-top:0px;padding-bottom:0px; " data-record-type="128" ><!-- T120 --><div class="t120"> <div class="t-container t-align_left"> <div class="t-col t-col_10 t-prefix_1"> <h2 class="t120__title t-heading t-heading_sm" field="title" style="color:#333333;font-size:22px;font-family:'Open Sans';text-transform:uppercase;"><div style="font-size:24px;text-align:left;" data-customstyle="yes"> <strong>When is <strong data-redactor-tag="strong">a message broker</strong> needed?</strong><br /></div></h2> <div class="t120__descr t-descr t-descr_xs" field="subtitle" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="font-size:20px;" data-customstyle="yes"></div></div> </div> </div></div></div><div id="rec98475358" class="r t-rec t-rec_pt_0 t-rec_pb_0" style="padding-top:0px;padding-bottom:0px; " data-record-type="128" ><!-- T120 --><div class="t120"> <div class="t-container t-align_left"> <div class="t-col t-col_10 t-prefix_2"> <h3 class="t120__title t-heading t-heading_sm" field="title" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="text-align:left;" data-customstyle="yes"></div></h3> <div class="t120__descr t-descr t-descr_xs" field="subtitle" style="color:#333333;font-size:22px;font-family:'Open Sans';"><ul> <li> If you want to control data feeds. For example, the number of registrations in any system.</li><li>When the task is to put data to several applications and avoid direct usage of their API.</li><li>The necessity to complete processes in a defined order like a transactional system. </li></ul></div> </div> </div></div></div><div id="rec98477985" class="r t-rec t-rec_pt_0 t-rec_pb_15" style="padding-top:0px;padding-bottom:15px; " data-record-type="128" ><!-- T120 --><div class="t120"> <div class="t-container t-align_left"> <div class="t-col t-col_10 t-prefix_1"> <h2 class="t120__title t-heading t-heading_sm" field="title" style="color:#333333;font-size:22px;font-family:'Open Sans';text-transform:uppercase;"><div style="font-size:24px;text-align:left;" data-customstyle="yes"></div></h2> <div class="t120__descr t-descr t-descr_xs" field="subtitle" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="font-size:20px;" data-customstyle="yes"> So, we can say that message brokers can do 4 important things:<br /><div style="font-size:20px;" data-customstyle="yes"></div></div></div> </div> </div></div></div><div id="rec98477979" class="r t-rec t-rec_pt_0 t-rec_pb_0" style="padding-top:0px;padding-bottom:0px; " data-record-type="128" ><!-- T120 --><div class="t120"> <div class="t-container t-align_left"> <div class="t-col t-col_10 t-prefix_2"> <h3 class="t120__title t-heading t-heading_sm" field="title" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="text-align:left;" data-customstyle="yes"></div></h3> <div class="t120__descr t-descr t-descr_xs" field="subtitle" style="color:#333333;font-size:22px;font-family:'Open Sans';"><ol> <li><span style="font-weight: 500;">divide</span> the publisher and consumer</li><li><span style="font-weight: 500;">store</span> the messages</li><li><span style="font-weight: 500;">route</span> messages</li><li><span style="font-weight: 500;">check</span> and organize messages</li></ol></div> </div> </div></div></div><div id="rec98478260" class="r t-rec t-rec_pt_0 t-rec_pb_60" style="padding-top:0px;padding-bottom:60px; " data-record-type="128" ><!-- T120 --><div class="t120"> <div class="t-container t-align_left"> <div class="t-col t-col_10 t-prefix_1"> <h2 class="t120__title t-heading t-heading_sm" field="title" style="color:#333333;font-size:22px;font-family:'Open Sans';text-transform:uppercase;"><div style="font-size:24px;text-align:left;" data-customstyle="yes"></div></h2> <div class="t120__descr t-descr t-descr_xs" field="subtitle" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="font-size:20px;" data-customstyle="yes"> There are <span style="font-weight: 500;">self-deployed</span> and <span style="font-weight: 500;">cloud-based</span> messaging tools. In this article, I will share my experience of working with the first type.<br /><div style="font-size:20px;" data-customstyle="yes"></div></div></div> </div> </div></div></div><div id="rec98475361" class="r t-rec t-rec_pt_0 t-rec_pb_0" style="padding-top:0px;padding-bottom:0px; " data-record-type="128" ><!-- T120 --><div class="t120"> <div class="t-container t-align_left"> <div class="t-col t-col_10 t-prefix_1"> <h2 class="t120__title t-heading t-heading_sm" field="title" style="color:#333333;font-size:22px;font-family:'Open Sans';text-transform:uppercase;"><div style="text-align:left;" data-customstyle="yes"> <strong>Message broker Apache Kafka </strong><br /></div></h2> <div class="t120__descr t-descr t-descr_xs" field="subtitle" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="line-height:30px;" data-customstyle="yes"></div></div> </div> </div></div></div><div id="rec98475362" class="r t-rec t-rec_pt_0 t-rec_pb_0" style="padding-top:0px;padding-bottom:0px; " data-record-type="128" ><!-- T120 --><div class="t120"> <div class="t-container t-align_left"> <div class="t-col t-col_10 t-prefix_1"> <h2 class="t120__title t-heading t-heading_sm" field="title" style="color:#333333;font-size:22px;font-family:'Open Sans';text-transform:uppercase;"><div style="text-align:left;" data-customstyle="yes"></div></h2> <div class="t120__descr t-descr t-descr_xs" field="subtitle" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="font-size:20px;" data-customstyle="yes"> <span style="font-weight: 600;">Pricing:</span> free<br /> <span style="font-weight: 600;">Official website:</span> <a href="https://kafka.apache.org/" style="color:rgb(77, 170, 244) !important;" rel="nofollow">https://kafka.apache.org/</a> <br /> <span style="font-weight: 600;">Useful resources:</span> <a href="https://kafka.apache.org/documentation.html" style="color:rgb(77, 170, 244) !important;" rel="nofollow">documentation</a>, <a href="https://data-flair.training/blogs/apache-kafka-books/" style="color:rgb(77, 170, 244) !important;" rel="nofollow">books</a><br /><strong></strong></div></div> </div> </div></div></div><div id="rec98475363" class="r t-rec t-rec_pt_0 t-rec_pb_15" style="padding-top:0px;padding-bottom:15px; " data-record-type="128" ><!-- T120 --><div class="t120"> <div class="t-container t-align_left"> <div class="t-col t-col_10 t-prefix_1"> <h2 class="t120__title t-heading t-heading_sm" field="title" style="color:#333333;font-size:22px;font-family:'Open Sans';text-transform:uppercase;"><div style="text-align:left;" data-customstyle="yes"></div></h2> <div class="t120__descr t-descr t-descr_xs" field="subtitle" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="font-size:20px;line-height:30px;" data-customstyle="yes"><span style="font-weight: 600;">Pros:</span><br /><ul><li>Easy to pick up</li><li>Powerful event streaming platform</li><li>Fault-tolerance and reliable solution</li><li>Good scalability</li><li>Free community distributed product</li><li>Multi-tenancy</li><li>Suitable for real-time processing</li><li>Excellent for big data project</li></ul><br /> <span style="font-weight: 600;">Cons: <br /> </span><ul> <li> Lack of ready to use elements <br /> </li> <li> The absence of complete monitoring set <br /> </li> <li> Dependency on Apache Zookeeper <br /> </li> <li> No routing <br /> </li> <li> Issues with an increasing number of messages<br /> </li></ul></div></div> </div> </div></div></div><div id="rec98475364" class="r t-rec t-rec_pt_0 t-rec_pb_30" style="padding-top:0px;padding-bottom:30px; " data-record-type="128" ><!-- T120 --><div class="t120"> <div class="t-container t-align_left"> <div class="t-col t-col_10 t-prefix_1"> <h2 class="t120__title t-heading t-heading_sm" field="title" style="color:#333333;font-size:22px;font-family:'Open Sans';text-transform:uppercase;"><div style="text-align:left;" data-customstyle="yes"></div></h2> <div class="t120__descr t-descr t-descr_xs" field="subtitle" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="font-size:20px;" data-customstyle="yes"> What do Netflix, eBay, Uber, The New York Times, PayPal and Pinterest have in common? All these great enterprises have used or are using the world's most popular message broker, Apache Kafka.<br /></div></div> </div> </div></div></div><div id="rec98475365" class="r t-rec t-rec_pt_0 t-rec_pb_45" style="padding-top:0px;padding-bottom:45px; " data-record-type="128" ><!-- T120 --><div class="t120"> <div class="t-container t-align_left"> <div class="t-col t-col_10 t-prefix_1"> <h2 class="t120__title t-heading t-heading_sm" field="title" style="color:#333333;font-size:22px;font-family:'Open Sans';text-transform:uppercase;"><div style="font-size:24px;text-align:left;" data-customstyle="yes"> <strong>THE STORY OF KAFKA DEVELOPMENT</strong><br /></div></h2> <div class="t120__descr t-descr t-descr_xs" field="subtitle" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="font-size:20px;" data-customstyle="yes">With numerous advantages for real-time processing and big data projects, this asynchronous messaging technology has conquered the world. How did it start?<br /><br /> In 2010 <a href="https://engineering.linkedin.com/distributed-systems/log-what-every-software-engineer-should-know-about-real-time-datas-unifying" style="color:rgb(51, 51, 51) !important;text-decoration: none;border-bottom: 1px solid rgb(94, 165, 221);box-shadow: inset 0px -1px 0px 0px rgb(94, 165, 221);-webkit-box-shadow: inset 0px -1px 0px 0px rgb(94, 165, 221);-moz-box-shadow: inset 0px -1px 0px 0px rgb(94, 165, 221);" rel="nofollow">LinkedIn engineers</a> faced the problem of <span style="font-weight: 500;">integration</span> huge amounts of data from their infrastructure into a lambda architecture. It also included Hadoop and real-time event processing systems. <br />As for traditional message brokers, they didn't satisfy Linkedin needs. These solutions were too heavy and slow. So, the engineering team has developed the scalable and fault-tolerant <span style="font-weight: 500;">messaging system</span> without lots of bells and whistles. The new queue manager has quickly transformed into a full-fledged event streaming platform.</div></div> </div> </div></div></div><div id="rec98475366" class="r t-rec t-rec_pt_0 t-rec_pb_0" style="padding-top:0px;padding-bottom:0px; " data-record-type="128" ><!-- T120 --><div class="t120"> <div class="t-container t-align_left"> <div class="t-col t-col_10 t-prefix_1"> <h2 class="t120__title t-heading t-heading_sm" field="title" style="color:#333333;font-size:22px;font-family:'Open Sans';text-transform:uppercase;"><div style="font-size:24px;text-align:left;" data-customstyle="yes"> <strong>APACHE KAFKA CAPABILITIES</strong><br /></div></h2> <div class="t120__descr t-descr t-descr_xs" field="subtitle" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="font-size:20px;" data-customstyle="yes"> The technology has become popular largely due to its compatibility. Let's see. We can use Apache Kafka with a wide range of systems. They are: <br /></div></div> </div> </div></div></div><div id="rec98481010" class="r t-rec t-rec_pt_0 t-rec_pb_0" style="padding-top:0px;padding-bottom:0px; " data-record-type="128" ><!-- T120 --><div class="t120"> <div class="t-container t-align_left"> <div class="t-col t-col_10 t-prefix_2"> <h3 class="t120__title t-heading t-heading_sm" field="title" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="text-align:left;" data-customstyle="yes"></div></h3> <div class="t120__descr t-descr t-descr_xs" field="subtitle" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="font-size:20px;" data-customstyle="yes"><ul><li>web and desktop custom applications</li><li>microservices, monitoring and analytical systems</li><li>any needed sinks or sources</li><li>NoSQL, Oracle, Hadoop, SFDC</li></ul></div></div> </div> </div></div></div><div id="rec98481907" class="r t-rec t-rec_pt_0 t-rec_pb_45" style="padding-top:0px;padding-bottom:45px; " data-record-type="128" ><!-- T120 --><div class="t120"> <div class="t-container t-align_left"> <div class="t-col t-col_10 t-prefix_1"> <h2 class="t120__title t-heading t-heading_sm" field="title" style="color:#333333;font-size:22px;font-family:'Open Sans';text-transform:uppercase;"><div style="font-size:24px;text-align:left;" data-customstyle="yes"></div></h2> <div class="t120__descr t-descr t-descr_xs" field="subtitle" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="font-size:20px;" data-customstyle="yes">With the help of Apache Kafka, you can successfully create data-driven applications and manage complicated back-end systems. The picture below shows 3 main capabilities of this queue manager.<br /></div></div> </div> </div></div></div><div id="rec98475367" class="r t-rec t-rec_pt_0 t-rec_pb_0" style="padding-top:0px;padding-bottom:0px; " data-record-type="3" ><!-- T107 --><div class="t107"> <div class="t-align_center" itemscope itemtype="http://schema.org/ImageObject"><meta itemprop="image" content="https://static.tildacdn.com/tild3234-3762-4561-b537-616237356665/completion.png"><meta itemprop="caption" content="Apache Kafka"> <img src="https://static.tildacdn.com/tild3234-3762-4561-b537-616237356665/-/empty/completion.png" data-original="https://static.tildacdn.com/tild3234-3762-4561-b537-616237356665/completion.png" data-zoomable="yes" data-img-zoom-url="https://static.tildacdn.com/tild3234-3762-4561-b537-616237356665/completion.png" class="t107__width t-width t-width_10 t-img" imgfield="img" alt="Apache Kafka" /> </div> </div></div><div id="rec98481992" class="r t-rec t-rec_pt_45 t-rec_pb_0" style="padding-top:45px;padding-bottom:0px; " data-record-type="128" ><!-- T120 --><div class="t120"> <div class="t-container t-align_left"> <div class="t-col t-col_10 t-prefix_1"> <h2 class="t120__title t-heading t-heading_sm" field="title" style="color:#333333;font-size:22px;font-family:'Open Sans';text-transform:uppercase;"><div style="font-size:24px;text-align:left;" data-customstyle="yes"></div></h2> <div class="t120__descr t-descr t-descr_xs" field="subtitle" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="font-size:20px;" data-customstyle="yes"> As you can see, Apache Kafka is able to:<br /></div></div> </div> </div></div></div><div id="rec98482074" class="r t-rec t-rec_pt_0 t-rec_pb_0" style="padding-top:0px;padding-bottom:0px; " data-record-type="128" ><!-- T120 --><div class="t120"> <div class="t-container t-align_left"> <div class="t-col t-col_9 t-prefix_1"> <h3 class="t120__title t-heading t-heading_sm" field="title" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="text-align:left;" data-customstyle="yes"></div></h3> <div class="t120__descr t-descr t-descr_xs" field="subtitle" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="font-size:20px;" data-customstyle="yes"><ol> <li><span style="font-weight: 500;">publish and subscribe</span> to streams of records with excellent scalability and performance, which makes it suitable for company-wide use. <br /> </li> <li> <span style="font-weight: 500;">durably store</span> the streams, distributing data across multiple nodes for a highly available deployment. </li><li><span style="font-weight: 500;">process</span> data streams as they arrive, allowing you aggregating, creating windowing parameters, performing joins of data within a stream, etc.</li></ol></div></div> </div> </div></div></div><div id="rec98482449" class="r t-rec t-rec_pt_45 t-rec_pb_0" style="padding-top:45px;padding-bottom:0px; " data-record-type="128" ><!-- T120 --><div class="t120"> <div class="t-container t-align_left"> <div class="t-col t-col_10 t-prefix_1"> <h2 class="t120__title t-heading t-heading_sm" field="title" style="color:#333333;font-size:22px;font-family:'Open Sans';text-transform:uppercase;"><div style="font-size:24px;text-align:left;" data-customstyle="yes"> <strong>APACHE KAFKA KEY TERMS AND CONCEPTS</strong><br /></div></h2> <div class="t120__descr t-descr t-descr_xs" field="subtitle" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="font-size:20px;" data-customstyle="yes">First of all, you should know about the abstraction of a distributed commit log. This confusing term is crucial for the message broker. Many web developers used to think about "logs" in the context of a login feature. But Apache Kafka is based on the <em>log data structure</em>. This means a log is a time-ordered, append-only sequence of data inserts. As for other concepts, they are:<br /></div></div> </div> </div></div></div><div id="rec98482584" class="r t-rec t-rec_pt_0 t-rec_pb_0" style="padding-top:0px;padding-bottom:0px; " data-record-type="128" ><!-- T120 --><div class="t120"> <div class="t-container t-align_left"> <div class="t-col t-col_9 t-prefix_2"> <h3 class="t120__title t-heading t-heading_sm" field="title" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="text-align:left;" data-customstyle="yes"></div></h3> <div class="t120__descr t-descr t-descr_xs" field="subtitle" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="font-size:20px;" data-customstyle="yes"><ol> <li><span style="font-weight: 500;">topics</span> (the stored streams of records)</li><li><span style="font-weight: 500;">records</span> (they include a key, a value, and a timestamp)</li><li><span style="font-weight: 500;">APIs</span> (Producer API, Consumer API, Streams API, Connector API)</li></ol></div></div> </div> </div></div></div><div id="rec98483148" class="r t-rec t-rec_pt_45 t-rec_pb_0" style="padding-top:45px;padding-bottom:0px; " data-record-type="128" ><!-- T120 --><div class="t120"> <div class="t-container t-align_left"> <div class="t-col t-col_10 t-prefix_1"> <h2 class="t120__title t-heading t-heading_sm" field="title" style="color:#333333;font-size:22px;font-family:'Open Sans';text-transform:uppercase;"><div style="font-size:24px;text-align:left;" data-customstyle="yes"> <strong>KAFKA WORKING PRINCIPLE</strong><br /></div></h2> <div class="t120__descr t-descr t-descr_xs" field="subtitle" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="font-size:20px;" data-customstyle="yes"> There are 2 main patterns of messaging:<br /></div></div> </div> </div></div></div><div id="rec98483217" class="r t-rec t-rec_pt_0 t-rec_pb_0" style="padding-top:0px;padding-bottom:0px; " data-record-type="128" ><!-- T120 --><div class="t120"> <div class="t-container t-align_left"> <div class="t-col t-col_10 t-prefix_2"> <h3 class="t120__title t-heading t-heading_sm" field="title" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="text-align:left;" data-customstyle="yes"></div></h3> <div class="t120__descr t-descr t-descr_xs" field="subtitle" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="font-size:20px;" data-customstyle="yes"><ol> <li> <a href="http://en.wikipedia.org/wiki/Message_queue" style="color:rgb(51, 51, 51) !important;text-decoration: none;border-bottom: 1px solid rgb(94, 165, 221);box-shadow: inset 0px -1px 0px 0px rgb(94, 165, 221);-webkit-box-shadow: inset 0px -1px 0px 0px rgb(94, 165, 221);-moz-box-shadow: inset 0px -1px 0px 0px rgb(94, 165, 221);" rel="nofollow">queuing</a><br /> </li> <li> <a href="http://en.wikipedia.org/wiki/Publish%E2%80%93subscribe_pattern" style="color:rgb(51, 51, 51) !important;text-decoration: none;border-bottom: 1px solid rgb(94, 165, 221);box-shadow: inset 0px -1px 0px 0px rgb(94, 165, 221);-webkit-box-shadow: inset 0px -1px 0px 0px rgb(94, 165, 221);-moz-box-shadow: inset 0px -1px 0px 0px rgb(94, 165, 221);" rel="nofollow">publish-subscribe</a><br /> </li></ol></div></div> </div> </div></div></div><div id="rec98483169" class="r t-rec t-rec_pt_0 t-rec_pb_45" style="padding-top:0px;padding-bottom:45px; " data-record-type="128" ><!-- T120 --><div class="t120"> <div class="t-container t-align_left"> <div class="t-col t-col_10 t-prefix_1"> <h2 class="t120__title t-heading t-heading_sm" field="title" style="color:#333333;font-size:22px;font-family:'Open Sans';text-transform:uppercase;"><div style="font-size:24px;text-align:left;" data-customstyle="yes"></div></h2> <div class="t120__descr t-descr t-descr_xs" field="subtitle" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="font-size:20px;" data-customstyle="yes"> Both of them have some pros and cons. The advantage of the first pattern is the opportunity to easily scale the processing. On the other hand, queues aren't multi-subscriber. The second model provides the possibility to broadcast data to multiple consumer groups. At the same time, scaling is more difficult in this case.<br /><br /> Apache Kafka magically combines these 2 ways of data processing, getting benefits of both of them. It should be mentioned that this queue manager provides better ordering guarantees than a traditional message broker.<br /></div></div> </div> </div></div></div><div id="rec98483667" class="r t-rec t-rec_pt_0 t-rec_pb_0" style="padding-top:0px;padding-bottom:0px; " data-record-type="128" ><!-- T120 --><div class="t120"> <div class="t-container t-align_left"> <div class="t-col t-col_10 t-prefix_1"> <h2 class="t120__title t-heading t-heading_sm" field="title" style="color:#333333;font-size:22px;font-family:'Open Sans';text-transform:uppercase;"><div style="font-size:24px;text-align:left;" data-customstyle="yes"> <strong>KAFKA PECULIARITIES</strong><br /></div></h2> <div class="t120__descr t-descr t-descr_xs" field="subtitle" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="font-size:20px;" data-customstyle="yes"> Combining the functions of messaging, storage, and processing, Kafka isn't a common message broker. It's a powerful event streaming platform capable of handling trillions of messages a day. Kafka is useful both for storing and processing historical data from the past and for real-time work. You can use it for creating streaming applications, as well as for streaming data pipelines. <br /><br /> If you want to follow the steps of Kafka users, you should be mindful of some nuances:<br /></div></div> </div> </div></div></div><div id="rec98483886" class="r t-rec t-rec_pt_0 t-rec_pb_45" style="padding-top:0px;padding-bottom:45px; " data-record-type="128" ><!-- T120 --><div class="t120"> <div class="t-container t-align_left"> <div class="t-col t-col_9 t-prefix_2"> <h3 class="t120__title t-heading t-heading_sm" field="title" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="text-align:left;" data-customstyle="yes"></div></h3> <div class="t120__descr t-descr t-descr_xs" field="subtitle" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="font-size:20px;" data-customstyle="yes"><ol> <li>the messages don't have separate IDs (they are addressed by their offset in the log)</li><li>the system doesn't check the consumers of each topic or message</li><li>Kafka doesn't maintain any indexes and doesn't allow random access (it just delivers the messages in order, starting with the offset)</li><li>the system doesn't have deletes and doesn't buffer the messages in userspace (but there are various configurable storage strategies)</li></ol></div></div> </div> </div></div></div><div id="rec98484131" class="r t-rec t-rec_pt_0 t-rec_pb_60" style="padding-top:0px;padding-bottom:60px; " data-record-type="128" ><!-- T120 --><div class="t120"> <div class="t-container t-align_left"> <div class="t-col t-col_10 t-prefix_1"> <h2 class="t120__title t-heading t-heading_sm" field="title" style="color:#333333;font-size:22px;font-family:'Open Sans';text-transform:uppercase;"><div style="font-size:24px;text-align:left;" data-customstyle="yes"> <strong>CONCLUSION</strong><br /></div></h2> <div class="t120__descr t-descr t-descr_xs" field="subtitle" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="font-size:20px;" data-customstyle="yes">Being a perfect open-source solution for real-time statistics and big data projects, this message broker has some weaknesses. The thing is it requires you to work a lot. You will feel a lack of plugins and other things that can be simply reused in your code. <br /><br /> I recommend you to use this multiple publish/subscribe and queueing tool, when you need to optimize processing really big amounts of data (100 000 messages per second and more). In this case, Apache Kafka will satisfy your needs.<br /></div></div> </div> </div></div></div><div id="rec98484152" class="r t-rec t-rec_pt_0 t-rec_pb_0" style="padding-top:0px;padding-bottom:0px; " data-record-type="128" ><!-- T120 --><div class="t120"> <div class="t-container t-align_left"> <div class="t-col t-col_10 t-prefix_1"> <h2 class="t120__title t-heading t-heading_sm" field="title" style="color:#333333;font-size:22px;font-family:'Open Sans';text-transform:uppercase;"><div style="font-size:24px;text-align:left;" data-customstyle="yes"> <strong>Message broker RabbitMQ</strong><br /></div></h2> <div class="t120__descr t-descr t-descr_xs" field="subtitle" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="font-size:20px;" data-customstyle="yes"></div></div> </div> </div></div></div><div id="rec98484436" class="r t-rec t-rec_pt_0 t-rec_pb_30" style="padding-top:0px;padding-bottom:30px; " data-record-type="128" ><!-- T120 --><div class="t120"> <div class="t-container t-align_left"> <div class="t-col t-col_10 t-prefix_1"> <h2 class="t120__title t-heading t-heading_sm" field="title" style="color:#333333;font-size:22px;font-family:'Open Sans';text-transform:uppercase;"><div style="text-align:left;" data-customstyle="yes"></div></h2> <div class="t120__descr t-descr t-descr_xs" field="subtitle" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="font-size:20px;" data-customstyle="yes"> <span style="font-weight: 600;">Pricing:</span> free<br /> <span style="font-weight: 600;">Official website:</span> <a href="https://www.rabbitmq.com" style="color:rgb(77, 170, 244) !important;" rel="nofollow">https://www.rabbitmq.com</a><br /> <span style="font-weight: 600;">Useful resources:</span> <a href="https://www.rabbitmq.com/devtools.html" style="color:rgb(77, 170, 244) !important;" rel="nofollow">tools</a>, <a href="https://www.rabbitmq.com/best-practices.html" style="color:rgb(77, 170, 244) !important;" rel="nofollow">best practices</a> <br /><br /> <span style="font-weight: 600;">Pros: <br /> </span><ul> <li> Suitable for many programming languages and messaging protocols <br /> </li> <li> Can be used on different operating systems and cloud environments <br /> </li> <li> Simple to start using and to deploy <br /> </li> <li> Gives an opportunity to use various developer tools <br /> </li> <li> Modern in-built user interface <br /> </li> <li> Offers clustering and is very good at it <br /> </li> <li> Scales to around 500,000+ messages per second </li></ul> <span style="font-weight: 600;">Cons: <br /> </span><ul> <li> Non-transactional (by default) <br /> </li> <li> Needs Erlang <br /> </li> <li> Minimal configuration that can be done through code <br /> </li> <li> Issues with processing big amounts of data<br /> </li></ul><strong></strong></div></div> </div> </div></div></div><div id="rec98484168" class="r t-rec t-rec_pt_0 t-rec_pb_45" style="padding-top:0px;padding-bottom:45px; " data-record-type="128" ><!-- T120 --><div class="t120"> <div class="t-container t-align_left"> <div class="t-col t-col_10 t-prefix_1"> <h2 class="t120__title t-heading t-heading_sm" field="title" style="color:#333333;font-size:22px;font-family:'Open Sans';text-transform:uppercase;"><div style="font-size:24px;text-align:left;" data-customstyle="yes"></div></h2> <div class="t120__descr t-descr t-descr_xs" field="subtitle" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="font-size:20px;" data-customstyle="yes"> The next very popular solution is written in the <a href="https://en.wikipedia.org/wiki/Erlang_(programming_language)" style="color:rgb(51, 51, 51) !important;text-decoration: none;border-bottom: 1px solid rgb(94, 165, 221);box-shadow: inset 0px -1px 0px 0px rgb(94, 165, 221);-webkit-box-shadow: inset 0px -1px 0px 0px rgb(94, 165, 221);-moz-box-shadow: inset 0px -1px 0px 0px rgb(94, 165, 221);" rel="nofollow">Erlang</a>. As it's a simple, general-purpose, functional programming language, consisted of many ready to use components, this software doesn't require lots of manual work. RabbitMQ is known as a <span style="font-weight: 500;">"traditional" message broker</span>, which is suitable for a wide range of projects. It is successfully used both for development of new startups and notable enterprises.<br /><br />The software is built on the <a href="https://en.wikipedia.org/wiki/Open_Telecom_Platform" style="color:rgb(51, 51, 51) !important;text-decoration: none;border-bottom: 1px solid rgb(94, 165, 221);box-shadow: inset 0px -1px 0px 0px rgb(94, 165, 221);-webkit-box-shadow: inset 0px -1px 0px 0px rgb(94, 165, 221);-moz-box-shadow: inset 0px -1px 0px 0px rgb(94, 165, 221);" rel="nofollow">Open Telecom Platform</a> framework for clustering and failover. You can find many client libraries for using the queue manager, written on all major programming languages.<br /></div></div> </div> </div></div></div><div id="rec98484173" class="r t-rec t-rec_pt_0 t-rec_pb_45" style="padding-top:0px;padding-bottom:45px; " data-record-type="128" ><!-- T120 --><div class="t120"> <div class="t-container t-align_left"> <div class="t-col t-col_10 t-prefix_1"> <h2 class="t120__title t-heading t-heading_sm" field="title" style="color:#333333;font-size:22px;font-family:'Open Sans';text-transform:uppercase;"><div style="font-size:24px;text-align:left;" data-customstyle="yes"> <strong>THE STORY OF RABBITMQ DEVELOPMENT</strong><br /></div></h2> <div class="t120__descr t-descr t-descr_xs" field="subtitle" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="font-size:20px;" data-customstyle="yes"> One of the <span style="font-weight: 500;">oldest open source message brokers</span> can be used with various protocols. Many web developers like this software, because of its useful features, libraries, development tools, and instructions. <br /><br /> In 2007, Rabbit Technologies Ltd. had developed the system, which originally implemented AMQP. It's an open wire protocol for messaging with complex routing features. AMQP ensured cross-language flexibility of using message broking solutions outside the Java ecosystem. In fact, RabbitMQ perfectly works with Java, Spring, .NET, PHP, Python, Ruby, JavaScript, Go, Elixir, Objective-C, Swift and many other technologies. The numerous plugins and libraries are the main advantage of the software.<br /></div></div> </div> </div></div></div><div id="rec205875756" class="r t-rec" style=" " data-animationappear="off" data-record-type="121" ><!-- T702 --><div class="t702"> <div class="t-popup" data-tooltip-hook="#popup:tellus" > <div class="t-popup__close"> <div class="t-popup__close-wrapper"> <svg class="t-popup__close-icon" width="23px" height="23px" viewBox="0 0 23 23" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"> <g stroke="none" stroke-width="1" fill="#fff" fill-rule="evenodd"> <rect transform="translate(11.313708, 11.313708) rotate(-45.000000) translate(-11.313708, -11.313708) " x="10.3137085" y="-3.6862915" width="2" height="30"></rect> <rect transform="translate(11.313708, 11.313708) rotate(-315.000000) translate(-11.313708, -11.313708) " x="10.3137085" y="-3.6862915" width="2" height="30"></rect> </g> </svg> </div> </div> <div class="t-popup__container t-width t-width_6" > <div class="t702__wrapper"> <div class="t702__text-wrapper t-align_center"> <div class="t702__title t-title t-title_xxs" style=""><div style="color:#000000;" data-customstyle="yes">Let's talk about your idea?</div></div> </div> <form id="form205875756" name='form205875756' role="form" action='' method='POST' data-formactiontype="2" data-inputbox=".t-input-group" data-success-url="/thank-you-page" class="t-form js-form-proccess t-form_inputs-total_4 " data-success-callback="t702_onSuccess" > <input type="hidden" name="formservices[]" value="d8560f29f00813ca91759359f00f410c" class="js-formaction-services"> <input type="hidden" name="formservices[]" value="0c510ab16f86682021743fdcc588f760" class="js-formaction-services"> <input type="hidden" name="formservices[]" value="b18232429d18144c2974be03e5b3ebdf" class="js-formaction-services"> <input type="hidden" name="formservices[]" value="ad7385cde0dcb35c4b890768d264011c" class="js-formaction-services"> <div class="js-successbox t-form__successbox t-text t-text_md" style="display:none;">Thank you!</div> <div class="t-form__inputsbox"> <div class="t-input-group t-input-group_nm" data-input-lid="1495810359387"> <div class="t-input-block"> <input type="text" autocomplete="name" name="Name" class="t-input js-tilda-rule " value="" placeholder="Name" data-tilda-req="1" data-tilda-rule="name" style="color:#000000; border:1px solid #c9c9c9; border-radius: 5px; -moz-border-radius: 5px; -webkit-border-radius: 5px;"> <div class="t-input-error"></div> </div> </div> <div class="t-input-group t-input-group_em" data-input-lid="1495810354468"> <div class="t-input-block"> <input type="text" autocomplete="email" name="Email" class="t-input js-tilda-rule " value="" placeholder="E-mail" data-tilda-req="1" data-tilda-rule="email" style="color:#000000; border:1px solid #c9c9c9; border-radius: 5px; -moz-border-radius: 5px; -webkit-border-radius: 5px;"> <div class="t-input-error"></div> </div> </div> <div class="t-input-group t-input-group_ta" data-input-lid="1593098085598"> <div class="t-input-block"> <textarea name="Textarea" class="t-input js-tilda-rule " placeholder="Your idea" data-tilda-req="1" style="color:#000000; border:1px solid #c9c9c9; border-radius: 5px; -moz-border-radius: 5px; -webkit-border-radius: 5px;height:102px" rows="3"></textarea> <div class="t-input-error"></div> </div> </div> <div class="t-input-group t-input-group_cb" data-input-lid="1593098188581"> <div class="t-input-block"> <label class="t-checkbox__control t-text t-text_xs" style=""><input type="checkbox" name="Checkbox" value="yes" class="t-checkbox js-tilda-rule" ><div class="t-checkbox__indicator" ></div>Send me NDA</label> <div class="t-input-error"></div> </div> </div><!--[if IE 8]><style>.t-checkbox__control .t-checkbox, .t-radio__control .t-radio { left: 0px; z-index: 1; opacity: 1;
+}
+.t-checkbox__indicator, .t-radio__indicator { display: none;
+}
+.t-img-select__control .t-img-select { position: static;
+}</style><![endif]--><div class="t-form__errorbox-middle"> <div class="js-errorbox-all t-form__errorbox-wrapper" style="display:none;"> <div class="t-form__errorbox-text t-text t-text_md"> <p class="t-form__errorbox-item js-rule-error js-rule-error-all"></p> <p class="t-form__errorbox-item js-rule-error js-rule-error-req"></p> <p class="t-form__errorbox-item js-rule-error js-rule-error-email">Please put a correct e-mail</p> <p class="t-form__errorbox-item js-rule-error js-rule-error-name"></p> <p class="t-form__errorbox-item js-rule-error js-rule-error-phone"></p> <p class="t-form__errorbox-item js-rule-error js-rule-error-minlength"></p> <p class="t-form__errorbox-item js-rule-error js-rule-error-string"></p> </div> </div></div> <div class="t-form__submit"> <button type="submit" class="t-submit" style="color:#ffffff;background-color:#000000;border-radius:5px; -moz-border-radius:5px; -webkit-border-radius:5px;" >Submit</button> </div> </div> <div class="t-form__errorbox-bottom"> <div class="js-errorbox-all t-form__errorbox-wrapper" style="display:none;"> <div class="t-form__errorbox-text t-text t-text_md"> <p class="t-form__errorbox-item js-rule-error js-rule-error-all"></p> <p class="t-form__errorbox-item js-rule-error js-rule-error-req"></p> <p class="t-form__errorbox-item js-rule-error js-rule-error-email">Please put a correct e-mail</p> <p class="t-form__errorbox-item js-rule-error js-rule-error-name"></p> <p class="t-form__errorbox-item js-rule-error js-rule-error-phone"></p> <p class="t-form__errorbox-item js-rule-error js-rule-error-minlength"></p> <p class="t-form__errorbox-item js-rule-error js-rule-error-string"></p> </div> </div> </div> </form><style>#rec205875756 input::-webkit-input-placeholder {color:#000000; opacity: 0.5;}	#rec205875756 input::-moz-placeholder {color:#000000; opacity: 0.5;}	#rec205875756 input:-moz-placeholder {color:#000000; opacity: 0.5;}	#rec205875756 input:-ms-input-placeholder {color:#000000; opacity: 0.5;}	#rec205875756 textarea::-webkit-input-placeholder {color:#000000; opacity: 0.5;}	#rec205875756 textarea::-moz-placeholder {color:#000000; opacity: 0.5;}	#rec205875756 textarea:-moz-placeholder {color:#000000; opacity: 0.5;}	#rec205875756 textarea:-ms-input-placeholder {color:#000000; opacity: 0.5;}</style> </div> </div> </div></div><script>$(document).ready(function() { setTimeout(function(){ t702_initPopup('205875756'); }, 500); /* fix for Android */ var ua = navigator.userAgent.toLowerCase(); var isAndroid = ua.indexOf("android") > -1; if (isAndroid) { $('.t-body').addClass('t-body_scrollable-fix-for-android'); $('head').append("<style>@media screen and (max-width: 560px) {\n.t-body_scrollable-fix-for-android {\noverflow: visible !important;\n}\n}\n</style>"); console.log('Android css fix was inited'); }
+});</script></div><div id="rec108482096" class="r t-rec" style=" " data-animationappear="off" data-record-type="121" ><!-- T354 --><div class="t354"><a href="#popup:tellus" class="t354__opener" data-trigger-position="1" data-cookie-name="myscrollcookie" data-cookie-time="-1"></a></div><script>$(document).ready(function() { setTimeout(function() { $(window).bind('scroll', t_throttle(function(){t354_checkPosition('108482096')})); }, 500);
+});</script> </div><div id="rec98484705" class="r t-rec t-rec_pt_0 t-rec_pb_0" style="padding-top:0px;padding-bottom:0px; " data-record-type="128" ><!-- T120 --><div class="t120"> <div class="t-container t-align_left"> <div class="t-col t-col_10 t-prefix_1"> <h2 class="t120__title t-heading t-heading_sm" field="title" style="color:#333333;font-size:22px;font-family:'Open Sans';text-transform:uppercase;"><div style="font-size:24px;text-align:left;" data-customstyle="yes"> <strong>RABBITMQ CAPABILITIES</strong><br /></div></h2> <div class="t120__descr t-descr t-descr_xs" field="subtitle" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="font-size:20px;" data-customstyle="yes"> Created as a message broker for general usage, RabbitMQ is based on the pub-sub communication pattern. The messaging process can be either synchronous or asynchronous, as you prefer. So, the main features of the message broker are:<br /></div></div> </div> </div></div></div><div id="rec98485020" class="r t-rec t-rec_pt_0 t-rec_pb_45" style="padding-top:0px;padding-bottom:45px; " data-record-type="128" ><!-- T120 --><div class="t120"> <div class="t-container t-align_left"> <div class="t-col t-col_10 t-prefix_1"> <h3 class="t120__title t-heading t-heading_sm" field="title" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="text-align:left;" data-customstyle="yes"></div></h3> <div class="t120__descr t-descr t-descr_xs" field="subtitle" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="font-size:20px;" data-customstyle="yes"><ul> <li>Support of numerous protocols and message queuing, changeable routing to queues, different types of exchange.</li><li>Clustering deployment ensures perfect availability and throughput. The software can be used across various zones and regions.</li><li>The possibilities to use Puppet, BOSH, Chef and Docker for deployment. Compatibility with the most popular modern programming languages.</li><li>The opportunity of simple deployment in both private and public clouds.</li><li>Pluggable authentication, support of TLS and LDAP, authorization.</li><li>Many of the proposed tools can be used for continuous integration, operational metrics, and work with other enterprise systems.</li></ul></div></div> </div> </div></div></div><div id="rec98484927" class="r t-rec t-rec_pt_0 t-rec_pb_45" style="padding-top:0px;padding-bottom:45px; " data-record-type="128" ><!-- T120 --><div class="t120"> <div class="t-container t-align_left"> <div class="t-col t-col_10 t-prefix_1"> <h2 class="t120__title t-heading t-heading_sm" field="title" style="color:#333333;font-size:22px;font-family:'Open Sans';text-transform:uppercase;"><div style="font-size:24px;text-align:left;" data-customstyle="yes"> <strong>RABBITMQ WORKING PRINCIPLE</strong><br /></div></h2> <div class="t120__descr t-descr t-descr_xs" field="subtitle" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="font-size:20px;" data-customstyle="yes"> Being a broker-centric program, RabbitMQ gives guarantees between producers and consumers. If you choose this software, you should use transient messages, rather than durable. <br /><br /> The program uses the broker to check the state of a message and verify whether the delivery was successfully completed. The message broker presumes that consumers are usually online. <br /><br /> As for the message ordering, the consumers will get the message in the published order itself. The order of publishing is managed consistently.<br /></div></div> </div> </div></div></div><div id="rec98485383" class="r t-rec t-rec_pt_0 t-rec_pb_0" style="padding-top:0px;padding-bottom:0px; " data-record-type="128" ><!-- T120 --><div class="t120"> <div class="t-container t-align_left"> <div class="t-col t-col_10 t-prefix_1"> <h2 class="t120__title t-heading t-heading_sm" field="title" style="color:#333333;font-size:22px;font-family:'Open Sans';text-transform:uppercase;"><div style="font-size:24px;text-align:left;" data-customstyle="yes"><strong>RABBITMQ PECULIARITIES</strong><br /></div></h2> <div class="t120__descr t-descr t-descr_xs" field="subtitle" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="font-size:20px;" data-customstyle="yes"> The main advantage of this message broker is the perfect set of plugins, combined with nice scalability. Many web developers enjoy clear documentation and well-defined rules, as well as the possibility of working with various message exchange models. In fact, RabbitMQ is suitable for 3 of them:<br /></div></div> </div> </div></div></div><div id="rec98485548" class="r t-rec t-rec_pt_0 t-rec_pb_0" style="padding-top:0px;padding-bottom:0px; " data-record-type="128" ><!-- T120 --><div class="t120"> <div class="t-container t-align_left"> <div class="t-col t-col_10 t-prefix_2"> <h3 class="t120__title t-heading t-heading_sm" field="title" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="text-align:left;" data-customstyle="yes"></div></h3> <div class="t120__descr t-descr t-descr_xs" field="subtitle" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="font-size:20px;" data-customstyle="yes"><ul> <li><span style="font-weight: 600;">Direct</span> exchange model (individual exchange of topic one be one)</li><li><span style="font-weight: 600;">Topic</span> exchange model (each consumer gets a message which is sent to a specific topic)</li><li><span style="font-weight: 600;">Fanout</span> exchange model (all consumers connected to queues get the message).</li></ul></div></div> </div> </div></div></div><div id="rec98475368" class="r t-rec t-rec_pt_0 t-rec_pb_45" style="padding-top:0px;padding-bottom:45px; " data-record-type="128" ><!-- T120 --><div class="t120"> <div class="t-container t-align_left"> <div class="t-col t-col_10 t-prefix_1"> <h3 class="t120__title t-heading t-heading_sm" field="title" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="text-align:left;" data-customstyle="yes"></div></h3> <div class="t120__descr t-descr t-descr_xs" field="subtitle" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="font-size:20px;" data-customstyle="yes"> Here you can see the gap between Kafka and RabbitMQ. If a consumer isn't connected to a fanout exchange in RabbitMQ, the message will be lost. At the same time, Kafka allows avoiding this, because any consumer can read any message.<br /></div></div> </div> </div></div></div><div id="rec98485806" class="r t-rec t-rec_pt_0 t-rec_pb_105" style="padding-top:0px;padding-bottom:105px; " data-record-type="128" ><!-- T120 --><div class="t120"> <div class="t-container t-align_left"> <div class="t-col t-col_10 t-prefix_1"> <h2 class="t120__title t-heading t-heading_sm" field="title" style="color:#333333;font-size:22px;font-family:'Open Sans';text-transform:uppercase;"><div style="font-size:24px;text-align:left;" data-customstyle="yes"><strong>CONCLUSION</strong><br /></div></h2> <div class="t120__descr t-descr t-descr_xs" field="subtitle" style="color:#333333;font-size:22px;font-family:'Open Sans';"><div style="font-size:20px;" data-customstyle="yes"> As for me, I like RabbitMQ due to the opportunity to use many plugins. They save time and speed-up work. You can easily adjust filters, priorities, message ordering, etc. Just like Kafka, RabbitMQ requires you to deploy and manage the software. But it has convenient in-built UI and allows using SSL for better security. As for abilities to cope with big data loads, here RabbitMQ is inferior to Kafka. <br /><br /> To sum up, both Apache Kafka and RabbitMQ truly worth the attention of skillful software developers. I hope, my article will help you find suitable big data technologies for your project. If you still have any questions, you are welcome to <a href="https://freshcodeit.com/contact" style="color:rgb(51, 51, 51) !important;text-decoration: none;border-bottom: 1px solid rgb(94, 165, 221);box-shadow: inset 0px -1px 0px 0px rgb(94, 165, 221);-webkit-box-shadow: inset 0px -1px 0px 0px rgb(94, 165, 221);-moz-box-shadow: inset 0px -1px 0px 0px rgb(94, 165, 221);">contact Freshcode</a> specialists. <br /><br />In the next review we will compare other powerful messaging tools: <a href="https://freshcodeit.com/freshcode-post/introduction-to-message-brokers-activemq-vs-redis-pub-sub" style="color:#5ea5dd !important;">ActiveMQ and Redis Pub/Sub</a>.<br /></div></div> </div> </div></div></div><div id="rec199426267" class="r t-rec t-rec_pt_90 t-rec_pb_150" style="padding-top:90px;padding-bottom:150px; " data-animationappear="off" data-record-type="718" ><!-- t718 --><div class="t718"> <div class="t-container"> <div class="t-col t-col_4 "> <div class="t718__contentbox" style="height:;"> <div class="t718__contentwrapper"> <div class="t718__contacts t-text t-descr_xxxl" style="font-size:27px;font-weight:500;font-family:'Open Sans';" field="text"><div style="font-size:20px;color:#000000;" data-customstyle="yes"><span style="font-weight: 600;">What happens after filling out this form:</span></div></div> <div class="t718__address t-text t-text_sm" style="color:#000000;font-size:16px;font-weight:400;font-family:'Open Sans';max-width:400px;" field="text2"><div style="line-height:24px;" data-customstyle="yes"><ul><li> One of our representatives gets in touch with you within 24 hours</li></ul><br /><ul><li>We gather all the essential requirements from you</li></ul><br /><ul><li> Our analysts and developers estimate your project</li></ul><br /><ul><li> Your ideas are safe with us, as we sign NDA with all of our clients </li></ul></div></div> </div> </div> </div> <div class="t-col t-col_6 t-prefix_1 t718__nomargin"> <form id="form199426267" name='form199426267' role="form" action='' method='POST' data-formactiontype="2" data-inputbox=".t-input-group" data-success-url="https://freshcodeit.com/thank-you-page" class="t-form js-form-proccess t-form_inputs-total_5 t-form_bbonly " data-success-callback="t718_onSuccess" > <input type="hidden" name="formservices[]" value="d8560f29f00813ca91759359f00f410c" class="js-formaction-services"> <input type="hidden" name="formservices[]" value="0c510ab16f86682021743fdcc588f760" class="js-formaction-services"> <input type="hidden" name="formservices[]" value="b18232429d18144c2974be03e5b3ebdf" class="js-formaction-services"> <input type="hidden" name="formservices[]" value="ad7385cde0dcb35c4b890768d264011c" class="js-formaction-services"> <div class="js-successbox t-form__successbox t-text t-text_md" style="display:none;">THANK YOU FOR YOUR MESSAGE</div> <div class="t-form__inputsbox"> <div class="t-input-group t-input-group_nm" data-input-lid="1496238250184"> <div class="t-input-title t-descr t-descr_md" data-redactor-toolbar="no" field="li_title__1496238250184" style="color:#000000;font-weight:600;">Tell us about Your Project</div> <div class="t-input-block"> <input type="text" autocomplete="name" name="Name" class="t-input js-tilda-rule t-input_bbonly" value="" placeholder="Name" data-tilda-req="1" data-tilda-rule="name" style="color:#000000; border:1px solid #c7c7c7; "> <div class="t-input-error"></div> </div> </div> <div class="t-input-group t-input-group_em" data-input-lid="1496238230199"> <div class="t-input-block"> <input type="text" autocomplete="email" name="Email" class="t-input js-tilda-rule t-input_bbonly" value="" placeholder="Email" data-tilda-req="1" data-tilda-rule="email" style="color:#000000; border:1px solid #c7c7c7; "> <div class="t-input-error"></div> </div> </div> <div class="t-input-group t-input-group_ta" data-input-lid="1496238259342"> <div class="t-input-block"> <textarea name="project" class="t-input js-tilda-rule t-input_bbonly" placeholder="Project details" data-tilda-req="1" style="color:#000000; border:1px solid #c7c7c7; height:102px" rows="3"></textarea> <div class="t-input-error"></div> </div> </div> <div class="t-input-group t-input-group_cb" data-input-lid="1590742471479"> <div class="t-input-block"> <label class="t-checkbox__control t-text t-text_xs" style="color: #000000"><input type="checkbox" name="nda" value="yes" class="t-checkbox js-tilda-rule" ><div class="t-checkbox__indicator" ></div>Send NDA</label> <div class="t-input-error"></div> </div> </div> <div class="t-input-group t-input-group_uw" data-input-lid="1590749487361"> <div class="t-input-block"> <div class="t-upwidget" style='margin-bottom:10px;'> <input type="text" type="hidden" role="upwidget-uploader" class="js-tilda-rule" name="File" data-tilda-upwidget-key="google-8c82b3dfc9dd9735716f8ed" style="display:none;"> <script src='https://static.tildacdn.com/js/tilda-upwidget-1.1.min.js' async></script> </div> <div class="t-input-error"></div> </div> </div><!--[if IE 8]><style>.t-checkbox__control .t-checkbox, .t-radio__control .t-radio { left: 0px; z-index: 1; opacity: 1;
+}
+.t-checkbox__indicator, .t-radio__indicator { display: none;
+}
+.t-img-select__control .t-img-select { position: static;
+}</style><![endif]--><div class="t-form__errorbox-middle"> <div class="js-errorbox-all t-form__errorbox-wrapper" style="display:none;"> <div class="t-form__errorbox-text t-text t-text_md"> <p class="t-form__errorbox-item js-rule-error js-rule-error-all"></p> <p class="t-form__errorbox-item js-rule-error js-rule-error-req"></p> <p class="t-form__errorbox-item js-rule-error js-rule-error-email">Please put a correct e-mail</p> <p class="t-form__errorbox-item js-rule-error js-rule-error-name"></p> <p class="t-form__errorbox-item js-rule-error js-rule-error-phone"></p> <p class="t-form__errorbox-item js-rule-error js-rule-error-minlength"></p> <p class="t-form__errorbox-item js-rule-error js-rule-error-string"></p> </div> </div></div> <div class="t-form__submit"> <button type="submit" class="t-submit" style="color:#ffffff;background-color:#48d188;border-radius:4px; -moz-border-radius:4px; -webkit-border-radius:4px;font-family:Open Sans;font-weight:400;text-transform:uppercase;" >SEND REQUEST</button> </div> </div> <div class="t-form__errorbox-bottom"> <div class="js-errorbox-all t-form__errorbox-wrapper" style="display:none;"> <div class="t-form__errorbox-text t-text t-text_md"> <p class="t-form__errorbox-item js-rule-error js-rule-error-all"></p> <p class="t-form__errorbox-item js-rule-error js-rule-error-req"></p> <p class="t-form__errorbox-item js-rule-error js-rule-error-email">Please put a correct e-mail</p> <p class="t-form__errorbox-item js-rule-error js-rule-error-name"></p> <p class="t-form__errorbox-item js-rule-error js-rule-error-phone"></p> <p class="t-form__errorbox-item js-rule-error js-rule-error-minlength"></p> <p class="t-form__errorbox-item js-rule-error js-rule-error-string"></p> </div> </div> </div> </form><style>#rec199426267 input::-webkit-input-placeholder {color:#000000; opacity: 0.5;}	#rec199426267 input::-moz-placeholder {color:#000000; opacity: 0.5;}	#rec199426267 input:-moz-placeholder {color:#000000; opacity: 0.5;}	#rec199426267 input:-ms-input-placeholder {color:#000000; opacity: 0.5;}	#rec199426267 textarea::-webkit-input-placeholder {color:#000000; opacity: 0.5;}	#rec199426267 textarea::-moz-placeholder {color:#000000; opacity: 0.5;}	#rec199426267 textarea:-moz-placeholder {color:#000000; opacity: 0.5;}	#rec199426267 textarea:-ms-input-placeholder {color:#000000; opacity: 0.5;}</style> </div> </div></div><style>#rec199426267 .t-input__vis-ph { color:#000000;
+}</style><!--[if IE 8 ]><style> .t-input-block .t-input:focus ~ .t-input__vis-ph, .t-input_has-content + .t-input__vis-ph { top: 10px; font-size: 12px; }</style><![endif]--><script>function t_animateInputs(recid){ var el = $('#rec'+recid); var inputs = el.find('.t-input:not(.t-inputquantity):not(.t-input-phonemask__wrap):not(.t-input-phonemask)'); el.find('.t-input-group:not(.t-input-group_da):not(.t-input-group_uw):not(.t-input-group_ri):not(.t-input-group_rg) .t-input-block, .t-datepicker__wrapper').css({'position':'relative','overflow':'hidden'}); inputs.each(function(){ $(this).addClass('t-input_pvis'); if( typeof $(this).attr('placeholder')!='undefined' && $(this).attr('placeholder')!=''){ $(this).after('<div class="t-input__vis-ph">'+$(this).attr('placeholder')+'</div>');	} $(this).attr('placeholder',''); }); inputs.on("blur", function() { if($(this).val() != ''){ $(this).addClass('t-input_has-content'); }else{ $(this).removeClass('t-input_has-content'); } }); if(/iPhone|iPad|iPod/i.test(navigator.userAgent)){ el.find('textarea:not(.t-input_bbonly)').css('padding-left', '17px'); el.find('textarea.t-input_bbonly').css('text-indent', '-3px'); }
+}
+$(document).ready(function(){ setTimeout(function(){ t_animateInputs('199426267'); }, 500);
+})</script> <style>#rec199426267 .t-submit:hover{ background-color: #34558b !important;	}	#rec199426267 .t-submit{ -webkit-transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out; transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;	}</style></div><div id="rec199426311" class="r t-rec" style=" " data-animationappear="off" data-record-type="131" ><!-- T123 --><div class="t123" ><div class="t-container_100 "><div class="t-width t-width_100 ">
+			<!--*****************************ФОРМА "Tell us about Your Project"***************************************-->
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/css/all.min.css" integrity="sha256-h20CPZ0QyXlBuAw7A+KluUYx/3pK+c7lYEpqLTlxjYQ=" crossorigin="anonymous" />
+<style>
+
+    .t718 .t-input-group .t-input__vis-ph {
+        opacity: 1;
+        font-weight: 600;
+    }
+    
+    .t718 .t-input-group_nm .t-input-title {
+        font-size: 27px;
+        font-weight: 600;
+        line-height: 36px;
+        letter-spacing: .5px;
+        margin-bottom: 40px;
+        }
+        
+    .t718 .t-form .js-error-control-box .t-input {
+        border: none!important;
+        border-bottom: 1px solid red!important;
+        padding-left: 0!important;
+    }
+    
+    .t718 .t-form .js-error-control-box .t-input__vis-ph {
+        left: 0px!important;
+    }
+    
+    .t718 .t-form__errorbox-middle {
+        display: none!important;
+    }
+    
+    .t718 .t-input-group_cb {
+        float: left;
+    }
+    
+    .t718 .t-input-group_uw {
+        float: right;
+    }
+    
+    .t718 .t-input-group_uw .t-upwidget-container__button {
+        color: #000000!important;
+        background-color: #ffffff!important;
+    }
+    
+    .t718 .t-input-group_uw .t-upwidget-container__button:before {
+        font-family: 'font awesome 5 free';
+        font-weight: 600;
+        font-size: 18px;
+        margin-right: 10px;
+        content: '\f0c6';
+    }
+    
+    .t718 .t-submit {
+        width: 100%;
+    }
+    
+    @media screen and (min-width: 981px) {
+        .t718 .t-container {
+            display: flex;
+            justify-content: space-between;
+            box-shadow: 0 8px 100px -10px rgba(0, 0, 0, .15);
+        }
+        
+        .t718 .t-container .t-col {
+            padding: 45px 50px;
+            margin: 0;
+        }
+        
+        .t718 .t-container .t-col_6 {
+            padding: 45px 100px;
+            border-left: 1px solid #e9e9e9;
+        }
+    }
+    
+    @media screen and (max-width: 980px) {
+        .t718 .t-container .t-col_4 {
+            display: none;
+        }
+    }
+</style>
+			 
+			</div> </div></div></div><div id="rec98475374" class="r t-rec t-rec_pt_75 t-rec_pb_75" style="padding-top:75px;padding-bottom:75px; " data-record-type="247" ><div class="t219"> <div class="t219__butwrapper"> </div> <div class="t-width t-width_10 t-margin_auto"> <div class="t219__disqusthread" id="disqus_thread" data-disqus-shortname="freshcodeit" data-page-id="5485129"></div></div></div></div><div id="rec98475375" class="r t-rec" style=" " data-animationappear="off" data-record-type="131" ><!-- T123 --><div class="t123" ><div class="t-container_100 "><div class="t-width t-width_100 ">
+			<div id="disqus_thread"></div>
+<script>
+
+/**
+*  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+*  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables*/
+/*
+var disqus_config = function () {
+this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+*/
+(function() { // DON'T EDIT BELOW THIS LINE
+var d = document, s = d.createElement('script');
+s.src = 'https://freshcodeit.disqus.com/embed.js';
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+                            
+			 
+			</div> </div></div></div><div id="rec98475376" class="r t-rec t-rec_pt_120 t-rec_pb_120" style="padding-top:120px;padding-bottom:120px; " data-animationappear="off" data-record-type="690" ><!-- t690 --><div class="t690"> <div class="t-container"> <div class="t-col t-col_10 t-prefix_2"> <form id="form98475376" name='form98475376' role="form" action='' method='POST' data-formactiontype="2" data-inputbox=".t-input-group" class="t-form js-form-proccess t-form_inputs-total_2 " data-success-callback="t690_onSuccess" > <input type="hidden" name="formservices[]" value="d8560f29f00813ca91759359f00f410c" class="js-formaction-services"> <input type="hidden" name="formservices[]" value="0c510ab16f86682021743fdcc588f760" class="js-formaction-services"> <input type="hidden" name="formservices[]" value="b18232429d18144c2974be03e5b3ebdf" class="js-formaction-services"> <input type="hidden" name="formservices[]" value="ad7385cde0dcb35c4b890768d264011c" class="js-formaction-services"> <div class="js-successbox t-form__successbox t-text t-text_md" style="display:none;"></div> <div class="t-form__inputsbox"> <div class="t-input-group t-input-group_nm" data-input-lid="1494863045129"> <div class="t-input-block"> <input type="text" autocomplete="name" name="name" class="t-input js-tilda-rule " value="" placeholder="Enter Your Name" data-tilda-req="1" data-tilda-rule="name" style="color:#1a1a1a; border:2px solid #bababa; "> <div class="t-input-error"></div> </div> </div> <div class="t-input-group t-input-group_em" data-input-lid="1495122982159"> <div class="t-input-block"> <input type="text" autocomplete="email" name="email" class="t-input js-tilda-rule " value="" placeholder="Enter Your Email" data-tilda-req="1" data-tilda-rule="email" style="color:#1a1a1a; border:2px solid #bababa; "> <div class="t-input-error"></div> </div> </div><div class="t-form__errorbox-middle"> <div class="js-errorbox-all t-form__errorbox-wrapper" style="display:none;"> <div class="t-form__errorbox-text t-text t-text_md"> <p class="t-form__errorbox-item js-rule-error js-rule-error-all"></p> <p class="t-form__errorbox-item js-rule-error js-rule-error-req"></p> <p class="t-form__errorbox-item js-rule-error js-rule-error-email">Please put a correct e-mail</p> <p class="t-form__errorbox-item js-rule-error js-rule-error-name"></p> <p class="t-form__errorbox-item js-rule-error js-rule-error-phone"></p> <p class="t-form__errorbox-item js-rule-error js-rule-error-minlength"></p> <p class="t-form__errorbox-item js-rule-error js-rule-error-string"></p> </div> </div></div> <div class="t-form__submit"> <button type="submit" class="t-submit" style="color:#ffffff;background-color:#bababa;font-family:Open Sans;font-weight:400;" >SUBSCRIBE</button> </div> </div> <div class="t-form__errorbox-bottom"> <div class="js-errorbox-all t-form__errorbox-wrapper" style="display:none;"> <div class="t-form__errorbox-text t-text t-text_md"> <p class="t-form__errorbox-item js-rule-error js-rule-error-all"></p> <p class="t-form__errorbox-item js-rule-error js-rule-error-req"></p> <p class="t-form__errorbox-item js-rule-error js-rule-error-email">Please put a correct e-mail</p> <p class="t-form__errorbox-item js-rule-error js-rule-error-name"></p> <p class="t-form__errorbox-item js-rule-error js-rule-error-phone"></p> <p class="t-form__errorbox-item js-rule-error js-rule-error-minlength"></p> <p class="t-form__errorbox-item js-rule-error js-rule-error-string"></p> </div> </div> </div> </form><style>#rec98475376 input::-webkit-input-placeholder {color:#1a1a1a; opacity: 0.5;}	#rec98475376 input::-moz-placeholder {color:#1a1a1a; opacity: 0.5;}	#rec98475376 input:-moz-placeholder {color:#1a1a1a; opacity: 0.5;}	#rec98475376 input:-ms-input-placeholder {color:#1a1a1a; opacity: 0.5;}	#rec98475376 textarea::-webkit-input-placeholder {color:#1a1a1a; opacity: 0.5;}	#rec98475376 textarea::-moz-placeholder {color:#1a1a1a; opacity: 0.5;}	#rec98475376 textarea:-moz-placeholder {color:#1a1a1a; opacity: 0.5;}	#rec98475376 textarea:-ms-input-placeholder {color:#1a1a1a; opacity: 0.5;}</style> </div> </div> </div> <style>#rec98475376 .t-submit:hover{ background-color: #00e0d1 !important; color: #ffffff !important; border-color: #00e0d1 !important;	}	#rec98475376 .t-submit{ -webkit-transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out; transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;	}</style> </div><div id="rec98475377" class="r t-rec t-rec_pt_60 t-rec_pb_60" style="padding-top:60px;padding-bottom:60px; " data-record-type="151" ><div class="t-container_100 t014" style="overflow:hidden;"><div style="position: relative; right: 50%; float: right;"><div style="position: relative; z-index: 1; right: -50%;" class="t014__circle-xl "><script type="text/javascript" src="https://static.tildacdn.com/js/ya-share.js" charset="utf-8" async="async"></script><div class="ya-share2" data-access-token:facebook="" data-yashareL10n="en" data-services="facebook,twitter" data-counter=""></div> </div></div></div></div><div id="rec98475378" class="r t-rec t-rec_pt_0 t-rec_pb_0" style="padding-top:0px;padding-bottom:0px; " data-record-type="795" ><!-- T795 --><div class="t795"> <div class="t-container t-align_center"> <div class="t-col t-col_10 t-prefix_1"> <div class="t795__title t-title t-title_xs t-margin_auto" field="title" style="color:#1a1a1a;font-size:32px;font-weight:400;font-family:'Open Sans';text-transform:uppercase;">THE MOST popular POSTS<br /></div> </div> </div></div></div><div id="rec59682165" class="r t-rec t-rec_pt_90 t-rec_pb_90" style="padding-top:90px;padding-bottom:90px; " data-animationappear="off" data-record-type="121" ><!-- T405 --><div class="t405" data-show-count="6"> <div class="t-container"> <div class="t405__col t-col t-col_2 t-align_left"> <a class="t405__link" href="/news/freshcode-ukraininan-leading-developer-in-2021" > <div class="t405__imgbox" > <div class="t405__img t-bgimg" data-original="https://static.tildacdn.com/tild6531-3435-4332-b638-623535376133/Clutch_2021.jpg" style="background-image: url('https://static.tildacdn.com/tild6531-3435-4332-b638-623535376133/-/resizeb/20x/Clutch_2021.jpg');"></div> <div class="t405__separator"></div> </div> <div class="t405__textwrapper"> <div class="t405__uptitle t-uptitle" style=""></div> <div class="t405__title t-name" style="color:#1a1a1a;font-size:18px;font-weight:400;font-family:'Open Sans';text-transform:uppercase;">Clutch Names Freshcode as Ukraine’s Leading Developer in 2021</div> </div> </a> </div> <div class="t405__col t-col t-col_2 t-align_left"> <a class="t405__link" href="/how-to-stop-being-afraid-of-clojure" > <div class="t405__imgbox" > <div class="t405__img t-bgimg" data-original="https://static.tildacdn.com/tild3337-3134-4865-b033-383935316561/IMG_2672_2.JPG" style="background-image: url('https://static.tildacdn.com/tild3337-3134-4865-b033-383935316561/-/resizeb/20x/IMG_2672_2.JPG');"></div> <div class="t405__separator"></div> </div> <div class="t405__textwrapper"> <div class="t405__uptitle t-uptitle" style=""></div> <div class="t405__title t-name" style="color:#1a1a1a;font-size:18px;font-weight:400;font-family:'Open Sans';text-transform:uppercase;">How to Learn Clojure: The Main Study Stages</div> </div> </a> </div> <div class="t405__col t-col t-col_2 t-align_left"> <a class="t405__link" href="/freshcode-post/chief-technology-officer-role" > <div class="t405__imgbox" > <div class="t405__img t-bgimg" data-original="https://static.tildacdn.com/tild3162-6236-4261-b639-646265336666/DSC07747.JPG" style="background-image: url('https://static.tildacdn.com/tild3162-6236-4261-b639-646265336666/-/resizeb/20x/DSC07747.JPG');"></div> <div class="t405__separator"></div> </div> <div class="t405__textwrapper"> <div class="t405__uptitle t-uptitle" style=""></div> <div class="t405__title t-name" style="color:#1a1a1a;font-size:18px;font-weight:400;font-family:'Open Sans';text-transform:uppercase;">What Does a CTO Do: Role and Responsibilities</div> </div> </a> </div> <div class="t405__col t-col t-col_2 t-align_left"> <a class="t405__link" href="/freshcode-post/create-a-voice-only-app-like-clubhouse" > <div class="t405__imgbox" > <div class="t405__img t-bgimg" data-original="https://static.tildacdn.com/tild3730-3139-4265-a237-393533396634/DSC07843_2.JPG" style="background-image: url('https://static.tildacdn.com/tild3730-3139-4265-a237-393533396634/-/resizeb/20x/DSC07843_2.JPG');"></div> <div class="t405__separator"></div> </div> <div class="t405__textwrapper"> <div class="t405__uptitle t-uptitle" style=""></div> <div class="t405__title t-name" style="color:#1a1a1a;font-size:18px;font-weight:400;font-family:'Open Sans';text-transform:uppercase;">Clubhouse: Why Do You Need to Create a Voice-only App</div> </div> </a> </div> <div class="t405__col t-col t-col_2 t-align_left"> <a class="t405__link" href="/freshcode-post/how-to-create-social-media-aggregator-app" > <div class="t405__imgbox" > <div class="t405__img t-bgimg" data-original="https://static.tildacdn.com/tild6638-3163-4462-b630-326236666233/DSC07435.JPG" style="background-image: url('https://static.tildacdn.com/tild6638-3163-4462-b630-326236666233/-/resizeb/20x/DSC07435.JPG');"></div> <div class="t405__separator"></div> </div> <div class="t405__textwrapper"> <div class="t405__uptitle t-uptitle" style=""></div> <div class="t405__title t-name" style="color:#1a1a1a;font-size:18px;font-weight:400;font-family:'Open Sans';text-transform:uppercase;">Creating Twitter Aggregators: How and Why</div> </div> </a> </div> <div class="t405__col t-col t-col_2 t-align_left"> <a class="t405__link" href="/freshcode-post/clojure-development-challenges" > <div class="t405__imgbox" > <div class="t405__img t-bgimg" data-original="https://static.tildacdn.com/tild3462-3835-4164-a431-386164323763/IMG_0998_2.jpg" style="background-image: url('https://static.tildacdn.com/tild3462-3835-4164-a431-386164323763/-/resizeb/20x/IMG_0998_2.jpg');"></div> <div class="t405__separator"></div> </div> <div class="t405__textwrapper"> <div class="t405__uptitle t-uptitle" style=""></div> <div class="t405__title t-name" style="color:#1a1a1a;font-size:18px;font-weight:400;font-family:'Open Sans';text-transform:uppercase;">How to Deal with Challenges | Clojure Developers Insights</div> </div> </a> </div> <div class="t405__col t-col t-col_2 t-align_left"> <a class="t405__link" href="/freshcode-post/cross-platform-app-dev" > <div class="t405__imgbox" > <div class="t405__img t-bgimg" data-original="https://static.tildacdn.com/tild3661-6136-4536-a361-376339663864/DSC09792_1.JPG" style="background-image: url('https://static.tildacdn.com/tild3661-6136-4536-a361-376339663864/-/resizeb/20x/DSC09792_1.JPG');"></div> <div class="t405__separator"></div> </div> <div class="t405__textwrapper"> <div class="t405__uptitle t-uptitle" style=""></div> <div class="t405__title t-name" style="color:#1a1a1a;font-size:18px;font-weight:400;font-family:'Open Sans';text-transform:uppercase;">Cross Platform Apps Development: Pros and Cons</div> </div> </a> </div> </div> <div class="t405__buttonwrapper"> <div class="t405__showmore t405__btn t-btn t-btn_sm" style="color:#48d188;border:2px solid #48d188;border-radius:2px; -moz-border-radius:2px; -webkit-border-radius:2px;font-family:Open Sans;font-weight:600;text-transform:uppercase;"><table style="width:100%; height:100%;"><tr><td>Show more</td></tr></table></div> </div> </div><script>$(document).ready(function(){ t405_showMore('59682165');
+});</script><style>#rec59682165 .t-btn:not(.t-animate_no-hover):hover{ background-color: #48d188 !important; color: #ffffff !important;	}	#rec59682165 .t-btn:not(.t-animate_no-hover){ -webkit-transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out; transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;	}</style></div><!--footer--><div id="t-footer" class="t-records" data-hook="blocks-collection-content-node" data-tilda-project-id="572703" data-tilda-page-id="3143211" data-tilda-page-alias="footer" data-tilda-formskey="11684db374f1a85ef9bb00361394374b" data-tilda-lazy="yes" data-tilda-project-lang="EN" data-tilda-project-headcode="yes" data-tilda-page-headcode="yes"><div id="rec205151746" class="r t-rec t-rec_pt_60 t-rec_pb_75" style="padding-top:60px;padding-bottom:75px;background-color:#012334; " data-animationappear="off" data-record-type="131" data-bg-color="#012334"><!-- T123 --><div class="t123" ><div class="t-container "><div class="t-col t-col_12 ">
+			<div class="footer">
+  <div class="col logo">
+    <a href="/">
+      <img
+        src="https://static.tildacdn.com/tild3533-3561-4363-b730-373532646636/logo.svg"
+        alt=""
+      />
+    </a>
+    <p>We’ll do everything at every stage to make your ideas happen.</p>
+  </div>
+  <div class="col address collapsed">
+    <h3 class="title">Ukraine&nbsp;&nbsp;<i class="fas fa-chevron-up"></i></h3>
+    <p>
+      <a href="https://g.page/freshcodeit?share" target="_blank" rel="nofollow">
+        Eco Tower Business Center<br />
+        160 Sobornyi Ave.,<br />
+        Zaporizhzhya, 69005
+      </a>
+    </p>
+    <p>
+      <a
+        href="https://g.page/space_hall_kh?share"
+        target="_blank"
+        rel="nofollow"
+      >
+        Tetris Business Center<br />
+        111a Klochkivska St.,<br />
+        Kharkiv, 61145
+      </a>
+    </p>
+  </div>
+  <div class="col address collapsed">
+    <h3 class="title">Bulgaria&nbsp;&nbsp;<i class="fas fa-chevron-up"></i></h3>
+    <p>
+      <a href="https://goo.gl/maps/VwAsqHptYHij3F967" target="_blank" rel="nofollow"
+        >93 Belovodski Put,<br />Sofia</a
+      >
+    </p>
+    <p>
+      Contact:<br />
+      <a href="tel:+380965880289">+380 96 588 02 89</a>
+    </p>
+    <p><a href="mailto:info@freshcodeit.com">info@freshcodeit.com</a></p>
+  </div>
+  <div class="col social">
+    <div class="sociallinks__container">
+      <div class="sociallinks">
+        <div class="sociallinks__item">
+          <a
+            href="https://www.facebook.com/freshcodeit"
+            target="_blank"
+            rel="nofollow"
+          >
+            <i class="fab fa-facebook-f"></i>
+          </a>
+        </div>
+        <div class="sociallinks__item">
+          <a
+            href="https://www.linkedin.com/company/freshcode-it"
+            target="_blank"
+            rel="nofollow"
+          >
+            <i class="fab fa-linkedin-in"></i>
+          </a>
+        </div>
+        <div class="sociallinks__item">
+          <a
+            href="https://twitter.com/FreshCode1"
+            target="_blank"
+            rel="nofollow"
+          >
+            <i class="fab fa-twitter"></i>
+          </a>
+        </div>
+        <div class="sociallinks__item">
+          <a
+            href="https://clutch.co/profile/freshcode"
+            target="_blank"
+            rel="nofollow"
+          >
+            <svg
+              version="1.0"
+              xmlns="http://www.w3.org/2000/svg"
+              width="21px"
+              height="21px"
+              viewBox="0 0 225.000000 225.000000"
+              preserveAspectRatio="xMidYMid meet"
+            >
+              <g
+                transform="translate(0.000000,225.000000) scale(0.100000,-0.100000)"
+                fill="#ffffff"
+                stroke="none"
+              >
+                <path
+                  d="M1054 2006 c-135 -26 -238 -67 -349 -141 -249 -165 -385 -448 -372 -775 6 -155 30 -252 96 -385 88 -178 204 -294 386 -385 142 -71 244 -93 420 -94 164 0 258 20 393 84 102 48 160 88 236 159 l58 56 -143 137 -143 136 -39 -31 c-128 -106 -200 -137 -332 -144 -161 -9 -281 33 -390 137 -99 96 -147 215 -147 365 0 140 40 250 128 344 92 99 218 151 369 151 136 0 262 -46 359 -132 24 -21 48 -38 53 -38 4 0 70 62 146 138 l138 138 -68 58 c-123 107 -238 169 -387 207 -103 27 -309 35 -412 15z"
+                />
+                <path
+                  d="M1125 1406 c-125 -39 -204 -147 -205 -282 0 -79 22 -143 71 -198 118 -134 326 -136 444 -4 147 164 78 421 -131 484 -57 17 -125 17 -179 0z"
+                />
+              </g>
+            </svg>
+          </a>
+        </div>
+      </div>
+      <div class="sociallinks">
+        <div class="sociallinks__item">
+          <a
+            href="https://www.instagram.com/freshcodeit"
+            target="_blank"
+            rel="nofollow"
+          >
+            <i class="fab fa-instagram"></i>
+          </a>
+        </div>
+        <div class="sociallinks__item">
+          <a
+            href="https://www.behance.net/freshcode"
+            target="_blank"
+            rel="nofollow"
+          >
+            <i class="fab fa-behance"></i>
+          </a>
+        </div>
+        <div class="sociallinks__item">
+          <a
+            href="https://dribbble.com/freshcode_it"
+            target="_blank"
+            rel="nofollow"
+          >
+            <i class="fab fa-dribbble"></i>
+          </a>
+        </div>
+        <div class="sociallinks__item">
+          <a href="https://www.youtube.com/channel/UC9nbMjxB5hfIWj6v1EoQUoQ" target="_blank" rel="nofollow">
+            <i class="fab fa-youtube"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+    <div class="btn">
+      <a href="/portfolio">Portfolio</a>
+    </div>
+  </div>
+</div>
+<div class="footer-bottom">
+  <div class="copy">
+    Copyright © 2022. All Rights Reserved <span>|</span>
+    <a href="/privacy-policy" target="_blank">Privacy Policy</a>
+  </div>
+  <div class="contacts"><a href="/contact">Сontacts</a></div>
+</div>
+
+<style>
+  .footer {
+    font-family: Open Sans;
+    font-style: normal;
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-pack: justify;
+        -ms-flex-pack: justify;
+            justify-content: space-between;
+  }
+
+  .footer .logo {
+    max-width: 226px;
+  }
+
+  .footer .logo img {
+    margin-bottom: 17px;
+  }
+
+  .footer .address {
+    position: relative;
+    padding-left: 32px;
+  }
+
+  .footer .col:not(.logo) {
+    padding-top: 16px;
+  }
+
+  .footer .address:before {
+    position: absolute;
+    display: block;
+    top: 14px;
+    left: 10px;
+    font-family: "font awesome 5 free";
+    font-weight: 600;
+    font-size: 18px;
+    content: "\f3c5";
+    color: #48d188;
+  }
+
+  .footer .col,
+  .footer .col h3 {
+    font-size: 16px;
+    font-weight: 300;
+    line-height: 22px;
+    color: #ffffff;
+  }
+
+  .footer .col h3 {
+    font-weight: 700;
+  }
+
+  .footer .col h3 i {
+    display: none;
+  }
+
+  .footer .col .title {
+    margin-bottom: 20px;
+  }
+
+  .footer .col p {
+    margin-top: 22px;
+  }
+
+  .footer .col:not(.social) a {
+    margin: 20px 0;
+  }
+
+  .footer .col.social {
+    max-width: 160px;
+    width: 100%;
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+        -ms-flex-direction: column;
+            flex-direction: column;
+  }
+
+  .footer .btn {
+    width: 100%;
+    margin-top: 57px;
+    height: 60px;
+    background: #48d188;
+    border-radius: 4px;
+    -webkit-transition: background 0.2s ease-in-out;
+    -o-transition: background 0.2s ease-in-out;
+    transition: background 0.2s ease-in-out;
+  }
+
+  .footer .btn:hover {
+    background: #42c280;
+  }
+
+  #allrecords .footer .btn:hover > a {
+    color: #ffffff;
+  }
+
+  #allrecords .footer .btn > a {
+    height: 100%;
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-pack: center;
+    -ms-flex-pack: center;
+    justify-content: center;
+    -webkit-box-align: center;
+    -ms-flex-align: center;
+    align-items: center;
+    font-family: Open Sans;
+    font-style: normal;
+    font-weight: bold;
+    font-size: 16px;
+    line-height: 22px;
+    letter-spacing: 0.005em;
+    text-transform: uppercase;
+    color: #ffffff;
+  }
+
+  .footer .sociallinks {
+    margin-bottom: 15px;
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-pack: justify;
+        -ms-flex-pack: justify;
+            justify-content: space-between;
+  }
+
+  #allrecords .footer a {
+    color: #ffffff;
+    -webkit-transition: all 0.2s ease-in-out;
+    -o-transition: all 0.2s ease-in-out;
+    transition: all 0.2s ease-in-out;
+  }
+
+  #allrecords .footer a:hover {
+    color: #28a8ed;
+  }
+
+  .footer .sociallinks__item svg {
+    position: relative;
+    top: 4px;
+  }
+
+  .footer .sociallinks__item svg g {
+    -webkit-transition: all 0.2s ease-in-out;
+    -o-transition: all 0.2s ease-in-out;
+    transition: all 0.2s ease-in-out;
+  }
+
+  #allrecords .footer .sociallinks__item a:hover svg g {
+    fill: #28a8ed;
+  }
+
+  .footer-bottom {
+    margin-top: 40px;
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-pack: justify;
+        -ms-flex-pack: justify;
+            justify-content: space-between;
+    font-family: Open Sans;
+    font-style: normal;
+    font-weight: normal;
+    font-size: 14px;
+    line-height: 19px;
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  #allrecords .footer-bottom a {
+    color: rgba(72, 209, 136, 0.5);
+    text-decoration: underline;
+  }
+
+  @media screen and (max-width: 980px) {
+    .footer {
+      max-width: 226px;
+      margin: 0 auto;
+      -webkit-box-orient: vertical;
+      -webkit-box-direction: normal;
+          -ms-flex-direction: column;
+              flex-direction: column;
+      -webkit-box-align: center;
+          -ms-flex-align: center;
+              align-items: center;
+    }
+
+    .footer .logo {
+      margin: 0;
+    }
+
+    .footer .logo p {
+      margin-bottom: 47px;
+    }
+
+    .footer .col:not(.address) {
+      text-align: center;
+    }
+
+    .footer .col.address {
+      overflow: hidden;
+      max-height: 250px;
+      white-space: nowrap;
+      -ms-flex-item-align: start;
+          align-self: flex-start;
+      margin-bottom: 26px;
+      -webkit-transition: max-height 0.5s ease-in-out;
+      -o-transition: max-height 0.5s ease-in-out;
+      transition: max-height 0.5s ease-in-out;
+    }
+
+    .footer .col.address.collapsed {
+      max-height: 23px;
+    }
+
+    .footer .col.address h3 i {
+      display: inline;
+    }
+
+    .footer .col.address h3 i:before {
+      display: inline-block;
+      -webkit-transition: all 0.5s ease-in-out;
+      -o-transition: all 0.5s ease-in-out;
+      transition: all 0.5s ease-in-out;
+    }
+
+    .footer .col.address.collapsed h3 i:before {
+      -webkit-transform: rotate(180deg);
+          -ms-transform: rotate(180deg);
+              transform: rotate(180deg);
+    }
+
+    .footer .logo img {
+      margin-bottom: 10px;
+    }
+
+    .footer .col.social {
+      -webkit-box-orient: vertical;
+      -webkit-box-direction: reverse;
+          -ms-flex-direction: column-reverse;
+              flex-direction: column-reverse;
+    }
+
+    .footer .col.social .btn {
+      margin-top: 8px;
+      margin-bottom: 45px;
+    }
+
+    .footer .sociallinks__item svg {
+      top: 0;
+    }
+
+    .footer-bottom {
+      text-align: center;
+      max-width: 250px;
+      margin: 30px auto 0;
+      -webkit-box-orient: vertical;
+      -webkit-box-direction: normal;
+          -ms-flex-direction: column;
+              flex-direction: column;
+    }
+
+    .footer-bottom .copy span {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  $(document).ready(function () {
+    var $collapseBtn = $(".footer .col.address h3");
+
+    $collapseBtn.on("click", function () {
+      var $parent = $(this).closest(".address");
+
+      $parent.toggleClass("collapsed");
+    });
+  });
+</script>
+
+			 
+			</div> </div></div></div></div><!--/footer--></div><!--/allrecords--><!-- Stat --><!-- Yandex.Metrika counter 72881014 --> <script type="text/javascript" data-tilda-cookie-type="analytics"> setTimeout(function(){ (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)}; m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)}) (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym"); window.mainMetrikaId = 72881014; ym(window.mainMetrikaId , "init", { clickmap:true, trackLinks:true, accurateTrackBounce:true, webvisor:true,ecommerce:"dataLayer" }); }, 2000);</script><noscript><div><img src="https://mc.yandex.ru/watch/72881014" style="position:absolute; left:-9999px;" alt="" /></div></noscript> <!-- /Yandex.Metrika counter --> <script type="text/javascript" data-tilda-cookie-type="analytics">setTimeout(function(){	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');	ga('create', 'UA-85297028-1', 'auto');	ga('send', 'pageview');	}, 2000);	window.mainTracker = 'user';</script><script type="text/javascript">if (! window.mainTracker) { window.mainTracker = 'tilda'; }	window.tildastatscroll='yes';	setTimeout(function(){	(function (d, w, k, o, g) { var n=d.getElementsByTagName(o)[0],s=d.createElement(o),f=function(){n.parentNode.insertBefore(s,n);}; s.type = "text/javascript"; s.async = true; s.key = k; s.id = "tildastatscript"; s.src=g; if (w.opera=="[object Opera]") {d.addEventListener("DOMContentLoaded", f, false);} else { f(); } })(document, window, '16a6d8c3e954189cf24e63af958025e6','script','https://static.tildacdn.com/js/tilda-stat-1.0.min.js');	}, 2000);</script><!-- Google Tag Manager (noscript) --><noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-NFNC86R" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript><!-- End Google Tag Manager (noscript) --></body></html>

@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-us" lang="en-us">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1"/>
+        <meta name="title" content="RabbitMQ Cluster Configuration for Kubernetes - zupzup"/>
+        <meta name="description" content="This is an example configuration of a RabbitMQ cluster running in Kubernetes"/>
+        <link id="feedLink" rel="alternate" type="application/rss+xml" title="RSS" href="/index.xml"/>
+        <meta name="referrer" content="always"/>
+        <meta name="keywords" content="programming, golang, rust, go, javascript, development, software, opensource, oss"/>
+        <meta name="author" content="Mario Zupan"/>
+        <link rel="canonical" href="https://www.zupzup.org/k8s-rabbitmq-cluster/index.html"/>
+        <title>RabbitMQ Cluster Configuration for Kubernetes - zupzup</title>
+        <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
+        <style>
+            html {
+                font-family: sans-serif;  
+                -ms-text-size-adjust: 100%;  
+                -webkit-text-size-adjust: 100%;  
+            }
+            body {
+                margin: 0;
+                background-color: #fafafa;
+            }
+            a:link, a:visited, a:hover, a:active {
+                text-decoration: none;
+                color: #008B8B;
+            }
+            #contactmobile {
+                display: none;
+            }
+            #header {
+                display: flex;
+                width: 100%;
+                background-color: #008B8B;
+                color: #fff;
+            }
+            #header a {
+                color: #fff
+            }
+            #header ul li{
+                display: inline-block;
+            }
+            #header #logo {
+                flex: 1;
+                padding: 1em;
+                vertical-align: top;
+            }
+            #header #logo #logotext {
+                display: inline-block;
+                margin-left: 5px;
+            }
+            #header #logo #logotext small {
+                font-size: x-small;
+            }
+            #header #logo strong {
+                display: block;
+                font-size: 1.2rem;
+            }
+            #header #menu {
+                flex: 2;
+                padding: 1em;
+                vertical-align: middle;
+                margin: auto;
+                text-align: center
+            }
+            #header #menu .menuitem {
+                width: 70px;
+            }
+            #header #menu .menuitem a, svg {
+                display: block;
+                text-align: center;
+                font-size: 12px;
+            }
+            #header #menu .menuitem div {
+                margin-top: 2px;
+            }
+            #header #contact {
+                flex: 1;
+                padding: 1em;
+                vertical-align: middle;
+                margin: auto;
+                text-align: right;
+            }
+            #header #contact svg {
+                width: 40px;
+                height: 40px;
+                display: inline-block;
+                fill: white;
+            }
+            #taglist {
+                list-style-type: none;
+            } 
+            #pagetitle {
+                margin-top: 5px;
+            }
+            #content {
+                max-width: 740px;
+                margin-left: auto;
+                margin-right: auto;
+                padding: 1em;
+                background-color: #fafafa;
+            }
+            #content p, li, table {
+                font-family: medium-content-serif-font,Georgia,Cambria,"Times New Roman",Times,serif;
+                font-weight: 400;
+                font-style: normal;
+                font-size: 21px;
+                line-height: 1.58;
+                letter-spacing: -.003em;
+                color: #000;
+                word-break: break-word;
+                word-wrap: break-word;
+                text-align: start;
+            }
+            #content .short p {
+                text-align: start;
+                word-break: break-word;
+                word-wrap: break-word;
+                font-weight: 400;
+                font-style: normal;
+                font-size: 18px;
+                line-height: 1.58;
+                letter-spacing: -.004em;
+                margin: 10px 0 10px 0;
+            }
+            #content .short h2 {
+                margin-bottom: 10px;
+            }
+            #content .short .tags, .readmore, .datettr {
+                font-size: 14px;
+            }
+            #content img {
+                max-width: 500px;
+            }
+            .old-articles-link {
+                text-align: center;
+                margin: 1.5rem 0;
+            }
+            code[class*="language-"] {
+                font-size: 16px;
+            }
+            @media only screen and (max-width: 768px), screen and (orientation: landscape) and (max-width: 640px) {
+                #header {
+                    display: block;
+                }
+                #header #logo {
+                    display: inline-block;
+                    width: 10%;
+                    padding: .2em 0 .2em .5em;
+                }
+                #header #logo #logotext {
+                    display: none;
+                }
+                #header #menu {
+                    padding: .2em 0 .2em 0;
+                    display: inline-block;
+                    width: 80%;
+                }
+                #header #menu .menuitem {
+                    width: 55px;
+                }
+                #header #menu .menuitem svg {
+                    width: 55px;
+                    height: 30px;
+                }
+                #header #contact{
+                    display: none;
+                }
+                #content p, li, table {
+                    font-size: 18px;
+                    word-break: break-word;
+                    word-wrap: break-word;
+                    line-height: 1.58;
+                    letter-spacing: -.004em;
+                    text-align: start;
+                }
+                #content .short p {
+                    font-size: 16px;
+                }
+                #content h1 {
+                    font-size: 1.4rem;
+                }
+                #content h2 {
+                    font-size: 1.2rem;
+                }
+                #content h3 {
+                    font-size: 1.1rem;
+                }
+                #content img {
+                    max-width: 300px;
+                }
+                code[class*="language-"] {
+                    font-size: 14px;
+                }
+                #content .short h2 {
+                    margin-bottom: 10px;
+                    font-size: 1.2em;
+                }
+                #contactmobile {
+                    display: block;
+                    background-color: #008B8B;
+                    text-align: center;
+                }
+                #contactmobile svg {
+                    width: 40px;
+                    height: 40px;
+                    display: inline-block;
+                    fill: white;
+                }
+            }
+            /* Background */ .chroma { color: #272822; background-color: #fafafa }
+/* Error */ .chroma .err { color: #960050; background-color: #1e0010 }
+/* LineTableTD */ .chroma .lntd { vertical-align: top; padding: 0; margin: 0; border: 0; }
+/* LineTable */ .chroma .lntable { border-spacing: 0; padding: 0; margin: 0; border: 0; width: auto; overflow: auto; display: block; }
+/* LineHighlight */ .chroma .hl { display: block; width: 100%;background-color: #e1e1e1 }
+/* LineNumbersTable */ .chroma .lnt { margin-right: 0.4em; padding: 0 0.4em 0 0.4em;color: #7f7f7f }
+/* LineNumbers */ .chroma .ln { margin-right: 0.4em; padding: 0 0.4em 0 0.4em;color: #7f7f7f }
+/* Keyword */ .chroma .k { color: #00a8c8 }
+/* KeywordConstant */ .chroma .kc { color: #00a8c8 }
+/* KeywordDeclaration */ .chroma .kd { color: #00a8c8 }
+/* KeywordNamespace */ .chroma .kn { color: #f92672 }
+/* KeywordPseudo */ .chroma .kp { color: #00a8c8 }
+/* KeywordReserved */ .chroma .kr { color: #00a8c8 }
+/* KeywordType */ .chroma .kt { color: #00a8c8 }
+/* Name */ .chroma .n { color: #111111 }
+/* NameAttribute */ .chroma .na { color: #75af00 }
+/* NameBuiltin */ .chroma .nb { color: #111111 }
+/* NameBuiltinPseudo */ .chroma .bp { color: #111111 }
+/* NameClass */ .chroma .nc { color: #75af00 }
+/* NameConstant */ .chroma .no { color: #00a8c8 }
+/* NameDecorator */ .chroma .nd { color: #75af00 }
+/* NameEntity */ .chroma .ni { color: #111111 }
+/* NameException */ .chroma .ne { color: #75af00 }
+/* NameFunction */ .chroma .nf { color: #75af00 }
+/* NameFunctionMagic */ .chroma .fm { color: #111111 }
+/* NameLabel */ .chroma .nl { color: #111111 }
+/* NameNamespace */ .chroma .nn { color: #111111 }
+/* NameOther */ .chroma .nx { color: #75af00 }
+/* NameProperty */ .chroma .py { color: #111111 }
+/* NameTag */ .chroma .nt { color: #f92672 }
+/* NameVariable */ .chroma .nv { color: #111111 }
+/* NameVariableClass */ .chroma .vc { color: #111111 }
+/* NameVariableGlobal */ .chroma .vg { color: #111111 }
+/* NameVariableInstance */ .chroma .vi { color: #111111 }
+/* NameVariableMagic */ .chroma .vm { color: #111111 }
+/* Literal */ .chroma .l { color: #ae81ff }
+/* LiteralDate */ .chroma .ld { color: #d88200 }
+/* LiteralString */ .chroma .s { color: #d88200 }
+/* LiteralStringAffix */ .chroma .sa { color: #d88200 }
+/* LiteralStringBacktick */ .chroma .sb { color: #d88200 }
+/* LiteralStringChar */ .chroma .sc { color: #d88200 }
+/* LiteralStringDelimiter */ .chroma .dl { color: #d88200 }
+/* LiteralStringDoc */ .chroma .sd { color: #d88200 }
+/* LiteralStringDouble */ .chroma .s2 { color: #d88200 }
+/* LiteralStringEscape */ .chroma .se { color: #8045ff }
+/* LiteralStringHeredoc */ .chroma .sh { color: #d88200 }
+/* LiteralStringInterpol */ .chroma .si { color: #d88200 }
+/* LiteralStringOther */ .chroma .sx { color: #d88200 }
+/* LiteralStringRegex */ .chroma .sr { color: #d88200 }
+/* LiteralStringSingle */ .chroma .s1 { color: #d88200 }
+/* LiteralStringSymbol */ .chroma .ss { color: #d88200 }
+/* LiteralNumber */ .chroma .m { color: #ae81ff }
+/* LiteralNumberBin */ .chroma .mb { color: #ae81ff }
+/* LiteralNumberFloat */ .chroma .mf { color: #ae81ff }
+/* LiteralNumberHex */ .chroma .mh { color: #ae81ff }
+/* LiteralNumberInteger */ .chroma .mi { color: #ae81ff }
+/* LiteralNumberIntegerLong */ .chroma .il { color: #ae81ff }
+/* LiteralNumberOct */ .chroma .mo { color: #ae81ff }
+/* Operator */ .chroma .o { color: #f92672 }
+/* OperatorWord */ .chroma .ow { color: #f92672 }
+/* Punctuation */ .chroma .p { color: #111111 }
+/* Comment */ .chroma .c { color: #75715e }
+/* CommentHashbang */ .chroma .ch { color: #75715e }
+/* CommentMultiline */ .chroma .cm { color: #75715e }
+/* CommentSingle */ .chroma .c1 { color: #75715e }
+/* CommentSpecial */ .chroma .cs { color: #75715e }
+/* CommentPreproc */ .chroma .cp { color: #75715e }
+/* CommentPreprocFile */ .chroma .cpf { color: #75715e }
+/* GenericEmph */ .chroma .ge { font-style: italic }
+/* GenericStrong */ .chroma .gs { font-weight: bold }
+
+        </style>
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="/">
+                    <img id="logoimage" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAqCAYAAABYzsDTAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAB1WlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1QIENvcmUgNS40LjAiPgogICA8cmRmOlJERiB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPgogICAgICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgICAgICAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyI+CiAgICAgICAgIDx0aWZmOkNvbXByZXNzaW9uPjE8L3RpZmY6Q29tcHJlc3Npb24+CiAgICAgICAgIDx0aWZmOk9yaWVudGF0aW9uPjE8L3RpZmY6T3JpZW50YXRpb24+CiAgICAgICAgIDx0aWZmOlBob3RvbWV0cmljSW50ZXJwcmV0YXRpb24+MjwvdGlmZjpQaG90b21ldHJpY0ludGVycHJldGF0aW9uPgogICAgICA8L3JkZjpEZXNjcmlwdGlvbj4KICAgPC9yZGY6UkRGPgo8L3g6eG1wbWV0YT4KAtiABQAAAgJJREFUSA3tVkFuwzAMc4b9qHnT+qbtTcmbMlM1Vcqx0mYosB1WIJUtkZQsq0hL+f/8Zge2llwt1twjzDVto4zNJO6nCILnUjXoM6uBn4pTULXM98bIC+yuuFeKo76Q4P2o4m35TMPTfE1jDGifPOuRKImwSQLVdDjEd09NtPMBB38Sc8G+58iqmbnO/GU5aF0v7llfsWBl0MIxT2uujTHfL9g1Q+XJBZ1OSIKOIjL6xBCQWVbcxb1q+FXccAmp0ygFbeBlSksCLrQlRA42ifDu5LvKlUj9rDL6l2UBdJvnmRSzoUctsvG4AdltVLiKatWuOWwLiCR3mraVGIU4CJok/BpVh2D19esg3FpTi7LWMNZzbE9xWH+qwCM/yMSUYVtM/vY1tYr6StTfx5y+mxZGpMo6z4tOQr3wpczXevzLvUri+4mhnlo/Gkk1CNHoh3h91A8chdLKG2h0ZJBv/tUHwgUpDDsiw2/gWhHW9sFxdT/yS0syXaNBnAlYFY+f+UF0HjaPpoXCwPJzWBVBsCNxe2noi6O/MNkb9lLWeqv2TlXtoXgAYFN7qdVOsp/0BdPWjh1NCwijdjApYi6AteDVH0Akq7UfDBzZtDDWSOfEG+kZE4RBGLUlCF0+Hv8jWL/Gf+1G0xLEdZOJKEbXp8SV+Mx616dGOpqWTDfTyvB/2P8NLejhK+nORKkAAAAASUVORK5CYII=">
+                    <div id="logotext">
+                        <strong>zupzup</strong>
+                        <small>I &#9825; Programming</small>
+                    </div>
+                </a>
+            </div>
+            <ul id="menu">
+                <li>
+                    <div class="menuitem">
+                        <a href="/">
+                            <svg width="70px" height="35px" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+                                <g id="Octicons" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                                    <g id="home" fill="#ffffff">
+                                        <path d="M16,9 L13,6 L13,2 L11,2 L11,4 L8,1 L0,9 L2,9 L3,14 C3,14.55 3.45,15 4,15 L12,15 C12.55,15 13,14.55 13,14 L14,9 L16,9 L16,9 Z M12,14 L9,14 L9,10 L7,10 L7,14 L4,14 L2.81,7.69 L8,2.5 L13.19,7.69 L12,14 L12,14 Z" id="Shape"></path>
+                                    </g>
+                                </g>
+                            </svg>
+                            <div>Home</div>
+                        </a>
+                    </div>
+                </li>
+                <li>
+                    <div class="menuitem">
+                        <a href="/about/">
+                            <svg width="70px" height="35px" viewBox="0 0 12 16" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+                                <g id="Octicons" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                                    <g id="light-bulb" fill="#ffffff">
+                                        <path d="M6.5,0 C3.48,0 1,2.19 1,5 C1,5.92 1.55,7.25 2,8 C3.34,10.25 3.78,10.78 4,12 L4,13 L9,13 L9,12 C9.22,10.78 9.66,10.25 11,8 C11.45,7.25 12,5.92 12,5 C12,2.19 9.52,0 6.5,0 L6.5,0 Z M10.14,7.48 C9.89,7.92 9.67,8.28 9.47,8.59 C8.61,10 8.22,10.65 8.02,11.82 C8,11.87 8,11.93 8,11.99 L5,11.99 C5,11.93 5,11.86 4.98,11.82 C4.78,10.65 4.39,9.99 3.53,8.59 C3.33,8.28 3.11,7.92 2.86,7.48 C2.44,6.78 2,5.65 2,5 C2,2.8 4.02,1 6.5,1 C7.72,1 8.86,1.42 9.72,2.19 C10.55,2.94 11,3.94 11,5 C11,5.66 10.56,6.78 10.14,7.48 L10.14,7.48 Z M4,14 L9,14 C8.77,15.14 7.7,16 6.5,16 C5.3,16 4.23,15.14 4,14 L4,14 Z" id="Shape"></path>
+                                    </g>
+                                </g>
+                            </svg>
+                            <div>About</div>
+                        </a>
+                    </div>
+                </li>
+                <li>
+                    <div class="menuitem">
+                        <a href="/tags/">
+                            <svg width="70px" height="35px" viewBox="0 0 14 16" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+                                <g id="Octicons" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                                    <g id="tag" fill="#ffffff">
+                                        <path d="M7.73,1.73 C7.26,1.26 6.62,1 5.96,1 L3.5,1 C2.13,1 1,2.13 1,3.5 L1,5.97 C1,6.63 1.27,7.27 1.73,7.74 L7.79,13.8 C8.18,14.19 8.81,14.19 9.2,13.8 L13.79,9.21 C14.18,8.82 14.18,8.19 13.79,7.8 L7.73,1.73 L7.73,1.73 Z M2.38,7.09 C2.07,6.79 1.91,6.39 1.91,5.96 L1.91,3.5 C1.91,2.62 2.63,1.91 3.5,1.91 L5.97,1.91 C6.39,1.91 6.8,2.07 7.1,2.38 L13.24,8.51 L8.51,13.24 L2.38,7.09 L2.38,7.09 Z M3.01,3 L5.01,3 L5.01,5 L3,5 L3,3 L3.01,3 Z" id="Shape"></path>
+                                    </g>
+                                </g>
+                            </svg>
+                            <div>Tags</div>
+                        </a>
+                    </div>
+                </li>
+                <li>
+                    <div class="menuitem">
+                        <a href="/archive/">
+                            <svg width="70px" height="35px" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+                                <g id="Octicons" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                                    <g id="book" fill="#ffffff">
+                                        <path d="M3,5 L7,5 L7,6 L3,6 L3,5 L3,5 Z M3,8 L7,8 L7,7 L3,7 L3,8 L3,8 Z M3,10 L7,10 L7,9 L3,9 L3,10 L3,10 Z M14,5 L10,5 L10,6 L14,6 L14,5 L14,5 Z M14,7 L10,7 L10,8 L14,8 L14,7 L14,7 Z M14,9 L10,9 L10,10 L14,10 L14,9 L14,9 Z M16,3 L16,12 C16,12.55 15.55,13 15,13 L9.5,13 L8.5,14 L7.5,13 L2,13 C1.45,13 1,12.55 1,12 L1,3 C1,2.45 1.45,2 2,2 L7.5,2 L8.5,3 L9.5,2 L15,2 C15.55,2 16,2.45 16,3 L16,3 Z M8,3.5 L7.5,3 L2,3 L2,12 L8,12 L8,3.5 L8,3.5 Z M15,3 L9.5,3 L9,3.5 L9,12 L15,12 L15,3 L15,3 Z" id="Shape"></path>
+                                    </g>
+                                </g>
+                            </svg>
+                            <div>Archive</div>
+                        </a>
+                    </div>
+                </li>
+            </ul>
+            <div id="contact">
+                <a href="https://github.com/zupzup" class="github" target="_blank" title="GitHub">
+                    <svg viewBox="0 0 512 512">
+                    <g fill="FA9B39">
+                        <path d="M256 70.7c-102.6 0-185.9 83.2-185.9 185.9 0 82.1 53.3 151.8 127.1 176.4 9.3 1.7 12.3-4 12.3-8.9V389.4c-51.7 11.3-62.5-21.9-62.5-21.9 -8.4-21.5-20.6-27.2-20.6-27.2 -16.9-11.5 1.3-11.3 1.3-11.3 18.7 1.3 28.5 19.2 28.5 19.2 16.6 28.4 43.5 20.2 54.1 15.4 1.7-12 6.5-20.2 11.8-24.9 -41.3-4.7-84.7-20.6-84.7-91.9 0-20.3 7.3-36.9 19.2-49.9 -1.9-4.7-8.3-23.6 1.8-49.2 0 0 15.6-5 51.1 19.1 14.8-4.1 30.7-6.2 46.5-6.3 15.8 0.1 31.7 2.1 46.6 6.3 35.5-24 51.1-19.1 51.1-19.1 10.1 25.6 3.8 44.5 1.8 49.2 11.9 13 19.1 29.6 19.1 49.9 0 71.4-43.5 87.1-84.9 91.7 6.7 5.8 12.8 17.1 12.8 34.4 0 24.9 0 44.9 0 51 0 4.9 3 10.7 12.4 8.9 73.8-24.6 127-94.3 127-176.4C441.9 153.9 358.6 70.7 256 70.7z"/>
+                        </g>
+                    </svg>
+                </a>
+                <a href="/index.xml" target="_blank" class="rss" title="RSS">
+                    <svg viewBox="0 0 512 512">
+                        <path d="M201.8 347.2c0 20.3-16.5 36.8-36.8 36.8 -20.3 0-36.8-16.5-36.8-36.8s16.5-36.8 36.8-36.8C185.3 310.4 201.8 326.8 201.8 347.2zM128.2 204.7v54.5c68.5 0.7 124 56.3 124.7 124.7h54.5C306.7 285.3 226.9 205.4 128.2 204.7zM128.2 166.6c57.9 0.3 112.3 22.9 153.2 63.9 41 41 63.7 95.5 63.9 153.5h54.5c-0.3-149.9-121.7-271.4-271.6-271.9V166.6L128.2 166.6z"/>
+                    </svg>
+                </a>
+            </div>
+        </div>
+        <div id="content">
+            <h1 id="pagetitle">RabbitMQ Cluster Configuration for Kubernetes</h1>
+            <p>RabbitMQ is a fantastic piece of software when it comes to queuing and multiplexing events. This post will show one way to integrate a RabbitMQ cluster within Kubernetes.</p>
+
+<p>Iâve struggled quite a bit with this, having never set up RabbitMQ before and, at the time, having almost no experience with Kubernetes as well. When I finally did get it to run however, it ran smoothly and hasnât been anything but stable since.</p>
+
+<p>In the following example configuration, weâll be using the <code>rabbitmq_peer_discovery_k8s</code> rabbitmq plugin for clustering. There were several different methods of doing this in the past, but right now, this is the recommended and supported way to do it.</p>
+
+<h2>RabbitMQ Configuration</h2>
+
+<p>First, we will go over the configuration for rabbitmq. In this case, we will simply create a custom docker image, which includes most of the configuration we need.</p>
+
+<p>As a base-image, we use the official <a href="https://hub.docker.com/_/rabbitmq/">RabbitMQ Docker Image</a> and copy in our own <code>rabbitmq.conf</code> and <code>enabled_plugins</code> files.</p>
+
+<pre><code class="language-bash"><pre class="chroma">FROM rabbitmq:3.8.4
+
+ADD rabbitmq.conf /etc/rabbitmq
+ADD enabled_plugins /etc/rabbitmq
+</pre></code></pre>
+
+<p>The <code>enabled_plugins</code> file, which adds the <code>rabbitmq_peer_discovery_k8s</code> plugin and the standard management plugin, looks like this:</p>
+
+<pre><code class="language-bash"><pre class="chroma"><span class="o">[</span>rabbitmq_management,rabbitmq_peer_discovery_k8s<span class="o">]</span>.
+</pre></code></pre>
+
+<p>So far, so good. Now it gets a bit more interesting. In <code>rabbitmq.conf</code>, we actually configure the peer-discovery mechanism, which will enable our rabbitmq nodes to find each other inside the kubernetes cluster later on:</p>
+
+<pre><code class="language-bash"><pre class="chroma"><span class="c1">## Cluster formation. See http://www.rabbitmq.com/cluster-formation.html to learn more</span>
+cluster_formation.peer_discovery_backend  <span class="o">=</span> rabbit_peer_discovery_k8s
+cluster_formation.k8s.host <span class="o">=</span> kubernetes.default.svc.cluster.local
+cluster_formation.k8s.address_type <span class="o">=</span> hostname
+cluster_formation.k8s.service_name <span class="o">=</span> rabbitmq-internal
+cluster_formation.k8s.hostname_suffix <span class="o">=</span> .rabbitmq-internal.example.svc.cluster.local
+cluster_formation.node_cleanup.interval <span class="o">=</span> <span class="m">60</span>
+cluster_formation.node_cleanup.only_log_warning <span class="o">=</span> <span class="nb">true</span>
+<span class="nv">cluster_partition_handling</span> <span class="o">=</span> autoheal
+<span class="nv">queue_master_locator</span><span class="o">=</span>min-masters
+</pre></code></pre>
+
+<p>First, we specify, that we want to use <code>rabbit_peer_discovery_k8s</code> as our discovery backend. Then, we define the k8s host (for API access), and that we use <code>hostname</code> as an addressing scheme. There is also an <code>ip</code> option, but <code>hostname</code> is recommended. However, <code>hostname</code> can only be used with Stateful Sets in kubernetes, which is what we plan to do anyway.</p>
+
+<p>Then, we specify the name of the <code>rabbitmq</code> service in kubernetes and the hostname suffix, which defines that our nodes will be named <code>rabbit@rabbitmq-0.rabbitmq-internal.example.svc.cluster.local</code>, with the number counting up (e.g.: rabbitmq-1,2â¦).</p>
+
+<p>There are some additional settings here, but what weâre mostly interested in are the kubernetes configuration options.</p>
+
+<p>Alright, the next step is the kubernetes configuration!</p>
+
+<h2>Kubernetes Configuration</h2>
+
+<p>The rabbitmq setup on kubernetes is based on a <code>StatefulSet</code> configuration. We also set up <code>two</code> services, one for accessing the pods from the outside, and one for peer-discovery between the individual rabbitmq pods.</p>
+
+<p>Weâll start off with the less interesting parts - RBAC config and a general configMap, and then move on to the more interesting and important configurations.</p>
+
+<p>First, a general configMap:</p>
+
+<pre><code class="language-bash"><pre class="chroma">apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rabbitmq-cfg
+  namespace: example
+data:
+  RABBITMQ_VM_MEMORY_HIGH_WATERMARK: <span class="s2">&#34;0.6&#34;</span>
+</pre></code></pre>
+
+<p>In such a configMap, arbitrary environment variables can be set for rabbitmq.</p>
+
+<p>Next up is the RBAC (Role Based Access Control) config, which regulates kubernetes API access:</p>
+
+<pre><code class="language-bash"><pre class="chroma">kind: Role
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: endpoint-reader
+  namespace: example
+rules:
+- apiGroups: <span class="o">[</span><span class="s2">&#34;&#34;</span><span class="o">]</span>
+  resources: <span class="o">[</span><span class="s2">&#34;endpoints&#34;</span><span class="o">]</span>
+  verbs: <span class="o">[</span><span class="s2">&#34;get&#34;</span><span class="o">]</span>
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: endpoint-reader
+  namespace: example
+subjects:
+- kind: ServiceAccount
+  name: rabbitmq
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: endpoint-reader
+apiVersion: v1
+---
+kind: ServiceAccount
+metadata:
+  name: rabbitmq 
+  namespace: example
+</pre></code></pre>
+
+<p>We define a <code>rabbitmq</code> service account, an <code>endpoint-reader</code> role, which allows calling <code>get</code> on all <code>endpoints</code> and then hook them up with a role binding.</p>
+
+<p>Alright, with that out of the way, letâs define our services:</p>
+
+<pre><code class="language-bash"><pre class="chroma">kind: Service
+apiVersion: v1
+metadata:
+  namespace: example 
+  name: rabbitmq-internal
+  labels:
+    app: rabbitmq
+spec:
+  clusterIP: None
+  ports:
+    - name: http
+      protocol: TCP
+      port: <span class="m">15672</span>
+    - name: amqp
+      protocol: TCP
+      port: <span class="m">5672</span>
+  selector:
+    app: rabbitmq  
+---
+kind: Service
+apiVersion: v1
+metadata:
+  namespace:  example
+  name: rabbitmq
+  labels:
+    app: rabbitmq
+    type: LoadBalancer
+spec:
+  selector:
+    app: rabbitmq
+  ports:
+   - name: rabbitmq-mgmt-port
+     protocol: TCP
+     port: <span class="m">15672</span>
+     targetPort: <span class="m">15672</span>
+   - name: rabbitmq-amqp-port
+     protocol: TCP
+     port: <span class="m">5672</span>
+     targetPort: <span class="m">5672</span>
+</pre></code></pre>
+
+<p>As mentioned above, we need two services in this case. One, called <code>rabbitmq</code>, for accessing the rabbitmq pods from outside/other parts of our kubernetes cluster and another one called <code>rabbitmq-internal</code>, which is used by the rabbitmq pods to do peer-discovery and to create the rabbitmq-cluster between them.</p>
+
+<p>Now weâll take a look at the core part of the kubernetes configuration - the <code>StatefulSet</code>. It is rather long, but donât be alarmed - weâll go over all the relevant parts one by one:</p>
+
+<pre><code class="language-bash"><pre class="chroma">apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rabbitmq
+  namespace: example
+spec:
+  serviceName: rabbitmq-internal
+  revisionHistoryLimit: <span class="m">3</span>
+  updateStrategy:
+    type: RollingUpdate
+  replicas: <span class="m">3</span>
+  selector: 
+    matchLabels:
+          app: rabbitmq
+  template:
+    metadata:
+      name: rabbitmq
+      labels:
+        app: rabbitmq
+    spec:
+      serviceAccountName: rabbitmq
+      terminationGracePeriodSeconds: <span class="m">10</span>
+      containers:        
+      - name: rabbitmq
+        image: path.to.image/rabbitmq:1234
+        lifecycle:
+          postStart:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - &gt;
+                  <span class="k">until</span> rabbitmqctl --erlang-cookie <span class="si">${</span><span class="nv">RABBITMQ_ERLANG_COOKIE</span><span class="si">}</span> await_startup<span class="p">;</span> <span class="k">do</span> sleep 1<span class="p">;</span> <span class="k">done</span><span class="p">;</span>
+                  rabbitmqctl --erlang-cookie <span class="si">${</span><span class="nv">RABBITMQ_ERLANG_COOKIE</span><span class="si">}</span> set_policy ha-two <span class="s2">&#34;&#34;</span> <span class="s1">&#39;{&#34;ha-mode&#34;:&#34;exactly&#34;, &#34;ha-params&#34;: 2, &#34;ha-sync-mode&#34;: &#34;automatic&#34;}&#39;</span>
+
+        ports:
+        - containerPort: <span class="m">4369</span>
+        - containerPort: <span class="m">5672</span>
+        - containerPort: <span class="m">25672</span>
+        - containerPort: <span class="m">15672</span>
+        resources:
+          requests:
+            memory: <span class="s2">&#34;800Mi&#34;</span>
+            cpu: <span class="s2">&#34;0.4&#34;</span>
+          limits:
+            memory: <span class="s2">&#34;900Mi&#34;</span>
+            cpu: <span class="s2">&#34;0.6&#34;</span>
+        livenessProbe:
+          exec:
+            <span class="c1"># This is just an example. There is no &#34;one true health check&#34; but rather</span>
+            <span class="c1"># several rabbitmq-diagnostics commands that can be combined to form increasingly comprehensive</span>
+            <span class="c1"># and intrusive health checks.</span>
+            <span class="c1"># Learn more at https://www.rabbitmq.com/monitoring.html#health-checks.</span>
+            <span class="c1">#</span>
+            <span class="c1"># Stage 2 check:</span>
+            command: <span class="o">[</span><span class="s2">&#34;rabbitmq-diagnostics&#34;</span>, <span class="s2">&#34;status&#34;</span>, <span class="s2">&#34;--erlang-cookie&#34;</span>, <span class="s2">&#34;</span><span class="k">$(</span>RABBITMQ_ERLANG_COOKIE<span class="k">)</span><span class="s2">&#34;</span><span class="o">]</span>
+          initialDelaySeconds: <span class="m">60</span>
+          <span class="c1"># See https://www.rabbitmq.com/monitoring.html for monitoring frequency recommendations.</span>
+          periodSeconds: <span class="m">60</span>
+          timeoutSeconds: <span class="m">15</span>
+        readinessProbe:
+          exec:
+            <span class="c1"># This is just an example. There is no &#34;one true health check&#34; but rather</span>
+            <span class="c1"># several rabbitmq-diagnostics commands that can be combined to form increasingly comprehensive</span>
+            <span class="c1"># and intrusive health checks.</span>
+            <span class="c1"># Learn more at https://www.rabbitmq.com/monitoring.html#health-checks.</span>
+            <span class="c1">#</span>
+            <span class="c1"># Stage 2 check:</span>
+            command: <span class="o">[</span><span class="s2">&#34;rabbitmq-diagnostics&#34;</span>, <span class="s2">&#34;status&#34;</span>, <span class="s2">&#34;--erlang-cookie&#34;</span>, <span class="s2">&#34;</span><span class="k">$(</span>RABBITMQ_ERLANG_COOKIE<span class="k">)</span><span class="s2">&#34;</span><span class="o">]</span>
+            <span class="c1"># To use a stage 4 check:</span>
+            <span class="c1"># command: [&#34;rabbitmq-diagnostics&#34;, &#34;check_port_connectivity&#34;, &#34;--erlang-cookie&#34;, &#34;$(RABBITMQ_ERLANG_COOKIE)&#34;]</span>
+          initialDelaySeconds: <span class="m">20</span>
+          periodSeconds: <span class="m">60</span>
+          timeoutSeconds: <span class="m">10</span>
+        envFrom:
+         - configMapRef:
+             name: rabbitmq-cfg
+        env:
+          - name: HOSTNAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: RABBITMQ_USE_LONGNAME
+            value: <span class="s2">&#34;true&#34;</span>
+          - name: RABBITMQ_NODENAME
+            value: <span class="s2">&#34;</span><span class="s2">rabbit@</span><span class="k">$(</span>HOSTNAME<span class="k">)</span><span class="s2">.rabbitmq-internal.</span><span class="k">$(</span>NAMESPACE<span class="k">)</span><span class="s2">.svc.cluster.local</span><span class="s2">&#34;</span>
+          - name: K8S_SERVICE_NAME
+            value: <span class="s2">&#34;rabbitmq-internal&#34;</span>
+          - name: RABBITMQ_DEFAULT_USER
+            value: usr
+          - name: RABBITMQ_DEFAULT_PASS
+            value: secret_pass
+          - name: RABBITMQ_ERLANG_COOKIE
+            value: secret_cookie
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+</pre></code></pre>
+
+<p>We start out rather basic - defining a <code>rabbitmq</code> StatefulSet, configuring update-strategy, service and replicas. Nothing out of the ordinary there, but then we get to the pod template.</p>
+
+<p>The first interesting part is the <code>postStart</code> lifecycle hook. This hook executes a script, which first waits until the node is healthy and then sets the <code>ha-mode</code>. This is the high-availability mode configuration of rabbitmq. We set it to our custom policy <code>ha-two</code>, which means, that the whole queue will be mirrored to two of the three nodes in the cluster, so itâs very unlikely we lose data, even if nodes die.</p>
+
+<p>Itâs important to mention here, that there are in fact many different ways to configure <code>high-availability</code> in rabbitMQ. Which setting to use will depend on your use-case. For more information, check out these resources on <a href="https://www.rabbitmq.com/ha.html">mirrored queues</a> and the new <a href="https://www.rabbitmq.com/quorum-queues.html">quorum queues</a>.</p>
+
+<p>This means more synchronization work, which has a performance tax, but there are also other settings for queue mirroring and you should take the one suiting your needs the best.</p>
+
+<p>Next up, we define ports and resource limits, which is not that interesting, but then we define the <code>livenessProbe</code> and the <code>readinessProbe</code>. There several ways to check, if a rabbitmq instance is healthy, or ready, there is even a <a href="https://www.rabbitmq.com/monitoring.html#health-checks">detailed article</a> about the topic. In this case, we use the <a href="https://github.com/rabbitmq/rabbitmq-peer-discovery-k8s/blob/master/examples/minikube/statefulset.yaml#L54">recommended</a> approach using <code>rabbitmq-diagnostics</code>.</p>
+
+<p>The advantage of this approach is that the impact on the rabbitmq instance is very little, whereas a full status query would take some time to fulfill. The disadvantage is of course, that itâs only a very basic test and there could be hidden issues, while sending to our test-queue would still work fine. Everythingâs a trade-off - this is a simple solution, but there are other, more sophisticated ways to do this Iâm sure, which might fit your needs better.</p>
+
+<p>At the end of the <code>StatefulSet</code> configuration, we configure it to use our above mentioned configMap and some environment variables. This is important, because some of these are relevant for the peer discovery mechanism.</p>
+
+<p>Letâs go through them one by one:</p>
+
+<ul>
+<li><code>HOSTNAME</code> - we take this from the metadata, it will simply be <code>rabbitmq-0...n</code></li>
+<li><code>NAMESPACE</code> - we also take this from the metadata, we will need it further down for creating the node name</li>
+<li><code>RABBITMQ_USE_LONGNAME</code> - use fully qualified names to identify rmq nodes</li>
+<li><code>RABBITMQ_NODENAME</code> - this is the node name of the pod based on the peer-discovery config - e.g. <code>rabbit@rabbitmq-0.rabbitmq-internal.example.svc.cluster.local</code></li>
+<li><code>K8S_SERVICE_NAME</code> - the k8s service name</li>
+<li><code>RABBITMQ_DEFAULT_USER</code> - login user</li>
+<li><code>RABBITMQ_DEFAULT_PASS</code> - login pw</li>
+<li><code>RABBITMQ_ERLANG_COOKIE</code> - the erlang cookie</li>
+<li><code>NODE_NAME</code> - the short node name, also generated from the metadata, same as the hostname</li>
+</ul>
+
+<p>Alright, thatâs the whole config. If we were to run this on a test kubernetes cluster, or locally in <a href="https://github.com/kubernetes/minikube">minikube</a>, we should get multiple rabbitmq instances spawning after one another and finding each other in the cluster. Yay!</p>
+
+<h2>Conclusion</h2>
+
+<p>Setting up the RabbitMQ cluster inside kubernetes took me quite a while when I first did it, as itâs a bit hard to find up-to-date documentation as well as concrete examples, so I hope this post has helped as a point to start from.</p>
+
+<p>I realize, that this post covered a lot of stuff and that it doesnât go into any details and frankly, I wouldnât say Iâm an expert on RabbitMQ or Kubernetes, but for simply setting this up, thatâs also not necessary. However, if you want to run something like this in production, it would definitely make sense to dive a bit deeper.</p>
+
+<p><em>A Big Thank you to <a href="https://github.com/michaelklishin">michaelklishin</a> of the RabbitMQ Core Team for pointing out a better way to do the health check, startup hook and high availability config, which I edited in the post above.</em></p>
+
+<h4>Resources</h4>
+
+<ul>
+<li><a href="https://www.rabbitmq.com/">RabbitMQ</a></li>
+<li><a href="https://github.com/rabbitmq/rabbitmq-peer-discovery-k8s/blob/master/examples/minikube/statefulset.yaml">RabbitMQ K8s Statefulset Baseline Config</a></li>
+<li><a href="https://www.rabbitmq.com/monitoring.html#health-checks">RabbitMQ Article about Health Checks</a></li>
+<li><a href="https://www.rabbitmq.com/cluster-formation.html#peer-discovery-k8s">RabbitMQ Kubernetes Cluster Config</a></li>
+<li><a href="https://kubernetes.io/">Kubernetes</a></li>
+<li><a href="https://github.com/kubernetes/minikube">Minikube</a></li>
+<li><a href="https://www.rabbitmq.com/ha.html">Mirrored Queues</a></li>
+<li><a href="https://www.rabbitmq.com/quorum-queues.html">Quorum Queues</a></li>
+</ul>
+
+        </div>
+        <div id="contactmobile">
+            <a href="https://github.com/zupzup" class="github" target="_blank" title="GitHub">
+                <svg viewBox="0 0 512 512">
+                <g fill="FA9B39">
+                    <path d="M256 70.7c-102.6 0-185.9 83.2-185.9 185.9 0 82.1 53.3 151.8 127.1 176.4 9.3 1.7 12.3-4 12.3-8.9V389.4c-51.7 11.3-62.5-21.9-62.5-21.9 -8.4-21.5-20.6-27.2-20.6-27.2 -16.9-11.5 1.3-11.3 1.3-11.3 18.7 1.3 28.5 19.2 28.5 19.2 16.6 28.4 43.5 20.2 54.1 15.4 1.7-12 6.5-20.2 11.8-24.9 -41.3-4.7-84.7-20.6-84.7-91.9 0-20.3 7.3-36.9 19.2-49.9 -1.9-4.7-8.3-23.6 1.8-49.2 0 0 15.6-5 51.1 19.1 14.8-4.1 30.7-6.2 46.5-6.3 15.8 0.1 31.7 2.1 46.6 6.3 35.5-24 51.1-19.1 51.1-19.1 10.1 25.6 3.8 44.5 1.8 49.2 11.9 13 19.1 29.6 19.1 49.9 0 71.4-43.5 87.1-84.9 91.7 6.7 5.8 12.8 17.1 12.8 34.4 0 24.9 0 44.9 0 51 0 4.9 3 10.7 12.4 8.9 73.8-24.6 127-94.3 127-176.4C441.9 153.9 358.6 70.7 256 70.7z"/>
+                    </g>
+                </svg>
+            </a>
+            <a href="/index.xml" target="_blank" class="rss" title="RSS">
+                <svg viewBox="0 0 512 512">
+                    <path d="M201.8 347.2c0 20.3-16.5 36.8-36.8 36.8 -20.3 0-36.8-16.5-36.8-36.8s16.5-36.8 36.8-36.8C185.3 310.4 201.8 326.8 201.8 347.2zM128.2 204.7v54.5c68.5 0.7 124 56.3 124.7 124.7h54.5C306.7 285.3 226.9 205.4 128.2 204.7zM128.2 166.6c57.9 0.3 112.3 22.9 153.2 63.9 41 41 63.7 95.5 63.9 153.5h54.5c-0.3-149.9-121.7-271.4-271.6-271.9V166.6L128.2 166.6z"/>
+                </svg>
+            </a>
+        </div>
+    </body>
+</html>

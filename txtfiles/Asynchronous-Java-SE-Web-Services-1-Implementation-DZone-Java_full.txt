@@ -1,0 +1,1190 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Asynchronous Java SE Web Services: 1. Implementation  - DZone Java
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Java Zone
+
+
+
+Thanks for visiting DZone today,
+
+
+
+
+
+
+
+
+Edit Profile
+
+
+Manage Email Subscriptions
+
+
+                          How to Post to DZone
+                        
+
+
+
+                          Article Submission Guidelines
+                        
+
+
+
+Sign Out
+View Profile
+
+
+
+
+
+Post
+
+
+
+
+
+
+
+Post an Article
+
+
+Manage My Drafts
+
+
+
+
+
+
+
+Over 2 million developers have joined DZone.
+
+Log In
+/
+Join
+
+
+
+
+
+
+
+
+
+
+
+
+
+Refcardz
+
+
+
+
+Trend Reports
+
+
+
+
+Webinars
+
+
+
+
+
+                  Zones
+                  
+
+
+
+
+
+
+|
+
+
+
+Agile
+
+
+AI
+
+
+Big Data
+
+
+Cloud
+
+
+Database
+
+
+DevOps
+
+
+Integration
+
+
+IoT
+
+
+Java
+
+
+Microservices
+
+
+Open Source
+
+
+Performance
+
+
+Security
+
+
+Web Dev
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+DZone
+                    >
+                      Java Zone
+                      >
+                      Asynchronous Java SE Web Services: 1. Implementation 
+
+
+
+Asynchronous Java SE Web Services: 1. Implementation 
+
+
+
+
+
+
+
+                          by
+
+                          
+
+Wayne Adams
+
+
+
+
+
+
+
+                          ·
+                        
+
+                        Jan. 16, 12
+                      
+                      ·
+                        
+Java Zone
+
+                      ·
+                      Interview
+
+
+
+
+
+
+
+Like
+
+
+(1)
+
+
+
+
+
+
+                      Comment
+                      
+
+
+
+
+Save
+
+
+
+
+
+Tweet
+
+
+
+
+ 30.40K
+                      Views
+
+
+
+
+Join the DZone community and get the full member experience.
+Join For Free
+
+
+
+
+A few years ago, I posted a how-to on Java-SE-based Web Services.
+
+  More recently, I've become interested in asynchronous web-service 
+
+invocation, and, as it turns out, Java SE supports that, too.  This 
+
+post, then, is the asynchronous version of that older post.  How I got 
+
+to the structure of this post is a story in itself.  To make things 
+
+simpler, I will first go through all the steps to deployan 
+
+asynchronous Java SE web service.  Then, I will explain the route I 
+
+chose, and what I see as the positives and negatives of the results.Here's the outline:Create a WSDL definition fileUsing the WSDL file, generate server artifacts; implement the web service operationsCreate an external JAX-WS binding definitions fileGenerate client-side artifacts using the WSDL and binding definitions filesDemonstrate synchronous and asynchronous client-side invocations of the web-service operationsLet's cut to the chase.Create a WSDL definition fileHere I'll create a minimal WSDL file, describing a web service which returns the exchangerate of two currencies.  Here's the file, called exchange-rate.wsdl:<?xml version="1.0" encoding="UTF-8"?>
+
+<definitions xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd"
+
+           xmlns:wsp="http://www.w3.org/ns/ws-policy"
+
+           xmlns:wsp1_2="http://schemas.xmlsoap.org/ws/2004/09/policy"
+
+           xmlns:wsam="http://www.w3.org/2007/05/addressing/metadata"
+
+           xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+
+           xmlns:tns="http://async.ws.adamsresearch.com/"
+
+           xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+
+           xmlns="http://schemas.xmlsoap.org/wsdl/"
+
+           targetNamespace="http://async.ws.adamsresearch.com/"
+
+           name="ExchangeRateService">
+
+        
+
+<types>
+
+  <xsd:schema xmlns:tns="http://async.ws.adamsresearch.com/"
+
+              xmlns:xs="http://www.w3.org/2001/XMLSchema"
+
+              version="1.0"
+
+              targetNamespace="http://async.ws.adamsresearch.com/">
+
+    <xsd:element name="getExchangeRate"  type="tns:getExchangeRate"></xsd:element>
+
+    <xsd:element name="getExchangeRateResponse"  type="tns:getExchangeRateResponse"></xsd:element>
+
+    <xsd:complexType name="getExchangeRate">
+
+      <xsd:sequence>
+
+        <xsd:element name="arg0" type="xsd:string" minOccurs="0"></xsd:element>
+
+        <xsd:element name="arg1" type="xsd:string" minOccurs="0"></xsd:element>
+
+      </xsd:sequence>
+
+    </xsd:complexType>
+
+    <xsd:complexType name="getExchangeRateResponse">
+
+      <xsd:sequence>
+
+        <xsd:element name="return" type="xsd:double"></xsd:element>
+
+      </xsd:sequence>
+
+    </xsd:complexType>
+
+  </xsd:schema>
+
+</types>
+
+<message name="getExchangeRate">
+
+  <part name="parameters" element="tns:getExchangeRate"></part>
+
+</message>
+
+<message name="getExchangeRateResponse">
+
+  <part name="parameters" element="tns:getExchangeRateResponse"></part>
+
+</message>
+
+<portType name="ExchangeRate">
+
+  <operation name="getExchangeRate">
+
+    <input wsam:Action="http://async.ws.adamsresearch.com/ExchangeRate/getExchangeRateRequest"
+
+message="tns:getExchangeRate"></input>
+
+    <output wsam:Action="http://async.ws.adamsresearch.com/ExchangeRate/getExchangeRateResponse"
+
+message="tns:getExchangeRateResponse"></output>
+
+  </operation>
+
+</portType>
+
+
+
+<binding name="ExchangeRatePortBinding" type="tns:ExchangeRate">
+
+  <soap:binding transport="http://schemas.xmlsoap.org/soap/http" style="document"></soap:binding>
+
+  <operation name="getExchangeRate">
+
+    <soap:operation soapAction=""></soap:operation>
+
+    <input>
+
+      <soap:body use="literal"></soap:body>
+
+    </input>
+
+    <output>
+
+      <soap:body use="literal"></soap:body>
+
+    </output>
+
+  </operation>
+
+</binding>
+
+
+
+<service name="ExchangeRateService">
+
+  <port name="ExchangeRatePort" binding="tns:ExchangeRatePortBinding">
+
+    <soap:address location="http://localhost:8282/exchangeRate"></soap:address>
+
+  </port>
+
+</service>
+
+
+
+</definitions>The web service has a single operation -- getExchangeRate -- which takes a String representation of two currencies and returns a double.
+
+  There's no need to flesh this service out with a lot of operations -- I
+
+ just want to demonstrate the dev cycle required to deploy a web service
+
+ with asynchronous operations.Generate the service-side artifactsNext, we'll create a Java web-service project using Maven.  In a convenient directory, entermvn archetype:generate -DgroupId=com.adamsresearch.ws.async -DartifactId=AsyncService(substituting
+
+ your values, of course) and accept all the default values.  This 
+
+creates the skeleton of what will be our web service.  Next, we'll 
+
+modify the POM file to read the WSDL file and generate the service-side 
+
+artifacts.  For this, we will use the JAX-WS utility wsimport (found in the Java SE SDK; we will be using the Maven wsimport
+
+ plugin, however).  First, we have to decide where to put the WSDL file.
+
+  We can put it anywhere we want, of course, but note from the jaxws:import docs page that the default location is ${basedir}/src/wsdl.  I prefer to put mine in a directory src/main/resources/wsdl, so I'll need to specify that directory below, in the arguments to wsimport.Open the POM file in the top-level directory of the project and add the following, after the dependencies element:<build>
+
+  <finalName>ExchangeRateWebService</finalName>
+
+  <plugins>
+
+    <plugin>
+
+      <artifactId>maven-compiler-plugin</artifactId>
+
+      <configuration>
+
+        <source>1.6</source>
+
+        <target>1.6</target>
+
+      </configuration>
+
+    </plugin>
+
+    <plugin>
+
+      <groupId>org.codehaus.mojo</groupId>
+
+      <artifactId>jaxws-maven-plugin</artifactId>
+
+      <executions>
+
+        <execution>
+
+          <goals>
+
+            <goal>wsimport</goal>
+
+          </goals>
+
+          <configuration>
+
+            <wsdlDirectory>${basedir}/src/main/resources/wsdl</wsdlDirectory>
+
+            <keep>true</keep>
+
+            <packageName>com.adamsresearch.ws.async.generated</packageName>
+
+            <sourceDestDir>${basedir}/src/main/java</sourceDestDir>
+
+          </configuration>
+
+        </execution>
+
+      </executions>
+
+    </plugin>
+
+  </plugins>
+
+</build>The
+
+ first dependency is an acknowledgment that Maven defaults to 1.3.  For 
+
+those of you without white hair, that's a really old version of Java.I've decided to override a number of wsimport defaults, to create the service in the desired package and to drop the files in the desired directory.  Note that packageName does  not have a default setting.  Now enter mvn install from the project top-level directory.I now have an interface -- ExchangeRate -- as well as some additional supporting classes.  It is time to write our service implementation.  Here is my first cut:package com.adamsresearch.ws.async;
+
+
+
+import javax.jws.WebMethod;
+
+import javax.jws.WebService;
+
+import javax.xml.ws.Endpoint;
+
+import com.adamsresearch.ws.async.generated.ExchangeRate;
+
+
+
+@WebService(serviceName="ExchangeRateService", portName="ExchangeRatePort", endpointInterface="com.adamsresearch.ws.async.generated.ExchangeRate")
+
+public class ExchangeRateEndpoint implements ExchangeRate
+
+{
+
+  public static void main(String[] args)
+
+  {
+
+      if (args.length != 1)
+
+      {
+
+          System.out.println("Usage: java -cp <jarFile> com.adamsresearch.ws.async.ExchangeRateEndpoint publishURL");
+
+          System.exit(-1);
+
+      }
+
+      ExchangeRateEndpoint wsInstance = new ExchangeRateEndpoint();
+
+      Endpoint.publish(args[0], wsInstance);
+
+      System.out.println("Published endpoint at URL " + args[0]);
+
+  }
+
+
+
+  @WebMethod
+
+  public double getExchangeRate(String fromCurrency, String toCurrency)
+
+  {
+
+    if (fromCurrency.equals("AS1") && toCurrency.equals("GMD"))
+
+    {
+
+      return 2.78;
+
+    }
+
+    else
+
+    {
+
+      return 0.0;
+
+    }
+
+  }
+
+}I then run mvn install once more, then launch the web service with the following:C:\dev\AsyncWSDev\AsyncService>java -cp target\ExchangeRateWebService.jar com.adamsresearch.ws.async.ExchangeRateEndpoint
+
+
+
+http:// localhost:8282/exchangeRateService Published endpoint at URL http://localhost:8282/exchangeRateServiceIf we open a browser at the specified URL with "?wsdl"
+
+ appended, we'll see the web-service WSDL file, verifying that we 
+
+successfully deployed the service.  Note that the Java runtime cleverly 
+
+extracts the XML Schema from the WSDL file and references it via import.
+
+  Both the WSDL file and the XML Schema file (as retrieved by the HTTP 
+
+request in the browser) are dynamically generated by the Java runtime.Create an external JAX-WS binding definitions fileWhy
+
+ are we performing this step?  To produce a more-fully-functional 
+
+client-side API for  our to-be-created web service client.  You can 
+
+provide two types of binding definitions files to  wsimport
+
+ -- JAXB-related files, and a file that specifies some customizations of
+
+ the web service (which is why it's called a binding customization).Here is our binding customization file:<?xml version="1.0" encoding="UTF-8"?>
+
+
+
+<bindings
+
+  xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+
+  wsdlLocation="http://localhost:8282/exchangeRateService?wsdl"
+
+  xmlns="http://java.sun.com/xml/ns/jaxws">
+
+
+
+  <!-- applies to wsdl:definitions node, that would mean the entire wsdl -->
+
+  <enableAsyncMapping>false</enableAsyncMapping>
+
+
+
+  <!-- wsdl:portType operation customization -->
+
+  <bindings node="wsdl:definitions/wsdl:portType [@name='ExchangeRate']/wsdl:operation[@name='getExchangeRate']">
+
+      <enableAsyncMapping>true</enableAsyncMapping>
+
+  </bindings>
+
+</bindings>Note that the outer envelope of the file is called bindings, and that there is an inner element also called bindings.   Not to go into too much detail, but elements can be applied at the global level, and at a portType or even an operation level.  In this file, I've disabled asynchronous mapping at the global level, but turned it on just for the getExchangeRate operation.  This precaution prevents potential new operations from being inadvertently exposed as asynchronous operations.  More on the wsdlLocation later.Generate the client-side artifactsWe're going to create a new Maven project for the web-service client (more on this later), so next we'll create another project:mvn archetype:generate -DgroupId=com.adamsresearch.ws.async -DartifactId=AsyncClientAs with the service-side artifacts, I will create a resources directory, but I'll do this a little differently this time.Instead of referencing the WSDL file in the project filesystem, I'll point wsimport
+
+ to it via URL.  Note this is what I did above in the binding 
+
+customization file, since it also references the WSDL location.  In the 
+
+client project directory structure, I'll create a src/main/resources/jaxws directory and put the binding customization file (which I called async-bindings.xml) in thedirectory.Here's
+
+ the relevant section of the client-project POM file, modified to point 
+
+to the binding customization file and to access the WSDL file from the 
+
+service itself:<build>
+
+  <finalName>ExchangeRateWebService</finalName>
+
+  <plugins>
+
+    <plugin>
+
+      <artifactId>maven-compiler-plugin</artifactId>
+
+      <configuration>
+
+        <source>1.6</source>
+
+        <target>1.6</target>
+
+      </configuration>
+
+    </plugin>
+
+    <plugin>
+
+      <groupId>org.codehaus.mojo</groupId>
+
+      <artifactId>jaxws-maven-plugin</artifactId>
+
+      <executions>
+
+        <execution>
+
+          <goals>
+
+            <goal>wsimport</goal>
+
+          </goals>
+
+          <configuration>
+
+            <wsdlUrls>
+
+              <wsdlUrl>http://localhost:8282/exchangeRateService?wsdl</wsdlUrl>
+
+            </wsdlUrls>
+
+            <bindingDirectory>${basedir}/src/main/resources/jaxws</bindingDirectory>
+
+            <keep>true</keep>
+
+            <packageName>com.adamsresearch.ws.async.generated</packageName>
+
+            <sourceDestDir>${basedir}/src/main/java</sourceDestDir>
+
+          </configuration>
+
+        </execution>
+
+      </executions>
+
+    </plugin>
+
+  </plugins>
+
+</build>Let's do a first build, before we actually write a client, and see what we get:   mvn installNow take a look at the generated ExchangeRate
+
+ Java interface.  When we generated the artifacts for the server, we had
+
+ a single method declaration for our one operation in this file: @WebMethod
+
+  @WebResult(targetNamespace = "")
+
+  @RequestWrapper(localName = "getExchangeRate", targetNamespace = "http://async.ws.adamsresearch.com/", className = "com.adamsresearch.ws.async.generated.GetExchangeRate")
+
+  @ResponseWrapper(localName = "getExchangeRateResponse", targetNamespace = "http://async.ws.adamsresearch.com/", className = "com.adamsresearch.ws.async.generated.GetExchangeRateResponse")
+
+  public double getExchangeRate(
+
+      @WebParam(name = "arg0", targetNamespace = "")
+
+      String arg0,
+
+      @WebParam(name = "arg1", targetNamespace = "")
+
+      String arg1);When we implemented this interface in our endpoint, it was a simple matter to process the input parameters and return the double value.  If you open the artifact that we just generated, you'll see there are two additional declarations:@WebMethod(operationName = "getExchangeRate")
+
+  @RequestWrapper(localName = "getExchangeRate", targetNamespace = "http://async.ws.adamsresearch.com/", className = "com.adamsresearch.ws.async.generated.GetExchangeRate")
+
+  @ResponseWrapper(localName = "getExchangeRateResponse", targetNamespace = "http://async.ws.adamsresearch.com/", className = "com.adamsresearch.ws.async.generated.GetExchangeRateResponse")
+
+  public Response getExchangeRateAsync(
+
+      @WebParam(name = "arg0", targetNamespace = "")
+
+      String arg0,
+
+      @WebParam(name = "arg1", targetNamespace = "")
+
+      String arg1);
+
+
+
+  @WebMethod(operationName = "getExchangeRate")
+
+  @RequestWrapper(localName = "getExchangeRate", targetNamespace = "http://async.ws.adamsresearch.com/", className = "com.adamsresearch.ws.async.generated.GetExchangeRate")
+
+  @ResponseWrapper(localName = "getExchangeRateResponse", targetNamespace = "http://async.ws.adamsresearch.com/", className = "com.adamsresearch.ws.async.generated.GetExchangeRateResponse")
+
+  public Future getExchangeRateAsync(
+
+      @WebParam(name = "arg0", targetNamespace = "")
+
+      String arg0,
+
+      @WebParam(name = "arg1", targetNamespace = "")
+
+      String arg1,
+
+      @WebParam(name = "asyncHandler", targetNamespace = "")
+
+      AsyncHandler asyncHandler);What
+
+ happened here is that we got two additional options to retrieve the 
+
+data -- one which returns a pollable object, and one which allows you to
+
+ specify an asynchronous handler (note that Response is a subinterface of Future).Implement the client-side logicAt
+
+ this point, you're probably wondering why we will be invoking an 
+
+asynchronous operation when we haven't yet implemented it on the server.
+
+  Bear with me for a moment, while we write our client.Here's my version of a client which exercises the three different available method signatures.package com.adamsresearch.ws.async;
+
+
+
+import java.net.MalformedURLException;
+
+import java.net.URL;
+
+import javax.xml.namespace.QName;
+
+import javax.xml.ws.AsyncHandler;
+
+import javax.xml.ws.Response;
+
+import com.adamsresearch.ws.async.generated.ExchangeRate;
+
+import com.adamsresearch.ws.async.generated.ExchangeRateService;
+
+import com.adamsresearch.ws.async.generated.GetExchangeRateResponse;
+
+
+
+public class ExchangeRateClient
+
+{
+
+protected ExchangeRateClient theClient = null;
+
+protected String wsdlUrl = null;
+
+protected double rate = 0.0d;
+
+ExchangeRate excRate = null;
+
+
+
+public static void main(String args[]) throws MalformedURLException, InterruptedException
+
+{
+
+  if (args.length != 1)
+
+  {
+
+    System.out.println("Usage java -cp <jarFile> com.adamsresearch.ws.async.ExchangeRateClient serviceWsdlUrl");
+
+    System.exit(-1);
+
+  }
+
+  ExchangeRateClient client = new ExchangeRateClient(args[0]);
+
+  Thread.sleep(5000L);
+
+}
+
+
+
+public ExchangeRateClient(String urlStr) throws MalformedURLException
+
+{
+
+  theClient = this;
+
+  wsdlUrl = urlStr;
+
+  URL url = new URL(wsdlUrl);
+
+  QName qname = new QName("http://async.ws.adamsresearch.com/", "ExchangeRateService");
+
+  ExchangeRateService exchangeRateService = new ExchangeRateService(url, qname);
+
+  excRate = exchangeRateService.getExchangeRatePort();
+
+
+
+  // synchronous:
+
+  System.out.println("Airstrip One / Ganymede exchange rate, retrieved synchronously, is: " + excRate.getExchangeRate("AS1", "GMD"));
+
+
+
+  // asynchronous with polling:
+
+  try
+
+  {
+
+    Response = excRate.getExchangeRateAsync("AS1", "GMD");
+
+    Thread.sleep (2000L);
+
+    GetExchangeRateResponse output = response.get();
+
+    System.out.println("--> retrieved via polling: " + output.getReturn());
+
+  }
+
+  catch (Exception exc)
+
+  {
+
+    System.out.println(exc.getClass().getName() + " polling for response: " + exc.getMessage());
+
+  }
+
+
+
+  // asynchronous with callback:
+
+  excRate.getExchangeRateAsync("AS1", "GMD", new AsyncHandler()
+
+  {
+
+    public void handleResponse(Response response)
+
+    {
+
+      System.out.println("In AsyncHandler");
+
+      try
+
+      {
+
+        theClient.setCurrencyExchangeRate(response.get().getReturn());
+
+      }
+
+      catch (Exception exc)
+
+      {
+
+          System.out.println(exc.getClass().getName() + " using callback for response:" + exc.getMessage());
+
+      }
+
+    }
+
+  });
+
+}
+
+
+
+protected void setCurrencyExchangeRate(double newRate)
+
+{
+
+    rate = newRate;
+
+    System.out.println("--> via callback, updated exchange rate to " + rate);
+
+}
+
+}The Thread.sleep() in main is just to make sure we're still around when the web service responds.  Finally, invoking the client:c:\dev\AsyncWSDev\AsyncClient>java -cp target\ExchangeRateWebService.jar
+
+com.adamsresearch.ws.async.ExchangeRateClient http://localhost:8282/exchangeRateService?wsdl
+
+Airstrip One / Ganymede exchange rate, retrieved synchronously, is: 2.78
+
+--> retrieved via polling: 2.78
+
+In AsyncHandler
+
+--> via callback, updated exchange rate to 2.78So
+
+ there we have it -- a Java SE client which hits a Java SE web service 
+
+three ways:  synchronously, asynchronously with polling, and 
+
+asynchronously with a callback handler.There's a lot to discuss 
+
+about these results, some of which, frankly, I did not expect (for 
+
+example, why did we not have to explicitly implement asynchronous 
+
+service-side logic?).  That is the topic of another post, which I hope you'll find interesting, too. From http://wayne-adams.blogspot.com/2012/01/asynchronous-java-se-web-services-1.html 
+
+
+
+Web Service
+Java (programming language)
+Implementation
+
+
+Opinions expressed by DZone contributors are their own.
+
+
+Popular on DZone
+
+
+9 Extraordinary Terraform Best Practices That Will Change Your Infra World
+
+
+Debugging the Java Message Service (JMS) API Using Lightrun
+
+
+Functional vs. Non-Functional Requirements: The Full Guide, Definitions, and Technical Examples
+
+
+How to Optimize MySQL Queries for Speed and Performance
+
+
+
+
+
+
+
+
+
+
+
+
+
+ Comments
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+                      Java Partner Resources
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                X
+              
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ABOUT US
+
+About DZone
+Send feedback
+Careers
+Sitemap
+
+
+
+ADVERTISE
+
+Advertise with DZone
+
+
+
+
+
+CONTRIBUTE ON DZONE
+
+Article Submission Guidelines
+MVB Program
+Become a Contributor
+Visit the Writers' Zone
+
+LEGAL
+
+Terms of Service
+Privacy Policy
+
+
+
+CONTACT US
+
+600 Park Offices Drive
+Suite 300
+Durham, NC 27709
+support@dzone.com
++1 (919) 678-0300
+
+
+
+
+
+Let's be friends:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+DZone.com is powered by 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,649 @@
+
+            
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="en" xmlns:og="http://ogp.me/ns#" xmlns:fb="http://www.facebook.com/2008/fbml" xmlns:exslt="http://exslt.org/common"><head><title>ActiveMQ, Qpid, HornetQ and RabbitMQ in Comparison</title><meta http-equiv="content-type" content="text/html; charset=UTF-8" /><meta name="keywords" content="" /><meta name="description" content="Message Brokers" /><meta name="language" content="en" /><meta name="geo.region" content="DE-NRW" /><meta name="geo.placename" content="Bad Godesberg" /><link rel="stylesheet" href="/reset.css" /><link rel="stylesheet" href="/960.css" /><link rel="stylesheet" href="/h2.css" /><link href="/sh2/styles/shCore.css" rel="stylesheet" type="text/css" /><link href="/sh2/styles/shThemePredic8.css" rel="stylesheet" type="text/css" /><script src="/sh2/scripts/shCore.js" type="text/javascript"></script><script src="/sh2/scripts/shBrushJScript.js" type="text/javascript"></script><script src="/sh2/scripts/shBrushCSharp.js" type="text/javascript"></script><script src="/sh2/scripts/shBrushSql.js" type="text/javascript"></script><script src="/sh2/scripts/shBrushXml.js" type="text/javascript"></script><script src="/sh2/scripts/shBrushJava.js" type="text/javascript"></script><script src="/sh2/scripts/shBrushPlain.js" type="text/javascript"></script><script type="text/javascript">
+    SyntaxHighlighter.all();
+    </script><script type="text/javascript">
+      var ga = 'UA-5735649-3';
+      var d = 'ga-disable-' + ga;
+      if (document.cookie.indexOf(d + '=true') &gt; -1) {
+      window[d] = true;
+      }
+      function gaOptout() {
+      document.cookie = d + '=true; expires=Thu, 31 Dec 2099 23:59:59 UTC; path=/';
+      window[d] = true;
+      alert('Das Tracking ist jetzt deaktiviert');
+      }
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+      ga('create', ga, 'auto');
+      ga('set', 'anonymizeIp', true);
+      ga('send', 'pageview');
+    </script></head><body leftmargin="0"><div id="con" class="container_16 global_resp"><div id="l" class="grid_16"><a href="/"><img id="l2" border="0" src="/logo4.png" /></a><div class="tn"></div></div><div class="menu grid_16 nav_resp"><a href="/">Home</a><a href="/training/">Training</a><a href="/public/" class="sel">Resources</a><a href="/open-source/">Open Source</a><a href="/press-releases/">Press Releases</a><a href="/contact/">Contact</a></div><div class="grid_3 left_nav_resp"><div id="nav"><div><a href="/rest-demo.htm">REST Demo</a><a href="/shibboleth-web-services-sso-en.htm">Shibboleth</a><a href="/yahoo-webrank.htm">Yahoo Webrank</a><a href="/ws-specifications.htm">WS-Specifications</a><a href="/how-to-support-web-services.htm">Web Services Support</a><a href="/open-source-web-services.htm">Open Source</a><a href="/gzip-compression-filter.htm">Compression Filter</a><a href="/axis-soap-compression.htm">SOAP Compression</a><a href="/soap-compression-howto.htm">Compression How-To</a><a href="/soa-vs-eai-esb.htm">SOA vs. EAI &amp; ESB</a><a href="/axis2-cxf-jax-ws-comparison.htm">SOAP Toolkits</a><a href="/ws-trust-example.htm">WS-Trust</a><a href="/screencast/rest-sqlrest.htm">REST Screencast</a><a href="/screencast/rest-services-gateway.htm">RESTGate Video</a><a href="/csv2xml-marshaler-en.htm">CSV and ESB</a><a href="/openesb-servicemix-comparison.htm">OpenESB vs. ServiceMix</a><a href="/groovy-web-services-jax-ws.htm">Groovy and JAX-WS</a><a href="/protobuf-etch-thrift-comparison.htm">Thrift, Etch,...</a><a href="/rest-webservices.htm">REST Introduction</a><a href="/bpel-xpath-splitter.htm">XPath Splitter</a><a href="/wsdl-reading.htm">Reading WSDL</a><a href="/software-architecture.htm">Software Architecture</a><a href="/iphone-css-layout-theme.htm">iPhone Stylesheet</a><div class="sel">Message Brokers</div></div></div><div class="contact noprint">+49 228 5552576-0<br /><a href="mailto:info@predic8.com">info@predic8.com</a></div></div><div id="main" class="grid_9 main_resp"><h1>ActiveMQ, Qpid, HornetQ and RabbitMQ in Comparison</h1><p>
+                     <img src="/images/enterprise-message-broker.jpg" />
+                  </p><p>
+  
+                     <div class="author"><img src="./people/thomas-bayer-kl.jpg" name="Thomas Bayer" alt="Thomas Bayer" title="Thomas Bayer" align="left" /><p><b>By: </b>Thomas Bayer<br /><b>Date: </b>04/11/2013<br /></p></div>
+                  </p><p>
+                     <i>Newer architectures and the standardized AMQP protocol have led to a flood of message brokers. All brokers take claim to be fast, robust and reliable. But what really distinguish the broker? How do I choose the right broker? Should we continue to use established brokers such as the ActiveMQ or try a more modern one? This article attempts to answer these questions and help the reader in selecting a suitable broker.</i>
+                  </p><p>The broker described in this article needed to:
+    <ul><li>be available under an open source license</li><li>allow access from Java</li><li>offer <i>Quality of Service</i> features such as guaranteed delivery and persistence</li></ul>
+    In the next sections the broker will be presented with their specialties. Then we handle criteria such as persistence, supported platforms, performance and distribution. The description starts with the established ActiveMQ broker.
+  </p><h2>Apache ActiveMQ</h2><p>Apache ActiveMQ has the largest number of installations of all open source message broker with the largest distribution. ActiveMQ implements the <i>Java Message Service</i> specification and offers numerous features such as support for the <i>Enterprise Integration Patterns</i>, for Spring Framework and for transactions.</p><p>For persistence of messages, different stores are used. The file-based database Kaha offers very good performance because it runs at Java VM of the broker and requires very few resources and has optimized for messages. has become popular too in enterprise environments. But the use of a relational database such as IBM's DB/2 or Oracle database. Using a JDBC store together with a relational database is associated with losing speed, but brings advantages for the operation: the database for persistence of messages can be incorporated into the operating of a data center and the existing mechanism can be used for the backup. It does not always make sense to create a backup for a message store.</p><p>A highlight at ActiveMQ is the numerous possibilities of clustering and distribution. In order to keep the operations going in case of failure of a broker ActiveMQ can be be operated in a <i>Master/Slave</i> configuration. Further, several brokers can be connected to a Network of Brokers. In a Network of Brokers queues and topics (publish / subscribe) are virtual, i.e. a queue is available on all nodes and the routing takes place automatically.</p><p>Figure 1 outlines a virtual broker which could be realized with distributed ActiveMQ installations.</p><img src="/public/enterprise/network-of-brokers.png" alt="network-of-brokers" title="Network Of Brokers" name="network-of-brokers" /><br /><p class="imgcap"><b>Figure1: </b><caption>Virtual Broker with globally distributed nodes</caption></p><p>ActiveMQ is used as bus infrastructure in some <i>Enterprise Service Bus</i> products such as ServiceMix and Mule ESB. There are many other projects that use ActiveMQ for transporting messages. Apache Geronimo and Tomee, the Java Enterprise Edition of the Tomcat Web container, are using ActiveMQ as JMS implementation.</p><p>The Fuse MQ Enterprise Broker by Progress Software is based on Apache ActiveMQ broker. Bugfix versions of Fuse are released more frequently as the versions of Apache ActiveMQ.</p><p>Since its inception in 2004, the ActiveMQ broker has matured and become widespread. Childhood diseases such as memory leaks have been eliminated long ago. For most tasks ActiveMQ messaging is reliable, high-performance and easy on resources.</p><p>ActiveMQ is still a very good choice for <i>Enterprise Messaging</i>. But ActiveMQ has gotten some competition, which is arriving with newer architectures, better performance, and with the support of standardized protocols in the area of the space deer.
+  </p><h2>Apache Apollo</h2><p>Apache ActiveMQ Apollo gets competition from its own company. Apollo is a recent development based on the experience of the ActiveMQ project.</p><p>In order to be faster, more robust and easier to maintain than ActiveMQ, a completely new architecture was introduced. That architecture is based on Scala programming language, which supports well the development of concurrent systems. The threading of the Apollo broker differs fundamentally from that of the ActiveMQ. All tasks are performed asynchronously and non-blocking which contributes to increased performance and stability. This means that the skills of multi-core processors are better used.</p><p>For Apollo, there are two storages for persistent messages. On the one hand on the NoSQL database LevelDB by Google and on the other hand via the Java Edition of the Berkeley DB.</p><p>Through the HTML5 WebSocket Connector, a messaging client can be integrated directly into a web page. The following listing shows how to use JavaScript and the Apollo <i>stomp.js</i> library to access a broker from a web page. When connecting, a callback function is registered which displays the contents of a receiving message in a dialog.
+  <div class="listing">
+        
+                        <pre class="brush: java; wrap-lines: false; width: 2000px; toolbar:false; ">
+var client = Stomp.client("ws://apollo.predic8.com:61623");
+
+client.connect("admin", "pwd", function(frame) {
+   client.subscribe("/topic/like", function(msg) {
+ 	  alert(msg.body);
+   });
+});
+        </pre>
+        
+                        <div class="cap"><b>Listing 1: </b>Access to the Apollo broker with STOMP and JavaScript</div>
+  
+                     </div>
+  Sending messages from within the browser can be done with following JavaScript one-liner:
+  <div class="listing">
+        
+                        <pre class="brush: java; wrap-lines: false; width: 2000px; toolbar:false; ">
+client.send("/topic/like", {}, inhalt);
+        </pre>
+  
+                     </div>
+  AlthoughÂ Apollo is written in Scala, the broker can be used safely in a Java environment. The fact that Apollo is realized with Scala can only be seen because the distribution also contains some Scala libraries among many Java libraries.</p><p>For the administration Apollo offers a simple web console as the following screenshot shows:</p><img src="public/enterprise/apollo-console-html.png" alt="Admin console of the Apollo Broker" title="Admin console of the Apollo Broker" name="apollo-console-html" /><br /><p class="imgcap"><b>Figure2: </b><caption>Admin console of the Apollo Broker</caption></p><p>If you edit the file extension of the URL from  <i>.html</i>  to <i>.json</i> you'll get a JSON representation rather than a Web page.</p><img src="public/enterprise/apollo-console-json.png" alt="Apollo console as JSON representation" title="Apollo console as JSON representation" name="apollo-console-json" /><br /><p class="imgcap"><b>Figure3: </b><caption>Apollo console as JSON representation</caption></p><p>By using REST and JSON you can also achieve write access to the Apollo Web application,Â for example to create a new queue. Figure 4 shows a screenshot with a visualization of the Apollo REST API. The visualization is integrated in Apollo and realized by the Swagger tool. <a href="http://swagger.wordnik.com/">The description with Swagger</a> is a specification and a framework for the description of REST APIs.</p><img src="public/enterprise/swagger-rest-api.png" alt="REST API Description with Swagger" title="REST API Description with Swagger" name="swagger-rest-api" /><br /><p class="imgcap"><b>Figure4: </b><caption>REST API Description with Swagger</caption></p><p>There is no client library for Apollo itself. ThereforeÂ other clients can be used for theÂ protocols supported by Apollo: MQTT, OpenWire and STOMP.</p><h2>FFMQ</h2><p>The <i>Full-Java, native JMS, message Queuer</i> is a lightweight JMS implementation. The whole server is smaller than 600 KB but there are a number of restrictions regarding JMS conformity or transactions. If you can dispense with advanced JMS functionality such as <i>Message Groups</i> gets a simple, fast and straightforward message broker with FFMQ.</p><h2>HornetQ</h2><p>For a long time the basis code of HornetQ was known under the name of <i>JBoss Messaging 2.0</i> until it was a further developed in separate project under the name of HornetQ. HornetQ can be usedÂ  independently of the JBoss Application Server. Since version 6 HornetQ is the preconfigured message broker for JMS of the JBoss server.</p><p>HornetQ is configured as Enterprise Message Broker. It has lots of features and lots of settings and is a complete implementation of the <i>Java Message Service</i> specification.</p><p>The User Manual has got 334 pages and therefore it is the most extensive of the listed Message Broker. The very detailed documentation contains the concepts of the architecture through to XA transactions and clustering.</p><p>HornetQ contains no stand-alone console for administration. HornetQ can be managed over the console of the JBoss Application Server. For example you can create queues or read statistics using JMX and MBeans. Since I would like to use the HornetQ in the standalone version a special bracket is on my wish list.</p><p>HornetQ has its strengths when used as Enterprise Broker and as JMS implementation. The integration into JBoss will certainly also help to its spread. This implies a certain degree of complexity. So there are more suitable broker if you need just easier configurations. For Enterprise applications HornetQ definitely has a sharp sting.</p><h2>JBoss Messaging</h2><p>The development of JBoss Messaging is set. New features will be implemented only in the follow-up project HornetQ. For a while there will be further support and bug fixes.</p><h2>OpenJMS</h2><p>OpenJMS was the open source JMS implementation from Sun Microsystems. In recent years, I could not see much activity around OpenJMS. It seems that this project is not especially alive.</p><h2>Apache Qpidâ¢</h2><p>Besides ActiveMQ and Apollo there is another Apache Message Broker, Apache Qpid. The aim of the Qpid project is the 100 percent compatibility with the <i>Advanced Message Queuing Protocol Standard</i>.</p><p>Qpid broker is available for C++ and Java. This article describes the features of the Java version. For Java clientsÂ there is a JMS API for Qpid. For C++, Python and Microsoft's .NET there is the <i>Qpid Messaging API</i>.</p><p>For the persistence of the messages the relational Apache Derby database and the Oracle Berkeley DB are supported.</p><p>Based on Apache Qpid Red Hat offers the Enterprise Messaging product MRG. For MRG longtime support and versions with additional bug fixes are available.</p><p>Protonâ¢, a subproject of Qpid, is a lightweight implementation of the AMQP protocol. Using proton it is likewise possible to develop clients and servers. Proton is available for C and Java. The C implementation also includes bindings for PHP, Python and Ruby.
+  </p><h2>RabbitMQ</h2><p>The RabbitMQ broker was created by the functional language Erlang. Erlang is especially suited for distributed applications, as concurrency and availability is well-supported.</p><p>Do not be deterred from that RabbitMQ is implemented in Erlang. Its installation runs quickly and easily at Windows and Mac OS. For programming in Java or other languages client libraries are available.</p><p>Using a Plugin allows RabbitMQ to understand protocols such as STOMP. The core of RabbitMQ is fully geared to the AMQP protocol. Unfortunately, there is currently no support for AMQP in version 1.0. But support for AMQP 1.0 is already in the planning.</p><p>The management plugin provides an appealing web console that allows easy administration. There also are visualized statistics such as the number of messages per second and the consumption of resources, such as memory, sockets, and the crucial file descriptors.</p><img src="public/enterprise/rabbitmq-console.png" alt="RabbitMQ Console" title="RabbitMQ Console" name="rabbitmq-console" /><br /><p class="imgcap"><b>Figure5: </b><caption>RabbitMQ Console</caption></p><h2>ZeroMQ</h2><p>ZeroMQ is no classic broker, which provides message queues to its clients, but rather a library to create distributedÂ and concurrent applications. The ZeroMQ API is similar to the low level Socket API for communication over networks.</p><p>In contrast to a message-oriented middleware no central server is required at ZeroMQ. The sender of a message is responsible for the for routing to the right destinationÂ and the receiver of a message is responsible for queuing.</p><p>ZeroMQ has got the following notations: MQ, OMQ and ZMQ. ZeroMQ is developed by iMatix who were involved in development of AMQP. Meanwhile iMatix has withdrawn from participation and focuses entirely on ZeroMQ. The approach taken by ZeroMQ is quite elegant and enables topologies from 0 to n nodes or brokers between sender and receiver.</p><p>The abandonment of a central broker enables very low latency and high bandwidth. Thus, ZeroMQ is ideal for largest volumes of messages eg for measurement values, for real-time quotes in financial industry or for online games.</p><h2>Scalability and Reliability</h2><p>Basically all brokers are highly scalable, robust and reliable. Almost every project praise that as a outstanding property. Therefore, the descriptions of the broker do notÂ separately Â mention these properties , unless a broker is significantly different from the others. So, this point is limited as a selection criterion.</p><p>The ActiveMQ broker has limitations in terms of scalability, robustness and reliability due to its architecture. But only at extremely high load or at thousands of queues ActiveMQ should show its limits. In practice, ActiveMQ often is more stable than its modern challenger because of its maturity.</p><h2>Performance</h2><p>Important in evaluating the speed of a broker is its field of application. Only searching for a fast broker usually is too simplistic. To evaluate the performance of a broker correctly you should ask yourself the following questions:
+    <ul><li>Do I need a broker for financial transactions or online games?</li><li>What is more important for the use: guaranteed transactional service or speed and bandwidth?</li><li>How big may be the delay in delivery of messages?</li><li>What size are the messages to be transmitted?</li><li>How many queues are needed?</li><li>How many clients simultaneously access the broker?</li></ul>
+  Properties such as persistence or transactionality cost performance and cause that messaging solutions without QoS, which keep the news to the main memory, usually are faster.</p><p>If higher throughput is required, persistence and guaranteed delivery can be disabled. In most cases the performance is despite persistence more than sufficient for many applications.</p><p>Even the somewhat dated ActiveMQ can process thousands of messages per second. Usually this is sufficient for most business applications in the fields of finance, insurance and retail. Higher demands on performance is needed in real-time processing of measured values or in online games.</p><p>If a throughput of 10 000 or more messages per second is needed, you should take one of the newer broker. The throughput of Apollo, Qpid, RabbitMQ and the other brokers lies between several hundred thousand to several million messages per second. For example, at <a href="Link: http://planet.jboss.org/post/8_2_million_messages_second_with_specjms">SpecJMS Benchmark</a> HornetQ has delivered more than 8 million messages per second, tested on a 2 chip machine with 4 cores and 24 GB main memory. For other brokers, there are similar results.</p><p>It is very difficult to achieve an objective comparison even with standardized benchmarks because most configurations, features or protocols are different. Several brokers claimed to be the fastest. These statements usually are only valid for a short time and only for a specific scenario.</p><p>The aforementioned values allow the conclusion that performance of a broker represents a project risk just in the fewest cases. Therefore the speed is hardly a selection criterion for the benefit of a particular broker.</p><p style="border:1.5px solid #000000">
+                     <b>Practical experience:</b>
+                     <br />Usually not the brokers is the bottleneck, but message consumer that are slowed down by slow backend systems or database queries.
+  </p><h2>Message Persistence</h2><p>So that messages can survive the failure of a broker they have to be saved permanently on disk. For most brokers there are exchangeable Message Stores.</p><p>If messages are stored permanently, the used database greatly influences the speed of the broker. Therefore, for the storage of messages specialized databases are used. Messages have to be stored, searched by the name of a queue and be deleted. The modification of messages is not necessary. The databases optimized for these tasks, which mostly access to the hard drive directly, achieve a much better performance in persisting messages as common relational databases. The order of magnitude of the speed difference between a relational database and a special message database lies approximately at ten times.</p><p>Despite of speed costs by relational data stores many users want to cache messages in their preferred database. The JDBC store the ActiveMQ broker allows to use any relational database for which there is a JDBC driver. Of course, the Oracle database can be used for storage at ActiveMQ.
+  </p><h2>JMS Support</h2><p>An important criterion when choosing a broker is the support of the <i>Java Message Service</i> standard. Many existing Java applications are using the JMS API to communicate with a Message Broker. Migration to a new broker then can occur without modifications to the application code.</p><p>In ActiveMQ and HornetQ JMS compliance is top of the list of features.</p><p>Apache Qpid comes with a JMS client API, which allows clients to connect to it over the AMQP broker. Through this API you can access other JMS brokers such as the RabbitMQ too.</p><h2>Messaging Protocols</h2><p>For a long time there was no standard for a messaging protocol. The Java standard JMS only describes the interface, which serves applications to communicate with a broker. The Protocol between the library and the JMS server is depending on the manufacturer.</p><p>Figure 6 shows how the same application can be operated with different message brokers using JMS. This application using the standardized JMS API through which it accesses a JMS implementation of a particular broker. In order to run the application with another broker you just have to replace the JMS client library.</p><img src="public/enterprise/jms-interoperability.png" alt="JMS Compatibility" title="JMS Compatibility" name="jms-interoperability" /><br /><p class="imgcap"><b>Figure6: </b><caption>JMS Compatibility</caption></p><p>Broker does not understand each other because of the different protocols. JMS also does not address the interoperability with other programming languages.</p><p>The <i>Advanced Message Queuing Protocol</i> is a standard that would like to fill this gap. AMQP enables collaboration of brokers and clients from different manufacturers and platforms. AMQP describes a binary formatand the necessary application logic. Many major manufacturers set on AMQP. ButÂ there is some criticism for the way of standardization caused by the complexity of AMQP.</p><p>The approved OASIS standard version AMQP 1.0 from October 2012 is significantly different from previous versions, so that one could speak of a completely separate protocol. The previous versions 0-8, 0-9, 0-9-1 and 0-10-0 are not compatible with each other. Whether AMQP really leads to more interoperability depends on how well the AMQP version 1.0 is accepted and implemented. Support of AMQP 1.0 in ActiveMQ, Apollo and Qpid brokers and announcements for HornetQ and RabbitMQ let hope that AMQP is a success. A decisive factor may be the break with the previous too overloaded version 0-10-0. AMQP 1.0 is compared with the 0-10-0 version a little easier.</p><p>A very popular protocol for the integration of scripting languages is text-based STOMP. It's simple, performant and there are a variety of servers and clients. For STOMP there are the most client libraries, for example, C, Objective-C, PHP, Go, Python and Ruby. STOMP is that simple that you can can create a client library for the unlikely event that there is no library with just little effort. The stomp.js library for JavaScriptÂ is sizing only 7 Kbytes. To use Web pages with JavaScript as a messaging client STOMP can be combined with the WebSockets protocol. Likewise this is the way to build slim Web 2.0 applications.</p><p>The following table lists the supported protocols of each broker.
+  <table class="s1" border="1" rules="rows" width="100%">
+		
+                        <thead>
+			
+                           <tr>
+			  
+                              <th></th>
+			  
+                              <th>ActiveMQ</th>
+			  
+                              <th>Apollo</th>
+			  
+                              <th>HornetQ</th>
+			  
+                              <th>Qpid</th>
+			  
+                              <th>RabbitMQ</th>
+			  
+                              <th>ZeroMQ</th>
+			
+                           </tr>
+    
+                        </thead>
+    
+                        <tbody>
+			
+                           <tr>
+			  
+                              <td>AMQP</td>
+			  
+                              <td>1.0</td>
+			  
+                              <td>1.0</td>
+			  
+                              <td>announced</td>
+			  
+                              <td>1.0</td>
+			  
+                              <td>0-8, 0-9, 0-9-1</td>
+			  
+                              <td>-</td>
+			
+                           </tr>
+			
+                           <tr>
+			  
+                              <td>MQTT</td>
+			  
+                              <td>
+					
+                                 <img src="/images/checkmark.png" />
+				
+                              </td>
+			  
+                              <td>
+					
+                                 <img src="/images/checkmark.png" />
+				
+                              </td>
+			  
+                              <td>-</td>
+			  
+                              <td>-</td>
+			  
+                              <td>
+					
+                                 <img src="/images/checkmark.png" />
+				
+                              </td>
+			  
+                              <td>-</td>
+			
+                           </tr>
+			
+                           <tr>
+			  
+                              <td>OpenWire</td>
+			  
+                              <td>
+                                 <img src="/images/checkmark.png" />
+                              </td>
+			  
+                              <td>
+                                 <img src="/images/checkmark.png" />
+                              </td>
+			  
+                              <td>-</td>
+			  
+                              <td>-</td>
+			  
+                              <td>-</td>
+			  
+                              <td>-</td>
+			
+                           </tr>
+			
+                           <tr>
+			  
+                              <td>REST</td>
+			  
+                              <td>
+                                 <img src="/images/checkmark.png" />
+                              </td>
+			  
+                              <td>
+                                 <img src="/images/checkmark.png" />
+                              </td>
+			  
+                              <td>
+                                 <img src="/images/checkmark.png" />
+                              </td>
+			  
+                              <td>-</td>
+			  
+                              <td>
+                                 <img src="/images/checkmark.png" />
+                              </td>
+			  
+                              <td>-</td>
+			
+                           </tr>
+			
+                           <tr>
+			  
+                              <td>STOMP</td>
+			  
+                              <td>
+                                 <img src="/images/checkmark.png" />
+                              </td>
+			  
+                              <td>
+                                 <img src="/images/checkmark.png" />
+                              </td>
+			  
+                              <td>
+                                 <img src="/images/checkmark.png" />
+                              </td>
+			  
+                              <td>-</td>
+			  
+                              <td>
+                                 <img src="/images/checkmark.png" />
+                              </td>
+			  
+                              <td>-</td>
+			
+                           </tr>
+			
+                           <tr>
+			  
+                              <td>STOMP over Websockets</td>
+			  
+                              <td>
+                                 <img src="/images/checkmark.png" />
+                              </td>
+			  
+                              <td>
+                                 <img src="/images/checkmark.png" />
+                              </td>
+			  
+                              <td>
+                                 <img src="/images/checkmark.png" />
+                              </td>
+			  
+                              <td>-</td>
+			  
+                              <td>
+                                 <img src="/images/checkmark.png" />
+                              </td>
+			  
+                              <td>-</td>
+			
+                           </tr>
+			
+                           <tr>
+			  
+                              <td>XMPP</td>
+			  
+                              <td>
+                                 <img src="/images/checkmark.png" />
+                              </td>
+			  
+                              <td>-</td>
+			  
+                              <td>-</td>
+			  
+                              <td>-</td>
+			  
+                              <td>Over Gateway</td>
+			  
+                              <td>-</td>
+			
+                           </tr>
+    
+                        </tbody>
+  
+                     </table>
+  Table 1: Support for Messaging Protocols
+  </p><h2>Client Interfaces</h2><p>Access to a message broker is not only reserved for Java applications. For many brokers there are client APIs in different programming languages. It is even common for client and broker to use different platforms, eg when a Java applicationÂ accesses an Erlang written RabbitMQ broker.</p><p>Since AMQP has standardized the protocol on the "cable level", it is even possible to connect the AMQP client library of a broker of another broker. For this to work the AMQP versions have to match because each version of the protocol are not compatible.</p><p>Through the STOMP protocolÂ different client platforms can be connected to a broker. STOMP is favorited to access a broker with scripting languages such as Perl, PHP and Ruby.</p><table class="s1" border="1" rules="rows" width="100%">
+		
+                     <thead>
+			
+                        <tr>
+			  
+                           <th></th>
+			  
+                           <th>ActiveMQ</th>
+			  
+                           <th>Apollo</th>
+			  
+                           <th>HornetQ</th>
+			  
+                           <th>Qpid</th>
+			  
+                           <th>RabbitMQ</th>
+			  
+                           <th>ZeroQ</th>
+			
+                        </tr>
+    
+                     </thead>
+    
+                     <tbody>
+			
+                        <tr>
+			  
+                           <td>C</td>
+			  
+                           <td>
+                              <img src="/images/checkmark.png" />
+                           </td>
+			  
+                           <td>-</td>
+			  
+                           <td>-</td>
+			  
+                           <td>
+                              <img src="/images/checkmark.png" />
+                           </td>
+			  
+                           <td>
+                              <img src="/images/checkmark.png" />
+                           </td>
+			  
+                           <td>
+                              <img src="/images/checkmark.png" />
+                           </td>
+			
+                        </tr>
+			
+                        <tr>
+			  
+                           <td>C++</td>
+			  
+                           <td>-</td>
+			  
+                           <td>-</td>
+			  
+                           <td>-</td>
+			  
+                           <td>
+                              <img src="/images/checkmark.png" />
+                           </td>
+			  
+                           <td>
+                              <img src="/images/checkmark.png" />
+                           </td>
+			  
+                           <td>
+                              <img src="/images/checkmark.png" />
+                           </td>
+			
+                        </tr>
+			
+                        <tr>
+			  
+                           <td>Erlang</td>
+			  
+                           <td>-</td>
+			  
+                           <td>-</td>
+			  
+                           <td>-</td>
+			  
+                           <td>-</td>
+			  
+                           <td>
+                              <img src="/images/checkmark.png" />
+                           </td>
+			  
+                           <td>
+                              <img src="/images/checkmark.png" />
+                           </td>
+			
+                        </tr>
+			
+                        <tr>
+			  
+                           <td>Haskell</td>
+			  
+                           <td>-</td>
+			  
+                           <td>-</td>
+			  
+                           <td>-</td>
+			  
+                           <td>-</td>
+			  
+                           <td>
+                              <img src="/images/checkmark.png" />
+                           </td>
+			  
+                           <td>
+                              <img src="/images/checkmark.png" />
+                           </td>
+			
+                        </tr>
+			
+                        <tr>
+			  
+                           <td>Java JMS</td>
+			  
+                           <td>
+                              <img src="/images/checkmark.png" />
+                           </td>
+			  
+                           <td>-</td>
+			  
+                           <td>
+                              <img src="/images/checkmark.png" />
+                           </td>
+			  
+                           <td>
+                              <img src="/images/checkmark.png" />
+                           </td>
+			  
+                           <td>-</td>
+			  
+                           <td>-</td>
+			
+                        </tr>
+			
+                        <tr>
+			  
+                           <td>Java proprietary</td>
+			  
+                           <td>
+                              <img src="/images/checkmark.png" />
+                           </td>
+			  
+                           <td>-</td>
+			  
+                           <td>
+                              <img src="/images/checkmark.png" />
+                           </td>
+			  
+                           <td>-</td>
+			  
+                           <td>
+                              <img src="/images/checkmark.png" />
+                           </td>
+			  
+                           <td>
+                              <img src="/images/checkmark.png" />
+                           </td>
+			
+                        </tr>
+			
+                        <tr>
+			  
+                           <td>.NET</td>
+			  
+                           <td>-</td>
+			  
+                           <td>-</td>
+			  
+                           <td>-</td>
+			  
+                           <td>
+                              <img src="/images/checkmark.png" />
+                           </td>
+			  
+                           <td>
+                              <img src="/images/checkmark.png" />
+                           </td>
+			  
+                           <td>
+                              <img src="/images/checkmark.png" />
+                           </td>
+			
+                        </tr>
+			
+                        <tr>
+			  
+                           <td>Objective-C</td>
+			  
+                           <td>-</td>
+			  
+                           <td>-</td>
+			  
+                           <td>-</td>
+			  
+                           <td>-</td>
+			  
+                           <td>-</td>
+			  
+                           <td>
+                              <img src="/images/checkmark.png" />
+                           </td>
+			
+                        </tr>
+			
+                        <tr>
+			  
+                           <td>Perl</td>
+			  
+                           <td>-</td>
+			  
+                           <td>-</td>
+			  
+                           <td>-</td>
+			  
+                           <td>-</td>
+			  
+                           <td>
+                              <img src="/images/checkmark.png" />
+                           </td>
+			  
+                           <td>
+                              <img src="/images/checkmark.png" />
+                           </td>
+			
+                        </tr>
+			
+                        <tr>
+			  
+                           <td>PHP</td>
+			  
+                           <td>-</td>
+			  
+                           <td>-</td>
+			  
+                           <td>-</td>
+			  
+                           <td>-</td>
+			  
+                           <td>
+                              <img src="/images/checkmark.png" />
+                           </td>
+			  
+                           <td>
+                              <img src="/images/checkmark.png" />
+                           </td>
+			
+                        </tr>
+			
+                        <tr>
+			  
+                           <td>Python</td>
+			  
+                           <td>-</td>
+			  
+                           <td>-</td>
+			  
+                           <td>-</td>
+			  
+                           <td>
+                              <img src="/images/checkmark.png" />
+                           </td>
+			  
+                           <td>
+                              <img src="/images/checkmark.png" />
+                           </td>
+			  
+                           <td>
+                              <img src="/images/checkmark.png" />
+                           </td>
+			
+                        </tr>
+			
+                        <tr>
+			  
+                           <td>Ruby</td>
+			  
+                           <td>-</td>
+			  
+                           <td>-</td>
+			  
+                           <td>-</td>
+			  
+                           <td>
+                              <img src="/images/checkmark.png" />
+                           </td>
+			  
+                           <td>
+                              <img src="/images/checkmark.png" />
+                           </td>
+			  
+                           <td>
+                              <img src="/images/checkmark.png" />
+                           </td>
+			
+                        </tr>
+    
+                     </tbody>
+  
+                  </table><h2>Dissemination</h2><p>The ActiveMQ broker has got the largest spreadÂ by far. RabbitMQ recently has received much attention.</p><p>The embedded Google Trends chartÂ below shows how frequently you searched for the brokers.</p><script type="text/javascript" src="http://www.google.de/trends/embed.js?hl=en-US&amp;q=activemq,+hornetq,+rabbitmq,+qpid&amp;cmpt=q&amp;content=1&amp;cid=TIMESERIES_GRAPH_0&amp;export=5&amp;w=500&amp;h=330"></script><p>Behind the AMQP standard there are many heavyweights in IT and business. Among others Deutsche BÃ¶rse, JPMorgan Chase, Microsoft, Progress Software, Red Hat, Software AG, U.S. Dept. of Homeland SecurityÂ and VMware have been involved on the standardization. Since October 2012 AMQP is an official OASIS standard. This all leads to the conclusion that AMQP will find a large spreading.</p><h1>Summary</h1><p>As so often in IT the selection of a broker is no royal. With ActiveMQ, there is a proven, fast and widespread Broker whose architecture encounters its limits. The JDBC Message Store is a unique feature of ActiveMQ for data center operations.</p><p>Alternatively, there is a series of promising and cool projects, but which are still lacking somewhat in maturity and dissemination. In the projects is a lot of movement, so I assume that in 2013 many brokers will achieve sufficient stability, compatibility, and documentation.</p><p>HornetQ is useful when Enterprise Messaging with JMS support is needed. Extensive documentation describes even advanced configurations with transactions and clustering.</p><p>Who is looking for a simple broker for Web 2.0 applications, sending &amp; receiving messages using JavaScript or who uses uses scripting languages besides Java should look at Apache Apollo.</p><p>If Erlang as a platform is not an exclusion criterion, RabbitMQ could also be interesting. Currently RabbitMQ is still missing the AMQP 1.0 compatibility.</p><p>
+    
+                     <br />Thomas Bayer<br />
+      
+                     <a href="mailto:bayer@predic8.com">bayer@predic8.com</a>
+    
+                     <br />
+  
+                  </p><h2>Watched Versions</h2><p>The following list shows the versions which were considered for this article:</p><ul><li>Apache ActiveMQ 5.7.0</li><li>Apache Apollo 1.5</li><li>FFMQ 3.0.1</li><li>HornetQ 2.3.0.Beta 3</li><li>JBoss Messaging 2.0.0</li><li>OpenJMS 0.7.7</li><li>Qpid 0.18</li><li>RabbitMQ 3.0.1</li><li>ZeroMQ 3.2</li></ul><h1>List of References</h1><p>
+                     <i>AMQP Homepage</i>
+                     <br />
+  
+                     <a href="http://www.amqp.org/node/">http://www.amqp.org/node/</a>
+                  </p><p>
+                     <i>ActiveMQ Homepage</i>
+                     <br />
+  
+                     <a href="http://activemq.apache.org/">http://activemq.apache.org/</a>
+                  </p><p>
+                     <i>STOMP Protocol Specification</i>
+                     <br />
+                     <a href="http://stomp.github.com/stomp-specification-1.2.html">http://stomp.github.com/stomp-specification-1.2.html</a>
+                  </p><p>
+                     <i>HornetQ Homepage</i>
+                     <br />
+                     <a href="http://www.jboss.org/hornetq">http://www.jboss.org/hornetq</a>
+                  </p><p>
+                     <i>RabbitMQ support JMS in the future?</i>
+                     <br />
+                     <a href="http://rabbitmq.1065348.n5.nabble.com/RabbitMQ-support-JMS-in-the-future-td24361.html">http://rabbitmq.1065348.n5.nabble.com/RabbitMQ-support-JMS-in-the-future-td24361.html</a>
+                  </p><p>
+                     <i>Message Queue Evaluation Notes</i>
+                     <br />
+                     <a href="http://wiki.secondlife.com/wiki/Message_Queue_Evaluation_Notes">http://wiki.secondlife.com/wiki/Message_Queue_Evaluation_Notes</a>
+                  </p><p>
+                     <i>Enabling the ActiveMQ Broker for AMQP</i>
+                     <br />
+                     <a href="http://activemq.apache.org/amqp.html">http://activemq.apache.org/amqp.html</a>
+  
+                  </p><p>
+                     <i>Open JMS Homepage</i>
+                     <br />
+                     <a href="http://openjms.sourceforge.net/">http://openjms.sourceforge.net/</a>
+  
+                  </p><p>
+                     <i>Apache Qpid Homepage</i>
+                     <br />
+                     <a href="http://qpid.apache.org/">http://qpid.apache.org/</a>
+  
+                  </p><p>
+                     <i>RabbitMQ Homepage</i>
+                     <br />
+                     <a href="http://www.rabbitmq.com/">http://www.rabbitmq.com/</a>
+  
+                  </p><p>
+                     <i>ZeroMQ Homepage</i>
+                     <br />
+                     <a href="http://www.zeromq.org/">http://www.zeromq.org/</a>
+  
+                  </p></div><div id="ex" class="grid_4 ex_resp"><div class="tags"><h2>Tags</h2><a href="/tag/Open-Source.html"><span class="t1">Open Source</span></a>Â 
+          <a href="/tag/ActiveMQ.html"><span class="t1">ActiveMQ</span></a>Â 
+          <a href="/tag/Messaging.html"><span class="t0">Messaging</span></a>Â 
+          <a href="/tag/Enterprise.html"><span class="t0">Enterprise</span></a>Â 
+          <a href="/tag/Qpid.html"><span class="t0">Qpid</span></a>Â 
+          <a href="/tag/HornetQ.html"><span class="t0">HornetQ</span></a>Â 
+          <a href="/tag/RabbitMQ.html"><span class="t0">RabbitMQ</span></a>Â 
+          <a href="/tag/Artikel.html"><span class="t0">Artikel</span></a>Â 
+          <a href="/tag/JMS.html"><span class="t0">JMS</span></a>Â 
+          <a href="/tag/AMQP.html"><span class="t0">AMQP</span></a>Â 
+          <a href="/tag/STOMP.html"><span class="t0">STOMP</span></a>Â 
+          <a href="/tag/WebSockets.html"><span class="t0">WebSockets</span></a>Â 
+          </div><div class="box"><h1>German <img src="/images/german.jpg" alt="View this article in german language" title="View this article in german language" border="0" />
+                     </h1><p><content>
+                        <a href="http://predic8.de/activemq-hornetq-rabbitmq-apollo-qpid-vergleich.htm">ActiveMQ, Qpid, HornetQ and RabbitMQ in Comparison</a> is available in German, too.</content></p></div></div></div><div class="container_16"><div id="foot"><p>Copyright (c) 2008-2018 predic8 GmbH, Koblenzer Str. 65, 53173 Bonn, Germany<br /><a href="/privacy-policy.htm" rel="nofollow">Privacy Policy</a></p></div></div></body></html>
+         

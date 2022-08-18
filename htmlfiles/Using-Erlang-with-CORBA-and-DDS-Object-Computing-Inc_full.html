@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="en" class=" cID-387">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+<title>Using Erlang with CORBA and DDS | Object Computing, Inc.</title>
+<meta name="description" content="The trend in modern computer systems is toward increased numbers of processing units — more cores on a single die, multiple processors in a single machine, or linking machines into larger and larger clusters. As a consequence, complex concurrent applications that are difficult to develop are becoming the norm. The Erlang [1] language can simplify the task of writing distributed concurrent applications. Although a system can be developed entirely in Erlang, interaction with non-Erlang systems is a necessity. This article will show how Erlang can send and receive messages from the outside world via CORBA and DDS.
+
+Erlang was developed over two decades ago by Ericsson for the implementation of large-scale telephony systems, and it is now used by companies [2] such as Amazon, Yahoo!, and Facebook, and in open-source applications such as CouchDB [3], a database engine, and RabbitMQ [4], an implementation of the AMQP messaging protocol [5].
+
+Erlang is a functional language, relying strongly on pattern matching and recursion. Erlang processes are cheap to create, and use message passing, rather than shared memory, for communication. As there is no shared state, computations do not need to block on synchronization primitives which would guard that state, allowing an Erlang system to scale well with the number of available processors.
+
+Another major strength of the Erlang language is fault-tolerance. Processes can be linked and if a process fails, all processes that are linked to it, even if running on a different physical machine, are notified. Action can then be taken to restart the process elsewhere, or to fail-over to alternative behavior. Running code can also be upgraded on the fly, without having to stop the system as a whole. These features allow Erlang-based systems to run continuously for years, without downtime.
+
+In this article, we will use TAO [6] and OpenDDS [7] as the CORBA and DDS implementations, respectively. The code that accompanies this article has been tested under 64-bit Windows 7 with Visual Studio 2010, 32-bit GNU/Linux with GCC 4.3.2, and 64-bit GNU/Linux with GCC 4.4.3 (TAO and DDS compiled as 64-bit, with a 64-bit Erlang distribution). Although Erlang concepts will be described as needed, a full tutorial is beyond the scope of this article. For more information, please consult the several books that have been published [8, 9, 10], and the web sites that have been created [11, 12, 13], that delve deeply into the language and its use." />
+<meta name="generator" content="concrete5 - 5.6.4.0" />
+<script type="text/javascript">
+var CCM_DISPATCHER_FILENAME = '/index.php';var CCM_CID = 387;var CCM_EDIT_MODE = false;var CCM_ARRANGE_MODE = false;var CCM_IMAGE_PATH = "/concrete/images";
+var CCM_TOOLS_PATH = "/index.php/tools/required";
+var CCM_BASE_URL = "https://objectcomputing.com";
+var CCM_REL = "";
+
+</script>
+
+	<link rel="shortcut icon" href="/files/4716/4373/9454/favicon.png" type="image/x-icon" />
+	<link rel="icon" href="/files/4716/4373/9454/favicon.png" type="image/x-icon" />
+	<link rel="apple-touch-icon" href="/files/1016/4373/9449/favicon-57.png"  />
+<meta name="msapplication-TileImage" content="/files/1016/4373/9445/favicon-144.png" />
+<script type="text/javascript" src="/concrete/js/jquery.js"></script>
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@objectcomputing">
+<meta name="twitter:title" content="Using Erlang with CORBA and DDS">
+<meta name="twitter:description" content="The trend in modern computer systems is toward increased numbers of processing units — more cores on a single die, multiple processors in a single machine, or linking machines into larger and larger clusters. As a consequence, complex concurrent applications that are difficult to develop are becoming the norm. The Erlang [1] language can simplify the task of writing distributed concurrent applications. Although a system can be developed entirely in Erlang, interaction with non-Erlang systems is a necessity. This article will show how Erlang can send and receive messages from the outside world via CORBA and DDS.
+
+Erlang was developed over two decades ago by Ericsson for the implementation of large-scale telephony systems, and it is now used by companies [2] such as Amazon, Yahoo!, and Facebook, and in open-source applications such as CouchDB [3], a database engine, and RabbitMQ [4], an implementation of the AMQP messaging protocol [5].
+
+Erlang is a functional language, relying strongly on pattern matching and recursion. Erlang processes are cheap to create, and use message passing, rather than shared memory, for communication. As there is no shared state, computations do not need to block on synchronization primitives which would guard that state, allowing an Erlang system to scale well with the number of available processors.
+
+Another major strength of the Erlang language is fault-tolerance. Processes can be linked and if a process fails, all processes that are linked to it, even if running on a different physical machine, are notified. Action can then be taken to restart the process elsewhere, or to fail-over to alternative behavior. Running code can also be upgraded on the fly, without having to stop the system as a whole. These features allow Erlang-based systems to run continuously for years, without downtime.
+
+In this article, we will use TAO [6] and OpenDDS [7] as the CORBA and DDS implementations, respectively. The code that accompanies this article has been tested under 64-bit Windows 7 with Visual Studio 2010, 32-bit GNU/Linux with GCC 4.3.2, and 64-bit GNU/Linux with GCC 4.4.3 (TAO and DDS compiled as 64-bit, with a 64-bit Erlang distribution). Although Erlang concepts will be described as needed, a full tutorial is beyond the scope of this article. For more information, please consult the several books that have been published [8, 9, 10], and the web sites that have been created [11, 12, 13], that delve deeply into the language and its use.">
+<meta property="og:title" content="Using Erlang with CORBA and DDS">
+<meta property="og:url" content="https://objectcomputing.com/resources/publications/mnb/using-erlang-with-corba-and-dds">
+<meta property="og:description" content="The trend in modern computer systems is toward increased numbers of processing units — more cores on a single die, multiple processors in a single machine, or linking machines into larger and larger clusters. As a consequence, complex concurrent applications that are difficult to develop are becoming the norm. The Erlang [1] language can simplify the task of writing distributed concurrent applications. Although a system can be developed entirely in Erlang, interaction with non-Erlang systems is a necessity. This article will show how Erlang can send and receive messages from the outside world via CORBA and DDS.
+
+Erlang was developed over two decades ago by Ericsson for the implementation of large-scale telephony systems, and it is now used by companies [2] such as Amazon, Yahoo!, and Facebook, and in open-source applications such as CouchDB [3], a database engine, and RabbitMQ [4], an implementation of the AMQP messaging protocol [5].
+
+Erlang is a functional language, relying strongly on pattern matching and recursion. Erlang processes are cheap to create, and use message passing, rather than shared memory, for communication. As there is no shared state, computations do not need to block on synchronization primitives which would guard that state, allowing an Erlang system to scale well with the number of available processors.
+
+Another major strength of the Erlang language is fault-tolerance. Processes can be linked and if a process fails, all processes that are linked to it, even if running on a different physical machine, are notified. Action can then be taken to restart the process elsewhere, or to fail-over to alternative behavior. Running code can also be upgraded on the fly, without having to stop the system as a whole. These features allow Erlang-based systems to run continuously for years, without downtime.
+
+In this article, we will use TAO [6] and OpenDDS [7] as the CORBA and DDS implementations, respectively. The code that accompanies this article has been tested under 64-bit Windows 7 with Visual Studio 2010, 32-bit GNU/Linux with GCC 4.3.2, and 64-bit GNU/Linux with GCC 4.4.3 (TAO and DDS compiled as 64-bit, with a 64-bit Erlang distribution). Although Erlang concepts will be described as needed, a full tutorial is beyond the scope of this article. For more information, please consult the several books that have been published [8, 9, 10], and the web sites that have been created [11, 12, 13], that delve deeply into the language and its use.">
+<style type="text/css"> 
+#blockStyle30311Main1268 {background-repeat:no-repeat; margin:-12px 0 0 0; } 
+#blockStyle30312Main1269 {background-repeat:no-repeat; margin:-12px 0 0 0; } 
+#blockStyle49855Main1271 {background-repeat:no-repeat; margin:-12px 0 0 0; } 
+#blockStyle86571Main8994 {background-repeat:no-repeat; padding:0 15px 0 0; } 
+</style>
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-9520490-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-9520490-1');
+</script>
+
+<!-- Crazy Egg -->
+<script type="text/javascript" src="https://script.crazyegg.com/pages/scripts/0093/4762.js" async="async"></script>  <link href="/themes/objectcomputing/css/bootstrap-min.css" rel="stylesheet" />
+  <link href="/themes/objectcomputing/css/main.css" rel="stylesheet" />
+  <script async src="/themes/objectcomputing/js/bundle.js"></script>
+</head>
+
+<body id="toc-top" class="cID-387"> 
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-K4DCWBQ"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+<nav class="utility-nav">
+  <div class="container">
+		<div class="row">
+			<div class="col-xs-12">
+				<ul class="utility-nav">
+					<li><a href="/search"><span class="hidden-xs">Search</span><span class="glyphicon glyphicon-search visible-xs"></span></a></li>
+					<li class="hidden-xs"><a href="/site-map">Site Map</a></li>
+				</ul>
+			</div>
+		</div>
+	</div>
+</nav>
+<nav class="navbar ">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="/">
+      	<span class="sr-only">Home</span>
+      	<img class="hidden-xs" src="/themes/objectcomputing/images/header-logo.svg">
+      	<img class="hidden-sm hidden-md hidden-lg"src="/themes/objectcomputing/images/header-logo-stacked.svg">
+      </a>
+    </div>
+    <div class="collapse navbar-collapse navbar-right">
+      <ul class="nav navbar-nav navbar-core"><li class=""><a href="/services" target="_self" class="">Services</a></li><li class="dropdown"><a href="/expertise" target="_self" class="dropdown-toggle">Expertise</a><ul class="dropdown-menu"><li class=""><a href="/expertise/machine-learning" target="_self" class="">Machine Learning</a></li><li class=""><a href="/expertise/blockchain" target="_self" class="">Blockchain Solutions</a></li><li class=""><a href="/expertise/industrial-internet-of-things" target="_self" class="">Industrial Internet of Things (IIoT)</a></li><li class=""><a href="/expertise/cloud-engineering" target="_self" class="">Cloud Engineering</a></li></ul></li><li class=""><a href="/case-studies" target="_self" class="">Case Studies</a></li><li class="dropdown"><a href="/products" target="_self" class="dropdown-toggle">Products</a><ul class="dropdown-menu"><li class=""><a href="/products/grails" target="_self" class="">Grails Framework</a></li><li class=""><a href="/products/micronaut" target="_self" class="">Micronaut Framework</a></li><li class=""><a href="/products/opendds" target="_self" class="">OpenDDS Middleware</a></li><li class=""><a href="/products/tao" target="_self" class="">TAO</a></li></ul></li><li class="nav-path-selected dropdown"><a href="/resources" target="_self" class="dropdown-toggle">Resources</a><ul class="dropdown-menu"><li class=""><a href="/resources/business-insights" target="_self" class="">Business Insights</a></li><li class="nav-path-selected"><a href="/resources/publications" target="_self" class="">Technical Insights</a></li><li class=""><a href="/resources/events" target="_self" class="">Events</a></li></ul></li><li class="dropdown"><a href="/about" target="_self" class="dropdown-toggle">About</a><ul class="dropdown-menu"><li class=""><a href="/about/our-approach" target="_self" class="">Our Approach</a></li><li class=""><a href="/about/careers" target="_self" class="">Careers</a></li><li class=""><a href="/about/our-clients" target="_self" class="">Clients</a></li><li class=""><a href="/about/our-partners" target="_self" class="">Partners</a></li><li class=""><a href="/about/philanthropy" target="_self" class="">Philanthropy</a></li></ul></li><li class=""><a href="/news" target="_self" class="">News</a></li></ul>    </div>
+  </div>
+</nav>
+
+
+	<style>.ws-header {background-image: url('/files/cache/f44aca2c364e1e7534844c822f366a0b_f4780.jpg');}</style>
+<header class="ws-header">
+  <div class="container">
+		<div class="row">
+			<div class="col-xs-12 ">
+				<h1 class="page_title">Using Erlang with CORBA and DDS</h1>			</div>
+		</div>
+  </div>
+</header>
+<nav class="ws-pathnav ">
+  <div class="container">
+    <ol class="breadcrumb"><li><a href="https://objectcomputing.com">Home</a></li><li><a href="/resources">Resources</a></li><li><a href="/resources/publications">Technical Insights</a></li><li><a href="/resources/publications/mnb">MNB</a></li><li>Using Erlang with CORBA and DDS</li></ol>  </div>
+</nav>
+
+<main class="container page-full-width">
+  <h2>Using Erlang with CORBA and DDS</h2>
+<p>By&nbsp;Charles Calkins, OCI Senior Software Engineer</p>
+<p style="text-transform: uppercase;">January 2011</p>
+<hr /><h2>Introduction</h2>
+<p>The trend in modern computer systems is toward increased numbers of processing units &mdash; more cores on a single die, multiple processors in a single machine, or linking machines into larger and larger clusters. As a consequence, complex concurrent applications that are difficult to develop are becoming the norm. The Erlang&nbsp;[1]&nbsp;language can simplify the task of writing distributed concurrent applications. Although a system can be developed entirely in Erlang, interaction with non-Erlang systems is a necessity. This article will show how Erlang can send and receive messages from the outside world via CORBA and DDS.</p>
+<p>Erlang was developed over two decades ago by Ericsson for the implementation of large-scale telephony systems, and it is now used by companies&nbsp;[2]&nbsp;such as Amazon, Yahoo!, and Facebook, and in open-source applications such as CouchDB&nbsp;[3], a database engine, and RabbitMQ&nbsp;[4], an implementation of the AMQP messaging protocol&nbsp;[5].</p>
+<p>Erlang is a functional language, relying strongly on pattern matching and recursion. Erlang processes are cheap to create, and use message passing, rather than shared memory, for communication. As there is no shared state, computations do not need to block on synchronization primitives which would guard that state, allowing an Erlang system to scale well with the number of available processors.</p>
+<p>Another major strength of the Erlang language is fault-tolerance. Processes can be linked and if a process fails, all processes that are linked to it, even if running on a different physical machine, are notified. Action can then be taken to restart the process elsewhere, or to fail-over to alternative behavior. Running code can also be upgraded on the fly, without having to stop the system as a whole. These features allow Erlang-based systems to run continuously for years, without downtime.</p>
+<p>In this article, we will use TAO&nbsp;[6]&nbsp;and OpenDDS&nbsp;[7]&nbsp;as the CORBA and DDS implementations, respectively. The&nbsp;<a href="https://objectcomputing.com/mnb/code/mnb201101-code.zip">code</a>&nbsp;that accompanies this article has been tested under 64-bit Windows 7 with Visual Studio 2010, 32-bit GNU/Linux with GCC 4.3.2, and 64-bit GNU/Linux with GCC 4.4.3 (TAO and DDS compiled as 64-bit, with a 64-bit Erlang distribution). Although Erlang concepts will be described as needed, a full tutorial is beyond the scope of this article. For more information, please consult the several books that have been published&nbsp;[8, 9, 10], and the websites that have been created&nbsp;[11, 12, 13], that delve deeply into the language and its use.</p>
+<h2>CORBA</h2>
+<p>The Erlang distribution includes a CORBA ORB called Orber as part of the Open Telecom Platform (OTP). OTP is a collection of libraries and procedures for producing distributed applications. While Orber tutorials can be found at&nbsp;[14]&nbsp;and&nbsp;[15], we will extend the example presented in the Middleware News Brief&nbsp;<em>Multi-Language CORBA Development with C++ (TAO), Java (JacORB), Perl (opalORB), and C# (IIOP.NET)</em>&nbsp;[16]&nbsp;to include Erlang.</p>
+<p>In that article, servers were created in each language to provide an object that implements the Math interface, as follows:</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">// CORBA/Erlang/Math.idl
+module MathModule {
+    interface Math 
+    {
+        long Add(in long x, in long y);   
+    };
+};</pre></div><p>Clients were then created in each language, and tests run to demonstrate that clients in any language can connect to servers in any language. For this test, we will only reference the C++ client and server in order to demonstrate interoperability between Orber and other ORBs.</p>
+<p>We begin by compiling the IDL file with the Erlang compiler.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">erlc Math.idl</pre></div><p>The files&nbsp;<code>MathModule.hrl</code>,&nbsp;<code>MathModule_Math.erl</code>,&nbsp;<code>MathModule_Math.hrl</code>,&nbsp;<code>oe_Math.erl</code>, and&nbsp;<code>oe_Math.hrl</code>&nbsp;are created, which include client stubs and other CORBA infrastructure. We can also create server stubs by running the compiler again, and specifying a back-end template:</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">erlc +&quot;{be,erl_template}&quot; Math.idl</pre></div><p>This creates the file <code>MathModule_Math_impl.erl</code>. In this file, the skeleton for the <code>Add</code> method is created as:</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">'Add'(State, X, Y) -&gt;
+    {reply, OE_Reply, State}.</pre></div><p>In Erlang, variables begin with uppercase letters, but function names must be atoms (non-numerical constants). The single quotes are used to convert the term into an atom. The variables<code>X</code> and <code>Y</code> are mapped from CORBA longs to Erlang integers — see <a href="file:///C:/Users/Kelsey/Downloads/MiddlewareNewsBrief-201101.html#ref17">[17]</a> for the complete CORBA type mapping. We now implement the function as a sum of <code>X</code> and <code>Y</code>, assigning the result to<code>OE_Reply</code>. Within a function, expressions in an expression list are separated by commas and executed sequentially. Here, the last expression is a 3-tuple (denoted by curly braces) to return from the function, with the first element of the tuple the atom <code>reply</code>, the second the variable<code>OE_Reply</code>, and the third the variable <code>State</code> that was passed into the function.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">'Add'(State, X, Y) -&gt;
+    OE_Reply = X + Y,
+    {reply, OE_Reply, State}.</pre></div><p>We can now create server and client tests. Create a file named&nbsp;<code>crb.erl</code>. Code is arranged into modules, as specified by the&nbsp;<code>-module()</code>&nbsp;declaration. Functions within a module that are to be used outside of the module are specified in a list (denoted by square brackets) in an&nbsp;<code>-export()</code>&nbsp;declaration. The name of each function to export is followed by a slash, and then the arity (number of parameters) of the function. Here, we export the client and server test functions. Each expression in Erlang, including these definitions, is terminated by a period and whitespace. Comments are denoted by %%.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">%% CORBA/Erlang/crb.erl
+-module(crb).
+-export([client_test/1, server_test/1]).</pre></div><p>Next, we create a helper function, <code>start_orber()</code>, to initialize a single-node instance of Orber.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">start_orber(Name) -&gt;
+    mnesia:start(),
+    corba:orb_init([{domain, Name}, 
+                    {orber_debug_level, 10}, 
+                    {iiop_port, 0} ]),
+    orber:install([node()], 
+                  [{ifr_storage_type, ram_copies},
+                   {nameservice_storage_type, ram_copies}]),
+    orber:start().</pre></div><p>This function takes the name of the domain as an argument. Orber instances within the same domain communicate via the Erlang distribution protocol, but communication between instances in different domains is by the OMG's GIOP. Attempting to use GIOP between a client and server in the same domain will cause an OBJECT_NOT_EXIST CORBA exception to be raised.</p>
+<p><code>start_orber()</code>&nbsp;begins by calling&nbsp;<code>mnesia:start()</code>&nbsp;which starts the Mnesia database&nbsp;[18]. Orber uses Mnesia to store internal data, where the database can be maintained fully in RAM, as indicated by the&nbsp;<code>ram_copies</code>&nbsp;options to&nbsp;<code>orber:install()</code>. If database persistence is desired, a Mnesia schema must first be created, and&nbsp;<code>disc_copies</code>&nbsp;specified, as described in&nbsp;[14]. For our purposes, a RAM-only database is sufficient.</p>
+<p>Next,&nbsp;<code>corba:orb_init()</code>&nbsp;is called to initialize the ORB. (In Erlang, functions that have been exported from modules are called by prefixing the function name by the module they reside in, followed by a colon.) A large number of options&nbsp;[19]&nbsp;can be set, but here only the domain, debug level, and port are specified. A value of 0 for the port causes a random, unused port to be chosen. If the&nbsp;<code>iiop_port</code>&nbsp;option is not provided, the port used defaults to 4001. This prevents multiple Orber instances from starting, as, on a given machine, multiple sockets cannot listen on the same port simultaneously. These options are presented as a list (in square brackets) of tuples.</p>
+<p>Finally,&nbsp;<code>orber:install()</code>&nbsp;is called to configure Orber to use the current node and in-memory tables, and&nbsp;<code>orber:start()</code>&nbsp;runs the ORB.</p>
+<p>We now define an additional helper method to read a stringified IOR of a server from a file, and return it as a string.&nbsp;<code>file:read_file()</code>&nbsp;returns a 2-tuple. Upon success, the first element is the atom&nbsp;<code>ok</code>, and the second element is a binary data object which is the contents of the file. In Erlang, strings are lists of characters so&nbsp;<code>erlang:binary_to_list()</code>&nbsp;is called to convert the binary object to a string.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">readIOR(FileName) -&gt;
+    {ok, Binary} = file:read_file(FileName),
+    erlang:binary_to_list(Binary).</pre></div><p>We can now write the client test.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">client_test([&quot;ior&quot;, IORFile, &quot;add&quot;, Xp, Yp]) -&gt;
+    start_orber(&quot;client&quot;),
+    {X, _} = string:to_integer(Xp),
+    {Y, _} = string:to_integer(Yp),
+    oe_Math:oe_register(),
+    Obj = corba:string_to_object(readIOR(IORFile)),
+    Res = 'MathModule_Math':'Add'(Obj, X, Y),
+    io:format(&quot;Sum: ~p~n&quot;, [Res]),
+    init:stop().</pre></div><p>This method accepts a list of strings as parameters, where the first and third are&nbsp;<code>"ior"</code>&nbsp;and&nbsp;<code>"add"</code>, respectively. The function first starts Orber in the&nbsp;<code>client</code>&nbsp;domain, and then converts the&nbsp;<code>X</code>and&nbsp;<code>Y</code>&nbsp;values from their initial string representation to integers via the&nbsp;<code>string:to_integer()</code>&nbsp;function. The second element of the 2-tuple returned by&nbsp;<code>string:to_integer()</code>&nbsp;is a list of unconverted text &mdash; here, all text will be converted and the list empty, so we use an underscore to match against the tuple element that we do not care to receive.</p>
+<p>The Math interface is registered in the Interface Repository by the call to&nbsp;<code>oe_Math:oe_register()</code>, and the stringified IOR is converted to an object reference via&nbsp;<code>corba:string_to_object()</code>.</p>
+<p>Calls to CORBA methods are via the syntax&nbsp;<code>Module:Method(ObjectReference, Parameters)</code>, here as&nbsp;<code>Res = 'MathModule_Math':'Add'(Obj, X, Y)</code>. The result is printed to standard output by&nbsp;<code>io:format()</code>. The test ends with a call to&nbsp;<code>init:stop()</code>&nbsp;which shuts down the currently-running Erlang node.</p>
+<p>Before running the test, the environment variable&nbsp;<code>ERL_ROOT</code>&nbsp;must be set to the root of the Erlang installation. A typical installation path under 64-bit Windows 7 is&nbsp;<code>C:\Program Files (x86)\erl5.8.2</code>. The script&nbsp;<code>run_test.pl</code>&nbsp;in the&nbsp;<code>CORBA/Test</code>&nbsp;directory runs the client test with a command-line (entered on a single line) similar to:</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">&lt;ERL_ROOT&gt;/bin/erl -pa ../Erlang -noshell 
+    -run crb client_test ior server.ior add 5 7</pre></div><p>The&nbsp;<code>-pa</code>&nbsp;argument adds the&nbsp;<code>../Erlang</code>&nbsp;directory to the start of the module search path. The&nbsp;<code>-noshell</code>&nbsp;argument runs Erlang without starting an interactive shell.&nbsp;<code>-run </code>&nbsp;is used to invoke the&nbsp;<code>client_test()</code>&nbsp;function in the&nbsp;<code>crb</code>&nbsp;module, with the arguments&nbsp;<code>ior server.ior add 5 7</code>&nbsp;passed as a list of strings. These match the arguments&nbsp;<code>["ior", IORFile, "add", Xp, Yp]</code>&nbsp;of&nbsp;<code>client_test()</code>. The complete list of arguments that can be passed to&nbsp;<code>erl</code>&nbsp;can be found here&nbsp;[20]. Note that arguments beginning with a dash are directed to&nbsp;<code>erl</code>&nbsp;and not passed as function arguments, so&nbsp;<code>ior</code>&nbsp;and&nbsp;<code>add</code>&nbsp;are used instead of&nbsp;<code>-ior</code>&nbsp;and&nbsp;<code>-add</code>&nbsp;as is done with the ORBs in the other programming languages. Save for this difference, the&nbsp;<code>run_test.pl</code>&nbsp;used here is the same as in the aforementioned Middleware News Brief.</p>
+<p>We next write the server test, which is simpler than the client test, as follows:</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">server_test([IORFile]) -&gt;
+    start_orber(&quot;server&quot;),
+    Obj = 'MathModule_Math':oe_create(),
+    writeIOR(IORFile, corba:object_to_string(Obj)).</pre></div><p>The server accepts one parameter, <code>IORFile</code>, the name of the file to which it will write the server's IOR. Orber is started in the <code>server</code> domain, the Math server begins execution with <code>oe_create()</code>, the returned object reference is stringified, and written to the file via the <code>writeIOR</code> helper function, defined as:</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">writeIOR(FileName, IOR) -&gt;
+    {ok, FileDesc} = file:open(FileName, [write]),
+    file:write(FileDesc, IOR),
+    file:close(FileDesc).</pre></div><p>As with the client test, the server test is executed by <code>run_test.pl</code> in an analogous way:</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">&lt;ERL_ROOT&gt;/bin/erl -pa ../Erlang -noshell 
+    -run crb server_test erlang.ior</pre></div><p>After compiling all of the&nbsp;<code>.erl</code>&nbsp;files,&nbsp;<code>MathModule_Math.erl</code>,&nbsp;<code>oe_Math.erl</code>,&nbsp;<code>MathModule_Math_impl.erl</code>&nbsp;and&nbsp;<code>crb.erl</code>, with&nbsp;<code>erlc</code>, running&nbsp;<code>CORBA/Test/run_test.pl</code>&nbsp;produces output such as:</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">Starting TAO server
+Starting orber server
+Running test: TAO server, TAO client
+  84+81 =&gt; Expected: 165  Actual: 165  =&gt; success
+Running test: TAO server, orber client
+  89+9 =&gt; Expected: 98  Actual: 98  =&gt; success
+Running test: orber server, TAO client
+  35+16 =&gt; Expected: 51  Actual: 51  =&gt; success
+Running test: orber server, orber client
+  98+3 =&gt; Expected: 101  Actual: 101  =&gt; success
+Stopping TAO server
+Stopping orber server</pre></div><p>The output is now similar to that of the prior MNB, showing that Orber can interoperate with TAO.</p>
+<h2>DDS</h2>
+<p>Unlike CORBA, Erlang does not have direct support for DDS, but can interoperate with C/C++, the implementation language of OpenDDS. We will create a "C Node"&nbsp;[21], an Erlang node implemented in C (C++, in our case), to act as a gateway between Erlang and DDS.</p>
+<p>We will use a variant of the DDS Messenger sample&nbsp;[22]&nbsp;for our purposes, with the following IDL:</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">// DDS/CPP/DDS_IDL/Messenger.idl
+module Messenger {
+    #pragma DCPS_DATA_TYPE &quot;Messenger::Message&quot;
+&nbsp;
+    struct Message {
+        string msg;
+        long id;
+    };
+};</pre></div><p>We wish to create an Erlang subscriber which receives Messenger samples, as well as an Erlang publisher which sends Messenger samples. We will begin by defining a message protocol between the Erlang processes and the C++ gateway.</p>
+<p>We need one message to support publishing from Erlang, three to support subscription, and one for Gateway termination. We will define them as tuples, with the first element an atom indicating the message type.</p>
+<table>
+<tbody>
+<tr>
+<td>{ publish, {,} }</td>
+<td class="lead"><small>&nbsp; Send the associated tuple as the DDS sample.</small></td>
+</tr>
+<tr>
+<td>{ subscribe,}</td>
+<td class="lead"><small>&nbsp; Add the ID of the current process as a process to send DDS samples to.</small></td>
+</tr>
+<tr>
+<td>{ unsubscribe,}&nbsp;</td>
+<td class="lead"><small>&nbsp; Remove the ID of the current process as a process to send DDS samples to.</small></td>
+</tr>
+<tr>
+<td>{ shutdown }</td>
+<td class="lead"><small>&nbsp; Terminate the gateway.</small></td>
+</tr>
+</tbody>
+</table>
+<p><br />In our example, we will publish 10 samples with decreasing values of the ID &mdash; when the ID reaches 0, the test will end. We begin the file&nbsp;<code>dds.erl</code>&nbsp;with a module and export declaration below. We will use the same Erlang source file for both the publisher and subscriber tests, so the necessary functions for both tests are exported.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">%% DDS/Erlang/dds.erl
+-module(dds).
+-export([publisher_test/1, subscriber_test/1, init_stop/0]).</pre></div><p>The <code>publisher_test()</code> function calls the internal <code>publisher_test_loop()</code> function with three arguments: the node name of the gateway, the message to send, and a loop count of 10 iterations. As before, arguments from the test script are passed as strings, so the node name of the gateway is converted to an atom before being passed to <code>publisher_test_loop()</code>.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">publisher_test([Gateway, Message]) -&gt;
+    publisher_test_loop(list_to_atom(Gateway), Message, 10).</pre></div><p>The function <code>publisher_test_loop()</code> is:</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">publisher_test_loop(Gateway, Message, Count) -&gt;
+    if 
+      Count &gt;= 0 -&gt; 
+        io:format(&quot;[Erlang ~p] Publish: msg='~p' id=~p~n&quot;, 
+          [node(), Message, Count]),
+        { any, Gateway } ! { publish, { Message, Count } },
+        wait(1000),
+        publisher_test_loop(Gateway, Message, Count-1);
+      true -&gt;
+        { any, Gateway } ! { shutdown },
+        io:format(&quot;[Erlang ~p]: done~n&quot;, [node()]),
+        init_stop()
+    end.</pre></div><p>Each element of an Erlang&nbsp;<code>if</code>&nbsp;expression is a guard (boolean expression), followed by an arrow, followed by a sequence of expressions. Guards are evaluated in the order presented &mdash; the first guard that is found that evaluates to true has its associated expression list evaluated, and the&nbsp;<code>if</code>statement terminates. The first guard above is true when the value of&nbsp;<code>Count</code>&nbsp;is greater than, or equal to, zero.</p>
+<p>When that condition occurs, text is printed to the console showing the message to be published, and a&nbsp;<code>publish</code>&nbsp;message is sent to the gateway node. The tuple on the left of the exclamation point is the address (process ID) to send a message to, the tuple on the right is the message, and the exclamation point is the&nbsp;<code>send</code>&nbsp;operator. After the message is sent, execution pauses for one second before continuing. The code then proceeds by recursively calling&nbsp;<code>publisher_test_loop()</code>&nbsp;with the message count reduced by one. Looping by tail recursion is a common pattern in Erlang, that is, the current state of a computation is passed as parameters to the function being looped, after being modified, as necessary, during the current loop iteration.</p>
+<p>If the first guard of the&nbsp;<code>if</code>&nbsp;statement fails, the next, and, in this case, last, guard is evaluated. The value&nbsp;<code>true</code>&nbsp;is always true, so, here, acts as an&nbsp;<code>else</code>&nbsp;clause to the&nbsp;<code>if</code>. If this guard is triggered, then the count has reached zero. In that case, the&nbsp;<code>shutdown</code>&nbsp;message is sent to the gateway, an indication of completion is printed to the console, and the Erlang node terminated. Exiting the function would normally be performed by simply not performing another tail-recursive call, but for the purposes of the test we desire the entire Erlang node to shut down.</p>
+<p>The subscriber test begins with a call to the&nbsp;<code>subscriber_test()</code>&nbsp;function. First, the&nbsp;<code>subscribe</code>&nbsp;message is sent to the gateway, to inform the gateway that the current process is interested in receiving DDS samples &mdash; the function&nbsp;<code>self()</code>&nbsp;returns the process ID of the current process. The&nbsp;<code>subscriber_test_loop()</code>&nbsp;function is then called to continue the test.</p><p>Each element of an Erlang&nbsp;<code>if</code>&nbsp;expression is a guard (boolean expression), followed by an arrow, followed by a sequence of expressions. Guards are evaluated in the order presented &mdash; the first guard that is found that evaluates to true has its associated expression list evaluated, and the&nbsp;<code>if</code>statement terminates. The first guard above is true when the value of&nbsp;<code>Count</code>&nbsp;is greater than, or equal to, zero.</p>
+<p>When that condition occurs, text is printed to the console showing the message to be published, and a&nbsp;<code>publish</code>&nbsp;message is sent to the gateway node. The tuple on the left of the exclamation point is the address (process ID) to send a message to, the tuple on the right is the message, and the exclamation point is the&nbsp;<code>send</code>&nbsp;operator. After the message is sent, execution pauses for one second before continuing. The code then proceeds by recursively calling&nbsp;<code>publisher_test_loop()</code>&nbsp;with the message count reduced by one. Looping by tail recursion is a common pattern in Erlang, that is, the current state of a computation is passed as parameters to the function being looped, after being modified, as necessary, during the current loop iteration.</p>
+<p>If the first guard of the&nbsp;<code>if</code>&nbsp;statement fails, the next, and, in this case, last, guard is evaluated. The value&nbsp;<code>true</code>&nbsp;is always true, so, here, acts as an&nbsp;<code>else</code>&nbsp;clause to the&nbsp;<code>if</code>. If this guard is triggered, then the count has reached zero. In that case, the&nbsp;<code>shutdown</code>&nbsp;message is sent to the gateway, an indication of completion is printed to the console, and the Erlang node terminated. Exiting the function would normally be performed by simply not performing another tail-recursive call, but for the purposes of the test we desire the entire Erlang node to shut down.</p>
+<p>The subscriber test begins with a call to the&nbsp;<code>subscriber_test()</code>&nbsp;function. First, the&nbsp;<code>subscribe</code>&nbsp;message is sent to the gateway, to inform the gateway that the current process is interested in receiving DDS samples &mdash; the function&nbsp;<code>self()</code>&nbsp;returns the process ID of the current process. The&nbsp;<code>subscriber_test_loop()</code>&nbsp;function is then called to continue the test.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">subscriber_test([Gateway]) -&gt;
+    { any, list_to_atom(Gateway) } ! { subscribe, self() },
+    subscriber_test_loop(list_to_atom(Gateway)).</pre></div><p>The <code>subscriber_test_loop()</code> provides a selective receive. Messages, when sent to a process, are stored in a mailbox for later retrieval. The <code>receive...end</code> expression performs a pattern-match against the messages in the mailbox, returning the first that matches. It is good to provide a wildcard match against unexpected messages, as otherwise, messages that are not extracted from the mailbox will remain and continue to consume memory.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">subscriber_test_loop(Gateway) -&gt;
+    receive
+        { message, _, 0 } -&gt;
+            { any, Gateway } ! { shutdown },
+            io:format(&quot;[Erlang ~p]: done~n&quot;, [node()]),
+            init_stop();
+        { message, Msg, Id } -&gt;
+            io:format(&quot;[Erlang ~p] Received: msg='~p' id=~p~n&quot;, 
+              [node(), Msg, Id]),
+            subscriber_test_loop(Gateway);
+        Any -&gt;
+            io:format(
+              &quot;[Erlang ~p]: Received unknown message ~p~n&quot;, 
+              [node(), Any]),
+            subscriber_test_loop(Gateway)
+    end.</pre></div><p>The first pattern matched against is <code>{ message, _, 0 }</code>, where the a matching message consists of a 3-tuple with the atom <code>message</code> in the first position, the value 0 in the third position, and anything in the second position. As a message with ID 0 is considered the termination message, if this is received, the <code>shutdown</code> message is sent to the gateway, a status indication is printed to the console, and, as before for the purpose of the test, the Erlang node is shut down.</p>
+<p>The second pattern matched against is <code>{ message, Msg, Id }</code>. This message is similar in structure to the previous, but, if the matching process has proceeded this far, then the ID value cannot be zero — so we bind the variables <code>Msg</code> and <code>Id</code> to the message text and count respectively. We then display a status message to the screen indicating that the incoming message was received, and then tail-recurse, waiting for the next message to arrive.</p>
+<p>The final pattern causes any unknown messages to be accepted and discarded.</p>
+<p>In the above, two helper functions were used: <code>init_stop()</code> and <code>wait()</code>. <code>init_stop()</code> is simply:</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">init_stop() -&gt; init:stop().</pre></div><p>where the supplied <code>stop()</code> function in the <code>init</code> module is invoked. <code>wait()</code> is implemented as:</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">wait(MS) -&gt;
+    receive
+        after MS -&gt; true
+    end.</pre></div><p>The&nbsp;<code>receive...end</code>&nbsp;expression, by default, is blocking, but by adding the&nbsp;<code>after</code>&nbsp;clause, can be made non-blocking in that an action can be taken after a timeout interval. Here, no messages are matched against, but&nbsp;<code>after</code>, with a delay in milliseconds, is used to exit the&nbsp;<code>receive...end</code>&nbsp;after the specified time has elapsed.</p>
+<p>The gateway consists of three logical pieces: a DDS publisher, a DDS subscriber, and an Erlang node to bridge Erlang and C++. We will begin by developing the Erlang node.</p>
+<p>Erlang provides the Erlang Interface C-API&nbsp;[23]&nbsp;for developing an Erlang node in C or C++ (a "C Node"&nbsp;[21]). Before generating project files with MPC&nbsp;[24]&nbsp;and compiling the code, be sure to set the environment variable&nbsp;<code>ERLI_ROOT</code>&nbsp;to point to the directory containing the root of the Erlang interface headers and library files. A typical installation path under 64-bit Windows 7 is&nbsp;<code>C:\Program Files (x86)\erl5.8.2\lib\erl_interface-3.7.2</code>.</p>
+<p>In the file&nbsp;<code>ErlangNode.h</code>, begin as follows:</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">// DDS/CPP/Gateway/ErlangNode.h
+#include &quot;XBuff.h&quot;
+#include &quot;Runnable.h&quot;
+&nbsp;
+class ErlangNode : public Runnable {
+protected:
+    std::string _shortName;
+    std::string _secretCookie;
+    int _port;
+    int _fd;</pre></div><p>The short name of the node is used as the node's address, and corresponds to the&nbsp;<code>Gateway</code>&nbsp;parameter in the Erlang code above. Erlang nodes must share the same secret cookie value in order to communicate, so the Erlang nodes and C node must use the same cookie. A C node opens a TCP socket for communication to Erlang, so the socket's port and file descriptor are maintained.</p>
+<p><code>ErlangNode</code>&nbsp;is designed as a base class for easy implementation of C nodes. As such, two methods to override are provided.&nbsp;<code>OnMessage()</code>&nbsp;will be called when an Erlang message arrives, and&nbsp;<code>OnIdle()</code>&nbsp;will be repeatedly called when there are no incoming messages to process, so other work can be performed.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">protected:
+    virtual bool OnMessage(erlang_pid /*from*/, 
+        XBuff&amp; /*buff*/) { return true; }
+    virtual bool OnIdle() { return true; }</pre></div><p>The <code>Listen()</code> method opens a socket on the given port.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;"> int Listen(int port) {
+        int listen_fd;
+        struct sockaddr_in addr;
+        int on = 1;
+        if ((listen_fd = socket(AF_INET, SOCK_STREAM, 0)) &lt; 0)
+            return (-1);
+        setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, 
+            (char *)&amp;on, sizeof(on));
+        memset((void*)&amp;addr, 0, (size_t) sizeof(addr));
+        addr.sin_family = AF_INET;
+        addr.sin_port = htons(port);
+        addr.sin_addr.s_addr = htonl(INADDR_ANY);
+        if (bind(listen_fd, (struct sockaddr*) &amp;addr, 
+            sizeof(addr)) &lt; 0)
+            return (-1);
+        listen(listen_fd, 5);
+        return listen_fd;
+    }</pre></div><p>The <code>Send()</code> method sends an Erlang message, stored in an XBuff, to a specified recipient.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">void Send(erlang_pid to, XBuff &amp;buff) {
+        if (ei_send(_fd, &amp;to, buff.get()-&gt;buff, 
+            buff.get()-&gt;index) &lt; 0)
+            throw EIException(&quot;ei_reg_send error failed&quot;, 
+                erl_errno);
+    }</pre></div><p>The constructor stores the node name, cookie, and port for later use.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;"> ErlangNode(std::string shortName, std::string secretCookie,
+       int port) : _shortName(shortName), 
+       _secretCookie(secretCookie), _port(port) {}</pre></div><p>The main work is performed in the <code>Svc()</code> method. We first initialize the <code>ei_cnode</code> structure. For most API functions, <code>erl_errno</code> is set when an error has occurred.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">   void *Svc() {
+        try {
+            ei_cnode ec;
+            int n=0;
+            if (ei_connect_init(&amp;ec, _shortName.c_str(),
+                _secretCookie.c_str(), n++) &lt; 0) 
+                throw EIException(&quot;ei_connect_init failed&quot;, 
+                erl_errno);</pre></div><p>Next, we create a socket for listening.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">            int listen;
+            if ((listen = Listen(_port)) &lt;= 0)
+                throw EIException(&quot;my_listen failed&quot;, errno);</pre></div><p>A daemon process, <code>epmd</code>, runs on each Erlang host, and the port that we are listening on must be registered with it.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">          if (ei_publish(&amp;ec, _port) == -1)
+                throw EIException(&quot;erl_publish failed&quot;, 
+                erl_errno);</pre></div><p>We now wait for communication with an Erlang node to be established.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">            ErlConnect conn;
+            if ((_fd = ei_accept(&amp;ec, listen, &amp;conn)) 
+                == ERL_ERROR)
+                throw EIException(&quot;erl_accept failed&quot;, 
+                erl_errno);</pre></div><p>Once connected, the main loop executes. The function <code>ei_xreceive_msg_tmo()</code> is called to receive Erlang messages. If the return value from this function is <code>ERL_REG_SEND</code> or <code>ERL_SEND</code>, a message has arrived, so <code>OnMessage()</code> is called to process it. If the return value is <code>ERL_ERROR</code>, an error or timeout has occurred, so <code>OnIdle()</code> is called. For our purposes, other return values and message types can be ignored.</p>
+<p>If <code>OnMessage()</code> or <code>OnIdle()</code> return true, the loop continues, else the loop, and Erlang node, exits.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">         while (true) {
+                erlang_msg msg;
+                XBuff buff(false);
+&nbsp;
+                int rcv = ei_xreceive_msg_tmo(_fd, &amp;msg, 
+                    buff.get(), 10); // 10 ms
+                if (rcv == ERL_MSG) {
+                    if ((msg.msgtype == ERL_REG_SEND) || 
+                        (msg.msgtype == ERL_SEND)) {
+                        if (!OnMessage(msg.from, buff))
+                            break;
+                    }
+                    // ignore other message types
+                }
+                else if (rcv == ERL_ERROR) {
+                    if (!OnIdle())
+                        break;
+                }
+                // ignore other ei_xreceive_msg_tmo return values
+            }
+        }
+        catch (std::exception &amp;e) {
+            std::cerr &lt;&lt; &quot;Exception: &quot; &lt;&lt; e.what() &lt;&lt; std::endl;
+        }
+        return 0;
+    }
+};</pre></div><p>We wish the Erlang node to run independently of the main thread of the gateway, so we define the interface <code>Runnable</code> to represent code which can be executed in its own thread. Although not needed by our example, this is beneficial as it allows multiple Erlang nodes to be hosted independently within a single C++ application.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">// DDS/CPP/Gateway/Runnable.h
+#include &lt;ace/Thread.h&gt;
+&nbsp;
+class Runnable {
+public:
+    virtual void *Svc() = 0;
+};</pre></div><p>Class <code>Runner</code> executes code that is <code>Runnable</code> in the context of an <code>ACE_Thread</code>. The <code>Start()</code>method begins execution, while <code>Wait()</code> blocks until the code being executed terminates. A more fully-featured class would implement cancellation as well, but that is not needed for our example.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">class Runner {
+    ACE_hthread_t _thread;
+    Runnable *_runnable; 
+&nbsp;
+    static void *Run(void *p) {
+        Runnable *runnable = 
+            (reinterpret_cast&lt;Runner *&gt;(p))-&gt;_runnable;
+        void *rtn = runnable-&gt;Svc();
+        delete runnable;
+        return rtn;
+    }
+&nbsp;
+public:
+    Runner(Runnable *runnable) : _thread(0), 
+        _runnable(runnable) {}
+&nbsp;
+    void Start() {
+        ACE_Thread::spawn(reinterpret_cast&lt;ACE_THR_FUNC&gt;(Run), 
+            this, THR_NEW_LWP|THR_JOINABLE, 0, &amp;_thread);
+    }
+&nbsp;
+    void Wait() {
+        if (_thread != 0)
+            ACE_Thread::join(_thread);
+    }
+};</pre></div><p>Erlang messages are packed into <code>ei_x_buff</code> structures — class <code>XBuff</code> provides a thin C++ wrapper around the life-cycle management, encoding and decoding functions to simplify the use of <code>ei_x_buff</code>. The class <code>XBuff</code> itself creates and destroys an <code>ei_x_buff</code>, plus provides access to encoder and decoder objects.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">// DDS/CPP/Gateway/XBuff.h
+class XBuff {
+    ei_x_buff _buff;
+&nbsp;
+public:
+    XBuff(bool initWithVersion) {
+        if (initWithVersion)
+            ei_x_new_with_version(&amp;_buff);
+        else
+            ei_x_new(&amp;_buff);
+    }
+    ~XBuff() {
+        ei_x_free(&amp;_buff);
+    }
+&nbsp;
+    ei_x_buff *get() { return &amp;_buff; }
+&nbsp;
+    XBuffDecoder GetDecoder() { return XBuffDecoder(_buff); }
+    XBuffEncoder GetEncoder() { return XBuffEncoder(_buff); }
+};</pre></div><p>For our example, only a select few types must be encoded: atoms, longs, strings, and tuples.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">class XBuffEncoder {
+    ei_x_buff &amp;_buff;
+&nbsp;
+    XBuffEncoder(ei_x_buff &amp;buff) : _buff(buff) {}
+public:
+&nbsp;
+    void SetTupleHeader(int arity) {
+        if (ei_x_encode_tuple_header(&amp;_buff, arity) &lt; 0)
+            throw EIEncodeException(
+                &quot;ei_x_encode_tuple_header failed&quot;);
+    }
+    void SetAtom(std::string atom) {
+        if (ei_x_encode_atom(&amp;_buff, atom.c_str()) &lt; 0)
+            throw EIEncodeException(&quot;ei_x_encode_atom failed&quot;);
+    }
+    void SetLong(long l) {
+        if (ei_x_encode_long(&amp;_buff, l) &lt; 0)
+            throw EIEncodeException(&quot;ei_x_encode_long failed&quot;);
+    }
+    void SetString(std::string str) {
+        if (ei_x_encode_string(&amp;_buff, str.c_str()) &lt; 0)
+            throw EIEncodeException(&quot;ei_x_encode_atom failed&quot;);
+    }
+&nbsp;
+    // more types
+&nbsp;
+    friend class XBuff;
+};</pre></div><p>These types, in addition to process IDs, must be decoded.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">class XBuffDecoder {
+    ei_x_buff &amp;_buff;
+    int _offset;
+&nbsp;
+    XBuffDecoder(ei_x_buff &amp;buff) : _buff(buff), _offset(0) {}
+&nbsp;
+    void GetType(int &amp;type, int &amp;size) {
+        if (ei_get_type(_buff.buff, &amp;_offset, &amp;type, &amp;size) &lt; 0)
+            throw EIDecodeException(&quot;ei_get_type failed&quot;);
+    }
+&nbsp;
+public:
+    int GetVersion() {
+        int version;
+        if (ei_decode_version(_buff.buff, &amp;_offset, &amp;version) &lt; 0)
+            throw EIDecodeException(&quot;ei_decode_version failed&quot;);
+        return version;
+    }
+&nbsp;
+    int GetTupleHeader() {
+        int arity;
+        if (ei_decode_tuple_header(
+            _buff.buff, &amp;_offset, &amp;arity) &lt; 0) 
+            throw EIDecodeException(
+                &quot;ei_decode_tuple_header failed&quot;);
+        return arity;
+    }
+&nbsp;
+    std::string GetAtom() {
+        char atom[MAXATOMLEN+1];
+        if (ei_decode_atom(_buff.buff, &amp;_offset, atom) &lt; 0)
+            throw EIDecodeException(&quot;ei_decode_atom failed&quot;);
+        return atom;
+    }
+&nbsp;
+    std::string GetString() {
+        int type, size;
+        GetType(type, size);
+        char *p = new char[size+1];
+        if (p == NULL)
+            throw EIDecodeException(&quot;ei_malloc failed&quot;);
+        if (ei_decode_string(_buff.buff, &amp;_offset, p) &lt; 0) {
+            delete [] p;
+            throw EIDecodeException(&quot;ei_decode_string failed&quot;);
+        }
+        std::string s = p;
+        delete [] p;
+        return s;
+    }
+&nbsp;
+    erlang_pid GetPID() {
+        erlang_pid pid;
+        if (ei_decode_pid(_buff.buff, &amp;_offset, &amp;pid) &lt; 0)
+            throw EIDecodeException(&quot;ei_decode_atom failed&quot;);
+        return pid;
+    }
+&nbsp;
+    long GetLong() {
+        long l;
+        if (ei_decode_long(_buff.buff, &amp;_offset, &amp;l) &lt; 0)
+            throw EIDecodeException(&quot;ei_decode_long failed&quot;);
+        return l;
+    }
+&nbsp;
+    // more data types
+&nbsp;
+    friend class XBuff;
+};</pre></div><p>We now turn to the main gateway application in <code>main.cpp</code>. We use an <code>ACE_Arg_Shifter</code> to parse the command-line arguments.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">// DDS/CPP/Gateway/main.cpp
+void GetArgs(int argc, char *argv[],
+    std::string &amp;sname, std::string &amp;secretcookie, int &amp;port) {
+        ACE_Arg_Shifter arg_shifter(argc, argv);
+        while (arg_shifter.is_anything_left()) {
+            const ACE_TCHAR *currentArg = 0;
+            if ((currentArg = arg_shifter.get_the_parameter(
+                ACE_TEXT(&quot;-sname&quot;))) != 0) {
+                sname = currentArg;
+                arg_shifter.consume_arg();
+            }
+            else if ((currentArg = arg_shifter.get_the_parameter(
+                ACE_TEXT(&quot;-setcookie&quot;))) != 0) {
+                secretcookie = currentArg;
+                arg_shifter.consume_arg();
+            }
+            else if ((currentArg = arg_shifter.get_the_parameter(
+                ACE_TEXT(&quot;-port&quot;))) != 0) {
+                port = ACE_OS::atoi(currentArg);
+                arg_shifter.consume_arg();
+            }
+            else
+                arg_shifter.ignore_arg();
+        }   
+}
+&nbsp;
+int ACE_TMAIN(int argc, ACE_TCHAR *argv[]) {
+    try {
+        std::string sname(&quot;alice&quot;), secretcookie(&quot;secretcookie&quot;);
+        int port = 8001;
+        GetArgs(argc, argv, sname, secretcookie, port);</pre></div><p>We now implement standard DDS publisher and subscriber infrastructure:</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">        DDS::DomainParticipantFactory_var dpf =
+            TheParticipantFactoryWithArgs(argc, argv);
+&nbsp;
+        // create domain participant
+        DDS::DomainParticipant_var participant =
+            dpf-&gt;create_participant(42,
+            PARTICIPANT_QOS_DEFAULT,
+            0,
+            OpenDDS::DCPS::DEFAULT_STATUS_MASK);
+&nbsp;
+        if (0 == participant) 
+            throw MyException(&quot;create_participant failed&quot;);
+&nbsp;
+&nbsp;
+        // register type
+        Messenger::MessageTypeSupport_var ts =
+            new Messenger::MessageTypeSupportImpl();
+&nbsp;
+        if (ts-&gt;register_type(participant.in(), &quot;&quot;) != 
+            DDS::RETCODE_OK) 
+            throw MyException(&quot;reigster_type failed&quot;);
+&nbsp;
+&nbsp;
+        // create topic
+        CORBA::String_var type_name = ts-&gt;get_type_name();
+        DDS::Topic_var topic =
+            participant-&gt;create_topic(&quot;MyTopic&quot;,
+            type_name.in(),
+            TOPIC_QOS_DEFAULT,
+            0,
+            OpenDDS::DCPS::DEFAULT_STATUS_MASK);
+&nbsp;
+        if (0 == topic) 
+            throw MyException(&quot;create_topic failed&quot;);
+&nbsp;
+&nbsp;
+        // create publisher
+        DDS::Publisher_var publisher =
+            participant-&gt;create_publisher(PUBLISHER_QOS_DEFAULT,
+            0,
+            OpenDDS::DCPS::DEFAULT_STATUS_MASK);
+&nbsp;
+        if (0 == publisher) 
+            throw MyException(&quot;create_publisher failed&quot;);
+&nbsp;
+&nbsp;
+        // create subscriber
+        DDS::Subscriber_var subscriber =
+            participant-&gt;create_subscriber(SUBSCRIBER_QOS_DEFAULT,
+            0,
+            OpenDDS::DCPS::DEFAULT_STATUS_MASK);
+&nbsp;
+        if (0 == subscriber) 
+            throw MyException(&quot;create_subscriber failed&quot;);</pre></div><p>OpenDDS, as of this writing, allows both the publisher and subscriber to share the same transport.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">        // create and attach the transport
+        OpenDDS::DCPS::TransportImpl_rch transport_impl =
+            TheTransportFactory-&gt;create_transport_impl(
+                OpenDDS::DCPS::DEFAULT_SIMPLE_TCP_ID,
+                OpenDDS::DCPS::AUTO_CONFIG);
+&nbsp;
+        if (transport_impl-&gt;attach(publisher.in()) != 
+            OpenDDS::DCPS::ATTACH_OK)
+            throw MyException(
+                &quot;transport creation for the publisher failed&quot;);
+&nbsp;
+        if (transport_impl-&gt;attach(subscriber.in()) != 
+            OpenDDS::DCPS::ATTACH_OK)
+            throw MyException(
+                &quot;transport creation for the subscriber failed&quot;);</pre></div><p>We finish the publisher code by creating a DataWriter.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">        // create and narrow datawriter
+        DDS::DataWriter_var writer =
+            publisher-&gt;create_datawriter(topic.in(),
+            DATAWRITER_QOS_DEFAULT,
+            DDS::DataWriterListener::_nil(),
+            OpenDDS::DCPS::DEFAULT_STATUS_MASK);
+&nbsp;
+        if (0 == writer) 
+            throw MyException(&quot;create_datawriter failed&quot;);
+&nbsp;
+        Messenger::MessageDataWriter_var message_writer =
+            Messenger::MessageDataWriter::_narrow(writer.in());
+&nbsp;
+        if (0 == message_writer) 
+            throw MyException(&quot;writer _narrow failed&quot;);</pre></div><p>We complete the subscriber code by creating a DataReader, and associated listener.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">        // create a common message queue
+        MessageQueue&lt;MessageType&gt; messageQueue;
+&nbsp;
+&nbsp;
+        // create and narrow datareader, assigning listener
+        DDS::DataReaderListener_var listener(new 
+            DataReaderListenerImpl(messageQueue));
+&nbsp;
+        DDS::DataReader_var reader =
+            subscriber-&gt;create_datareader(topic.in(),
+            DATAREADER_QOS_DEFAULT,
+            listener.in(),
+            OpenDDS::DCPS::DEFAULT_STATUS_MASK);
+&nbsp;
+        if (0 == reader) 
+            throw MyException(&quot;create_datareader failed&quot;);</pre></div><p>A <code>MessageQueue&lt;T&gt;</code> is a thread-safe list to hold DDS samples as they are received. The list itself is implemented by using an <code>ACE_Guard&lt;T&gt;</code> to protect methods of a <code>std::list&lt;T&gt;</code>:</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">// DDS/CPP/Gateway/MessageQueue.h
+#include &lt;list&gt;
+&nbsp;
+template&lt;typename T&gt;
+class MessageQueue {
+    std::list&lt;T&gt; _q;
+    ACE_Thread_Mutex lock_;
+&nbsp;
+public:
+    void Insert(T t) {
+        ACE_Guard&lt;ACE_Thread_Mutex&gt; guard(lock_);
+        _q.push_back(t);
+    }
+&nbsp;
+    T Remove() {
+        ACE_Guard&lt;ACE_Thread_Mutex&gt; guard(lock_);
+        T front = _q.front();
+        _q.pop_front();
+        return front;
+    }
+&nbsp;
+    bool empty() {
+        ACE_Guard&lt;ACE_Thread_Mutex&gt; guard(lock_);
+        return _q.empty();
+    }
+&nbsp;
+    void clear() {
+        ACE_Guard&lt;ACE_Thread_Mutex&gt; guard(lock_);
+        return _q.clear();
+    }
+};</pre></div><p>The <code>MessageQueue&lt;T&gt;</code> stores smart pointer-wrapped DDS samples.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">// DDS/CPP/Gateway/defs.h
+typedef std::tr1::shared_ptr&lt;Messenger::Message&gt; MessageType;</pre></div><p>Messages are added to the&nbsp;<code>MessageQueue</code>&nbsp;by the DataReader listener's&nbsp;<code>OnDataAvailable()</code>&nbsp;method.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">// DDS/CPP/Gateway/DataReaderListenerImpl.cpp
+ void DataReaderListenerImpl::on_data_available(
+     DDS::DataReader_ptr reader)
+     ACE_THROW_SPEC((CORBA::SystemException))
+{
+    Messenger::MessageDataReader_var reader_i =
+        Messenger::MessageDataReader::_narrow(reader);
+&nbsp;
+    if (CORBA::is_nil(reader_i.in())) {
+        ACE_ERROR((LM_ERROR,
+            ACE_TEXT(&quot;ERROR: %N:%l: on_data_available() -&quot;)
+            ACE_TEXT(&quot; _narrow failed!\n&quot;)));
+        ACE_OS::exit(-1);
+    }
+&nbsp;
+    MessageType message(new Messenger::Message);
+    DDS::SampleInfo info;
+&nbsp;
+    DDS::ReturnCode_t error = 
+        reader_i-&gt;take_next_sample(*message, info);
+&nbsp;
+    if (error == DDS::RETCODE_OK) {
+&nbsp;
+        if (info.valid_data)
+            _messageQueue.Insert(message);
+&nbsp;
+    } else {
+        ACE_ERROR((LM_ERROR,
+            ACE_TEXT(&quot;ERROR: %N:%l: on_data_available() -&quot;)
+            ACE_TEXT(&quot; take_next_sample failed!\n&quot;)));
+    }
+}</pre></div><p>We complete <code>ACE_TMAIN()</code> by running the <code>DDSGateway</code> Erlang node, waiting for its termination, and cleaning up when done.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">        // DDS/CPP/Gateway/main.cpp
+        Runner r(new DDSGateway(sname, secretcookie, port, 
+            message_writer.in(), messageQueue));
+        r.Start();
+        r.Wait();
+&nbsp;
+        // clean up
+        participant-&gt;delete_contained_entities();
+        dpf-&gt;delete_participant(participant.in());
+&nbsp;
+        TheTransportFactory-&gt;release();
+        TheServiceParticipant-&gt;shutdown();
+&nbsp;
+    } catch (const CORBA::Exception&amp; e) {
+        e._tao_print_exception(&quot;Exception caught in main():&quot;);
+        return -1;
+    } catch (const std::exception&amp; e) {
+        std::cerr &lt;&lt; &quot;Exception caught in main(): &quot; &lt;&lt; e.what() 
+            &lt;&lt; std::endl;
+        return -1;
+    }
+&nbsp;
+    return 0; 
+}</pre></div><p>Now that the infrastructure is in place, we can implement&nbsp;<code>DDSGateway</code>, the core of the gateway process.&nbsp;<code>DDSGateway</code>&nbsp;maintains a reference to the Message DataWriter, allowing it to receive Erlang messages and publish them as DDS ones.&nbsp;<code>DDSGateway</code>&nbsp;also maintains a reference to the&nbsp;<code>MessageQueue</code>&nbsp;from the DDS subscriber, and a collection of Erlang process IDs, allowing it to receive messages from the DDS subscriber, and send them as Erlang ones. The constructor also sets the Erlang node name, cookie, and listening port.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">// DDS/CPP/Gateway/DDSGateway.h
+class DDSGateway : public ErlangNode {
+    Messenger::MessageDataWriter_var _messageWriter;
+    std::set&lt;erlang_pid&gt; _subscribers;
+    MessageQueue&lt;MessageType&gt; &amp;_messageQueue;
+public:
+    DDSGateway(std::string shortName, std::string secretCookie, 
+        int port, Messenger::MessageDataWriter_ptr messageWriter, 
+        MessageQueue&lt;MessageType&gt; &amp;messageQueue) :
+    ErlangNode(shortName, secretCookie, port),
+        _messageWriter(messageWriter), 
+        _messageQueue(messageQueue) {}
+&nbsp;
+    virtual bool OnMessage(erlang_pid /*from*/, XBuff&amp; /*buff*/);
+    virtual bool OnIdle();
+};</pre></div><p>Implementation of&nbsp;<code>DDSGateway</code>&nbsp;is straightforward, as we only need to override&nbsp;<code>OnMessage()</code>&nbsp;and&nbsp;<code>OnIdle()</code>. In&nbsp;<code>OnMessage()</code>, we decode the first part of every incoming message the same way as the start of a 3-tuple, followed by an atom indicating the type of message being sent.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">// DDS/CPP/Gateway/DDSGateway.cpp
+bool DDSGateway::OnMessage(erlang_pid /*from*/, XBuff &amp;buff) {
+    // Process these messages:
+    // { publish, { &lt;string&gt;, &lt;long&gt; } }
+    // { subscribe, pid }
+    // { unsubscribe, pid }
+    // { shutdown }
+&nbsp;
+    XBuffDecoder d = buff.GetDecoder();
+    d.GetVersion();
+    d.GetTupleHeader();
+    std::string cmd = d.GetAtom();</pre></div><p>If the message is <code>shutdown</code>, we terminate the Erlang node by returning false.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">    // on shutdown, exit
+    if (cmd == &quot;shutdown&quot;)
+        return false;  </pre></div><p>If the message is&nbsp;<code>publish</code>, we extract the message and ID values, assign them to a DDS&nbsp;<code>Messenger::Message</code>&nbsp;structure, and publish it as a DDS sample.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">    // publish
+    if (cmd == &quot;publish&quot;) {
+        d.GetTupleHeader();
+        Messenger::Message message;
+        message.msg = d.GetString().c_str();
+        message.id = d.GetLong();
+&nbsp;
+        DDS::ReturnCode_t err = 
+            _messageWriter-&gt;write(message, DDS::HANDLE_NIL);
+        if (err!=DDS::RETCODE_OK)
+            throw MyException(&quot;DDS write failed&quot;); 
+    }</pre></div><p>Finally, if a <code>subscribe</code> or <code>unsubscribe</code> message is received, then the supplied PID is added or removed from the subscriber collection, respectively.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">    // subscribe
+    if (cmd == &quot;subscribe&quot;)
+        _subscribers.insert(d.GetPID());
+&nbsp;
+    // unsubscribe
+    if (cmd == &quot;unsubscribe&quot;)
+        _subscribers.erase(d.GetPID());
+&nbsp;
+    return true;
+}</pre></div><p>In&nbsp;<code>OnIdle()</code>, we handle any pending DDS messages that have been received in the&nbsp;<code>MessageQueue</code>. If there are no Erlang subscribers, however, then any pending messages can be discarded. As an extension, quality of service criteria can be applied here, such as maintaining a history of samples that can be sent to late-joining subscribers which mirrors the DDS DURABILITY policy&nbsp;[22].</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">bool DDSGateway::OnIdle() { 
+    // if there are no subscribers, 
+    // discard pending messages and return
+    if (_subscribers.empty()) {
+        _messageQueue.clear();
+        return true;
+    }</pre></div><p>If there is at least one subscriber, send all pending messages to each subscriber. The subscriber list cannot change while the loop executes, as&nbsp;<code>OnMessage()</code>&nbsp;will not be called again until&nbsp;<code>OnIdle()</code>&nbsp;returns. The&nbsp;<code>MessageQueue</code>, however, can change, so repeatedly removing DDS samples until the queue is (at least momentarily) empty will ensure that all samples are handled properly.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">    // otherwise, send each waiting message to all subscribers
+    while (!_messageQueue.empty()) {
+        MessageType m = _messageQueue.Remove();
+&nbsp;
+        for (std::set&lt;erlang_pid&gt;::iterator 
+            subscriber = _subscribers.begin(); 
+            subscriber!=_subscribers.end(); subscriber++) {</pre></div><p>Each DDS sample is formed into an Erlang 3-tuple containing the atom <code>message</code>, the message text, and the ID value. The message is then sent to the subscriber in question.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;"> XBuff rtn(true);
+            XBuffEncoder e=rtn.GetEncoder();
+            e.SetTupleHeader(3);
+            e.SetAtom(&quot;message&quot;);
+            e.SetString(m-&gt;msg.in());
+            e.SetLong(m-&gt;id);
+            Send(*subscriber, rtn);
+        }
+    }
+    return true;
+}</pre></div><p>This completes the implementation of the gateway. After compiling all C++ code, as well as&nbsp;<code>dds.erl</code>, we can now run the publisher and subscriber tests. As with the CORBA tests, we will use Perl test runners, but these will be based on the test runners in the OpenDDS distribution. The output from the tests below has been abbreviated somewhat for ease of discussion &mdash; additional log messages will be displayed by the test runners.</p>
+<p>To execute the publisher test, run&nbsp;<code>DDS/Test/run_test_ep.pl</code>. The test script performs the actions described below.</p>
+<p>As the Erlang daemon,&nbsp;<code>epmd</code>, must be running in order for the gateway to register its listening socket, we ensure that an instance is started by running an Erlang node, and then executing the&nbsp;<code>init_stop()</code>&nbsp;function so it immediately terminates. Although the node has shut down,&nbsp;<code>epmd</code>&nbsp;remains running. The test runs a command similar to:</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">&lt;ERL_ROOT&gt;/bin/erl -sname dummy -setcookie secretcookie 
+    -pa ../Erlang -noshell -run dds init_stop</pre></div><p>Next, we start the DCPSInfoRepo:</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">&lt;DDS_ROOT&gt;\bin\.\DCPSInfoRepo.EXE -ORBDebugLevel 10 
+    -ORBLogFile DCPSInfoRepo.log -o repo.ior</pre></div><p>Next, we start the gateway as Erlang node <em>alice</em>:</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">..\CPP\Gateway\.\gateway.EXE -ORBSvcConf tcp.conf -sname alice 
+    -setcookie secretcookie -port 8001</pre></div><p>Next, we start a C++ DDS subscriber that subscribes to the topic that is being published. As the code is substantially similar to the subscriber-side of the gateway, it is not described here but is present in the&nbsp;<a class="file ext-zip" title="mnb201101-code" href="/index.php/download_file/view/1773/387">code archive</a>.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">..\CPP\Subscriber\.\subscriber.EXE -ORBSvcConf tcp.conf</pre></div><p>Finally, we start the Erlang&nbsp;<code>publisher_test()</code>&nbsp;function itself in Erlang node&nbsp;<em>bob</em>. We pass the address of the gateway (here,&nbsp;<code>alice@oci1373</code>) and the message to publish as arguments to&nbsp;<code>publisher_test()</code>.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">&lt;ERL_ROOT&gt;/bin/erl -sname bob -setcookie secretcookie 
+    -pa ../Erlang -noshell 
+    -run dds publisher_test alice@oci1373 Message</pre></div><p>As the test runs, the Erlang node prints the message being sent, the gateway publishes them as DDS samples, and and the C++ subscriber prints the messages as they are received.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">[Erlang bob@oci1373] Sent to gateway: msg='&quot;Message&quot;' id=10
+[Subscriber] Received: msg='Message' id=10
+[Erlang bob@oci1373] Sent to gateway: msg='&quot;Message&quot;' id=9
+[Subscriber] Received: msg='Message' id=9
+[Erlang bob@oci1373] Sent to gateway: msg='&quot;Message&quot;' id=8
+[Subscriber] Received: msg='Message' id=8
+[Erlang bob@oci1373] Sent to gateway: msg='&quot;Message&quot;' id=7
+[Subscriber] Received: msg='Message' id=7
+[Erlang bob@oci1373] Sent to gateway: msg='&quot;Message&quot;' id=6
+[Subscriber] Received: msg='Message' id=6
+[Erlang bob@oci1373] Sent to gateway: msg='&quot;Message&quot;' id=5
+[Subscriber] Received: msg='Message' id=5
+[Erlang bob@oci1373] Sent to gateway: msg='&quot;Message&quot;' id=4
+[Subscriber] Received: msg='Message' id=4
+[Erlang bob@oci1373] Sent to gateway: msg='&quot;Message&quot;' id=3
+[Subscriber] Received: msg='Message' id=3
+[Erlang bob@oci1373] Sent to gateway: msg='&quot;Message&quot;' id=2
+[Subscriber] Received: msg='Message' id=2
+[Erlang bob@oci1373] Sent to gateway: msg='&quot;Message&quot;' id=1
+[Subscriber] Received: msg='Message' id=1
+[Erlang bob@oci1373]: done</pre></div><p>The subscriber test starts similarly. When the test script <code>DDS/Test/run_test_es.pl</code> is executed, an Erlang node is run, executing the <code>init_stop()</code> function, to ensure that <code>epmd</code> has started. Next, the DCPSInfoRepo is started, as well as the gateway on node <em>alice</em>.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">&lt;ERL_ROOT&gt;/bin/erl -sname dummy -setcookie secretcookie 
+    -pa ../Erlang -noshell -run dds init_stop
+&lt;DDS_ROOT&gt;\bin\.\DCPSInfoRepo.EXE -ORBDebugLevel 10 
+    -ORBLogFile DCPSInfoRepo.log -o repo.ior
+..\CPP\Gateway\.\gateway.EXE -ORBSvcConf tcp.conf -sname alice 
+    -setcookie secretcookie -port 8001</pre></div><p>Erlang node <em>bob</em> is now started to run the <code>subscriber_test()</code> function, which takes the address of the gateway as an argument.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">&lt;ERL_ROOT&gt;/bin/erl -sname bob -setcookie secretcookie 
+    -pa ../Erlang -noshell -run dds subscriber_test alice@oci1373</pre></div><p>Finally, we start a C++ DDS publisher that publishes&nbsp;<code>Message</code>&nbsp;samples. As the code is substantially similar to the publisher-side of the gateway, it is not described here but is present in the&nbsp;<a title="mnb201101-code" href="	https://objectcomputing.com/download_file/1773">code archive</a>.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">..\CPP\Publisher\.\publisher.EXE -ORBSvcConf tcp.conf</pre></div><p>As the test runs, the C++ publisher prints the message being sent, the gateway publishes them as DDS samples, and and the Erlang subscriber prints the messages as they are received.</p><div class="ccm-syntax-highlighter">
+    <pre class="text" style="font-family:monospace;">[Publisher] Publish: msg='Message' id=10
+[Erlang bob@oci1373] Received: msg='&quot;Message&quot;' id=10
+[Publisher] Publish: msg='Message' id=9
+[Erlang bob@oci1373] Received: msg='&quot;Message&quot;' id=9
+[Publisher] Publish: msg='Message' id=8
+[Erlang bob@oci1373] Received: msg='&quot;Message&quot;' id=8
+[Publisher] Publish: msg='Message' id=7
+[Erlang bob@oci1373] Received: msg='&quot;Message&quot;' id=7
+[Publisher] Publish: msg='Message' id=6
+[Erlang bob@oci1373] Received: msg='&quot;Message&quot;' id=6
+[Publisher] Publish: msg='Message' id=5
+[Erlang bob@oci1373] Received: msg='&quot;Message&quot;' id=5
+[Publisher] Publish: msg='Message' id=4
+[Erlang bob@oci1373] Received: msg='&quot;Message&quot;' id=4
+[Publisher] Publish: msg='Message' id=3
+[Erlang bob@oci1373] Received: msg='&quot;Message&quot;' id=3
+[Publisher] Publish: msg='Message' id=2
+[Erlang bob@oci1373] Received: msg='&quot;Message&quot;' id=2
+[Publisher] Publish: msg='Message' id=1
+[Erlang bob@oci1373] Received: msg='&quot;Message&quot;' id=1
+[Publisher] Publish: msg='Message' id=0
+[Erlang bob@oci1373]: done</pre></div><h2>Conclusion</h2>
+<p>As shown in this article, CORBA and DDS can be used with systems written in Erlang. While CORBA has direct support in the Erlang distribution, DDS must be used via the external code interface. By using the framework presented here, supporting different CORBA interfaces and DDS sample types is straightforward.</p>
+<h2>References</h2>
+<p><a name="ref1"></a>[1] Open-source Erlang - White Paper<br /><a href="http://erlang.org/white_paper.html">http://erlang.org/white_paper.html</a></p>
+<p><a name="ref2"></a>[2] Where is Erlang used and why?<br /><a href="http://stackoverflow.com/questions/1636455/where-is-erlang-used-and-why">http://stackoverflow.com/questions/1636455/where-is-erlang-used-and-why</a></p>
+<p><a name="ref3"></a>[3] The CouchDB Project<br /><a href="http://couchdb.apache.org/">http://couchdb.apache.org/</a></p>
+<p><a name="ref4"></a>[4] RabbitMQ<br /><a href="http://www.rabbitmq.com/">http://www.rabbitmq.com/</a></p>
+<p><a name="ref5"></a>[5] Advanced Message Queuing Protocol<br /><a href="http://www.amqp.org/">http://www.amqp.org/</a></p>
+<p><a name="ref6"></a>[6] The ACE ORB (TAO)<br /><a href="http://www.theaceorb.com/">http://www.theaceorb.com/</a></p>
+<p><a name="ref7"></a>[7] OpenDDS<br /><a href="http://www.opendds.org/">http://www.opendds.org/</a></p>
+<p><a name="ref8"></a>[8] Armstrong. <em>Programming Erlang, Software for a Concurrent World.</em> Pragmatic Bookshelf, 2007.</p>
+<p><a name="ref9"></a>[9] Cesarini, Thompson. <em>Erlang Programming.</em> O'Reilly, 2009.</p>
+<p><a name="ref10"></a>[10] Logan, Merritt, Carlsson. <em>Erlang and OTP in Action.</em> Manning, 2011.</p>
+<p><a name="ref11"></a>[11] www.trapexit.org<br /><a href="http://www.trapexit.org/">http://www.trapexit.org/</a></p>
+<p><a name="ref12"></a>[12] Open Source Erlang<br /><a href="http://www.erlang.org/">http://www.erlang.org/</a></p>
+<p><a name="ref13"></a>[13] erldocs.com<br /><a href="http://erldocs.com/">http://erldocs.com/</a></p>
+<p><a name="ref14"></a>[14] Installing Orber<br /><a href="http://www.erlang.org/doc/apps/orber/ch_install.html">http://www.erlang.org/doc/apps/orber/ch_install.html</a></p>
+<p><a name="ref15"></a>[15] Orber Examples<br /><a href="http://erlang.mirror.su.se/documentation/doc-5.4.8/lib/orber-3.6/doc/html/ch_example.html">http://erlang.mirror.su.se/documentation/doc-5.4.8/lib/orber-3.6/doc/html/ch_example.html</a></p>
+<p><a name="ref16"></a>[16] Multi-Language CORBA Development with C++ (TAO), Java (JacORB), Perl (opalORB), and C# (IIOP.NET)<br /><a href="http://mnb.ociweb.com/mnb/MiddlewareNewsBrief-200904.html">http://mnb.ociweb.com/mnb/MiddlewareNewsBrief-200904.html</a></p>
+<p><a name="ref17"></a>[17] OMG IDL to Erlang Mapping<br /><a href="http://www.erlang.org/doc/apps/orber/ch_idl_to_erlang_mapping.html">http://www.erlang.org/doc/apps/orber/ch_idl_to_erlang_mapping.html</a></p>
+<p><a name="ref18"></a>[18] [Mnesia] Introduction<br /><a href="http://www.erlang.org/doc/apps/mnesia/Mnesia_chap1.html">http://www.erlang.org/doc/apps/mnesia/Mnesia_chap1.html</a></p>
+<p><a name="ref19"></a>[19] Orber options<br /><a href="http://www.erlang.org/doc/apps/orber/ch_install.html#config">http://www.erlang.org/doc/apps/orber/ch_install.html#config</a></p>
+<p><a name="ref20"></a>[20] erl<br /><a href="http://www.erlang.org/doc/man/erl.html">http://www.erlang.org/doc/man/erl.html</a></p>
+<p><a name="ref21"></a>[21] C Nodes<br /><a href="http://www.erlang.org/doc/tutorial/cnode.html">http://www.erlang.org/doc/tutorial/cnode.html</a></p>
+<p><a name="ref22"></a>[22] OpenDDS Developer's Guide<br /><a href="http://download.ociweb.com/OpenDDS/OpenDDS-latest.pdf">http://download.ociweb.com/OpenDDS/OpenDDS-latest.pdf</a></p>
+<p><a name="ref23"></a>[23] ei_connect<br /><a href="http://www.erlang.org/doc/man/ei_connect.html">http://www.erlang.org/doc/man/ei_connect.html</a></p>
+<p><a name="ref24"></a>[24] MPC<br /><a href="https://objectcomputing.com/products/mpc">https://objectcomputing.com/products/mpc</a></p></main>
+
+
+<footer>
+  <div class="social-media"></div>
+  <div class="fat-footer">
+		<div class="container">
+			<div class="row">
+				<div class="col-xs-10 col-xs-offset-1 col-sm-12 col-sm-offset-0">
+					<ul class="fat-footer-content">
+						<li class="footer-news">
+							<input type="radio" name="accordion-01" id="toggle-02">
+							<label for="toggle-02"><span>News</span><a href="/news">News</a></label>
+							<div>
+								
+<div class="ws_posts_list">
+
+	
+	<ul>
+				<li>
+						<a href="https://objectcomputing.com/news/2022/05/23/hbar-foundation-partnership">Object Computing Partners with HBAR Foundation to Enhance Trust and Transparency in the ESG Marketplace</a>
+
+			
+		</li>
+				<li>
+						<a href="https://objectcomputing.com/news/2022/04/21/object-computing-meet-midwest-it-leaders-gateway-innovation">Object Computing to Meet with Midwest IT Leaders at Gateway to Innovation 2022</a>
+
+			
+		</li>
+				<li>
+						<a href="https://objectcomputing.com/news/2022/04/08/blockchain-enthusiasts-gain-nft-insights-oci-hosted-event">St. Louis Blockchain Enthusiasts Gain NFT Insights at OCI-Hosted Event</a>
+
+			
+		</li>
+				<li>
+						<a href="https://objectcomputing.com/news/2022/03/31/object-computing-partners-eos-network-foundation-enhance-eos">Object Computing Partners with the EOS Network Foundation to Enhance EOS Features</a>
+
+			
+		</li>
+				<li>
+						<a href="https://objectcomputing.com/news/2022/03/16/object-computing-partners-techstl-host-live-blockchain-event">Object Computing Partners with TechSTL to Host Live Blockchain Event</a>
+
+			
+		</li>
+				<li>
+						<a href="https://objectcomputing.com/news/2022/02/23/introducing-our-new-tagline">Introducing Our New Tagline</a>
+
+			
+		</li>
+			</ul>
+</div>
+
+
+
+
+							</div>
+							<a class="button-link button-link-white" title="News" href="/news">All News</a>
+						</li>
+						<li class="footer-events">
+							<input type="radio" name="accordion-01" id="toggle-03">
+							<label for="toggle-03"><span>Events</span><a href="/events">Events</a></label>
+							<div>
+								
+	<table class="dec-upcoming-events-list">
+			<tr class="dec-upcoming-event-item">
+			<th>Jul 11</th>
+			<td><a href="/services/training/catalog/middleware/opendds-programming-cpp-and-java">Introduction to OpenDDS Programming [Q3 workshop]</a></td>
+		</tr><!-- .dec-upcoming-event-item -->
+			<tr class="dec-upcoming-event-item">
+			<th>Jul 13</th>
+			<td><a href="/services/training/catalog/middleware/opendds-security">Building OpenDDS Applications with DDS Security [Q3 Workshop]</a></td>
+		</tr><!-- .dec-upcoming-event-item -->
+			<tr class="dec-upcoming-event-item">
+			<th>Jul 18</th>
+			<td><a href="https://www.jbcnconf.com/2022/">JBCNConf</a></td>
+		</tr><!-- .dec-upcoming-event-item -->
+			<tr class="dec-upcoming-event-item">
+			<th>Jul 18</th>
+			<td><a href="https://www.jbcnconf.com/2022/infoTalk.html?id=6229173756274e0bddf0079d">Building Database Applications with Micronaut Data and GraalVM</a></td>
+		</tr><!-- .dec-upcoming-event-item -->
+			<tr class="dec-upcoming-event-item">
+			<th>Jul 18</th>
+			<td><a href="/services/training/catalog/middleware/opendds-essentials">OpenDDS Essentials I [Q3 Workshop]</a></td>
+		</tr><!-- .dec-upcoming-event-item -->
+			<tr class="dec-upcoming-event-item">
+			<th>Jul 20</th>
+			<td><a href="https://www.jbcnconf.com/2022/infoTalk.html?id=6229f5eb56274e0bddf007a2">Security in the Micronaut Framework</a></td>
+		</tr><!-- .dec-upcoming-event-item -->
+		</table><!-- dec-upcoming-events-list -->
+	
+							</div>
+							<a class="button-link button-link-white" title="Events" href="/events">All Events</a>
+						</li>
+						<li class="footer-connect">
+							<input type="radio" name="accordion-01" id="toggle-04">
+							<label for="toggle-04"><span>Contact</span></label>
+							<div>
+									<div id="blockStyle86571Main8994" class=" ccm-block-styles" >
+
+<div class="contact-info">
+  <img src="/index.php/download_file/view_inline/1257/387">
+  <div class="Media-body"><p><a href="tel:+13145790066">(314) 579-0066</a></p></div>
+</div>
+</div>	<div id="blockStyle30311Main1268" class="hidden-sm ccm-block-styles" >
+
+<div class="contact-info">
+  <img src="/index.php/download_file/view_inline/1468/387">
+  <div class="Media-body"><p><a href="mailto:info@objectcomputing.com">info@objectcomputing.com</a></p></div>
+</div>
+</div>	<div id="blockStyle30312Main1269" class="visible-sm ccm-block-styles" >
+
+<div class="contact-info">
+  <img src="/index.php/download_file/view_inline/1468/387">
+  <div class="Media-body"><p><a href="mailto:info@objectcomputing.com">Email Us</a></p></div>
+</div>
+</div>	<div id="blockStyle49855Main1271" class=" ccm-block-styles" >
+
+<div class="contact-info">
+  <img src="/index.php/download_file/view_inline/1258/387">
+  <div class="Media-body"><p><a href="http://maps.apple.com/?q=12140+Woodcrest+Executive+Dr+St.+Louis+MO+63141">12140 Woodcrest<br />Executive Dr.,<br />Ste 300<br />St. Louis, MO 63141</a></p></div>
+</div>
+</div>
+
+<ul class="social-media-icons">
+			<li><a href="https://www.twitter.com/objectcomputing"><img class="callout-icon" src="/files/1214/8771/9866/twitter_social_icon.svg"></a></li>
+			<li><a href=" https://www.linkedin.com/company/objectcomputing/"><img class="callout-icon" src="/files/6314/8771/9865/linkedin_social_icon.svg"></a></li>
+			<li><a href="https://www.youtube.com/ociweb"><img class="callout-icon" src="/files/6014/8771/9866/youtube_social_icon.svg"></a></li>
+			<li><a href="https://github.com/objectcomputing"><img class="callout-icon" src="/files/6314/8771/9865/github_socail_icon.svg"></a></li>
+	</ul>							</div>
+						</li>
+					</ul>
+				</div>
+			</div>
+		</div>
+  </div>
+  <div class="sub-footer">
+		<div class="container">
+			<div class="row">
+				<div class="col-sm-4 sub-footer-left">
+          <p>&copy; 2022 Object Computing, Inc. All Rights Reserved.</p>				</div>
+				<div class="col-sm-8 sub-footer-right">
+          <p><a title="Terms of Use" href="/about/legal/terms-of-use">Terms</a> | <a title="Privacy Statement" href="/about/legal/privacy-statement">Privacy</a> | <a title="Media Kit" href="/about/media-kit">Media Kit</a></p>				</div>
+			</div>
+		</div>
+  </div>
+</footer>
+
+<a href="/wp-admin" style="display:none">secret</a>
+
+<div id="back-to-top" class="back-to-top__hidden"><a href="#toc-top"><img src="/themes/objectcomputing/images/back-to-top.svg" alt=""></a></div>
+
+<style>
+  #back-to-top {
+    position: fixed;
+    bottom: 0;
+    right: 10px;
+    transition: opacity 0.25s ease;
+    overflow: hidden;
+  }
+  #back-to-top a {
+    display: block;
+  }
+  #back-to-top img {
+    height: 50px;
+    width: 50px;
+  }
+
+  .back-to-top__hidden {
+    opacity: 0;
+  }
+</style>
+
+<script>
+  $(function() {
+    //show the link when page scrolls down
+    $(document).scroll(function() {
+      var hide = ($(this).scrollTop() < 1);
+      $('#back-to-top').toggleClass('back-to-top__hidden', hide);
+    });
+    
+    //smooth scroll up to top when link is clicked
+    $('#back-to-top a').on('click', function(event) {
+      event.preventDefault();
+      $('html, body').animate({
+        scrollTop: $($(this).attr('href')).offset().top
+      }, 250);
+    });
+  });
+</script><!-- Start of HubSpot Embed Code -->
+<script type="text/javascript" id="hs-script-loader" async defer src="//js.hs-scripts.com/4547412.js"></script>
+<!-- End of HubSpot Embed Code -->
+</body>
+</html>

@@ -1,0 +1,2107 @@
+
+
+
+
+Apache Flume - Architecture of Flume NG : Apache Flume
+
+
+
+
+
+
+
+
+
+
+
+Foundation
+Projects
+People
+Get Involved
+Support Apache
+Download
+
+
+
+The Apache Software Foundation
+Blogging in Action.
+
+
+
+
+
+
+
+Apache Flume
+
+Main
+        | Apache Flume Hackath... »
+        
+
+
+
+      Friday December 09, 2011
+    
+
+
+Apache Flume - Architecture of Flume NG
+
+
+Apache Flume is a distributed, reliable, and available system for efficiently collecting, aggregating and moving large amounts of log data from many different sources to a centralized data store. Flume is currently undergoing incubation at The Apache Software Foundation. More information on this project can be found at http://incubator.apache.org/flume. Flume NG is work related to new major revision of Flume and is the subject of this post.Prior to entering the incubator, Flume saw incremental releases leading up to version 0.9.4. As Flume became adopted it became clear that certain design choices would need to be reworked in order to address problems reported in the field. The work necessary to make this change began a few months ago under the JIRA issue FLUME-728. This work currently resides on a separate branch by the name flume-728, and is informally referred to as Flume NG. At the time of writing this post Flume NG had gone through two internal milestones - NG Alpha 1, and NG Alpha 2 and a formal incubator release of Flume NG is in the works.At a high-level, Flume NG uses a single-hop message delivery guarantee semantics to provide end-to-end reliability for the system. To accomplish this, certain new concepts have been incorporated into its design, while certain other existing concepts have been either redefined, reused or dropped completely.In this blog post, I will describe the fundamental concepts incorporated in Flume NG and talk about it’s high-level architecture. This is a first in a series of blog posts by Flume team that will go into further details of it’s design and implementation.
+
+Core ConceptsThe purpose of Flume is to provide a distributed, reliable, and available system for efficiently collecting, aggregating and moving large amounts of log data from many different sources to a centralized data store. The architecture of Flume NG is based on a few concepts that together help achieve this objective. Some of these concepts have existed in the past implementation, but have changed drastically. Here is a summary of concepts that Flume NG introduces, redefines, or reuses from earlier implementation:
+
+Event: A byte payload with optional string headers that represent the unit of data that Flume can transport from it’s point of origination to it’s final destination.
+Flow: Movement of events from the point of origin to their final destination is considered a data flow, or simply flow. This is not a rigorous definition and is used only at a high level for description purposes. 
+Client: An interface implementation that operates at the point of origin of events and delivers them to a Flume agent. Clients typically operate in the process space of the application they are consuming data from. For example, Flume Log4j Appender is a client.
+Agent: An independent process that hosts flume components such as sources, channels and sinks, and thus has the ability to receive, store and forward events to their next-hop destination. 
+Source: An interface implementation that can consume events delivered to it via a specific mechanism. For example, an Avro source is a source implementation that can be used to receive Avro events from clients or other agents in the flow. When a source receives an event, it hands it over to one or more channels.
+Channel: A transient store for events, where events are delivered to the channel via sources operating within the agent. An event put in a channel stays in that channel until a sink removes it for further transport. An example of channel is the JDBC channel that uses a file-system backed embedded database to persist the events until they are removed by a sink. Channels play an important role in ensuring durability of the flows.
+Sink: An interface implementation that can remove events from a channel and transmit them to the next agent in the flow, or to the event’s final destination. Sinks that transmit the event to it’s final destination are also known as terminal sinks. The Flume HDFS sink is an example of a terminal sink. Whereas the Flume Avro sink is an example of a regular sink that can transmit messages to other agents that are running an Avro source.
+
+
+These concepts help in simplifying the architecture, implementation, configuration and deployment of Flume. 
+
+Flow PipelineA flow in Flume NG starts from the client. The client transmits the event to it’s next hop destination. This destination is an agent. More precisely, the destination is a source operating within the agent. The source receiving this event will then deliver it to one or more channels. The channels that receive the event are drained by one or more sinks operating within the same agent. If the sink is a regular sink, it will forward the event to it’s next-hop destination which will be another agent. If instead it is a terminal sink, it will forward the event to it’s final destination. Channels allow the decoupling of sources from sinks using the familiar producer-consumer model of data exchange. This allows sources and sinks to have different performance and runtime characteristics and yet be able to effectively use the physical resources available to the system. 
+
+Figure 1 below shows how the various components interact with each other within a flow pipeline. 
+ 
+ 
+ Figure 1: Schematic showing logical components in a flow. The arrows represent the direction in which events travel across the system. This also illustrates how flows can fan-out by having one source write the event out to multiple channels.
+ 
+By configuring a source to deliver the event to more than one channel, flows can fan-out to more than one destination. This is illustrated in Figure 1 where the source within the operating Agent writes the event out to two channels - Channel 1 and Channel 2.
+Conversely, flows can be converged by having multiple sources operating within the same agent write to the same channel. A example of the physical layout of a converging flow is show in Figure 2 below.
+ 
+ 
+ Figure 2: A simple converging flow on Flume NG.
+ 
+Reliability and Failure Handling
+
+Flume NG uses channel-based transactions to guarantee reliable message delivery. When a message moves from one agent to another, two transactions are started, one on the agent that delivers the event and the other on the agent that receives the event. In order for the sending agent to commit it’s transaction, it must receive success indication from the receiving agent. The receiving agent only returns a success indication if it’s own transaction commits properly first. This ensures guaranteed delivery semantics between the hops that the flow makes. Figure 3 below shows a sequence diagram that illustrates the relative scope and duration of the transactions operating within the two interacting agents.
+ 
+ Figure 3: Transactional exchange of events between agents.
+ 
+This mechanism also forms the basis for failure handling in Flume NG. When a flow that passes through many different agents encounters a communication failure on any leg of the flow, the affected events start getting buffered at the last unaffected agent in the flow. If the failure is not resolved on time, this may lead to the failure of the last unaffected agent, which then would force the agent before it to start buffering the events. Eventually if the failure occurs when the client transmits the event to its first-hop destination, the failure will be reported back to the client which can then allow the application generating the events to take appropriate action.
+On the other hand, if the failure is resolved before the first-hop agent fails, the buffered events in various agents downstream will start draining towards their destination. Eventually the flow will be restored to its original characteristic throughput levels. Figure 4 below illustrates a scenario where a flow comprising of two intermediary agents between the client and the central store go through a transient failure. The failure occurs between agent 2 and the central store, resulting in the events getting buffered at the agent 2 itself. Once the failing link has been restored to normal, the buffered events drain out to the central store and the flow is restored to its original throughput characteristics.
+ 
+ Figure 4: Failure handling in flows. In (a) the flow is normal and events can travel from the client to the central store. In (b) a communication failure occurs between Agent 2 and the event store resulting in events being buffered on Agent 2. In (c) the cause of failure was addressed and the flow was restored and any events buffered in Agent 2 were drained to the store.
+ 
+
+Wrapping up
+
+In this post I described the various concepts that are a part of Flume NG and its high-level architecture. This is first of a series of posts from the Flume team that will highlight the design and implementation of this system. In the meantime, if you need anymore information, please feel free to drop an email on the project’s user or developer lists, or alternatively file the appropriate JIRA issues. Your contribution in any form is welcome on the project. 
+ 
+
+Links:
+Project Website: http://incubator.apache.org/flume/
+Flume NG Getting Started Guide: https://cwiki.apache.org/confluence/display/FLUME/Getting+Started
+Mailing Lists: http://incubator.apache.org/flume/mail-lists.html
+Issue Tracking: https://issues.apache.org/jira/browse/FLUME
+
+IRC Channel: #flume on irc.freenode.net 
+ 
+ 
+
+ 
+ 
+ 
+
+
+
+            Posted at 10:30AM Dec 09, 2011
+            by arvind in General  | 
+                Comments [128]
+            
+             | 
+            
+
+
+
+
+
+
+Comments:
+
+
+
+
+                [Trackback] Facebook Scribe vs Cloudera Flume Comparison Matri
+
+                
+                Posted by
+                    Confluence: 데이터지능팀
+
+                on May 24, 2012 at 10:36 AM PDT
+
+                #
+
+
+
+
+
+                [Trackback] Overview https://github.com/cloudera/flume Clouder
+
+                
+                Posted by
+                    Confluence: 데이터지능팀
+
+                on May 24, 2012 at 10:52 AM PDT
+
+                #
+
+
+
+
+
+                [Trackback] Overview https://github.com/cloudera/flume Clouder
+
+                
+                Posted by
+                    Confluence: 데이터지능팀
+
+                on May 24, 2012 at 10:52 AM PDT
+
+                #
+
+
+
+
+
+                [Trackback] Overview https://github.com/apache/flume Flume의 차세
+
+                
+                Posted by
+                    Confluence: 데이터지능팀
+
+                on May 24, 2012 at 11:09 AM PDT
+
+                #
+
+
+
+
+
+                [Trackback] Table of Contents Overview https://github.com/apac
+
+                
+                Posted by
+                    Confluence: 데이터지능팀
+
+                on May 24, 2012 at 11:09 AM PDT
+
+                #
+
+
+
+
+
+                [Trackback] Table of Contents Overview https://github.com/apac
+
+                
+                Posted by
+                    Confluence: 데이터지능팀
+
+                on May 24, 2012 at 11:11 AM PDT
+
+                #
+
+
+
+
+
+                [Trackback] Facebook Scribe vs Cloudera Flume Comparison Matri
+
+                
+                Posted by
+                    Confluence: 데이터지능팀
+
+                on May 24, 2012 at 11:43 AM PDT
+
+                #
+
+
+
+
+
+                [Trackback] Facebook Scribe vs Cloudera Flume Comparison Matri
+
+                
+                Posted by
+                    Confluence: 데이터지능팀
+
+                on May 24, 2012 at 11:43 AM PDT
+
+                #
+
+
+
+
+
+                [Trackback] Table of Contents Overview https://github.com/apac
+
+                
+                Posted by
+                    Confluence: 데이터지능팀
+
+                on January 04, 2013 at 09:01 AM PST
+
+                #
+
+
+
+
+
+                [Trackback] Facebook Scribe vs Cloudera Flume Comparison Matri
+
+                
+                Posted by
+                    Confluence: Smart VOD사업팀
+
+                on March 11, 2013 at 12:07 AM PDT
+
+                #
+
+
+
+
+
+                [Trackback] Overview https://github.com/cloudera/flume Clouder
+
+                
+                Posted by
+                    Confluence: Smart VOD사업팀
+
+                on March 11, 2013 at 12:08 AM PDT
+
+                #
+
+
+
+
+
+                [Trackback] Facebook Scribe vs Cloudera Flume Comparison Matri
+
+                
+                Posted by
+                    Confluence: Smart VOD사업팀
+
+                on March 11, 2013 at 12:08 AM PDT
+
+                #
+
+
+
+
+
+                [Trackback] Facebook Scribe vs Cloudera Flume Comparison Matri
+
+                
+                Posted by
+                    Confluence: Smart VOD사업팀
+
+                on March 11, 2013 at 12:08 AM PDT
+
+                #
+
+
+
+
+
+                [Trackback] Table of Contents Overview https://github.com/apac
+
+                
+                Posted by
+                    Confluence: Smart VOD사업팀
+
+                on March 11, 2013 at 12:09 AM PDT
+
+                #
+
+
+
+
+
+                [Trackback] Introduction This document describes the proposed 
+
+                
+                Posted by
+                    Confluence: Data Science
+
+                on March 27, 2013 at 08:13 AM PDT
+
+                #
+
+
+
+
+
+                [Trackback] Introduction This document describes the proposed 
+
+                
+                Posted by
+                    Confluence: Data Science
+
+                on March 27, 2013 at 09:58 AM PDT
+
+                #
+
+
+
+
+
+                [Trackback] Introduction This document describes the proposed 
+
+                
+                Posted by
+                    Confluence: Data Science
+
+                on March 28, 2013 at 01:49 AM PDT
+
+                #
+
+
+
+
+
+                [Trackback] Introduction This document describes the proposed 
+
+                
+                Posted by
+                    Confluence: Data Science
+
+                on March 28, 2013 at 02:14 AM PDT
+
+                #
+
+
+
+
+
+                [Trackback] Introduction This document describes the proposed 
+
+                
+                Posted by
+                    Confluence: Data Science
+
+                on March 28, 2013 at 02:15 AM PDT
+
+                #
+
+
+
+
+
+                [Trackback] Introduction This document describes the proposed 
+
+                
+                Posted by
+                    Confluence: Data Science
+
+                on March 28, 2013 at 02:32 AM PDT
+
+                #
+
+
+
+
+
+                [Trackback] Introduction This document describes the proposed 
+
+                
+                Posted by
+                    Confluence: Data Science
+
+                on March 28, 2013 at 02:42 AM PDT
+
+                #
+
+
+
+
+
+                [Trackback] Introduction This document describes the proposed 
+
+                
+                Posted by
+                    Confluence: Data Science
+
+                on March 28, 2013 at 03:04 AM PDT
+
+                #
+
+
+
+
+
+                [Trackback] Introduction This document describes the proposed 
+
+                
+                Posted by
+                    Confluence: Data Science
+
+                on March 28, 2013 at 03:11 AM PDT
+
+                #
+
+
+
+
+
+                [Trackback] Introduction This document describes the proposed 
+
+                
+                Posted by
+                    Confluence: Data Science
+
+                on March 28, 2013 at 06:52 AM PDT
+
+                #
+
+
+
+
+
+                [Trackback] Introduction This document describes the proposed 
+
+                
+                Posted by
+                    Confluence: Data Science
+
+                on March 28, 2013 at 07:32 AM PDT
+
+                #
+
+
+
+
+
+                [Trackback] Introduction This document describes the proposed 
+
+                
+                Posted by
+                    Confluence: Data Science
+
+                on March 28, 2013 at 08:29 AM PDT
+
+                #
+
+
+
+
+
+                [Trackback] Introduction This document describes the proposed 
+
+                
+                Posted by
+                    Confluence: Data Science
+
+                on October 04, 2013 at 07:22 AM PDT
+
+                #
+
+
+
+
+
+                [Trackback] Introduction This document describes the proposed 
+
+                
+                Posted by
+                    Confluence: Data Science
+
+                on October 04, 2013 at 07:22 AM PDT
+
+                #
+
+
+
+
+
+                [Trackback] Introduction This document describes the proposed 
+
+                
+                Posted by
+                    Confluence: Data Science
+
+                on October 04, 2013 at 07:26 AM PDT
+
+                #
+
+
+
+
+
+                [Trackback] With increased customer adoption, there are now hu
+
+                
+                Posted by
+                    Confluence: Cloud
+
+                on January 20, 2014 at 07:15 AM PST
+
+                #
+
+
+
+
+
+                [Trackback] Facebook Scribe vs Cloudera Flume Comparison Matri
+
+                
+                Posted by
+                    Confluence: Smart VOD사업팀
+
+                on January 20, 2014 at 06:51 PM PST
+
+                #
+
+
+
+
+
+                [Trackback] Overview https://github.com/cloudera/flume Clouder
+
+                
+                Posted by
+                    Confluence: Smart VOD사업팀
+
+                on January 20, 2014 at 06:52 PM PST
+
+                #
+
+
+
+
+
+                [Trackback] Table of Contents Overview https://github.com/apac
+
+                
+                Posted by
+                    Confluence: Smart VOD사업팀
+
+                on January 20, 2014 at 06:53 PM PST
+
+                #
+
+
+
+
+
+                [Trackback] Facebook Scribe vs Cloudera Flume Comparison Matri
+
+                
+                Posted by
+                    Confluence: 데이터지능팀
+
+                on March 01, 2014 at 01:59 AM PST
+
+                #
+
+
+
+
+
+                [Trackback] Overview https://github.com/cloudera/flume Clouder
+
+                
+                Posted by
+                    Confluence: 데이터지능팀
+
+                on March 01, 2014 at 01:59 AM PST
+
+                #
+
+
+
+
+
+                [Trackback] Facebook Scribe vs Cloudera Flume Comparison Matri
+
+                
+                Posted by
+                    Confluence: 데이터지능팀
+
+                on March 01, 2014 at 02:00 AM PST
+
+                #
+
+
+
+
+
+                [Trackback] Facebook Scribe vs Cloudera Flume Comparison Matri
+
+                
+                Posted by
+                    Confluence: 데이터지능팀
+
+                on March 01, 2014 at 02:01 AM PST
+
+                #
+
+
+
+
+
+                [Trackback] Table of Contents Overview https://github.com/apac
+
+                
+                Posted by
+                    Confluence: 데이터지능팀
+
+                on March 01, 2014 at 02:01 AM PST
+
+                #
+
+
+
+
+
+                [Trackback] Facebook Scribe vs Cloudera Flume Comparison Matri
+
+                
+                Posted by
+                    Confluence: 데이터지능팀
+
+                on March 01, 2014 at 02:47 AM PST
+
+                #
+
+
+
+
+
+                [Trackback] Overview https://github.com/cloudera/flume Clouder
+
+                
+                Posted by
+                    Confluence: 데이터지능팀
+
+                on March 01, 2014 at 02:47 AM PST
+
+                #
+
+
+
+
+
+                [Trackback] Table of Contents Overview https://github.com/apac
+
+                
+                Posted by
+                    Confluence: 데이터지능팀
+
+                on March 01, 2014 at 02:48 AM PST
+
+                #
+
+
+
+
+
+                In Flume NG architecture, what is a purpose of redistributing source data into multiple channels? Is it becuase of the throughput performance and/or redundancy & HA?
+
+                
+                Posted by
+                    Brandon Lee
+
+                on November 30, 2015 at 09:53 AM PST
+
+                #
+
+
+
+
+
+                I assume, Agent is a Java programs or process. 
+
+
+
+If these are processes, how they are communicating with each other, IPC?
+
+
+
+If they are programs, are they running on same JVM?
+
+
+
+A little inside Transactions handling would help.
+
+
+
+Thanks.
+
+
+
+                
+                Posted by
+                    Manjeet
+
+                on December 30, 2015 at 03:53 AM PST
+
+                #
+
+
+
+
+
+                It's => short for It is
+
+Its => possesive form
+
+
+
+its shape, it is round
+
+
+
+it's far from its centre 
+
+
+
+
+
+                
+                Posted by
+                    Bee
+
+                on October 27, 2016 at 06:57 AM PDT
+
+                #
+
+
+
+
+
+                Hi Team,
+
+
+
+Your link is really Good! I'm first time reading this link without any background & I like it really!
+
+
+
+Awesome content!
+
+
+
+If possible pls share some use cases.
+
+
+
+
+
+Regards,
+
+Mikhil
+
+                
+                Posted by
+                    Mikhil Nagarale
+
+                on August 22, 2017 at 10:37 PM PDT
+
+                #
+
+
+
+
+
+                The Service Management of MC Donald is conducting the MC Donald’s Customer Satisfaction Survey.
+
+
+
+http://mcdvoice.online/
+
+                Posted by
+                    mcdvoice
+
+                on February 09, 2019 at 01:20 AM PST
+
+                #
+
+
+
+
+
+                My someone that I very like your calculation machine on-line and affirm the mass your post's to be solely what i'm gazing. ar you able to very offer visitant manufacturers to form content material for you? i might not neural structure subsidence a post or explaining on assortment of the topic downside you compose with regard to here. once more, awe-inspiring weblog! 
+
+https://instagramcaptions.org/savage-captions/
+https://instagramcaptions.org/
+
+                Posted by
+                    instagramcaptions
+
+                on March 21, 2019 at 04:58 AM PDT
+
+                #
+
+
+
+
+
+                We staggered here stand-out process machine and thought i might additional investigate things out. I merely like what I see thus by and by i am tailing you. foresee seeing your registering machine as a rule. 
+
+https://www.neet2019.in/
+https://www.neet2019.in/neet-admit-card-2019/
+
+                Posted by
+                    NEET official website
+
+                on March 21, 2019 at 05:01 AM PDT
+
+                #
+
+
+
+
+
+                All the Apache blog users are welcoming to take your favorite store or restaurant surveys at https://patronsurvey.com/ . Because the patronsurvey website providing all the instructions to complete the feedback survey without any mistake. Win $500 by completing a food lion survey on the patronsurvey website.
+
+                
+                Posted by
+                    talktofoodlion com survey
+
+                on April 26, 2019 at 02:59 AM PDT
+
+                #
+
+
+
+
+
+                It is possible to configure Flume to get data from log files on Apache web server?
+
+
+
+While doing the last-minute config change for https://betjedi.net/, I ran into the issue that I had missed my Flume package and I thought I would have to reinstall it manually.
+
+                
+                Posted by
+                    enakinkenobi
+
+                on June 25, 2019 at 07:24 AM PDT
+
+                #
+
+
+
+
+
+                ایرنیک
+
+https://www.reddit.com/r/RegisterDomain/comments/c60vb2/%D8%AB%D8%A8%D8%AA_%D8%AF%D8%A7%D9%85%D9%86%D9%87_%D8%AF%D8%B1_%D8%A7%DB%8C%D8%B1%D8%A7%D9%86_%D8%B3%D8%B1%D9%88%D8%B1/
+
+                Posted by
+                    ایرنیک
+
+                on June 26, 2019 at 09:28 PM PDT
+
+                #
+
+
+
+
+
+                Notify me by email of new commentsNotify me by email of new commentsNotify me by email of new commentsNotify me by email of new comments
+
+                
+                Posted by
+                    film izle
+
+                on June 29, 2019 at 01:04 PM PDT
+
+                #
+
+
+
+
+
+                by email of new commentsNotify me by email of new comments
+
+http://www.gtagame100.com
+http://www.subway-game.blogspot.com
+
+                Posted by
+                    zain david
+
+                on July 15, 2019 at 09:40 AM PDT
+
+                #
+
+
+
+
+
+                nice post.
+
+ http://www.zumagame100.blogspot.com
+
+                Posted by
+                    zain david
+
+                on July 15, 2019 at 09:46 AM PDT
+
+                #
+
+
+
+
+
+                bssc result http://supremecourtjudgements.in
+
+                Posted by
+                    Ramesh
+
+                on July 15, 2019 at 08:23 PM PDT
+
+                #
+
+
+
+
+
+                great Apache Flume
+
+                
+                Posted by
+                    DISFUNZIONE
+
+                on July 17, 2019 at 04:39 AM PDT
+
+                #
+
+
+
+
+
+                Erectile Dysfunction
+
+                
+                Posted by
+                    Erectile Dysfunction
+
+                on July 17, 2019 at 04:41 AM PDT
+
+                #
+
+
+
+
+
+                Architecture of Flume NG
+
+                
+                Posted by
+                    Dysfunction Erectile
+
+                on July 17, 2019 at 04:43 AM PDT
+
+                #
+
+
+
+
+
+                This mechanism also forms the basis 
+
+                
+                Posted by
+                    Dysfunction
+
+                on July 17, 2019 at 04:44 AM PDT
+
+                #
+
+
+
+
+
+                When a message moves from one agent to another,
+
+                
+                Posted by
+                    POTENZMITTEL
+
+                on July 17, 2019 at 04:48 AM PDT
+
+                #
+
+
+
+
+
+                The purpose of Flume is to provide a distributed
+
+                
+                Posted by
+                    DISFUNCIÓN ERÉCTIL
+
+                on July 17, 2019 at 04:59 AM PDT
+
+                #
+
+
+
+
+
+                Flume NG uses channel-based transactions to guarantee reliable message delivery
+
+                
+                Posted by
+                    La Dysfonction érectile
+
+                on July 17, 2019 at 05:00 AM PDT
+
+                #
+
+
+
+
+
+                A flow in Flume NG starts from the client.
+
+                
+                Posted by
+                    Erectile Dysfunction
+
+                on July 17, 2019 at 05:01 AM PDT
+
+                #
+
+
+
+
+
+                Thank you for sharing! Stunningly inspiring. 6666666666
+
+                
+                Posted by
+                    mengingmahis1973
+
+                on July 20, 2019 at 09:47 AM PDT
+
+                #
+
+
+
+
+
+                Appealing Colors! so delicately illustrated. Love to see in large print
+
+                
+                Posted by
+                    ciaverscoorru1974
+
+                on July 20, 2019 at 09:54 AM PDT
+
+                #
+
+
+
+
+
+                epic! great concept
+
+                
+                Posted by
+                    spinunelul1989
+
+                on July 20, 2019 at 10:35 AM PDT
+
+                #
+
+
+
+
+
+                sixsixsix Awwwwwsssssooommmeee
+
+                
+                Posted by
+                    izsitaphe1977
+
+                on July 20, 2019 at 10:49 AM PDT
+
+                #
+
+
+
+
+
+                Beautiful ❤️❤️ trendy :)
+
+                
+                Posted by
+                    unnymmistlu1985
+
+                on July 20, 2019 at 11:21 AM PDT
+
+                #
+
+
+
+
+
+                I love the video and UI, but the music throw me off a bit. Style!!!!!
+
+                
+                Posted by
+                    pyouderjasa1989
+
+                on July 20, 2019 at 12:27 PM PDT
+
+                #
+
+
+
+
+
+                Engaging and thought provoking photos - love the streaks of concealer on faces and the unusual pottery! Awesome illustration style!
+
+                
+                Posted by
+                    wotounoga1977
+
+                on July 20, 2019 at 04:24 PM PDT
+
+                #
+
+
+
+
+
+                nice !!! Real great job
+
+                
+                Posted by
+                    logrisenka1975
+
+                on July 20, 2019 at 05:14 PM PDT
+
+                #
+
+
+
+
+
+                @Carol uu 嗷嗷嗷嗷 好的好的 Legal demais, parabéns.
+
+                
+                Posted by
+                    billchidanur1979
+
+                on July 20, 2019 at 06:06 PM PDT
+
+                #
+
+
+
+
+
+                Amazing project, I love it! 可爱
+
+                
+                Posted by
+                    kickkalliacong1978
+
+                on July 20, 2019 at 07:46 PM PDT
+
+                #
+
+
+
+
+
+                Very cool work! I did notice that there's a typo (I think) in one of the animated sequences. no doubt it's a great design, smart and organic
+
+                
+                Posted by
+                    meevesinpopp1988
+
+                on July 20, 2019 at 09:45 PM PDT
+
+                #
+
+
+
+
+
+                Awsome. fantástico! muito bom!!
+
+                
+                Posted by
+                    themvogaca1986
+
+                on July 20, 2019 at 10:17 PM PDT
+
+                #
+
+
+
+
+
+                So cool! ✨ Reminds me of Moebius, great stuff.
+
+                
+                Posted by
+                    totirudis1972
+
+                on July 20, 2019 at 10:58 PM PDT
+
+                #
+
+
+
+
+
+                Muchas gracias @Mariano Diez ! Another great work!
+
+                
+                Posted by
+                    hardportvermalt1971
+
+                on July 20, 2019 at 11:31 PM PDT
+
+                #
+
+
+
+
+
+                this is a jewelry job!! So beautifull !
+
+                
+                Posted by
+                    concourenlooks1970
+
+                on July 21, 2019 at 12:04 AM PDT
+
+                #
+
+
+
+
+
+                So much fun I love these :D Nice work! The use of the colors and textures are great! :)
+
+                
+                Posted by
+                    sporfulcuro1978
+
+                on July 21, 2019 at 12:36 AM PDT
+
+                #
+
+
+
+
+
+                I love it! Nice job @Hea Lin Kwon 哪个在屠宰场的猪。。。是不是玩的太专注了
+
+                
+                Posted by
+                    detitimi1983
+
+                on July 21, 2019 at 01:08 AM PDT
+
+                #
+
+
+
+
+
+                Súper! I love your colours! Really original work
+
+                
+                Posted by
+                    doubtvedergui1972
+
+                on July 21, 2019 at 01:40 AM PDT
+
+                #
+
+
+
+
+
+                Wow. Amazing THIS IS INSANE! LOVE IT
+
+                
+                Posted by
+                    ghetatanach1970
+
+                on July 21, 2019 at 02:45 AM PDT
+
+                #
+
+
+
+
+
+                 @Eveling Salazar @Vébé ® @Ramon Li - thank you for your kind comments and support!
+
+                
+                Posted by
+                    dawdticonmi1980
+
+                on July 21, 2019 at 03:19 AM PDT
+
+                #
+
+
+
+
+
+                It's a great article. 
+
+                
+                Posted by
+                    هاست وردپرس
+
+                on July 22, 2019 at 06:01 AM PDT
+
+                #
+
+
+
+
+
+                If you want to participate in survey ant win exciting gifts for yourself then you can visit our website onlinesurvey. http://onlinesurvey.tech/www-survey-walmart-com/
+
+                Posted by
+                    MyCFAVisit
+
+                on August 21, 2019 at 09:15 AM PDT
+
+                #
+
+
+
+
+
+                In modern world you have no need to travel thousand miles to plunge into the atmosphere of casino and play your favorite games on money. Today you have no need to spend your money at expensive casino services such as food, drinks and tips. Modern technologies allow you to play at web based casinos, which are very similar to the common ones, but you can visit them any time when you have internet access as they are available online.
+
+                
+                Posted by
+                    petrufc4
+
+                on September 24, 2019 at 12:38 PM PDT
+
+                #
+
+
+
+
+
+                There are no things more important for roulette players than understanding of game rules and principles of betting. When https://rouletteonlineart.com/ you know them you may be sure that sooner or later you will win, but if you have no idea on how to bet at the roulette table, you can meet a lot of problems. Besides, it is also important to have some strategy to bet in roulette game.
+
+
+
+
+
+                
+                Posted by
+                    tomarapupkina
+
+                on October 04, 2019 at 09:23 AM PDT
+
+                #
+
+
+
+
+
+                Playing https://pokercasinosfan.com/ may be very beneficial as in this game you may easily control situation at the table.
+
+                
+                Posted by
+                    MarinaSamoylova
+
+                on October 13, 2019 at 06:44 AM PDT
+
+                #
+
+
+
+
+
+                Here I will teach you how not be a complete loser in poker http://pokerpromotionsgiant.com/ game. You should know at least the basic rules and hints to play with your friends or in the neighborhood poker room. It's not fun poems like "My name's Jacqueline, I'm seventeen" but real stuff. So read and learn.
+
+
+
+
+
+                
+                Posted by
+                    MarkKhudobyak
+
+                on October 19, 2019 at 10:11 AM PDT
+
+                #
+
+
+
+
+
+                Ruby Rains was born and grew up in typical Texas family that means competition and cards were deep in her blood. Card play was a thing that made the whole family keep together and forget about life problems. Free blackjack http://pokerrulesguru.com/ was a favorite game among Ruby's family members. She was smart enough to go to Jefferson University and get degree in psychology and later PhD. She got married to her classmate Jason Simmons and became Ruby Simmons. Her husband was fond of poker and took his wife to local poker rooms with him. That started an era of Ruby as a poker player. But there were so many things about gambling to know! And one of them was comprehension of all game rules. Ruby succeeded in that. Want to be like she is? Check out gambling.com for the top online roulette site reviews, bonus offers, and more.
+
+
+
+
+
+                
+                Posted by
+                    YefimKryukov
+
+                on October 19, 2019 at 11:28 AM PDT
+
+                #
+
+
+
+
+
+                Interesting post take a look https://devrant.com/users/dgcustomerfirst
+
+                Posted by
+                    dgcustomerfirst-com.com
+
+                on October 27, 2019 at 04:04 AM PDT
+
+                #
+
+
+
+
+
+                Really nice way to express your experiment, if you free please have look at our site, which is design nicely. But your opinion would be appreciable.
+
+
+
+https://indianfestwishesquotes.blogspot.com
+
+
+
+Thanks for your Time!
+
+                
+                Posted by
+                    https://inspiringwishes.com
+
+                on November 28, 2019 at 03:11 AM PST
+
+                #
+
+
+
+
+
+                Interesting read, thank you for sharing with us. This is also a good read https://tech25s.com
+
+                Posted by
+                    Tech 25
+
+                on December 15, 2019 at 01:05 AM PST
+
+                #
+
+
+
+
+
+                hich is design nicely
+
+                
+                Posted by
+                    آجر نما لعابدار اصفهان
+
+                on December 15, 2019 at 02:02 AM PST
+
+                #
+
+
+
+
+
+                nice web design thank you for share this 
+
+                
+                Posted by
+                    https://389sports.org/
+
+                on December 26, 2019 at 06:36 PM PST
+
+                #
+
+
+
+
+
+                i like your website. it help me alot
+
+                
+                Posted by
+                    sbobet
+
+                on December 26, 2019 at 06:37 PM PST
+
+                #
+
+
+
+
+
+                nice website very helpful
+
+                
+                Posted by
+                    http://slotcasino88.com/
+
+                on December 26, 2019 at 06:39 PM PST
+
+                #
+
+
+
+
+
+                nice architecture of website thanks
+
+                
+                Posted by
+                    http://www.tunaspoker.online/
+
+                on December 26, 2019 at 06:39 PM PST
+
+                #
+
+
+
+
+
+                nice blog for flume architecture.
+
+for more details follow http://www.greatonlinestore.in/men-fashion/
+
+                Posted by
+                    Akoya
+
+                on January 01, 2020 at 09:46 PM PST
+
+                #
+
+
+
+
+
+                nice info. 5/5
+
+                
+                Posted by
+                    Free Tutorials
+
+                on January 08, 2020 at 08:48 AM PST
+
+                #
+
+
+
+
+
+                thanks everyone
+
+                
+                Posted by
+                    Apache
+
+                on January 08, 2020 at 08:49 AM PST
+
+                #
+
+
+
+
+
+                Hey really nice article by apache fashion https://bestwalletformen.com/
+
+                Posted by
+                    Wallet Men 
+
+                on January 18, 2020 at 10:58 PM PST
+
+                #
+
+
+
+
+
+                It great thought, you must be an expert in your coding. Thanks for Sharing
+
+                
+                Posted by
+                    Different Type Of SEO
+
+                on January 19, 2020 at 06:01 AM PST
+
+                #
+
+
+
+
+
+                Related Article By Meetanshi https://meetanshi.com/blog/install-magento-2-on-localhost-using-xampp/
+https://meetanshi.com/
+
+                Posted by
+                    Andrew
+
+                on January 20, 2020 at 02:12 AM PST
+
+                #
+
+
+
+
+
+                hi new post
+
+                
+                Posted by
+                    napconline
+
+                on January 22, 2020 at 07:08 AM PST
+
+                #
+
+
+
+
+
+                Thank you. 
+
+                
+                Posted by
+                    Merlin
+
+                on January 27, 2020 at 05:35 PM PST
+
+                #
+
+
+
+
+
+                Programming is hard nowadays guys. 
+
+                
+                Posted by
+                    Merlin
+
+                on January 27, 2020 at 05:39 PM PST
+
+                #
+
+
+
+
+
+                Still looking forward. 
+
+                
+                Posted by
+                    Merlin
+
+                on January 27, 2020 at 05:40 PM PST
+
+                #
+
+
+
+
+
+                Very decent work! I did notice that there is a typo (I believe) in one of the animated sequences. no doubt these are all great designs, smart and natural http://clarenceusa.bravesites.com/
+https://cullencanada.tumblr.com/
+https://armanionlineusa.webnode.com/
+https://adysononline.shutterfly.com/
+
+The web design is fantastic.
+
+                
+                Posted by
+                    Florida
+
+                on January 29, 2020 at 06:15 PM PST
+
+                #
+
+
+
+
+
+                Thank you, is work.
+
+                
+                Posted by
+                    Sbobethub
+
+                on January 30, 2020 at 02:28 AM PST
+
+                #
+
+
+
+
+
+                Moving within/from Vancouver, (North, West, East) BC? We’re here for all your moving, packing, and storage needs. https://www.1promovingandshipping.com/ At 1 Pro, our movers have extensive experience moving people and their belongings within and out of the area. 
+
+                
+                Posted by
+                    Vancouver
+
+                on February 01, 2020 at 04:34 PM PST
+
+                #
+
+
+
+
+
+                Related Article By Magento Store Manager https://www.mag-manager.com/useful-articles/about-magento-shopping-cart/how-to-install-magento-on-localhost-like-xampp/
+
+                Posted by
+                    alex
+
+                on February 04, 2020 at 04:02 AM PST
+
+                #
+
+
+
+
+
+                good post
+
+thank you
+
+                
+                Posted by
+                    agahi rayegan
+
+                on February 05, 2020 at 07:27 AM PST
+
+                #
+
+
+
+
+
+                Interesting read, thank you for sharing with us. 
+
+                
+                Posted by
+                    Eric Wurfel
+
+                on February 07, 2020 at 11:20 PM PST
+
+                #
+
+
+
+
+
+                Interesting read, thank you for sharing with us. 
+
+                
+                Posted by
+                    Eric Wurfel
+
+                on February 07, 2020 at 11:21 PM PST
+
+                #
+
+
+
+
+
+                Nice Information. always helpful content.
+
+                
+                Posted by
+                    Susanne Eisenhauer
+
+                on February 07, 2020 at 11:24 PM PST
+
+                #
+
+
+
+
+
+                Amazing designs! Your custom cabinets are flawless. http://stpeterandbrotherrod.ca/
+
+                Posted by
+                    Maple Ridge
+
+                on February 11, 2020 at 05:45 PM PST
+
+                #
+
+
+
+
+
+                These useful concepts help in simplifying the whole towing and removal process. https://nobletowing.ca/
+
+                Posted by
+                    Vancouver 
+
+                on February 11, 2020 at 05:47 PM PST
+
+                #
+
+
+
+
+
+                Thank you Flume. My goal with the website https://psychictoronto.ca/ is to provide a distributed, reliable, and available system for efficiently predicting the future!.
+
+                
+                Posted by
+                    Toronto
+
+                on February 11, 2020 at 05:50 PM PST
+
+                #
+
+
+
+
+
+                Amazing local SEO project, I approve of it!
+
+http://co60q.esa.int/Lists/ESTEC%20Co60%20Customer%20Satisfaction/DispForm.aspx?ID=1175
+
+                Posted by
+                    Nanaimo
+
+                on February 11, 2020 at 05:53 PM PST
+
+                #
+
+
+
+
+
+                Hey, It's Great to read about this. https://magecomp.com/magento-2-extensions.html
+
+                Posted by
+                    Gaurav Jain
+
+                on February 11, 2020 at 10:00 PM PST
+
+                #
+
+
+
+
+
+                Hey, Thanks for posting about this. 
+
+https://magecomp.com/
+
+                Posted by
+                    Zoya Scoot
+
+                on February 11, 2020 at 10:18 PM PST
+
+                #
+
+
+
+
+
+                nice post, I learned alot! 
+
+                
+                Posted by
+                    GetZQ protocol
+
+                on February 14, 2020 at 07:12 PM PST
+
+                #
+
+
+
+
+
+                Cool place! 
+
+                
+                Posted by
+                    add website
+
+                on February 14, 2020 at 07:13 PM PST
+
+                #
+
+
+
+
+
+                Thank you for your consideration https://www.1promovingandshipping.com/office-moving/ and yes, there are way too many local office movers in bc.
+
+                
+                Posted by
+                    Burnaby BC
+
+                on February 17, 2020 at 10:58 AM PST
+
+                #
+
+
+
+
+
+                Even if you "only" have Gestational Diabetes, it is especially important for you to monitor your blood glucose levels. Your baby will be impacted by the slightest peak you might have as the insulin does cross the placenta, so make sure to keep your levels even so your baby will grow normally.
+
+[https://www.lucktest.in/ResultChart.php](play bazaar)
+
+                
+                Posted by
+                    Play Bazaar
+
+                on February 19, 2020 at 04:16 AM PST
+
+                #
+
+
+
+
+
+                Smoking is dangerous for anybody, but it is even mroe problematic for diabetics. Having this habit will expose you to a lot of unhealthy effects. When you smoke it makes your insulin resistant and if you are not already diabetic, it will increase your risk for developing type 2 diabetes.
+
+(play bazaar)[https://www.lucktest.in/ResultChart.php]
+
+                Posted by
+                    Play Bazaar
+
+                on February 19, 2020 at 04:18 AM PST
+
+                #
+
+
+
+
+
+                The content of your article page is very good, I find the content quite good and helpful to me, thank you for
+
+                
+                Posted by
+                    Download GHD SPORTS
+
+                on February 20, 2020 at 05:11 AM PST
+
+                #
+
+
+
+
+Post a Comment:
+
+Comments are closed for this entry.
+
+
+
+
+
+Calendar
+
+« May 2022SunMonTueWedThuFriSat12345678910111213141516171819202122232425262728293031           Today
+
+Search
+
+
+
+
+
+
+
+
+
+Hot Blogs (today's hits)
+
+
+
+
+
+
+Tag Cloud
+
+
+         flume
+       
+
+         flume-ng
+       
+
+         hackathon
+       
+
+         hadoop
+       
+
+         hbase
+       
+
+         performance
+       
+
+ Categories
+
+
+All
+General
+Status
+Music
+
+
+Feeds
+
+
+All
+General
+Status
+Music
+Comments
+
+
+Links
+
+
+
+Apache Software Foundation
+
+
+Apache Roller Project
+
+
+
+Navigation
+
+
+
+ASF Blogs
+
+
+Weblog
+
+
+Login
+
+
+
+
+
+
+

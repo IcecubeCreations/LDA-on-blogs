@@ -1,0 +1,973 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="This article takes a critical look at the performance of the most popular message brokers according to requirements set forth from this developer's clients.">
+  <meta name="keywords" content="kafka, kestrel, Database, Requirement, clustering">
+
+  <meta property="og:description" content="This article takes a critical look at the performance of the most popular message brokers according to requirements set forth from this developer's clients.">
+  <meta property="og:site_name" content="dzone.com">
+  <meta property="og:title" content="Exploring Message Brokers: RabbitMQ, Kafka, ActiveMQ, and Kestrel - DZone Integration">
+  <meta property="og:url" content="https://dzone.com/articles/exploring-message-brokers">
+  <meta property="og:image" content="https://dz2cdn2.dzone.com/storage/article-thumb/2697-thumb.jpg">
+  <meta property="og:type" content="article">
+
+  <meta name="twitter:site" content="@DZoneInc">
+  <meta name="twitter:image" content="https://dz2cdn2.dzone.com/storage/article-thumb/2697-thumb.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:description" content="This article takes a critical look at the performance of the most popular message brokers according to requirements set forth from this developer's clients.">
+  <meta name="twitter:title" content="Exploring Message Brokers: RabbitMQ, Kafka, ActiveMQ, and Kestrel - DZone Integration">
+
+  <meta name="referrer" content="origin-when-cross-origin">
+  <meta name="google-site-verification" content="kndbhxcupfEqWmZclhCpB6vlgOs7QSmx2UHAGGnP2mA">
+  <meta name="df-verify" content="df0d76632b4543">
+
+  <link rel="icon" type="image/x-icon" href="https://dz2cdn2.dzone.com/themes/dz20/images/favicon.png">
+  <link rel="image_src" href="https://dz2cdn2.dzone.com/storage/article-thumb/2697-thumb.jpg">
+  <link rel="canonical" href="https://dzone.com/articles/exploring-message-brokers">
+
+  <title>Exploring Message Brokers: RabbitMQ, Kafka, ActiveMQ, and Kestrel - DZone Integration</title>
+
+  <link rel="preload" href="https://fonts.dzone.com/themes/dz20/font/fontello.woff?11773374" as="font" type="font/woff" crossorigin="anonymous">
+
+  <link rel="stylesheet" media="all" href="https://dz2cdn2.dzone.com/themes/dz20/ftl/icons.css">
+  <link rel="stylesheet" media="all" href="https://dz2cdn2.dzone.com/themes/dz20/lib/static/bootstrap/bootstrap.min.css">
+  <link rel="stylesheet" media="all" href="https://dz2cdn2.dzone.com/themes/dz20/ftl/article/global.css">
+  <link rel="stylesheet" media="all" href="https://dz2cdn2.dzone.com/themes/dz20/ftl/header/styles.css">
+</head>
+<body>
+<div id="ftl-header">
+  <div class="container-fluid header">
+    <div class="row">
+      <div class="col-md-12" style="padding: 0;">
+        <div class="header-top">
+          <div class="header-container">
+            <div class="pull-left logo-container">
+              <div class="logo">
+                <a class="inner" href="/">
+                  <picture>
+                    <source srcset="https://dz2cdn2.dzone.com/themes/dz20/images/dz_logo_2021_cropped.webp" type="image/webp">
+                    <source srcset="https://dz2cdn2.dzone.com/themes/dz20/images/dz_logo_2021_cropped.png" type="image/png">
+                    <img src="https://dz2cdn2.dzone.com/themes/dz20/images/dz_logo_2021_cropped.png" width="160" height="52" alt="DZone">
+                  </picture>
+                </a>
+              </div>
+
+                <div class="active-portal"><a href="/enterprise-integration-training-tools-news">Integration Zone</a></div>
+            </div>
+
+            <div class="pull-right login-and-search">
+              <div id="authenticated-block" class="logged-in">
+                <div class="welcome-back">Thanks for visiting DZone today,</div>
+                <div id="user-header" class="user-info">
+                  <button class="user-avatar">
+                    <span id="header-username" class="username"></span>
+                    <img id="header-avatar" src="" alt="user avatar">
+                  </button>
+                  <div id="user-dropdown" class="browse-user-menu">
+                    <div class="user-content">
+                      <a id="header-user-plug" href="#" class="user-description"></a>
+                      <a id="header-user-edit" href="#" class="edit-profile">Edit Profile</a>
+                    </div>
+                    <ul class="user-actions">
+                      <li id="first-user-action"><a id="header-dropdown-manage-email" href="#">Manage Email Subscriptions</a></li>
+                      <li>
+                        <a href="/articles/how-to-submit-a-post-to-dzone?utm_source=DZone&utm_medium=user_dropdown&utm_campaign=how_to_post">
+                          How to Post to DZone
+                        </a>
+                      </li>
+                      <li>
+                        <a href="/articles/dzones-article-submission-guidelines">
+                          Article Submission Guidelines
+                        </a>
+                      </li>
+                    </ul>
+                    <div class="bottom">
+                      <a href="/users/logout.html" class="sign-out">Sign Out</a>
+                      <a id="dropdown-view-profile" href="#" class="view-profile">View Profile</a>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="post-content">
+                  <button id="post-button" class="post-content--button">
+                    <span class="post-class">Post</span>
+                    <i class="icon-plus"></i>
+                  </button>
+
+                  <div id="post-menu" class="posting-links">
+                    <div class="posting-links-menu">
+                      <ul>
+                        <li>
+                          <img src="/themes/dz20/images/dz-postarticle.svg">
+                          <a href="/content/article/post.html">Post an Article</a>
+                        </li>
+                        <li>
+                          <a id="drafts-link" href="#">Manage My Drafts</a>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div id="unauthenticated-block">
+                <div class="dz-intro">Over 2 million developers have joined DZone.</div>
+                <div class="mobile-invisible sign-in-join">
+                  <a href="/users/login.html">Log In</a>
+                  <span class="dz-intro-span">/</span>
+                  <a href="/static/registration.html">Join</a>
+                </div>
+                <a class="join-icon" href="/users/login.html"><i class="icon-user"></i></a>
+              </div>
+              <div class="headerSearch">
+                <a class="icon-search dropdown-toggle" href="/search"></a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="header-bottom">
+
+
+          <ul class="portals header-container scrollable-ul">
+            <li>
+              <a href="/refcardz" id="header-refcardz">
+                <em>Refcardz</em>
+              </a>
+            </li>
+            <li>
+              <a href="/trendreports" id="header-research">
+                <em>Trend Reports</em>
+              </a>
+            </li>
+            <li>
+              <a href="/webinars" id="header-webinars">
+                <em>Webinars</em>
+              </a>
+            </li>
+            <li class="last-portal-link">
+              <a href="#" id="header-portals">
+                <em>
+                  Zones
+                  <span id="zone-arrow" class="collapsible-toggle">
+                    <i class="icon-angle-down"></i>
+                    <i class="icon-angle-up"></i>
+                  </span>
+                </em>
+              </a>
+            </li>
+
+            <li class="separator" aria-hidden="true" style="color: #d9dcdd;">|</li>
+            <li id="portal-list" class="portal-topics">
+              <ul>
+                  <li>
+                    <a href="/agile-methodology-training-tools-news" id="header-2">Agile</a>
+                  </li>
+                  <li>
+                    <a href="/artificial-intelligence-tutorials-tools-news" id="header-4001">AI</a>
+                  </li>
+                  <li>
+                    <a href="/big-data-analytics-tutorials-tools-news" id="header-3">Big Data</a>
+                  </li>
+                  <li>
+                    <a href="/cloud-computing-tutorials-tools-news" id="header-4">Cloud</a>
+                  </li>
+                  <li>
+                    <a href="/database-sql-nosql-tutorials-tools-news" id="header-5">Database</a>
+                  </li>
+                  <li>
+                    <a href="/devops-tutorials-tools-news" id="header-6">DevOps</a>
+                  </li>
+                  <li>
+                    <a href="/enterprise-integration-training-tools-news" id="header-7">Integration</a>
+                  </li>
+                  <li>
+                    <a href="/iot-developer-tutorials-tools-news-reviews" id="header-8">IoT</a>
+                  </li>
+                  <li>
+                    <a href="/java-jdk-development-tutorials-tools-news" id="header-1">Java</a>
+                  </li>
+                  <li>
+                    <a href="/microservices-news-tutorials-tools" id="header-6001">Microservices</a>
+                  </li>
+                  <li>
+                    <a href="/open-source-news-tutorials-tools" id="header-7001">Open Source</a>
+                  </li>
+                  <li>
+                    <a href="/apm-tools-performance-monitoring-optimization" id="header-10">Performance</a>
+                  </li>
+                  <li>
+                    <a href="/application-web-network-security" id="header-2001">Security</a>
+                  </li>
+                  <li>
+                    <a href="/web-development-programming-tutorials-tools-news" id="header-11">Web Dev</a>
+                  </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script async src="https://dz2cdn2.dzone.com/themes/dz20/ftl/header/bundle.js"></script><link rel="stylesheet" media="all" href="https://dz2cdn2.dzone.com/themes/dz20/ftl/article/styles.css">
+
+
+
+
+<div id="ftl-article" >
+  <div class="container-fluid body">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="articles-wrap">
+              <div class="ad-container">
+                <div id="div-gpt-ad-1435246566686-0" class="ads-billboard-article" data-gpt-slot="top"></div>
+              </div>
+
+
+          <div class="article-stream widget-top-border">
+                <div class="content-right-images">
+                  <div id="div-gpt-ad-1435246566686-2" class="sidebar-ad" data-gpt-desktop="true" data-gpt-slot="sidebar1"></div>
+                </div>
+
+                <script type="application/ld+json">
+                  {
+                    "@context": "http://schema.org",
+                    "@type": "Article",
+                    "headline": "Exploring Message Brokers: RabbitMQ, Kafka, ActiveMQ, and Kestrel",
+                    "author": {
+                      "@type": "Person",
+                      "name": "Yves Trudeau"
+                    },
+                    "audience": "software developers",
+                    "keywords": "integration,activemq,rabbitmq,kafka,kestrel,apache kafka,message brokers",
+                    "timeRequired": "PT6M",
+                    "commentCount": 4,
+                    "wordCount": "1431",
+                    "accessMode": "textual, visual",
+                    "dateCreated": "2014-06-03T02:00:00Z",
+                    "datePublished": "2014-06-03T02:00:00Z",
+                    "dateModified": "2019-10-25T14:45:52Z",
+                    "articleSection": "enterprise-integration-training-tools-news",
+                    "publisher": {
+                      "@type": "Organization",
+                      "name": "DZone",
+                      "url": "https://dzone.com",
+                      "logo": {
+                        "@type": "ImageObject",
+                        "url": "https://dzone.com/themes/dz20/images/dz_logo_2021_cropped.png"
+                      }
+                    },
+                    "articleBody": "Message brokers are not regularly covered here but are, nonetheless, important web-related technologies. Some time ago, I was asked by one of our customers to review a selection of OSS message brokers and propose a couple of good candidates. The requirements were fairly simple: behave well when there’s a large backlog of messages, be able to create a cluster and in case of the failure of a node in a cluster, try to protect the data, but never blocks the publishers even though that might imply data lost. Nothing fancy regarding queues and topics management. I decided to write my findings here, before I forget… I don’t consider myself a message broker specialist and I spent only about a day or two on each so, I may have done some big mistakes configuration wise. I’ll take the blame if something is misconfigured or not used correctly. RabbitMQ RabbitMQ is a well-known and popular message broker and it has many powerful features. The documentation on the RabbitMQ website is excellent and there are many books available. RabbitMQ is written in Erlang, not a widely used programming language but well adapted to such tasks. The company Pivotal develops and maintains RabbitMQ. I reviewed version 3.2.2 on CentOS 6 servers. The installation was easy, I installed Erlang version R14B from epel and the RabbitMQ rpm. The only small issue I had was that the server is expecting “127.0.0.1″ to be resolved in /etc/hosts and the OpenStack VMs I used were missing that. Easy to fix. I also installed and enabled the management plugin. The RabbitMQ configuration is set in the rabbitmq.config file and it has tons of adjustable parameters. I used the defaults. In terms of client API, RabbitMQ supports a long list of languages and some standards protocols, like STOMP are available with a plugin. Queues and topics can be created either by the web interface or through the client API directly. If you have more than one node, they can be clustered and then, queues and topics, can be replicated to other servers. I created 4 queues, wrote a Ruby client and started inserting messages. I got a publishing rate of about 20k/s using multiple threads but I got a few stalls caused by the vm_memory_high_watermark, from my understanding during those stalls it writing to disk. Not exactly awesome given my requirements. Also, some part is always kept in memory even if a queue is durable so, even though I had plenty of disk space, the memory usage grew and eventually hit the vm_memory_high_watermark setting. The CPU load was pretty high during the load, between 40% and 50% on an 8 cores VM. Even though my requirements were not met, I set up a replicated queue on 2 nodes and inserted a few millions objects. I killed one of the two nodes and insert were even faster but then…I did a mistake. I restarted the node and asked for a resync. Either I didn’t set it correctly or the resync is poorly implemented but it took forever to resync and it was slowing down as it progressed. At 58% done, it has been running for 17h, one thread at 100%. My patience was exhausted. So, lots of features, decent performance, but behavior not compatible with the requirements. Kafka Kafka has been designed originally by LinkedIn, it is written in Java and it is now under the Apache project umbrella. Sometimes you look at a technology and you just say: wow, this is really done the way it should be. At least I could say that for the purpose I had. What is so special about Kafka is the architecture, it stores the messages in flat files and consumers ask messages based on an offset. Think of it like a MySQL server (producer) saving messages (updates SQL) to its binlogs and slaves (consumers) ask messages based on an offset. The server is pretty simple and just don’t care about the consumers much. That simplicity makes it super fast and low on resource. Old messages can be retained on a time base (like expire_logs_days) and/or on a storage usage base. So, if the server doesn’t keep track of what has been consumed on each topic, how can you have multiple consumers? The missing element here is Zookeeper. The Kafka server uses Zookeeper for cluster membership and routing while the consumers can also use Zookeeper or something else for synchronization. The sample consumer provided with the server uses Zookeeper so you can launch many instances and they’ll synchronize automatically. For the ones that doesn’t know Zookeeper, it is a highly-available synchronous distributed storage system. If you know Corosync, it provides somewhat the same functionality. Feature-wise, Kafka isn’t that great. There’s no web frontend built-in, although a few are available in the ecosystem. Routing and rules are inexistent and stats are just with JMX. But, the performance…I reached a publishing speed of 165k messages/s over a single thread, and I didn’t bother tuning for more. Consuming was essentially disk bound on the server, 3M messages/s… amazing. That was without Zookeeper coordination. Memory and CPU usage were modest. To test clustering, I created a replicated queue, inserted a few messages, stopped a replica, inserted a few millions more messages and restarted the replica. I took only a few seconds to resync. So, Kafka is very good fit for the requirements, stellar performance, low resource usage and nice fit with the requirements. ActiveMQ ActiveMQ is another big player in the field with an impressive feature set. ActiveMQ is more in the RabbitMQ league than Kafka and like Kafka, it is written in Java. HA can be provided by the storage backend, levelDB supports replication but I got some issues with it. My requirements are not for full HA, just to make sure the publishers are never blocked so I dropped the storage backend replication in favor of a mesh of brokers. My understanding of the mesh of brokers is that you connect to one of the members and you publish or consume a message. You don’t know on which node(s) the queue is located, the broker you connect to knows and routes your request. To further help, you can specify all the brokers on the connection string and the client library will just reconnect to another if the one you are connected to goes down. That looks pretty good for the requirements. With the mesh of brokers setup, I got an insert rate of about 5000 msg/s over 15 threads and a single consumer was able to read 2000 msg/s. I let it run for a while and got 150M messages. At this point though, I lost the web interface and the publishing rate was much slower. So, a big beast, lot of features, decent performance, on the edge with the requirements. Kestrel Kestrel is another interesting broker, this time, more like Kafka. Written in Scala, the Kestrel broker speaks the memcached protocol. Basically, the key becomes the queue name and the object is the message. Kestrel is very simple: queues are defined in a configuration file but you can specify, per queue, storage limits, expiration, and behavior when limits are reached. With a setting like “ discardOldWhenFull = true ”, my requirement of never blocking the publishers is easily met. In term of clustering, Kestrel is a bit limited but each can publish its availability to Zookeeper so that publishers and consumers can be informed of a missing server and adjust. Of course, if you have many Kestrel servers with the same queue defined, the consumers will need to query all of the brokers to get the message back and strict ordering can be a bit hard. In terms of performance, a few simple bash scripts using nc to publish messages easily reached 10k messages, which is very good. The rate is static over time and likely limited by the reconnection for each message. The presence of consumers slightly reduces the publishing rate but nothing drastic. The only issue I had was when a large number of messages expired, the server froze for some time but that was because I forgot to set maxExpireSweep to something like 100 and all the messages were removed in one pass. So, fairly good impression on Kestrel, simple but works well. Conclusion For the requirements given by the customer, Kafka was like a natural fit. It offers a high guarantee that the service will be available and non-blocking under any circumstances. In addition, messages can easily be replicated for higher data availability. Kafka performance is just great and resource usage modest.",
+                    "mainEntityOfPage": {
+                      "@type": "WebPage",
+                      "@id": "https://dzone.com/articles/exploring-message-brokers"
+                    },
+                    "image": {
+                      "@type": "ImageObject",
+                      "url": "https://dzone.com//dz2cdn2.dzone.com/storage/article-thumb/2697-thumb.jpg"
+                    }
+                  }
+                </script>
+
+                  <script type="application/ld+json">
+                    {
+                      "@context": "https://schema.org",
+                      "@type": "BreadcrumbList",
+                      "itemListElement": [{
+                        "@type": "ListItem",
+                        "position": 1,
+                        "name": "DZone",
+                        "item": "https://dzone.com"
+                      }, {
+                        "@type": "ListItem",
+                        "position": 2,
+                        "name": "Integration Zone",
+                        "item": "https://dzone.com/enterprise-integration-training-tools-news"
+                      }, {
+                        "@type": "ListItem",
+                        "position": 3,
+                        "name": "Exploring Message Brokers: RabbitMQ, Kafka, ActiveMQ, and Kestrel",
+                        "item": "https://dzone.com/articles/exploring-message-brokers"
+                      }]
+                    }
+                  </script>
+
+            <article>
+              <div class="content">
+                <div class="header">
+                  <div class="col-xs-12 breadcrumb-padding">
+                    <a href="/">DZone</a>
+                    >
+                      <a href="/enterprise-integration-training-tools-news">Integration Zone</a>
+                      >
+                      <a href="#">Exploring Message Brokers: RabbitMQ, Kafka, ActiveMQ, and Kestrel</a>
+                  </div>
+
+
+                  <div class="header-title">
+                    <div class="title">
+                      <h1 class="article-title">Exploring Message Brokers: RabbitMQ, Kafka, ActiveMQ, and Kestrel</h1>
+                    </div>
+
+                    <div class="subhead">
+                      <h3>Explore different message brokers, and discover how these important web technologies impact a customer's backlog of messages, and cluster/data performance.</h3>
+                    </div>
+
+                    <div class="publish-meta">
+                        <div class="article-author-meta">
+                          <img src="https://secure.gravatar.com/avatar/e978d95b98741323b0310492741ed0e8?d=identicon&r=PG" class="avatar" alt="Yves Trudeau user avatar" width="40">
+                          by
+
+                          <div class="author-info">
+                            <span class="author-name">
+                              <a href="/users/2824623/yvestrudeau.html" rel="nofollow">Yves Trudeau</a>
+                            </span>
+                          </div>
+
+
+                            <div class="mvb-award">
+                              <i title="Most Valuable Blogger" class="icon-mvb-1"></i>
+                            </div>
+
+
+                          &middot;
+                        </div>
+                      <span class="author-date">
+                        Jun. 03, 14
+                      </span>
+                      &middot;
+                        <a href="/enterprise-integration-training-tools-news" id="portal-name">
+                          <span class="portal-name">Integration Zone</span>
+                        </a>
+                      &middot;
+                      <span>Review</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="author-n-useraction">
+                  <div class="like action">
+                    <div id="activity-like-icon" class="dz-like icon-thumbs-up">
+                      <span class="action-label">
+                        <span id="activity-like-text">Like</span>
+                      </span>
+                      <a href="#">
+                        <span id="activity-like-counter">(47)</span>
+                      </a>
+                    </div>
+                  </div>
+
+                  <div class="action">
+
+                    <button class="comment">
+                      <i class="icon-comment"></i>
+                      Comment
+                      <span id="activity-comment-counter" class="comment-count"></span>
+                    </button>
+                  </div>
+
+                  <div class="save action">
+                    <div id="activity-save-icon" class="save icon-star-empty">
+                      <span id="activity-save-text" class="action-label">Save</span>
+                    </div>
+                  </div>
+
+                  <div class="tweet action">
+                    <a id="tweet-link" href="" class="title" target="_blank">
+                      <span><i class="icon-twitter"></i></span>
+                      <span class="action-label">Tweet</span>
+                    </a>
+                  </div>
+
+                  <div class="pull-right">
+                    <div id="activity-view-container" class="article-views action">
+                      <i class="icon-eye"></i> 449.23K
+                      <span class="action-label">Views</span>
+                    </div>
+                  </div>
+                </div>
+
+                    <div class="signin-prompt">
+                      <p>Join the DZone community and get the full member experience.</p>
+                      <a id="article-signin-prompt" href="/static/registration.html">Join For Free</a>
+                    </div>
+                    <div class="arrow-down"></div>
+
+                  <div id="top-bumper-container"></div>
+
+                <div>
+                  <div class="content-html"><p pid="1"><a href="http://en.wikipedia.org/wiki/Message_broker" rel="nofollow" target="_blank" style="background-color: rgb(255, 255, 255);">Message brokers</a> are not regularly covered here but are, nonetheless, important web-related technologies. Some time ago, I was asked by one of our customers to review a selection of OSS message brokers and propose a couple of good candidates. The requirements were fairly simple: behave well when there’s a large backlog of messages, be able to create a cluster and in case of the failure of a node in a cluster, try to protect the data, but never blocks the publishers even though that might imply data lost. Nothing fancy regarding queues and topics management. I decided to write my findings here, before I forget…</p>
+<div>
+ <p>I don’t consider myself a message broker specialist and I spent only about a day or two on each so, I may have done some big mistakes configuration wise. I’ll take the blame if something is misconfigured or not used correctly.</p>
+ <h2>RabbitMQ</h2>
+ <p><a href="https://www.rabbitmq.com/" target="_blank">RabbitMQ</a> is a well-known and popular message broker and it has many powerful features. The documentation on the RabbitMQ website is excellent and there are many books available. RabbitMQ is written in Erlang, not a widely used programming language but well adapted to such tasks. The company Pivotal develops and maintains RabbitMQ. I reviewed version 3.2.2 on CentOS 6 servers.</p>
+ <p>The installation was easy, I installed Erlang version R14B from epel and the RabbitMQ rpm. The only small issue I had was that the server is expecting “127.0.0.1″ to be resolved in /etc/hosts and the OpenStack VMs I used were missing that. Easy to fix. I also installed and enabled the management plugin.</p>
+ <p>The RabbitMQ configuration is set in the rabbitmq.config file and it has tons of adjustable parameters. I used the defaults. In terms of client API, RabbitMQ supports a long list of languages and some standards protocols, like STOMP are available with a plugin. Queues and topics can be created either by the web interface or through the client API directly. If you have more than one node, they can be clustered and then, queues and topics, can be replicated to other servers.</p>
+ <p>I created 4 queues, wrote a Ruby client and started inserting messages. I got a publishing rate of about 20k/s using multiple threads but I got a few stalls caused by the vm_memory_high_watermark, from my understanding during those stalls it writing to disk. Not exactly awesome given my requirements. Also, some part is always kept in memory even if a queue is durable so, even though I had plenty of disk space, the memory usage grew and eventually hit the vm_memory_high_watermark setting. The CPU load was pretty high during the load, between 40% and 50% on an 8 cores VM.</p>
+ <p>Even though my requirements were not met, I set up a replicated queue on 2 nodes and inserted a few millions objects. I killed one of the two nodes and insert were even faster but then…I did a mistake. I restarted the node and asked for a resync. Either I didn’t set it correctly or the resync is poorly implemented but it took forever to resync and it was slowing down as it progressed. At 58% done, it has been running for 17h, one thread at 100%. My patience was exhausted.</p>
+ <p>So, lots of features, decent performance, but behavior not compatible with the requirements.</p>
+ <h2>Kafka</h2>
+ <p><a href="http://kafka.apache.org/" target="_blank">Kafka</a> has been designed originally by LinkedIn, it is written in Java and it is now under the Apache project umbrella. Sometimes you look at a technology and you just say: wow, this is really done the way it should be. At least I could say that for the purpose I had. What is so special about Kafka is the architecture, it stores the messages in flat files and consumers ask messages based on an offset. Think of it like a MySQL server (producer) saving messages (updates SQL) to its binlogs and slaves (consumers) ask messages based on an offset. The server is pretty simple and just don’t care about the consumers much. That simplicity makes it super fast and low on resource. Old messages can be retained on a time base (like expire_logs_days) and/or on a storage usage base.</p>
+ <p>So, if the server doesn’t keep track of what has been consumed on each topic, how can you have multiple consumers? The missing element here is Zookeeper. The Kafka server uses Zookeeper for cluster membership and routing while the consumers can also use Zookeeper or something else for synchronization. The sample consumer provided with the server uses Zookeeper so you can launch many instances and they’ll synchronize automatically. For the ones that doesn’t know Zookeeper, it is a highly-available synchronous distributed storage system. If you know Corosync, it provides somewhat the same functionality.</p>
+ <p>Feature-wise, Kafka isn’t that great. There’s no web frontend built-in, although a few are available in the ecosystem. Routing and rules are inexistent and stats are just with JMX. But, the performance…I reached a publishing speed of 165k messages/s over a single thread, and I didn’t bother tuning for more. Consuming was essentially disk bound on the server, 3M messages/s… amazing. That was without Zookeeper coordination. Memory and CPU usage were modest.</p>
+ <p>To test clustering, I created a replicated queue, inserted a few messages, stopped a replica, inserted a few millions more messages and restarted the replica. I took only a few seconds to resync.</p>
+ <p>So, Kafka is very good fit for the requirements, stellar performance, low resource usage and nice fit with the requirements.</p>
+ <h2>ActiveMQ</h2>
+ <p><a href="http://activemq.apache.org/" target="_blank">ActiveMQ</a> is another big player in the field with an impressive feature set. ActiveMQ is more in the RabbitMQ league than Kafka and like Kafka, it is written in Java. HA can be provided by the storage backend, levelDB supports replication but I got some issues with it. My requirements are not for full HA, just to make sure the publishers are never blocked so I dropped the storage backend replication in favor of a mesh of brokers.</p>
+ <p>My understanding of the mesh of brokers is that you connect to one of the members and you publish or consume a message. You don’t know on which node(s) the queue is located, the broker you connect to knows and routes your request. To further help, you can specify all the brokers on the connection string and the client library will just reconnect to another if the one you are connected to goes down. That looks pretty good for the requirements.</p>
+ <p>With the mesh of brokers setup, I got an insert rate of about 5000 msg/s over 15 threads and a single consumer was able to read 2000 msg/s. I let it run for a while and got 150M messages. At this point though, I lost the web interface and the publishing rate was much slower.</p>
+ <p>So, a big beast, lot of features, decent performance, on the edge with the requirements.</p>
+ <h2>Kestrel</h2>
+ <p><a href="https://github.com/twitter/kestrel" target="_blank">Kestrel</a> is another interesting broker, this time, more like Kafka. Written in Scala, the Kestrel broker speaks the memcached protocol. Basically, the key becomes the queue name and the object is the message. Kestrel is very simple: queues are defined in a configuration file but you can specify, per queue, storage limits, expiration, and behavior when limits are reached. With a setting like “&nbsp;<code>discardOldWhenFull = true</code><span id="_tmp_pre_1">&nbsp;</span>”, my requirement of never blocking the publishers is easily met.</p>
+ <p>In term of clustering, Kestrel is a bit limited but each can publish its availability to Zookeeper so that publishers and consumers can be informed of a missing server and adjust. Of course, if you have many Kestrel servers with the same queue defined, the consumers will need to query all of the brokers to get the message back and strict ordering can be a bit hard.</p>
+ <p>In terms of performance, a few simple bash scripts using nc to publish messages easily reached 10k messages, which is very good. The rate is static over time and likely limited by the reconnection for each message. The presence of consumers slightly reduces the publishing rate but nothing drastic. The only issue I had was when a large number of messages expired, the server froze for some time but that was because I forgot to set maxExpireSweep to something like 100 and all the messages were removed in one pass.</p>
+ <p>So, fairly good impression on Kestrel, simple but works well.</p>
+ <h2>Conclusion</h2>
+ <p>For the requirements given by the customer, Kafka was like a natural fit. It offers a high guarantee that the service will be available and non-blocking under any circumstances. In addition, messages can easily be replicated for higher data availability. Kafka performance is just great and resource usage modest.</p>
+</div></div>
+                </div>
+
+                  <div id="bottom-bumper-container"></div>
+                  <div class="article-tag-pill-container">
+                      <span class="article-tag-pill">kafka</span>
+                      <span class="article-tag-pill">kestrel</span>
+                      <span class="article-tag-pill">Database</span>
+                      <span class="article-tag-pill">Requirement</span>
+                      <span class="article-tag-pill">clustering</span>
+                  </div>
+
+                  <div class="attribution">
+                      <p>Published at DZone with permission of <span>Yves Trudeau<span>, DZone MVB</span></span>.
+                        <span>
+                          <a href="http://www.mysqlperformanceblog.com/2014/05/05/exploring-message-brokers/" target="_blank">See the original article here.
+                            <i class="icon-link-ext-alt"></i>
+                          </a>
+                        </span>
+                      </p>
+                    <p>Opinions expressed by DZone contributors are their own.</p>
+                  </div>
+
+                    <div class="related">
+                      <h3>Popular on DZone</h3>
+                        <ul>
+                            <li class="relateddiv">
+                              <a href="/articles/10-cloud-platforms-for-internet-of-things-iot?fromrel=true">Top 11 Cloud Platforms for Internet of Things (IoT)</a>
+                            </li>
+                            <li class="relateddiv">
+                              <a href="/articles/troubleshooting-memory-leaks-deep-dive-into-common-heap-profilers?fromrel=true">Troubleshooting Memory Leaks With Heap Profilers</a>
+                            </li>
+                            <li class="relateddiv">
+                              <a href="/articles/federated-schema-design?fromrel=true">Federated Schema Design</a>
+                            </li>
+                            <li class="relateddiv">
+                              <a href="/articles/functional-vs-non-functional-requirements-the-full?fromrel=true">Functional vs. Non-Functional Requirements: The Full Guide, Definitions, and Technical Examples</a>
+                            </li>
+                        </ul>
+                      </div>
+<div class="comments-overlay"></div>
+<div id="comment-box">
+  <div class="comment-box-wrapper">
+    <div id="comment-input-editor"></div>
+  </div>
+  <div class="info hidden"></div>
+  <div class="comments-content">
+    <div class="comment-header">
+      <hr />
+      <span class="icon-comment">
+        <span class="numOfComments"></span> Comments
+      </span>
+    </div>
+    <div class="comments"></div>
+  </div>
+</div>
+            </article>
+          </div>
+
+            <div id="above-pr-ad" class="bottom-ad-container">
+              <div id="div-gpt-ad-1435246566686-11" data-gpt-slot="bottom"></div>
+            </div>
+            <div class="layout-card widget-top-border partner-resources-block" style="width:100%; margin-bottom: 1em;">
+              <div class="main-container">
+                <div class="featured-header">
+                  <h2>
+                      Integration<span> Partner Resources</span>
+                  </h2>
+                </div>
+                <div class="partner-resources-container">
+                  <div id="div-gpt-ad-1435246566686-5" class="resource-block" data-gpt-slot="partner" data-gpt-position="pr1"></div>
+                  <div id="div-gpt-ad-1435246566686-6" class="resource-block" data-gpt-slot="partner" data-gpt-position="pr2"></div>
+                  <div id="div-gpt-ad-1435246566686-7" class="resource-block" data-gpt-slot="partner" data-gpt-position="pr3"></div>
+                </div>
+              </div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <div id="bsa-parent" class="bottom-sticky-ad-container hide">
+      <div class="container">
+        <div class="col-md-9">
+          <div class="fixed-bottom-div">
+            <div class="inline-block">
+              <div id="div-gpt-ad-1635294790718-12" data-gpt-desktop="true" class="bottom-sticky-ad"></div>
+            </div>
+            <div class="inline-block">
+              <span id="close" class="bottom-sticky-ad-close-button" onclick="removeBottomStickyAd()">
+                X
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  <div class="modal fade bd-example-modal-lg" id="modal-message" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header"></div>
+        <div class="modal-body"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script async>const articleTitle = 'Exploring Message Brokers: RabbitMQ, Kafka, ActiveMQ, and Kestrel'
+const articleUrl = 'https://dzone.com/articles/exploring-message-brokers'
+
+const retweetLink = document.querySelector('#tweet-link')
+
+function retweet(event) {
+    event.preventDefault()
+    event.stopPropagation()
+
+    const twitter = 'https://twitter.com/intent/tweet'
+    const params = '?text=' + encodeURIComponent(articleTitle) + '&url=' + articleUrl + '&ref=dzone.com&via=DZoneInc'
+    const win = window.open(twitter + params, '_blank')
+    win.focus()
+}
+
+retweetLink.addEventListener('click', retweet);
+
+function showStatusMessage(options) {
+  var modal = document.getElementById("modal-message");
+
+  if(modal) {
+    modal.classList.add(options.type);
+    var modalBody = modal.querySelector(".modal-content .modal-body");
+    var modalHeader = modal.querySelector(".modal-content .modal-header");
+
+    modalHeader.innerText = options.header ? options.header : "";
+    modalBody.innerText = options.body ? options.body : "" ;
+
+    $(modal).modal("show");
+
+    $(modal).on('hidden.bs.modal', function () {
+      modal.classList.remove(options.type);
+    });
+  }
+}
+
+function showConfirmMessage(options) {
+  var modal = document.getElementById("modal-message");
+
+  if(modal) {
+    modal.classList.add(options.type);
+    var modalBody = modal.querySelector(".modal-content .modal-body");
+    var modalHeader = modal.querySelector(".modal-content .modal-header");
+
+    modalHeader.innerText = options.header ? options.header : "";
+    modalBody.innerText = options.body ? options.body : "" ;
+
+    if (options.textarea) {
+      const textareaDiv = document.createElement('div')
+      const textareaLabel = document.createElement('label')
+      textareaLabel.setAttribute('for', 'modal-textarea')
+      textareaLabel.innerText = options.textarea.label
+
+      const textarea = document.createElement('textarea')
+      textarea.id = 'modal-textarea'
+      textarea.placeholder = (options.textarea.placeholder || '')
+      textarea.setAttribute('rows', (options.textarea.rows || 3))
+      textarea.classList.add('form-control', 'not-resizable')
+
+      if (options.textarea.maxlength) {
+        textarea.maxLength = options.textarea.maxlength
+      }
+
+      textareaDiv.appendChild(textareaLabel)
+      textareaDiv.appendChild(textarea)
+      modalBody.appendChild(textareaDiv)
+    }
+
+    var btnContainer = document.createElement("div");
+    btnContainer.classList.add("btn-container");
+
+    var noBtn = document.createElement("button");
+    noBtn.innerText = options.noBtnText ? options.noBtnText : "No";
+    noBtn.classList.add("no-btn");
+
+    var yesBtn = document.createElement("button");
+    yesBtn.innerText = options.yesBtnText ? options.yesBtnText : "Yes";
+    yesBtn.classList.add("yes-btn");
+
+    btnContainer.appendChild(noBtn);
+    btnContainer.appendChild(yesBtn);
+
+    modalBody.appendChild(btnContainer);
+
+    $(modal).modal("show");
+
+    $(noBtn).one("click", function() {
+      $(modal).modal("hide");
+
+      if(options.noCallback) {
+        $(modal).one('hidden.bs.modal', function () {
+          options.noCallback();
+        });
+      }
+    });
+
+    $(yesBtn).one("click", function() {
+      $(modal).modal("hide");
+
+      if(options.yesCallback) {
+        $(modal).one('hidden.bs.modal', function () {
+          options.yesCallback();
+        });
+      }
+    });
+
+    $(modal).on('hidden.bs.modal', function () {
+      modal.classList.remove(options.type);
+    });
+  }
+}
+</script><link rel="stylesheet" media="all" href="https://dz2cdn2.dzone.com/themes/dz20/ftl/footer/styles.css">
+
+<div id="ftl-footer">
+  <div class="container-fluid footerOuter">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="container">
+          <div class="row footer">
+            <div class="col-md-12 footerWidget">
+              <div class="row footerContainer footer">
+                <div class="left col-xs-12 col-sm-7">
+                  <div class="col-xs-12 social-media-icons footer-mobile">
+                    <ul class="icons-only">
+                      <li class="rss-icon" id="rss-footer-1">
+                        <a href="/pages/feeds" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-rss-1"></i>
+                        </a>
+                      </li>
+                      <li class="twitter-icon">
+                        <a href="https://twitter.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-twitter"></i>
+                        </a>
+                      </li>
+                      <li class="facebook-icon">
+                        <a href="https://www.facebook.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-facebook-1"></i>
+                        </a>
+                      </li>
+                      <li class="linkedin-icon">
+                        <a href="https://www.linkedin.com/company/dzone/" target="_blank"
+                           rel="noreferrer noopener">
+                          <i class="icon-linkedin-1"></i>
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div class="top-section col-xs-12">
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">ABOUT US</p>
+                      <ul class="link-group">
+                        <li><a href="/pages/about" rel="noreferrer noopener">About DZone</a></li>
+                        <li><a href="mailto:support@dzone.com" rel="noreferrer noopener">Send feedback</a></li>
+                        <li><a href="https://careers.dzone.com/" target="_blank" rel="noreferrer noopener">Careers</a></li>
+                          <li><a href="/sitemap" rel="noreferrer noopener">Sitemap</a></li>
+                      </ul>
+                    </div>
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">ADVERTISE</p>
+                      <ul class="link-group">
+                        <li><a href="https://advertise.dzone.com" target="_blank" rel="noreferrer noopener">Advertise with DZone</a></li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div class="bottom-section col-xs-12">
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">CONTRIBUTE ON DZONE</p>
+                      <ul class="bottom-top-list link-group">
+                        <li><a href="/articles/dzones-article-submission-guidelines">Article Submission Guidelines</a></li>
+                        <li><a href="/pages/mvb" rel="noreferrer noopener">MVB Program</a></li>
+                        <li><a href="/pages/contribute" rel="noreferrer noopener">Become a Contributor</a></li>
+                        <li><a href="/writers-zone" rel="noreferrer noopener">Visit the Writers' Zone</a></li>
+                      </ul>
+
+                      <p class="section-header">LEGAL</p>
+                      <ul class="link-group">
+                        <li><a href="/pages/tos" rel="noreferrer noopener">Terms of Service</a></li>
+                        <li><a href="/pages/privacy" rel="noreferrer noopener">Privacy Policy</a></li>
+                      </ul>
+                    </div>
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">CONTACT US</p>
+                      <ul class="link-group">
+                        <li>600 Park Offices Drive</li>
+                        <li>Suite 300</li>
+                        <li>Durham, NC 27709</li>
+                        <li><a href="mailto:support@dzone.com" rel="noreferrer noopener">support@dzone.com</a></li>
+                        <li><a href="tel:+19196780300" rel="noreferrer noopener">+1 (919) 678-0300</a></li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="right col-xs-12 col-sm-5">
+
+                  <p class="connect-text">Let's be friends:</p>
+                  <div class="col-xs-12 social-media-icons footer-wide">
+                    <ul class="icons-only">
+                      <li class="rss-icon" id="rss-footer-1">
+                        <a href="/pages/feeds" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-rss-1"></i>
+                        </a>
+                      </li>
+                      <li class="twitter-icon">
+                        <a href="https://twitter.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-twitter"></i>
+                        </a>
+                      </li>
+                      <li class="facebook-icon">
+                        <a href="https://www.facebook.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-facebook-1"></i>
+                        </a>
+                      </li>
+                      <li class="linkedin-icon">
+                        <a href="https://www.linkedin.com/company/dzone/" target="_blank"
+                           rel="noreferrer noopener">
+                          <i class="icon-linkedin-1"></i>
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div class="col-xs-12 powered-by">
+                    <p>DZone.com is powered by&nbsp;</p>
+                    <a href="https://devada.com/answerhub/" rel="noreferrer noopener">
+                      <img src=""
+                           data-src="https://dz2cdn2.dzone.com/themes/dz20/images/answerhub_logo_white_footer.png"
+                           width="150"
+                           height="56"
+                           class="lazyload"
+                           alt="AnswerHub logo">
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  <script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"></script>
+
+  <script async>
+      (function(w, d, s, l, i) {
+          w[l] = w[l] || [];
+          w[l].push({'gtm.start': new Date().getTime(), event: 'gtm.js'});
+          var f = d.getElementsByTagName(s)[0], j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : '';
+          j.async = true;
+          j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+          f.parentNode.insertBefore(j,f);
+      })(window, document, 'script', 'dataLayer', 'GTM-K25QL22');
+  </script>
+
+  <script>
+      window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+      ga('create', 'UA-410289-1', 'auto');
+      ga('require', 'linkid', 'linkid.js');
+      ga('require', 'GTM-TSD9TZP');
+      ga('set', 'siteSpeedSampleRate', 25);
+  </script>
+  <script async src="https://www.google-analytics.com/analytics.js"></script>
+  <script async>const analytics = {
+    'dimension1': 'integration',
+    'dimension2': 'article/review',
+    'dimension3': '2014-06-03',
+    'dimension4': '0',
+    'dimension5': '',
+    'dimension7': 'kafka, kestrel, Database, Requirement, clustering',
+    'dimension8': 'YvesTrudeau',
+    'dimension9': 'undefined',
+    'dimension10': 'undefined'
+}
+
+if (window.ga) {
+    Object.keys(analytics).forEach(function(key) {
+        window.ga('set', key, analytics[key])
+    })
+
+    window.ga('send', 'pageview')
+}</script>
+
+  <script>
+      !function (e, o, n, i) {
+          if (!e) {
+              e = e || {}, window.permutive = e, e.q = [];
+              var t = function () {
+                  return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, function (e) {
+                      return (e ^ (window.crypto || window.msCrypto).getRandomValues(new Uint8Array(1))[0] & 15 >> e / 4).toString(16)
+                  })
+              };
+              e.config = i || {}, e.config.apiKey = o, e.config.workspaceId = n, e.config.environment = e.config.environment || "production", (window.crypto || window.msCrypto) && (e.config.viewId = t());
+              for (var g = ["addon", "identify", "track", "trigger", "query", "segment", "segments", "ready", "on", "once", "user", "consent"], r = 0; r < g.length; r++) {
+                  var w = g[r];
+                  e[w] = function (o) {
+                      return function () {
+                          var n = Array.prototype.slice.call(arguments, 0);
+                          e.q.push({
+                              functionName: o,
+                              arguments: n
+                          })
+                      }
+                  }(w)
+              }
+          }
+      }(window.permutive, "bca90777-e088-4f2a-96c2-13ad18deeccc", "18ad0c5b-460c-4d19-a729-dc537805538f", {});
+      window.googletag = window.googletag || {}, window.googletag.cmd = window.googletag.cmd || [], window.googletag.cmd.push(function () {
+          if (0 === window.googletag.pubads().getTargeting("permutive").length) {
+              var e = window.localStorage.getItem("_pdfps");
+              window.googletag.pubads().setTargeting("permutive", e ? JSON.parse(e) : []);
+              var o = window.localStorage.getItem("permutive-id");
+              o && (window.googletag.pubads().setTargeting("puid", o), window.googletag.pubads().setTargeting("ptime", Date.now().toString())), window.permutive.config.viewId && window.googletag.pubads().setTargeting("prmtvvid", window.permutive.config.viewId), window.permutive.config.workspaceId && window.googletag.pubads().setTargeting("prmtvwid", window.permutive.config.workspaceId)
+          }
+      });
+
+
+      permutive.addon('web', {
+          'page': {
+              'category': 'Integration',
+              'node': {
+                  'authorCompany': '',
+                  'authors': [2824623, ],
+                  'publishDate': new Date(1401760800000),
+                  'sponsorAuthor': false,
+                  'tags': ['kafka', 'kestrel', 'Database', 'Requirement', 'clustering', ],
+                  'title': 'Exploring Message Brokers: RabbitMQ, Kafka, ActiveMQ, and Kestrel',
+                  'type': 'article',
+              },
+              'section': 'article',
+          }
+      });
+  </script>
+  <script async src="https://18ad0c5b-460c-4d19-a729-dc537805538f.edge.permutive.app/18ad0c5b-460c-4d19-a729-dc537805538f-web.js"></script>
+
+  <script>
+      const csrf = '7048255519413757063'
+      const articleId = 503085
+      const likes = 47
+      const assetDomain = 'https://dz2cdn2.dzone.com'
+      const codemirrorVars = {
+          modeURI: 'https://dz2cdn2.dzone.com/themes/dz20/lib/codemirror/mode/',
+          requiredScripts: [
+              'https://dz2cdn2.dzone.com/themes/dz20/lib/codemirror/lib/codemirror.js',
+              'https://dz2cdn2.dzone.com/themes/dz20/lib/codemirror/mode/meta.js'
+          ]
+      }
+
+      const gptTags = {
+          'zone': 'integration',
+          'topicTag': 'kafka,kestrel,Database,Requirement,clustering',
+          'company': '',
+          'siteSection': 'Zones',
+          'articleCategory': 'review',
+          'nodeID': '503085',
+          'authorID': '2824623',
+          'publishYear': '2014',
+          'publishMonth': '06',
+          'jobRole': '',
+          'companySize': ''
+      }
+
+      const minCommentChar = 10;
+      const peer39Enabled = true;
+  </script>
+
+  <script src="https://dz2cdn2.dzone.com/themes/dz20/lib/static/jquery/jquery.min.js"></script>
+  <script async src="https://dz2cdn2.dzone.com/themes/dz20/lib/static/bootstrap/bootstrap.min.js"></script>
+  <script async src="https://dz2cdn2.dzone.com/themes/dz20/ftl/article/ads.js"></script>
+
+
+
+  <script>
+      function loadScript(src) {
+          return new Promise(function (resolve, reject) {
+              const s = document.createElement('script')
+              s.src = src
+              s.onload = resolve
+              s.onerror = reject
+              document.head.appendChild(s)
+          })
+      }
+
+      function loadStyle(href) {
+          const link = document.createElement('link')
+          link.rel = 'stylesheet'
+          link.href = href
+          document.head.appendChild(link)
+      }
+
+      function loadScriptsSync(deferred) {
+          var p = Promise.resolve()
+          for (var i = 0; i < deferred.length; i++) {
+              let script = deferred[i]
+              p = p.then(function() {
+                  return loadScript(script)
+              })
+          }
+          return p
+      }
+
+      function loadStyles() {
+          const deferred = [
+              'https://dz2cdn2.dzone.com/themes/dz20/lib/codemirror/lib/codemirror.css',
+              'https://dz2cdn2.dzone.com/themes/dz20/ftl/comments/styles.css',
+              'https://dz2cdn2.dzone.com/themes/dz20/lib/froala3/css/froala_editor.pkgd.min.css',
+              'https://dz2cdn2.dzone.com/themes/dz20/lib/froala3/css/themes/gray.min.css',
+              'https://dz2cdn2.dzone.com/themes/dz20/ftl/article/mini-profile.css'
+          ]
+
+          for (var i = 0; i < deferred.length; i++) {
+              loadStyle(deferred[i])
+          }
+      }
+
+      window.addEventListener('load', function(event) {
+          loadStyles()
+          loadScriptsSync([
+              'https://dz2cdn2.dzone.com/themes/dz20/ftl/header/auth-status.js',
+              'https://dz2cdn2.dzone.com/themes/dz20/lib/lazysizes.min.js',
+              'https://dz2cdn2.dzone.com/themes/dz20/ftl/article/codeblocks.js',
+              'https://dz2cdn2.dzone.com/themes/dz20/ftl/article/activity-bar.js',
+              'https://dz2cdn2.dzone.com/themes/dz20/lib/froala3/js/froala_editor.pkgd.min.js',
+              'https://dz2cdn2.dzone.com/themes/dz20/ftl/froala/content.js',
+              'https://dz2cdn2.dzone.com/themes/dz20/ftl/comments/content.js',
+              'https://dz2cdn2.dzone.com/themes/dz20/ftl/article/content.js'
+          ])
+      })
+  </script>
+</body>
+</html>

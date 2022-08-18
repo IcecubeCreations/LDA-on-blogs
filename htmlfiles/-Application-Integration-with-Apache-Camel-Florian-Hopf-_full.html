@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en-us">
+
+  <head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="google-site-verification" content="FHN22a-0bEzrZwsvlgb1TPwt_uzHDNKmp_E9RsM8uy4" />
+
+  <!-- Enable responsiveness on mobile devices-->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title>
+    
+      Application Integration with Apache Camel &middot; Florian Hopf
+    
+  </title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="http://www.florian-hopf.de/public/css/poole.css">
+  <link rel="stylesheet" href="http://www.florian-hopf.de/public/css/syntax.css">
+  <link rel="stylesheet" href="http://www.florian-hopf.de/public/css/hyde.css">
+  <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  <!-- Icons -->
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="http://www.florian-hopf.de/public/apple-touch-icon-144-precomposed.png">
+                                 <link rel="shortcut icon" href="http://www.florian-hopf.de/public/favicon.ico">
+
+  <!-- RSS -->
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/atom.xml">
+</head>
+
+
+  <body>
+
+    <div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <h1>
+        <a href="http://www.florian-hopf.de/">
+          Florian Hopf
+        </a>
+      </h1>
+      <p class="lead">Software Developer living in Singapore</p>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a class="sidebar-nav-item" href="http://blog.florian-hopf.de/">Blog</a>
+<!--	<nav style="font-size: smaller" class="sidebar-nav-item"><a class="sidebar-nav-item" href="http://blog.florian-hopf.de/archive.html">Blog Archive</a></nav>-->
+      <a class="sidebar-nav-item" href="http://www.florian-hopf.de/artikel-vortraege/">Articles &amp; Talks</a>
+      <a class="sidebar-nav-item" href="http://www.florian-hopf.de/kontakt/">Contact</a>
+    </nav>
+
+<a href="http://elasticsearch-buch.de"><img src="http://www.florian-hopf.de/files/elasticsearch-buchcover-tn.jpg" alt="Elasticsearch - Der praktische Einstieg" style="margin-left: auto; margin-right: auto;"/></a>
+
+    <div><small>Theme based on <a href="http://hyde.getpoole.com/">Hyde</a></small><br/><small><a href="http://www.florian-hopf.de/impressum/">Impressum</a></small><br/> <small><a href="http://www.florian-hopf.de/datenschutz/">Datenschutz</a></small> </div>
+  </div>
+</div>
+
+
+    <div class="content container">
+      <div class="post">
+  <h1 class="post-title" id="top">Application Integration with Apache Camel</h1>
+  <span class="post-date">07 Jul 2019</span>
+  <p>Apache Camel is a very useful tool when it comes to integrating different systems and technologies. In this post I will introduce some of its concepts and show how you can test and run your application using Spring Boot.</p>
+
+<h2>Apache Camel</h2>
+
+<p>Camel is an implementation of many integration patterns, mostly inspired by the book <a href="http://www.enterpriseintegrationpatterns.com/">Enterprise Integration Patterns</a>. Messages are passing through channels from endpoint to endpoint and along the way they can be translated, filtered and routed to other channels/endpoints. This is taken from the website for the book:</p>
+
+<p><img src="/files/camel-eip.png" alt="Concepts of Enterprise Integration Patterns"></p>
+
+<p>Besides the integration patterns Apache Camel offers implementations of many protocols and technologies in its components. This means not only can you build your application based on the patterns above but there is also the groundwork for doing technical integrations, one example being reading files from an FTP server or downloading data from an email server. </p>
+
+<p>To use Camel effectively you need to understand a few concepts.</p>
+
+<h2>Endpoints</h2>
+
+<p>Endpoints describe how to access external systems. Each endpoint is handled by a component which registers endpoint prefixes during runtime. Some components are available with the core camel dependency, some need to be added explicitly. Examples for components are the MailComponent, for receiving and sending emails, RabbitComponent for use with RabbitMQ and FileComponent, that provides functionality for reading and writing files.</p>
+
+<p>Endpoints are being configured by URIs. Each component provides a prefix that determines if it&#39;s responsible for an URI. An example URI for the FileComponent:</p>
+<div class="highlight"><pre><code class="language-" data-lang="">file:/opt/storage?move=.success&amp;moveFailed=.error
+</code></pre></div>
+<p>This will poll the directory <code>/opt/storage</code> for new files. If a file is processed successfully it is moved to the folder <code>.success</code>, if there is an error, it is moved to <code>.error</code>.</p>
+
+<p>Another example for RabbitMQ, that can be used for sending or receiving messages.</p>
+<div class="highlight"><pre><code class="language-" data-lang="">rabbitmq://host:5672/?username=op&amp;password=op
+</code></pre></div>
+<p>The documentation of the components normally provides a table with a description of all the parameters that are available.</p>
+
+<h2>Routes</h2>
+
+<p>Endpoints are being connected by Routes. Most of the time you will use the nice Java DSL which is available if you extend your class from <code>RouteBuilder</code>. A simple example that polls files from a folder and writes them to RabbitMQ:</p>
+<div class="highlight"><pre><code class="language-" data-lang="">from(âfile:/opt/attachmentsâ).to(ârabbitmq:host:5672/â);
+</code></pre></div>
+<p>Besides directly connecting endpoints you can also use <code>filter</code> to skip some messages and <code>choice</code> to send them to different endpoints. Or you can have any other processing that you wish in between.</p>
+
+<h2>Exchanges</h2>
+
+<p>Exchanges are containers for the current message flow, not to be confused with the term Exchange in the AMQP world. It&#39;s a wrapper the contains the in/out message and potential errors. A message consists of a header, that might keep component specific information like the filename for the FileComponent, and a body.</p>
+
+<h2>Processor</h2>
+
+<p>A Processor is anything that does work in a route, <code>filter</code> and <code>choice</code> mentioned above are processors. But you can also do other tasks by implementing the Processor interface, e.g. if you want to do some transformation. </p>
+<div class="highlight"><pre><code class="language-" data-lang="">@Override
+public void process(Exchange exchange) throws Exception {
+
+} 
+</code></pre></div>
+<p>This processor can be registered in the route by adding a <code>.process(new MyProcessor())</code>.  </p>
+
+<h2>Testing</h2>
+
+<p>Camel provides support for testing routes in isolation by replacing endpoints with mock endpoints, injected using <code>AdviceWithRouteBuilder</code>. Messages can be sent to you endpoints using the <code>MessageProducerTemplate</code>. You can then assert that a message is arriving at the mock endpoint.</p>
+<div class="highlight"><pre><code class="language-" data-lang="">MockEndpoint resultEndpoint = getMockEndpoint("mock:result");
+resultEndpoint.setAssertPeriod(1000);
+resultEndpoint.setExpectedMessageCount(1);
+
+writeToInputFolder(getClass().getResourceAsStream("/transaction-report.csv"));
+resultEndpoint.assertIsSatisfied();
+</code></pre></div>
+<p>Testing can be a bit special when it comes to Apache Camel as some of the processing is being done asynchronously.</p>
+
+<h2>Runtime</h2>
+
+<p>When using Camel standalone you have to take care to start a <code>CamelContext</code>, which holds all the configured components and routes. When using Spring Boot you can use the spring-boot-camel-starter that will manage the <code>CamelContext</code> for you. You just create routes and annotate the methods with <code>@Bean</code>. By setting the property <code>camel.springboot.main-run-controller=true</code> the application will stay alive even if you haven&#39;t included something like Spring MVC.</p>
+
+<h2>Conclusion</h2>
+
+<p>I really like the model of Apache Camel. It provides asynchronous processing and you can decouple different parts of the processing, e.g. by first downloading files to a certain folder and then parse them in another route. Both of those tasks can run in isolation. Besides all the different protocols that are implemented Apache Camel also provides solutions for cross cutting concerns like error handling.</p>
+
+<p>The declarative approach can make it a bit harder to start for beginners but once you find your way around there is also a lot of potential.</p>
+
+</div>
+
+
+<div id="disqus_thread"></div>
+<script>
+    /**
+     *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+     *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
+     */
+    /*
+    var disqus_config = function () {
+        this.page.url = 'http://blog.florian-hopf.de/' + '2019/07/apache-camel.html';  // Replace PAGE_URL with your page's canonical URL variable
+        this.page.identifier = '/2019/07/apache-camel'; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+    };
+    */
+    (function() {  // DON'T EDIT BELOW THIS LINE
+        var d = document, s = d.createElement('script');
+        
+        s.src = '//fhopf.disqus.com/embed.js';
+        
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+
+
+<div class="related">
+  <h2>Related Posts</h2>
+  <ul class="related-posts">
+    
+      <li>
+        <h3>
+          <a href="/2018/03/indonesian-analyzer-lucene-solr-elasticsearch.html">
+            Indonesian Language in Lucene, Solr and Elasticsearch
+            <small>23 Mar 2018</small>
+          </a>
+        </h3>
+      </li>
+    
+      <li>
+        <h3>
+          <a href="/2018/03/book-review-mastering-docker.html">
+            Book Review &ndash; Mastering Docker
+            <small>09 Mar 2018</small>
+          </a>
+        </h3>
+      </li>
+    
+      <li>
+        <h3>
+          <a href="/2018/03/rabbitmq-messaging-patterns.html">
+            Messaging with RabbitMQ
+            <small>02 Mar 2018</small>
+          </a>
+        </h3>
+      </li>
+    
+  </ul>
+</div>
+
+    </div>
+
+<!-- Piwik -->
+<script type="text/javascript">
+  var _paq = _paq || [];
+  _paq.push(["setDocumentTitle", document.domain + "/" + document.title]);
+  _paq.push(["setCookieDomain", "*.florian-hopf.de"]);
+  _paq.push(["setDomains", ["*.florian-hopf.de"]]);
+  _paq.push(['trackPageView']);
+  _paq.push(['enableLinkTracking']);
+  (function() {
+    var u=(("https:" == document.location.protocol) ? "https" : "http") + "://piwik.florian-hopf.de/";
+    _paq.push(['setTrackerUrl', u+'piwik.php']);
+    _paq.push(['setSiteId', 2]);
+    var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0]; g.type='text/javascript';
+    g.defer=true; g.async=true; g.src=u+'piwik.js'; s.parentNode.insertBefore(g,s);
+  })();
+</script>
+<noscript><p><img src="http://piwik.florian-hopf.de/piwik.php?idsite=2" style="border:0;" alt="" /></p></noscript>
+<!-- End Piwik Code -->
+
+  </body>
+</html>

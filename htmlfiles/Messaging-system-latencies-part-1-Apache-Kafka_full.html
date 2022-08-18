@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Messaging system latencies, part 1: Apache Kafka</title> 
+    <meta name="description" content="Find out if Apache Kafka is suitable for low latency use case">
+    <meta name="twitter:description" content="Find out if Apache Kafka is suitable for low latency use case">
+    <meta name="og:description" content="Find out if Apache Kafka is suitable for low latency use case">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="shortcut icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,400i,700,700i&display=swap" />
+    <link rel="stylesheet" href="/css/main.css" />
+    <link rel="canonical" href="https://romanmarkunas.com/messaging/2018/09/22/0003-messaging-messaging-system-latencies-1-kafka/">
+    <link rel="alternate" type="application/rss+xml" title="Roman Markunas (Romans Markuns) blog Feed" href="https://romanmarkunas.com/feed.xml">
+    
+    <script data-ad-client="ca-pub-9488600968816185" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+    
+</head>
+<body onload="transformSyntaxHiglightsBecausePygmentsJavaLexerIsRubbish();">
+    <div class="site">
+        <nav id="top" class="site-nav outer" aria-label="Main Menu">
+    <div class="inner">
+        <div class="site-nav-inside">
+
+            <button id="menu-show" class="js-menu-toggle"><span class="icon icon-menu"
+                    aria-hidden="true"></span>Menu</button>
+
+            <div class="menu-panel">
+                <div class="menu-panel-scrollable">
+                    <div class="menu-panel-top">
+                        <button id="menu-hide" class="js-menu-toggle button button-icon button-fill-horz"><span class="icon icon-close" aria-hidden="true"></span><span class="screen-reader-text">Close</span></button>
+                    </div>
+                    <ul class="menu">
+                        
+                        
+                        
+                        <li class="menu-item ">
+                            <a href="/">Home</a>
+                        </li>
+                        
+                        
+                        
+                        <li class="menu-item ">
+                            <a href="/tags/">Archive</a>
+                        </li>
+                        
+                    </ul>
+                </div>
+            </div><!-- .menu-panel -->
+
+            <ul class="actions">
+                <li>
+                    <a class="button button-icon button-fill-horz"
+                       href="https://www.linkedin.com/in/romansmarkuns"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg><span class="screen-reader-text">LinkedIn</span></a>
+                </li>
+                <li>
+                    <a class="button button-icon button-fill-horz"
+                       href="https://github.com/romanmarkunas"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg><span class="screen-reader-text">GitHub</span></a>
+                </li>
+                <li>
+                    <a class="button button-icon button-fill-horz"
+                        href="/feed.xml"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19.199 24C19.199 13.467 10.533 4.8 0 4.8V0c13.165 0 24 10.835 24 24h-4.801zM3.291 17.415c1.814 0 3.293 1.479 3.293 3.295 0 1.813-1.485 3.29-3.301 3.29C1.47 24 0 22.526 0 20.71s1.475-3.294 3.291-3.295zM15.909 24h-4.665c0-6.169-5.075-11.245-11.244-11.245V8.09c8.727 0 15.909 7.184 15.909 15.91z"/></svg><span class="screen-reader-text">Subscribe</span></a>
+                </li>
+            </ul><!-- .actions -->
+
+        </div><!-- .site-nav-inside -->
+    </div><!-- .inner -->
+</nav><!-- .site-nav -->
+
+        <header class="site-alto-header outer">
+    <div class="inner">
+        <div class="site-header-inside">
+
+<!--            -->
+
+        </div><!-- .site-header-inside -->
+    </div><!-- .inner -->
+</header><!-- .site-header -->
+
+        <div class="site-content outer">
+            <div class="inner">
+                <main class="site-main">
+                    <div class="primary">
+    <article class="post post-full">
+        <header class="post-header">
+            <div class="post-header-wrap">
+                <h1 class="post-title outer">Messaging system latencies, part 1: Apache Kafka</h1>
+            </div>
+        </header><!-- .post-header -->
+        <div class="post-content inner-small outer">
+            <time class="published" datetime="">2018-09-22</time><span class="reading-time" title="Estimated read time">
+  
+  
+    	&mdash; 5 min read
+  
+</span>
+
+
+            <br>
+
+            
+            
+            <a href="/tags/index.html#kafka" rel="tag" id="a-post-tag">#kafka</a>
+            
+            <a href="/tags/index.html#messaging" rel="tag" id="a-post-tag">#messaging</a>
+            
+            <a href="/tags/index.html#low+latency" rel="tag" id="a-post-tag">#low latency</a>
+            
+            <br>
+            
+            <br>
+
+            <p>Most developers I talk to about Kafka agree on a catchphrase “Kafka is designed for throughput”. That’s fair and you can find plenty of benchmarks that show 700k/s throughput for single producer without replication. But does that mean we should discard Kafka when talking about low latency messaging?</p>
+
+<p>After quick googling I found <a href="https://stackoverflow.com/questions/20520492/how-to-minimize-the-latency-involved-in-kafka-messaging-framework">this outdated SO question</a>. That question is very old and includes very old version of Kafka (0.7.2 whereas current version is 2.0.0) and also <a href="https://engineering.linkedin.com/kafka/benchmarking-apache-kafka-2-million-writes-second-three-cheap-machines">this article</a> states that very decent latencies (2-3ms 99 percentile) are achievable. Having such controversial info is not enough to make final decision so I decided to create a little benchmark myself, to finally conclude whether Kafka is good for low-latency applications.</p>
+
+<!--more-->
+
+<h2>What is measured</h2>
+
+<p>For all tests I run producer, consumer and broker on the same machine. For these tests I used laptop: i7-7820HQ, 16GB, Windows 10 (yes, I know…). This is why pre-allocation is on in broker settings and you will need to disable it should you run provided code on Linux box. Also I didn’t change default Kafka startup scripts, which means brokers had 1GB heap maximum.</p>
+
+<p>Latency test intent is to test following scenarios:</p>
+<ul>
+  <li>light throughput of 200 messages/second + non-durable broker</li>
+  <li>light throughput of 200 messages/second + fault-tolerant broker</li>
+  <li>moderate throughput of 4000 messages/second + non-durable broker</li>
+  <li>moderate throughput of 4000 messages/second + fault tolerant broker</li>
+</ul>
+
+<p>This test do not measure latency drops due to cluster node failovers as these scenarios are very different depending on your partitioning schema and replication factor. Hopefully node failures are not part of your normal day-to-day operations ;)</p>
+
+<p>As usual, all code can be found <a href="https://github.com/romanmarkunas/blog-kafka-artemis-latency">here</a>, if you want to play around and see how your setup compares. All scenarios are located in test directory under benchmark/LatencyBenchmark.</p>
+
+<p>For exact broker/client configuration see code above. Also I’ll put a little explanation why these settings were used.</p>
+
+<h2>Results</h2>
+
+<h4>Lowest latencies possible</h4>
+
+<p>Measurements @ 200 messages/s:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Total sent     - 5000
+Total received - 5000
+Send rate      - 200.004
+99 percentile  - 1.576891
+75 percentile  - 1.180825
+Min latency    - 0.593806
+Max latency    - 8.921906
+Avg latency    - 1.085105
+</code></pre></div></div>
+
+<p>Measurements @ 4000 messages/s:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Total sent     - 50000
+Total received - 50000
+Send rate      - 3837.725
+99 percentile  - 1.327242
+75 percentile  - 0.945013
+Min latency    - 0.413972
+Max latency    - 13.287300
+Avg latency    - 0.802173
+</code></pre></div></div>
+
+<p>So these are lowest latencies possible on my machine. Configuration for these:</p>
+<ol>
+  <li>No batching on producer (consumer always fetches all available messages up to configured size)</li>
+  <li>No acks on producer</li>
+  <li>No commits after each message (but uses asynchronous background commits) on consumer</li>
+  <li>Single node cluster, no replication</li>
+  <li>Broker has delayed sync to disk</li>
+  <li>All internal topics are single partition</li>
+</ol>
+
+<p>As you can see most messages make a roundtrip within 1-2 ms. There are always outliers at rare occasion, which are caused by different maintenance operations and probably some interference from OS. For example, expired offset removal took around 7 ms.</p>
+
+<p>Also it’s possible to decrease consumer poll timeout to get smaller max latency at cost of higher 99 percentile.</p>
+
+<h4>Non fault-tolerant setup with consumer commit after each read</h4>
+
+<p>Measurements @ 200 messages/s and synchronous commit:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Total sent     - 5000
+Total received - 5000
+Send rate      - 200.004
+99 percentile  - 4.535680
+75 percentile  - 1.927668
+Min latency    - 0.904814
+Max latency    - 9.848230
+Avg latency    - 1.865007
+</code></pre></div></div>
+
+<p>I made these measurements as I was curious how synchronous commit affects latency, and it’s roughly 30% overhead.</p>
+
+<h4>Fault-tolerant setup with synchronous consumer commit</h4>
+
+<p>Measurements @ 200 messages/s and synchronous commit:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Total sent     - 5000
+Total received - 5000
+Send rate      - 199.989
+99 percentile  - 5.137226
+75 percentile  - 3.924183
+Min latency    - 2.115347
+Max latency    - 14.580346
+Avg latency    - 3.613249
+</code></pre></div></div>
+
+<p>Measurements @ 4000 messages/s and synchronous commit:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Total sent     - 50000
+Total received - 50000
+Send rate      - 3993.356
+99 percentile  - 17.898772
+75 percentile  - 11.823148
+Min latency    - 5.039950
+Max latency    - 35.926347
+Avg latency    - 11.018564
+</code></pre></div></div>
+
+<p>Fault tolerant config:</p>
+<ol>
+  <li>Broker made out of 3 nodes</li>
+  <li>Producer waits for ack from each broker node</li>
+  <li>Sync to disk is still delayed</li>
+</ol>
+
+<p>For the higher throughput scenario I had to turn batching on and put a setting to batch at most 500 records. Otherwise maximum throughput would be 1000 / MIN_LATENCY = 1000 / 5 = 200 messages/s</p>
+
+<h2>Conclusion</h2>
+
+<p>Looks like these articles about huge latencies of 100ms magnitude relate to older versions of Kafka. Replicated operation showed pretty decent results, which should be enough for most cases. Please note that these results are not made on dedicated hardware and I didn’t do any memory/OS settings/affinity tuning, so very likely it’s possible to get even better results.</p>
+
+<p>There are no measurements for durable messages (force flush each message on disk) and I think tests for such setup are extremely hardware dependent and should be made using proper HDD/SSD.</p>
+
+<p>My takeaway from this is that unless you need sub-millisecond latencies I could do with Kafka. Unless you are in that outlier part of spectrum technologies/solution selection must be done based on functionality it provides and not on specific performance parameters. And of course reusing well-known technology is much better than having a zoo of trendy names, that barely anyone in team understands properly.</p>
+
+<h2>P.S.</h2>
+
+<p>Coming soon! Follow-up post where same tests are performed with Apache Artemis (former ActiveMQ).</p>
+        </div><!-- .post-content -->
+        <footer class="post-footer inner-small outer">
+            <div class="post-share">
+                <span>Share:</span>
+                <a class="button button-icon button-fill-horz"
+                    href="https://twitter.com/intent/tweet?text=Messaging%20system%20latencies,%20part%201:%20Apache%20Kafka&amp;url=https://romanmarkunas.com/messaging/2018/09/22/0003-messaging-messaging-system-latencies-1-kafka/"
+                    target="_blank" rel="noopener"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M23.954 4.569a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.691 8.094 4.066 6.13 1.64 3.161a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.061a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.937 4.937 0 004.604 3.417 9.868 9.868 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.054 0 13.999-7.496 13.999-13.986 0-.209 0-.42-.015-.63a9.936 9.936 0 002.46-2.548l-.047-.02z"/></svg><span
+                        class="screen-reader-text">Share on Twitter</span></a>
+                <a class="button button-icon button-fill-horz"
+                    href="https://www.facebook.com/sharer/sharer.php?u=https://romanmarkunas.com/messaging/2018/09/22/0003-messaging-messaging-system-latencies-1-kafka/&amp;t=Messaging%20system%20latencies,%20part%201:%20Apache%20Kafka"
+                    target="_blank" rel="noopener"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M23.998 12c0-6.628-5.372-12-11.999-12C5.372 0 0 5.372 0 12c0 5.988 4.388 10.952 10.124 11.852v-8.384H7.078v-3.469h3.046V9.356c0-3.008 1.792-4.669 4.532-4.669 1.313 0 2.686.234 2.686.234v2.953H15.83c-1.49 0-1.955.925-1.955 1.874V12h3.328l-.532 3.469h-2.796v8.384c5.736-.9 10.124-5.864 10.124-11.853z"/></svg><span
+                        class="screen-reader-text">Share on Facebook</span></a>
+            </div>
+<!--            -->
+<!--            <div class="post-tags">-->
+<!--                <span>Tags:</span>-->
+<!--                <a href="/tags/index.html#kafka" rel="tag">kafka</a><a href="/tags/index.html#messaging" rel="tag">messaging</a><a href="/tags/index.html#low+latency" rel="tag">low latency</a>-->
+<!--            </div>-->
+<!--            -->
+        </footer><!-- .post-footer -->
+    </article><!-- .post -->
+    <nav class="post-navigation">
+        <h2 class="screen-reader-text">Read Next</h2>
+        
+        <div class="nav-previous">
+            <div class="nav-inside inner-small outer">
+                
+                <div class="nav-before">Previous</div>
+                <h3 class="nav-title"><a href="/concurrency/2018/04/02/0002-concurrency-introduction-to-java-coroutines/">Introduction to Java coroutines</a>
+                </h3>
+                <div class="nav-date">April 2, 2018</div>
+            </div><!-- .nav-inside -->
+        </div><!-- .nav-previous -->
+        
+        
+        <div class="nav-next">
+            <div class="nav-inside inner-small outer">
+                
+                <div class="nav-before">Next</div>
+                <h3 class="nav-title"><a href="/uncategorized/2018/10/01/0004-uncategorized-monty-hall/">Monty-Hall problem</a></h3>
+                <div class="nav-date">October 1, 2018</div>
+            </div><!-- .nav-inside -->
+        </div><!-- .nav-next -->
+        
+    </nav><!-- .post-navigation -->
+
+    <div class="comments-area">
+        <div class="inner-small outer">
+<!--            <h2 class="comments-title line-accent">Comments</h2>-->
+            <div id="hyvor-talk-view"></div>
+            <script type="text/javascript">
+                var HYVOR_TALK_WEBSITE = 708; // DO NOT CHANGE THIS
+                var HYVOR_TALK_CONFIG = {
+                    url: 'https://romanmarkunas.com/messaging/2018/09/22/0003-messaging-messaging-system-latencies-1-kafka/',
+                    id: '/messaging/2018/09/22/--0003---messaging---messaging-system-latencies-1-kafka'
+                };
+            </script>
+            <script async type="text/javascript" src="//talk.hyvor.com/web-api/embed"></script>
+
+        </div><!-- .inner-small -->
+    </div><!-- .comments-area -->
+
+</div><!-- .primary -->
+
+<aside class="sidebar">
+
+    <section class="widget widget-text">
+        <h2 class="widget-title line-accent">About</h2>
+        <p style="text-align:justify;">
+            I am Roma, a Java developer focusing on high-throughput
+            systems. This blog is a collection of tech, performance and
+            design tips, broadly covering my experience out in the field.
+        </p>
+    </section><!-- .widget-text -->
+
+    
+
+    
+    <section class="widget widget-text">
+        <h2 class="widget-title line-accent">Recommended books</h2>
+<!--        <iframe style="width:120px;height:240px;" marginwidth="0" marginheight="0" scrolling="no" frameborder="0" src="//ws-na.amazon-adsystem.com/widgets/q?ServiceVersion=20070822&OneJS=1&Operation=GetAdHtml&MarketPlace=US&source=ss&ref=as_ss_li_til&ad_type=product_link&tracking_id=devbooks09-20&marketplace=amazon&region=US&placement=0134685997&asins=0134685997&linkId=12e2b168fc942f7f6797d7ad4f4435a4&show_border=true&link_opens_in_new_window=true"></iframe>-->
+        <p style="text-align:center"><a href="https://www.amazon.com/Effective-Java-Joshua-Bloch-dp-0134685997/dp/0134685997/ref=as_li_ss_il?_encoding=UTF8&me=&qid=&linkCode=li3&tag=devbooks09-20&linkId=5d4f23cab29aa16014ab06cd806b9d6b" target="_blank"><img border="0" src="//ws-na.amazon-adsystem.com/widgets/q?_encoding=UTF8&ASIN=0134685997&Format=_SL250_&ID=AsinImage&MarketPlace=US&ServiceVersion=20070822&WS=1&tag=devbooks09-20" ></a><img src="https://ir-na.amazon-adsystem.com/e/ir?t=devbooks09-20&l=li3&o=1&a=0134685997" width="1" height="1" border="0" alt="" style="border:none !important; margin:0px !important;" /></p>
+        <!--        <p><a href="THIS IS JUST TO SWITCH BANNER ON IN sidebar.html" target="_blank" rel="noopener"><img src="/images/banner.jpg" alt="Alt text" /></a></p>-->
+        <p>As an Amazon Associate I earn from qualifying purchases</p>
+    </section><!-- .widget-text-->
+    
+
+    <section class="widget widget-recent-posts">
+        <h2 class="widget-title line-accent">Latest Posts</h2>
+        <ul class="recent-posts">
+            
+            <li class="recent-item"><a href="/performance/2020/09/10/0012-performance-reducing-jvm-memory-footprint-3-off-heap/">Reducing JVM heap size, part 3: Manual memory management</a> <span>September 10, 2020</span></li>
+            
+            <li class="recent-item"><a href="/performance/2020/07/01/0011-performance-reducing-jvm-memory-footprint-2-optimizing/">Reducing JVM heap size, part 2: Optimizing</a> <span>July 1, 2020</span></li>
+            
+            <li class="recent-item"><a href="/performance/2020/07/01/0010-performance-reducing-jvm-memory-footprint-1-profile/">Reducing JVM heap size, part 1: Profiling</a> <span>July 1, 2020</span></li>
+            
+            <li class="recent-item"><a href="/protocols/2020/06/03/0009-protocols-jackson-mixins/">Jackson mix-ins</a> <span>June 3, 2020</span></li>
+            
+            <li class="recent-item"><a href="/microservices/2018/11/15/0008-microservices-dropwizard-101/">Getting started with Dropwizard</a> <span>November 15, 2018</span></li>
+            
+        </ul><!-- .recent-posts -->
+    </section><!-- .widget-recent-posts -->
+
+    <!--Create a sorted array of tags-->
+    
+    
+    <section class="widget widget-tags">
+        <h2 class="widget-title line-accent">Tags</h2>
+        <div class="tagcloud">
+            <a href="/tags/#build">build</a><a href="/tags/#concurrency">concurrency</a><a href="/tags/#core+java">core java</a><a href="/tags/#coroutines">coroutines</a><a href="/tags/#design">design</a><a href="/tags/#dropwizard">dropwizard</a><a href="/tags/#gradle">gradle</a><a href="/tags/#jackson">jackson</a><a href="/tags/#java">java</a><a href="/tags/#kafka">kafka</a><a href="/tags/#low+latency">low latency</a><a href="/tags/#memory">memory</a><a href="/tags/#messaging">messaging</a><a href="/tags/#microservices">microservices</a><a href="/tags/#multithreading">multithreading</a><a href="/tags/#non-blocking+IO">non-blocking IO</a><a href="/tags/#performance">performance</a><a href="/tags/#protocols">protocols</a><a href="/tags/#quasar">quasar</a>
+        </div><!-- .tagcloud -->
+    </section><!-- .widget -->
+
+</aside><!-- .sidebar -->
+
+
+                </main><!-- .site-main -->
+            </div><!-- .inner -->
+        </div><!-- .site-content -->
+        <footer class="site-footer outer">
+    <div class="inner">
+        <div class="site-info">
+            <a href="#top" id="js-top-link" class="top-link button button-icon button-fill-horz"><span class="screen-reader-text">Back to the top</span><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3.44 18.359l8.56-8.541 8.56 8.541 2.63-2.63-11.189-11.189-11.189 11.189z"></path></svg></a>
+        </div><!-- .site-info -->
+    </div><!-- .inner -->
+</footer><!-- .site-footer -->
+
+    </div><!-- .site -->
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-117056147-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-117056147-2');
+</script>
+
+    
+    <script src="/js/scripts.js"></script>
+</body>
+</html>

@@ -1,0 +1,104 @@
+<!doctype html><html><head><script>(function(t,s,o,e,a){t[e]=t[e]||[],t[e].push({'gtm.start':(new Date).getTime(),event:"gtm.js"});var i=s.getElementsByTagName(o)[0],n=s.createElement(o),r=e!="dataLayer"?"&amp;l="+e:'';n.async=!0,n.src="https://www.googletagmanager.com/gtm.js?id="+a+r,i.parentNode.insertBefore(n,i)})(window,document,"script","dataLayer","GTM-NSPM4RC")</script><meta xmlns=http://www.w3.org/1999/xhtml name=googlebot content="NOODP"></meta><meta xmlns=http://www.w3.org/1999/xhtml name=google-site-verification content="nSYeDgyKM9mw5CWcZuD0xu7iSWXlJijAlg9rcxVOYf4"></meta><meta xmlns=http://www.w3.org/1999/xhtml name=google-site-verification content="6UEaC3SWhpGQvqRnSJIEm2swxXpM5Adn4dxZhFsNdw0"></meta><meta charset=utf-8><meta content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no" id=viewport name=viewport><title>RabbitMQ Performance Measurements, part 2 | RabbitMQ - Blog</title><meta name=description content><link xmlns=http://www.w3.org/1999/xhtml rel=icon type=/image/vnd.microsoft.icon href=https://www.rabbitmq.com/favicon.ico></link>
+<link href="https://fonts.googleapis.com/css?family=Raleway:400,500,600,700" rel=stylesheet><link rel=stylesheet href=/assets/css/syntax.css type=text/css><link xmlns=http://www.w3.org/1999/xhtml rel=stylesheet rev="stylesheet" href=https://www.rabbitmq.com/css/rabbit.css type=text/css></link>
+<link xmlns=http://www.w3.org/1999/xhtml rel=icon type=/image/vnd.microsoft.icon href=https://www.rabbitmq.com/favicon.ico></link>
+<link rel=stylesheet href=/assets/css/rabbitmq-blog.css type=text/css><script>window.twttr=function(n,s,o){var t,i=n.getElementsByTagName(s)[0],e=window.twttr||{};return n.getElementById(o)?e:(t=n.createElement(s),t.id=o,t.src="https://platform.twitter.com/widgets.js",i.parentNode.insertBefore(t,i),e._e=[],e.ready=function(t){e._e.push(t)},e)}(document,"script","twitter-wjs")</script></head><body><noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-NSPM4RC" height=0 width=0 style=display:none;visibility:hidden></iframe></noscript><div xmlns=http://www.w3.org/1999/xhtml id=outerContainer><div class=container><div class=rabbit-logo><a href=https://www.rabbitmq.com/><img src=https://www.rabbitmq.com/img/logo-rabbitmq.svg alt=RabbitMQ></a></div><a class="btn menubtn" onclick=showHide()>Menu <img src=https://www.rabbitmq.com/img/carrot-down-white.svg></a><div class=mobilemenuicon onclick=showHide()><img src=https://www.rabbitmq.com/img/mobile-menu-icon.svg></div><div id=nav><ul id=mainNav><li><a href=https://www.rabbitmq.com/#features>Features</a></li><li><a href=https://www.rabbitmq.com/#getstarted>Get Started</a></li><li><a href=https://www.rabbitmq.com/#support>Support</a></li><li><a href=https://www.rabbitmq.com/#community>Community</a></li><li><a href=https://www.rabbitmq.com/documentation.html>Docs</a></li><li><a href=https://blog.rabbitmq.com class=selected>Blog</a></li></ul></div></div><div class=nav-separator></div><div id=innerContainer class=container><div>« <a href=https://blog.rabbitmq.com/posts/2012/04/london-realtime-hackweekend/ rel=prev>London Realtime hackweekend</a></div><div><a href=https://blog.rabbitmq.com/posts/2012/05/some-queuing-theory-throughput-latency-and-bandwidth/ rel=next>Some queuing theory: throughput, latency and bandwidth</a> »</div><h1>RabbitMQ Performance Measurements, part 2</h1><a class=twitter-share-button href=https://twitter.com/intent/tweet>Tweet</a>
+<a class=twitter-follow-button href=https://twitter.com/RabbitMQ data-show-count=false data-lang=en>Follow @RabbitMQ</a><br><em>April 25, 2012</em><p>Welcome back! <a href=/posts/2012/04/rabbitmq-performance-measurements-part-1>Last time</a> we talked about flow control and
+latency; today let&rsquo;s talk about how different features affect
+the performance we see. Here are some simple scenarios. As
+before, they&rsquo;re all variations on the theme of one publisher and
+one consumer publishing as fast as they can.</p><h2 id=some-simple-scenarios>Some Simple Scenarios</h2><p><img src=/assets/images/2012/04/performance-01.png class=blog alt></p><p>This first scenario is the simplest - just one producer and
+one consumer. So we have a baseline.</p><p><img src=/assets/images/2012/04/performance-02.png class=blog alt></p><p>Of course we want to produce impressive figures. So we can go
+a bit faster than that - if we don&rsquo;t consume anything then we
+can publish faster.</p><p><img src=/assets/images/2012/04/performance-03.png class=blog alt></p><p>This uses a couple of the cores on our server - but not all of
+them. So for the best headline-grabbing rate, we start a
+number of parallel producers, all publishing into nothing.</p><p><img src=/assets/images/2012/04/performance-04.png class=blog alt></p><p>Of course, consuming is rather important! So for the headline
+consuming rate, we publish to a large number of consumers in
+parallel.</p><p>Of course to some extent this quest for large numbers is a bit
+silly, we&rsquo;re more interested in relative performance. So let&rsquo;s
+revert to one producer and one consumer.</p><p><img src=/assets/images/2012/04/performance-05.png class=blog alt></p><p>Now let&rsquo;s try publishing with the mandatory flag set. We drop
+to about 40% of the non-mandatory rate. The reason for this is
+that the channel we&rsquo;re publishing to can&rsquo;t just asynchronously
+stream messages at queues any more; it synchronously checks
+with the queues to make sure they&rsquo;re still there. (Yes, we
+could probably make mandatory publishing faster, but it&rsquo;s not
+very heavily used.)</p><p><img src=/assets/images/2012/04/performance-06.png class=blog alt></p><p>The immediate flag gives us almost exactly the same drop in
+performance. This isn&rsquo;t hugely surprising - it has to make the
+same synchronous check with the queue.</p><p><img src=/assets/images/2012/04/performance-07.png class=blog alt></p><p>Scrapping the rarely-used mandatory and immediate flags, let&rsquo;s
+try turning on acknowledgements for delivered messages. We still
+see a performance drop compared to delivering without
+acknowledgements (the server has to do more bookkeeping after
+all) but it&rsquo;s less noticeable.</p><p><img src=/assets/images/2012/04/performance-08.png class=blog alt></p><p>Now we turn on publish confirms as well. Performance drops a
+little more but we&rsquo;re still at over 60% the speed of neither
+acks nor confirms.</p><p><img src=/assets/images/2012/04/performance-09.png class=blog alt></p><p>Finally, we enable message persistence. The rate becomes much
+lower, since we&rsquo;re throwing all those messages at the disk as
+well.</p><h2 id=message-sizes>Message Sizes</h2><p>Notably, all the messages we&rsquo;ve been sending until now have only
+been a few bytes long. There are a couple of reasons for this:</p><ul><li>Quite a lot of the work done by RabbitMQ is per-message, not
+per-byte-of-message.</li><li>It&rsquo;s always nice to look at big numbers.</li></ul><p>But in the real world we will often want to send bigger
+messages. So let&rsquo;s look at the next chart:</p><h3 id=1---1-sending-rate-message-sizes>1 -> 1 sending rate message sizes</h3><p><img src=/assets/images/2012/04/performance-10.png class=blog alt></p><p>Here (again) we&rsquo;re sending unacked / unconfirmed messages as
+fast as possible, but this time we vary the message size. We
+can see that (of course) the message rate drops further as the
+size increases, but the actual number of bytes sent increases as
+we have less and less routing overhead.</p><p>So how does the message size affect horizontal scaling? Let&rsquo;s
+vary the number of producers with different message sizes. Just
+for a change, in this test we&rsquo;re not going to have any consumers
+ar all.</p><h3 id=n---0-sending-msg-rate-vs-number-of-producers-for-various-message-sizes>n -> 0 sending msg rate vs number of producers, for various message sizes</h3><p><img src=/assets/images/2012/04/performance-11.png class=blog alt></p><h3 id=n---0-sending-bytes-rate-vs-number-of-producers-for-various-message-sizes>n -> 0 sending bytes rate vs number of producers, for various message sizes</h3><p><img src=/assets/images/2012/04/performance-12.png class=blog alt></p><p>In these tests we can see that for small messages it only takes
+a couple of producers to reach an upper bound on how many
+messages we can publish, but that for larger messages we need
+more producers to use the available bandwidth.</p><p>Another frequently confusing issue is performance around
+consumers with a prefetch count. RabbitMQ (well, AMQP) defaults
+to sending all the messages it can to any consumer that looks
+ready to accept them. The maximum number of these unacknowledged
+messages per channel can be limited by setting the prefetch
+count. However, small prefetch counts can hurt performance
+(since we can be waiting for acks to arrive before sending out
+more messages).</p><p>So let&rsquo;s have a look at prefetch count and, while we&rsquo;re there,
+also consider the number of consumers consuming from a single
+queue. This chart contains some deliberately absurd extremes.</p><h3 id=1---n-receiving-rate-vs-consumer-count--prefetch-count>1 -> n receiving rate vs consumer count / prefetch count</h3><p><img src=/assets/images/2012/04/performance-13.png class=blog alt></p><p>The first thing to notice is that tiny prefetch counts really
+hurt performance. Note the large difference in performance
+between prefetch = 1 and prefetch = 2! But we also get into
+diminishing returns - notice that the difference between
+prefetch = 20 and prefetch = 50 is hard to see, and the
+difference between prefetch = 50 and prefetch = 10000 is almost
+invisible. Of course, this is because for our particular network
+link prefetch = 50 already ensures that we never starve the
+consumer while waiting for acks. Of course, this test was run
+over a low latency link - more latent links will benefit from a
+higher prefetch count.</p><p>The second thing to notice is that when we have a small number
+of consumers, adding one more will increase performance (we get
+more parallellism). And with a tiny prefetch count, increasing
+consumers even up to a large number has benefits (since each
+individual consumer spends much of its time starved). But when
+we have a larger prefetch count, increasing the number of
+consumers is not so helpful, since even a small number can kept
+busy enough to max out our queue, but the more consumers we have
+the more work RabbitMQ has to do to keep track of all of them.</p><h2 id=large-queues>Large queues</h2><p>All the examples we&rsquo;ve looked at so far have one thing in
+common: very few messages actually get queued. In general we&rsquo;ve
+looked at scenarios where messages get consumed as quickly as
+they get produced, and thus each queue has an average length of
+0.</p><p>So what happens whe queues get big? When queues are small(ish)
+they will reside entirely within memory. Persistent messages
+will also get written to disc, but they will only get read again
+if the broker restarts.</p><p>But when queues get larger, they will get paged to disc,
+persistent or not. In this case performance can take a hit as
+suddenly we need to access the disc to send messages to
+consumers. So let&rsquo;s run a test: publish a lot of non-persistent
+messages to a queue, and then consume them all.</p><h3 id=queue-load--drain-500k-messages>Queue load / drain 500k messages</h3><p><img src=/assets/images/2012/04/performance-14.png class=blog alt></p><p>In this small case we can see fairly consistent performance:
+the messages go into the queue fairly quickly and then come out
+even more quickly.</p><h3 id=queue-load--drain-10m-messages>Queue load / drain 10M messages</h3><p><img src=/assets/images/2012/04/performance-15.png class=blog alt></p><p>But when we have a larger queue we see that the performance
+varies a lot more. We see that when loading the queue we
+initially get a very high throughput, then a pause while some of
+the queue is paged out to disc, then a more consistent lower
+throughput. Similarly when draining the queue we see a much
+lower rate when pulling the messages from disc.</p><p>Performance of disc-bound queues is a complex topic -
+see <a href=/posts/2011/10/performance-of-queues-when-less-is-more>Matthew&rsquo;s
+blog post on the subject</a> for some more talk on the subject.</p><h2 id=learn-more>Learn More</h2><ul><li>Webinar: <a href="https://content.pivotal.io/webinars/may-23-what-s-new-in-rabbitmq-3-8-webinar?utm_campaign=rabbitmq-blog-3.8-webinar-q319&utm_source=rabbitmq&utm_medium=website">What&rsquo;s new in RabbitMQ 3.8?</a></li><li>Webpage: <a href=https://www.rabbitmq.com/best-practices.html>RabbitMQ Best Practices</a></li><li>Webinar: <a href="https://content.pivotal.io/webinars/dec-12-10-things-every-developer-using-rabbitmq-should-know-webinar?utm_campaign=rabbitmq-blog-10-things-q319&utm_source=rabbitmq&utm_medium=website">10 Things Every Developer Using RabbitMQ Should Know</a></li></ul><p>Tags:
+<a href=https://blog.rabbitmq.com/tags/charts/>charts</a>
+<a href=https://blog.rabbitmq.com/tags/flow-control/>flow-control</a>
+<a href=https://blog.rabbitmq.com/tags/performance/>performance</a></p><p>Written by:
+<a href=https://blog.rabbitmq.com/authors/simon/>Simon MacMullen</a></p><p>Categories:
+<a href=https://blog.rabbitmq.com/categories/performance/>Performance</a></p></div><div class=clear></div><div class=pageFooter><div class=container><div class=rabbit-logo><a href=https://www.rabbitmq.com/><img src=https://www.rabbitmq.com/img/logo-rabbitmq-white.svg alt=RabbitMQ></a></div><ul class=footerNav><li><a href=https://www.rabbitmq.com/#features>Features</a></li><li><a href=https://www.rabbitmq.com/#getstarted>Get Started</a></li><li><a href=https://www.rabbitmq.com/#support>Support</a></li><li><a href=https://www.rabbitmq.com/#community>Community</a></li><li><a href=https://www.rabbitmq.com/documentation.html>Docs</a></li><li><a href=https://blog.rabbitmq.com>Blog</a></li></ul><p id=copyright>Copyright &#169; 2007-2021 <a href=https://tanzu.vmware.com/>VMware</a>, Inc. or its affiliates. All rights reserved.
+<a href=https://pivotal.io/terms-of-use>Terms of Use</a>,
+<a href=https://pivotal.io/privacy-policy>Privacy</a> and
+<a href=https://www.rabbitmq.com/trademark-guidelines.html>Trademark Guidelines</a></p><p><small>The postings on this site are by individual members of the
+RabbitMQ team, and do not represent VMware’s positions, strategies
+or opinions.</small></p></div></div></div></body></html>

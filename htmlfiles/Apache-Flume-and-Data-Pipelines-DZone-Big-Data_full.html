@@ -1,0 +1,1022 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="In this article, we discuss Apache Flume and its basic history, file system, architecture, and potential limitations.">
+  <meta name="keywords" content="data, Apache Flume, hadoop, File system">
+
+  <meta property="og:description" content="In this article, we discuss Apache Flume and its basic history, file system, architecture, and potential limitations.">
+  <meta property="og:site_name" content="dzone.com">
+  <meta property="og:title" content="Apache Flume and Data Pipelines - DZone Big Data">
+  <meta property="og:url" content="https://dzone.com/articles/apache-flume-and-data-pipelines">
+  <meta property="og:image" content="https://dz2cdn1.dzone.com/storage/article-thumb/12319136-thumb.jpg">
+  <meta property="og:type" content="article">
+
+  <meta name="twitter:site" content="@DZoneInc">
+  <meta name="twitter:image" content="https://dz2cdn1.dzone.com/storage/article-thumb/12319136-thumb.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:description" content="In this article, we discuss Apache Flume and its basic history, file system, architecture, and potential limitations.">
+  <meta name="twitter:title" content="Apache Flume and Data Pipelines - DZone Big Data">
+
+  <meta name="referrer" content="origin-when-cross-origin">
+  <meta name="google-site-verification" content="kndbhxcupfEqWmZclhCpB6vlgOs7QSmx2UHAGGnP2mA">
+  <meta name="df-verify" content="df0d76632b4543">
+
+  <link rel="icon" type="image/x-icon" href="https://dz2cdn1.dzone.com/themes/dz20/images/favicon.png">
+  <link rel="image_src" href="https://dz2cdn1.dzone.com/storage/article-thumb/12319136-thumb.jpg">
+  <link rel="canonical" href="https://dzone.com/articles/apache-flume-and-data-pipelines">
+
+  <title>Apache Flume and Data Pipelines - DZone Big Data</title>
+
+  <link rel="preload" href="https://fonts.dzone.com/themes/dz20/font/fontello.woff?11773374" as="font" type="font/woff" crossorigin="anonymous">
+
+  <link rel="stylesheet" media="all" href="https://dz2cdn1.dzone.com/themes/dz20/ftl/icons.css">
+  <link rel="stylesheet" media="all" href="https://dz2cdn1.dzone.com/themes/dz20/lib/static/bootstrap/bootstrap.min.css">
+  <link rel="stylesheet" media="all" href="https://dz2cdn1.dzone.com/themes/dz20/ftl/article/global.css">
+  <link rel="stylesheet" media="all" href="https://dz2cdn1.dzone.com/themes/dz20/ftl/header/styles.css">
+</head>
+<body>
+<div id="ftl-header">
+  <div class="container-fluid header">
+    <div class="row">
+      <div class="col-md-12" style="padding: 0;">
+        <div class="header-top">
+          <div class="header-container">
+            <div class="pull-left logo-container">
+              <div class="logo">
+                <a class="inner" href="/">
+                  <picture>
+                    <source srcset="https://dz2cdn1.dzone.com/themes/dz20/images/dz_logo_2021_cropped.webp" type="image/webp">
+                    <source srcset="https://dz2cdn1.dzone.com/themes/dz20/images/dz_logo_2021_cropped.png" type="image/png">
+                    <img src="https://dz2cdn1.dzone.com/themes/dz20/images/dz_logo_2021_cropped.png" width="160" height="52" alt="DZone">
+                  </picture>
+                </a>
+              </div>
+
+                <div class="active-portal"><a href="/big-data-analytics-tutorials-tools-news">Big Data Zone</a></div>
+            </div>
+
+            <div class="pull-right login-and-search">
+              <div id="authenticated-block" class="logged-in">
+                <div class="welcome-back">Thanks for visiting DZone today,</div>
+                <div id="user-header" class="user-info">
+                  <button class="user-avatar">
+                    <span id="header-username" class="username"></span>
+                    <img id="header-avatar" src="" alt="user avatar">
+                  </button>
+                  <div id="user-dropdown" class="browse-user-menu">
+                    <div class="user-content">
+                      <a id="header-user-plug" href="#" class="user-description"></a>
+                      <a id="header-user-edit" href="#" class="edit-profile">Edit Profile</a>
+                    </div>
+                    <ul class="user-actions">
+                      <li id="first-user-action"><a id="header-dropdown-manage-email" href="#">Manage Email Subscriptions</a></li>
+                      <li>
+                        <a href="/articles/how-to-submit-a-post-to-dzone?utm_source=DZone&utm_medium=user_dropdown&utm_campaign=how_to_post">
+                          How to Post to DZone
+                        </a>
+                      </li>
+                      <li>
+                        <a href="/articles/dzones-article-submission-guidelines">
+                          Article Submission Guidelines
+                        </a>
+                      </li>
+                    </ul>
+                    <div class="bottom">
+                      <a href="/users/logout.html" class="sign-out">Sign Out</a>
+                      <a id="dropdown-view-profile" href="#" class="view-profile">View Profile</a>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="post-content">
+                  <button id="post-button" class="post-content--button">
+                    <span class="post-class">Post</span>
+                    <i class="icon-plus"></i>
+                  </button>
+
+                  <div id="post-menu" class="posting-links">
+                    <div class="posting-links-menu">
+                      <ul>
+                        <li>
+                          <img src="/themes/dz20/images/dz-postarticle.svg">
+                          <a href="/content/article/post.html">Post an Article</a>
+                        </li>
+                        <li>
+                          <a id="drafts-link" href="#">Manage My Drafts</a>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div id="unauthenticated-block">
+                <div class="dz-intro">Over 2 million developers have joined DZone.</div>
+                <div class="mobile-invisible sign-in-join">
+                  <a href="/users/login.html">Log In</a>
+                  <span class="dz-intro-span">/</span>
+                  <a href="/static/registration.html">Join</a>
+                </div>
+                <a class="join-icon" href="/users/login.html"><i class="icon-user"></i></a>
+              </div>
+              <div class="headerSearch">
+                <a class="icon-search dropdown-toggle" href="/search"></a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="header-bottom">
+
+
+          <ul class="portals header-container scrollable-ul">
+            <li>
+              <a href="/refcardz" id="header-refcardz">
+                <em>Refcardz</em>
+              </a>
+            </li>
+            <li>
+              <a href="/trendreports" id="header-research">
+                <em>Trend Reports</em>
+              </a>
+            </li>
+            <li>
+              <a href="/webinars" id="header-webinars">
+                <em>Webinars</em>
+              </a>
+            </li>
+            <li class="last-portal-link">
+              <a href="#" id="header-portals">
+                <em>
+                  Zones
+                  <span id="zone-arrow" class="collapsible-toggle">
+                    <i class="icon-angle-down"></i>
+                    <i class="icon-angle-up"></i>
+                  </span>
+                </em>
+              </a>
+            </li>
+
+            <li class="separator" aria-hidden="true" style="color: #d9dcdd;">|</li>
+            <li id="portal-list" class="portal-topics">
+              <ul>
+                  <li>
+                    <a href="/agile-methodology-training-tools-news" id="header-2">Agile</a>
+                  </li>
+                  <li>
+                    <a href="/artificial-intelligence-tutorials-tools-news" id="header-4001">AI</a>
+                  </li>
+                  <li>
+                    <a href="/big-data-analytics-tutorials-tools-news" id="header-3">Big Data</a>
+                  </li>
+                  <li>
+                    <a href="/cloud-computing-tutorials-tools-news" id="header-4">Cloud</a>
+                  </li>
+                  <li>
+                    <a href="/database-sql-nosql-tutorials-tools-news" id="header-5">Database</a>
+                  </li>
+                  <li>
+                    <a href="/devops-tutorials-tools-news" id="header-6">DevOps</a>
+                  </li>
+                  <li>
+                    <a href="/enterprise-integration-training-tools-news" id="header-7">Integration</a>
+                  </li>
+                  <li>
+                    <a href="/iot-developer-tutorials-tools-news-reviews" id="header-8">IoT</a>
+                  </li>
+                  <li>
+                    <a href="/java-jdk-development-tutorials-tools-news" id="header-1">Java</a>
+                  </li>
+                  <li>
+                    <a href="/microservices-news-tutorials-tools" id="header-6001">Microservices</a>
+                  </li>
+                  <li>
+                    <a href="/open-source-news-tutorials-tools" id="header-7001">Open Source</a>
+                  </li>
+                  <li>
+                    <a href="/apm-tools-performance-monitoring-optimization" id="header-10">Performance</a>
+                  </li>
+                  <li>
+                    <a href="/application-web-network-security" id="header-2001">Security</a>
+                  </li>
+                  <li>
+                    <a href="/web-development-programming-tutorials-tools-news" id="header-11">Web Dev</a>
+                  </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script async src="https://dz2cdn1.dzone.com/themes/dz20/ftl/header/bundle.js"></script><link rel="stylesheet" media="all" href="https://dz2cdn1.dzone.com/themes/dz20/ftl/article/styles.css">
+
+
+
+
+<div id="ftl-article" >
+  <div class="container-fluid body">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="articles-wrap">
+              <div class="ad-container">
+                <div id="div-gpt-ad-1435246566686-0" class="ads-billboard-article" data-gpt-slot="top"></div>
+              </div>
+
+
+          <div class="article-stream widget-top-border">
+                <div class="content-right-images">
+                  <div id="div-gpt-ad-1435246566686-2" class="sidebar-ad" data-gpt-desktop="true" data-gpt-slot="sidebar1"></div>
+                </div>
+
+                <script type="application/ld+json">
+                  {
+                    "@context": "http://schema.org",
+                    "@type": "Article",
+                    "headline": "Apache Flume and Data Pipelines",
+                    "author": {
+                      "@type": "Person",
+                      "name": "Daniel Berman"
+                    },
+                    "audience": "software developers",
+                    "keywords": "big data,apache,flume,hdfs,architecture",
+                    "timeRequired": "PT6M",
+                    "commentCount": 0,
+                    "wordCount": "1357",
+                    "accessMode": "textual, visual",
+                    "dateCreated": "2019-08-09T19:11:36Z",
+                    "datePublished": "2019-08-09T00:00:00Z",
+                    "dateModified": "2019-08-09T19:11:36Z",
+                    "articleSection": "big-data-analytics-tutorials-tools-news",
+                    "publisher": {
+                      "@type": "Organization",
+                      "name": "DZone",
+                      "url": "https://dzone.com",
+                      "logo": {
+                        "@type": "ImageObject",
+                        "url": "https://dzone.com/themes/dz20/images/dz_logo_2021_cropped.png"
+                      }
+                    },
+                    "articleBody": "What Is Apache Flume? Apache Flume is an efficient, distributed, reliable, and fault-tolerant data-ingestion tool. It facilitates the streaming of huge volumes of log files from various sources (like web servers) into the Hadoop Distributed File System (HDFS), distributed databases, such as HBase on HDFS, or even destinations like Elasticsearch at near-real time speeds. In addition to streaming log data, Flume can also stream event data generated from web sources like Twitter, Facebook, and Kafka Brokers. The History of Apache Flume Apache Flume was developed by Cloudera to provide a way to quickly and reliably stream large volumes of log files generated by web servers into Hadoop. There, applications can perform further analysis on data in a distributed environment. Initially, Apache Flume was developed to handle only log data. Later, it was equipped to handle event data as well. An Overview of HDFS HDFS stands for Hadoop Distributed File System. HDFS is a tool developed by Apache for storing and processing large volumes of unstructured data on a distributed platform. A number of databases use Hadoop to quickly process large volumes of data in a scalable manner by leveraging the computing power of multiple systems within a network. Facebook, Yahoo, and LinkedIn are few of the companies that rely upon Hadoop for their data management. Why Apache Flume? Organizations running multiple web services across multiple servers and hosts will generate multitudes of log files on a daily basis. These log files will contain information about events and activities that are required for both auditing and analytical purposes. They can size up to terabytes or even petabytes, and significant development effort and infrastructure costs can be expended in an effort to analyze them. Flume is a popular choice when it comes to building data pipelines for log data files because of its simplicity, flexibility, and features — which are described below. Flume’s Features and Capabilities Flume transfers raw log files by pulling them from multiple sources and streaming them to the Hadoop file system. There, the log files can be consumed by analytical tools like Spark or Kafka. Flume can connect to various plugins to ensure that log data is pushed to the right destination. Transferring log files to multiple sources Streaming Data With Apache Flume: Architecture and Examples The process of streaming data through Apache Flume needs to be planned and architected to ensure data is transferred in an efficient manner. To stream data from web servers to HDFS, the Flume configuration file must have information about where the data is being picked up from and where it is being pushed to. Providing this information is straightforward; Flume’s source component picks up the log files from the source or data generators and sends it to the agent where the data is channeled. In this process, the data to be streamed is stored in the memory, which is meant to reach the destination where it will sink with it. Architecture There are three important parts of Apache Flume’s data streaming architecture: the data generating sources, the Flume agent, and the destination or target. The Flume agent is made up of the Flume source, the channel, and the sink. The Flume source picks up log files from data generating sources like web servers and Twitter and sends it to the channel. The Flume’s sink component ensures that the data it receives is synced to the destination, which can be HDFS, a database like HBase on HDFS, or an analytics tool like Spark. Below is the basic architecture of Flume for an HDFS sink: Flume architecture The source, channel, and sink components are parts of the Flume agent. When streaming large volumes of data, multiple Flume agents can be configured to receive data from multiple sources, and the data can be streamed in parallel to multiple destinations. Flume architecture can vary based on data streaming requirements. Flume can be configured to stream data from multiple sources and clients to a single destination or from a single source to multiple destinations. This flexibility is very helpful. Below are two examples of how this flexibility can be built into the Flume architecture: Streaming from multiple sources to a single destination Centralized data store In this architecture, data can be streamed from multiple clients to multiple agents. The data collector picks up the data from all three agents and sends it across to the destination, a centralized data store. Data streamed from a single client to multiple destinations Client In this example, two Apache agents (more can be configured based on the requirements) pick up the data and sync it across to multiple destinations. This architecture is helpful when streaming different sets of data from one client to two different destinations (for example, HDFS and HBase for analytical purposes) is necessary. Flume can recognize specific sources and destinations. Integrating Flume With Distributed Databases and Tools In addition to being able to stream data from multiple sources to multiple destinations, Flume can integrate with a wide range of tools and products. It can pull data from almost any type of source, including web server log files, CSV files generated from an RDBMS database, and events. Similarly, Flume can push data to destinations like HDFS, HBase, and Hive. Flume can even integrate with other data streaming tools like Kafka and Spark. The examples below illustrate Flume’s integration capabilities. Streaming Log Data to HDFS from Twitter As mentioned earlier, Flume can stream data from a web source like Twitter to a directory residing on HDFS. This is a typical requirement of a real-time scenario. To make this happen, Flume must be configured to pick up data from the source (source type) and sink the data to the destination (destination type). The source type here is Twitter, and the sink type is HDFS-SINK. Once the sink is done, applications like Spark can perform analytics on HDFS. Log data to HDFS from Twitter Streaming Log Data From Kafka to HDFS Using Flume Kafka is a message broker, which can stream live data and messages generated on web pages to a destination like a database. If you need to stream these messages to a location on HDFS, Flume can use Kafka Source to extract the data and then sync it to HDFS using HDFS Sink. Log data from Kafka from HDFS Streaming Log Data to Elasticsearch Flume can be used to stream log data to Elasticsearch, a popular open-source tool that can be used to quickly perform complex text search operations on large volumes of JSON data in a distributed environment in a scalable manner. It is built on top of Lucene and leverages Lucene's capabilities to perform index-based searching across JSON. Flume can stream JSON documents from a web server to Elasticsearch, so that applications can access the data from Elasticsearch. The JSON documents can be streamed directly to Elasticsearch quickly and reliably on a distributed environment. Flume recognizes an ELK destination with its ElasticsearchSinkcapability. Elasticsearch should be installed with a FlumeSink plugin so that it recognizes Flume as a source from which to accept data streams. Flume streams data in the form of index files to the Elasticsearch destination. By default, one index file is streamed per day with a default naming format “flume-yyyy-MM-dd,” which can be changed in the Flume config file. Log data to Elastisearch The Limitations of Apache Flume Apache Flume does have some limitations. For starters, its architecture can become complex and difficult to manage and maintain when streaming data from multiple sources to multiple destinations. In addition, Flume’s data streaming is not 100% real-time. Alternatives like Kafka can be used if more real-time data streaming is needed. While it is possible for Flume to stream duplicate data to the destination, it can be difficult to identify duplicate data. This challenge will vary depending upon the type of destination the data is being streamed to. Summary Apache Flume is a robust, reliable, and distributed tool that can help stream data from multiple sources, and it’s your best choice for streaming large volumes of raw log data. Its ability to integrate with modern, real-time data streaming tools makes it a popular and efficient option.",
+                    "mainEntityOfPage": {
+                      "@type": "WebPage",
+                      "@id": "https://dzone.com/articles/apache-flume-and-data-pipelines"
+                    },
+                    "image": {
+                      "@type": "ImageObject",
+                      "url": "https://dzone.com//dz2cdn1.dzone.com/storage/article-thumb/12319136-thumb.jpg"
+                    }
+                  }
+                </script>
+
+                  <script type="application/ld+json">
+                    {
+                      "@context": "https://schema.org",
+                      "@type": "BreadcrumbList",
+                      "itemListElement": [{
+                        "@type": "ListItem",
+                        "position": 1,
+                        "name": "DZone",
+                        "item": "https://dzone.com"
+                      }, {
+                        "@type": "ListItem",
+                        "position": 2,
+                        "name": "Big Data Zone",
+                        "item": "https://dzone.com/big-data-analytics-tutorials-tools-news"
+                      }, {
+                        "@type": "ListItem",
+                        "position": 3,
+                        "name": "Apache Flume and Data Pipelines",
+                        "item": "https://dzone.com/articles/apache-flume-and-data-pipelines"
+                      }]
+                    }
+                  </script>
+
+            <article>
+              <div class="content">
+                <div class="header">
+                  <div class="col-xs-12 breadcrumb-padding">
+                    <a href="/">DZone</a>
+                    >
+                      <a href="/big-data-analytics-tutorials-tools-news">Big Data Zone</a>
+                      >
+                      <a href="#">Apache Flume and Data Pipelines</a>
+                  </div>
+
+
+                  <div class="header-title">
+                    <div class="title">
+                      <h1 class="article-title">Apache Flume and Data Pipelines</h1>
+                    </div>
+
+                    <div class="subhead">
+                      <h3>Everything you need to know about Apache Flume.</h3>
+                    </div>
+
+                    <div class="publish-meta">
+                        <div class="article-author-meta">
+                          <img src="https://dz2cdn1.dzone.com/thumbnail?fid=1471080&w=80" class="avatar" alt="Daniel Berman user avatar" width="40">
+                          by
+
+                          <div class="author-info">
+                            <span class="author-name">
+                              <a href="/users/2757213/proudboffin.html" rel="nofollow">Daniel Berman</a>
+                            </span>
+                          </div>
+
+
+                            <div class="mvb-award">
+                              <i title="Most Valuable Blogger" class="icon-mvb-1"></i>
+                            </div>
+
+
+                          &middot;
+                        </div>
+                      <span class="author-date">
+                        Aug. 09, 19
+                      </span>
+                      &middot;
+                        <a href="/big-data-analytics-tutorials-tools-news" id="portal-name">
+                          <span class="portal-name">Big Data Zone</span>
+                        </a>
+                      &middot;
+                      <span>Opinion</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="author-n-useraction">
+                  <div class="like action">
+                    <div id="activity-like-icon" class="dz-like icon-thumbs-up">
+                      <span class="action-label">
+                        <span id="activity-like-text">Like</span>
+                      </span>
+                      <a href="#">
+                        <span id="activity-like-counter">(2)</span>
+                      </a>
+                    </div>
+                  </div>
+
+                  <div class="action">
+
+                    <button class="comment">
+                      <i class="icon-comment"></i>
+                      Comment
+                      <span id="activity-comment-counter" class="comment-count"></span>
+                    </button>
+                  </div>
+
+                  <div class="save action">
+                    <div id="activity-save-icon" class="save icon-star-empty">
+                      <span id="activity-save-text" class="action-label">Save</span>
+                    </div>
+                  </div>
+
+                  <div class="tweet action">
+                    <a id="tweet-link" href="" class="title" target="_blank">
+                      <span><i class="icon-twitter"></i></span>
+                      <span class="action-label">Tweet</span>
+                    </a>
+                  </div>
+
+                  <div class="pull-right">
+                    <div id="activity-view-container" class="article-views action">
+                      <i class="icon-eye"></i> 15.83K
+                      <span class="action-label">Views</span>
+                    </div>
+                  </div>
+                </div>
+
+                    <div class="signin-prompt">
+                      <p>Join the DZone community and get the full member experience.</p>
+                      <a id="article-signin-prompt" href="/static/registration.html">Join For Free</a>
+                    </div>
+                    <div class="arrow-down"></div>
+
+                  <div id="top-bumper-container"></div>
+
+                <div>
+                  <div class="content-html"><h2>What Is Apache Flume?</h2>
+<p style="box-sizing: border-box; color: rgb(51, 51, 51); font-size: 18px; line-height: inherit; margin-bottom: 1.5rem; margin-top: 1.5rem; font-family: &amp;quot;ITC Charter&amp;quot;, sans-serif; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-style: initial; text-decoration-color: initial;" pid="2">Apache Flume is an efficient, distributed, reliable, and fault-tolerant data-ingestion tool. It facilitates the streaming of huge volumes of log files from various sources (like web servers) into the Hadoop Distributed File System (HDFS), distributed databases, such as HBase on HDFS, or even destinations like Elasticsearch at near-real time speeds. In addition to streaming log data, Flume can also stream event data generated from web sources like Twitter, Facebook, and Kafka Brokers.</p>
+<h2>The History of Apache Flume</h2>
+<p style="box-sizing: border-box; color: rgb(51, 51, 51); font-size: 18px; line-height: inherit; margin-bottom: 1.5rem; margin-top: 1.5rem; font-family: &amp;quot;ITC Charter&amp;quot;, sans-serif; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-style: initial; text-decoration-color: initial;" pid="3">Apache Flume was developed by Cloudera to provide a way to quickly and reliably stream large volumes of log files generated by web servers into Hadoop. There, applications can perform further analysis on data in a distributed environment. Initially, Apache Flume was developed to handle only log data. Later, it was equipped to handle event data as well.</p>
+<h2>An Overview of HDFS</h2>
+<p style="box-sizing: border-box; color: rgb(51, 51, 51); font-size: 18px; line-height: inherit; margin-bottom: 1.5rem; margin-top: 1.5rem; font-family: &amp;quot;ITC Charter&amp;quot;, sans-serif; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-style: initial; text-decoration-color: initial;" pid="4">HDFS stands for Hadoop Distributed File System. HDFS is a tool developed by Apache for storing and processing large volumes of unstructured data on a distributed platform. A number of databases use Hadoop to quickly process large volumes of data in a scalable manner by leveraging the computing power of multiple systems within a network. Facebook, Yahoo, and LinkedIn are few of the companies that rely upon Hadoop for their data management.</p>
+<h2>Why Apache Flume?</h2>
+<p style="box-sizing: border-box; color: rgb(51, 51, 51); font-size: 18px; line-height: inherit; margin-bottom: 1.5rem; margin-top: 1.5rem; font-family: &amp;quot;ITC Charter&amp;quot;, sans-serif; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-style: initial; text-decoration-color: initial;" pid="5">Organizations running multiple web services across multiple servers and hosts will generate multitudes of log files on a daily basis. These log files will contain information about events and activities that are required for both auditing and analytical purposes. They can size up to terabytes or even petabytes, and significant development effort and infrastructure costs can be expended in an effort to analyze them.</p>
+<p style="box-sizing: border-box; color: rgb(51, 51, 51); font-size: 18px; line-height: inherit; margin-bottom: 1.5rem; margin-top: 1.5rem; font-family: &amp;quot;ITC Charter&amp;quot;, sans-serif; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-style: initial; text-decoration-color: initial;" pid="6">Flume is a popular choice when it comes to building data pipelines for log data files because of its simplicity, flexibility, and features — which are described below.</p>
+<h2>Flume’s Features and Capabilities</h2>
+<p style="box-sizing: border-box; color: rgb(51, 51, 51); font-size: 18px; line-height: inherit; margin-bottom: 1.5rem; margin-top: 1.5rem; font-family: &amp;quot;ITC Charter&amp;quot;, sans-serif; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-style: initial; text-decoration-color: initial;" pid="7">Flume transfers raw log files by pulling them from multiple sources and streaming them to the Hadoop file system. There, the log files can be consumed by analytical tools like Spark or Kafka. Flume can connect to various plugins to ensure that log data is pushed to the right destination.<a href="https://logz.io/wp-content/uploads/2019/07/social.png" target="_blank"><img alt="Transferring log files to multiple sources" class="fr-fin fr-dib" data-image-enhancer="larger than 578" data-original="https://logz.io/wp-content/uploads/2019/07/social.png" data-pre-sourced="yes" data-sourced="yes" data-src="https://logz.io/wp-content/uploads/2019/07/social.png" id="image1" src="https://logz.io/wp-content/uploads/2019/07/social.png" title="Transferring log files to multiple sources" width="763" /></a></p>
+<figcaption style="text-align:center">
+ <em>Transferring log files to multiple sources</em>
+</figcaption>
+<p pid="37"><br /></p>
+<h2>Streaming Data With Apache Flume: Architecture and Examples</h2>
+<p style="box-sizing: border-box; color: rgb(51, 51, 51); font-size: 18px; line-height: inherit; margin-bottom: 1.5rem; margin-top: 1.5rem; font-family: &amp;quot;ITC Charter&amp;quot;, sans-serif; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-style: initial; text-decoration-color: initial;" pid="8">The process of streaming data through Apache Flume needs to be planned and architected to ensure data is transferred in an efficient manner.</p>
+<p style="box-sizing: border-box; color: rgb(51, 51, 51); font-size: 18px; line-height: inherit; margin-bottom: 1.5rem; margin-top: 1.5rem; font-family: &amp;quot;ITC Charter&amp;quot;, sans-serif; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-style: initial; text-decoration-color: initial;" pid="9">To stream data from web servers to HDFS, the Flume configuration file must have information about where the data is being picked up from and where it is being pushed to. Providing this information is straightforward; Flume’s source component picks up the log files from the source or data generators and sends it to the agent where the data is channeled. In this process, the data to be streamed is stored in the memory, which is meant to reach the destination where it will sink with it.&nbsp;</p>
+<h3>Architecture&nbsp;</h3>
+<p style="box-sizing: border-box; color: rgb(51, 51, 51); font-size: 18px; line-height: inherit; margin-bottom: 1.5rem; margin-top: 1.5rem; font-family: &amp;quot;ITC Charter&amp;quot;, sans-serif; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-style: initial; text-decoration-color: initial;" pid="10">There are three important parts of Apache Flume’s data streaming architecture: the data generating sources, the Flume agent, and the destination or target. The Flume agent is made up of the Flume source, the channel, and the sink. The Flume source picks up log files from data generating sources like web servers and Twitter and sends it to the channel. The Flume’s sink component ensures that the data it receives is synced to the destination, which can be HDFS, a database like HBase on HDFS, or an analytics tool like Spark.&nbsp;</p>
+<p style="box-sizing: border-box; color: rgb(51, 51, 51); font-size: 18px; line-height: inherit; margin-bottom: 1.5rem; margin-top: 1.5rem; font-family: &amp;quot;ITC Charter&amp;quot;, sans-serif; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-style: initial; text-decoration-color: initial;" pid="11">Below is the basic architecture of Flume for an HDFS sink:</p>
+<p style="box-sizing: border-box; color: rgb(51, 51, 51); font-size: 18px; line-height: inherit; margin-bottom: 1.5rem; margin-top: 1.5rem; font-family: &amp;quot;ITC Charter&amp;quot;, sans-serif; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-style: initial; text-decoration-color: initial;" pid="12"><a href="https://logz.io/wp-content/uploads/2019/07/data-generatir.png" target="_blank"><img alt="Flume architecture" class="fr-fil fr-dii" data-image-enhancer="larger than 578" data-original="https://logz.io/wp-content/uploads/2019/07/data-generatir.png" data-pre-sourced="yes" data-sourced="yes" data-src="https://logz.io/wp-content/uploads/2019/07/data-generatir.png" id="image2" src="https://logz.io/wp-content/uploads/2019/07/data-generatir.png" title="Flume architecture" /></a></p>
+<figcaption style="text-align:center">
+ <em>Flume architecture</em>
+</figcaption>
+<p pid="38"><br /></p>
+<p style="box-sizing: border-box; color: rgb(51, 51, 51); font-size: 18px; line-height: inherit; margin-bottom: 1.5rem; margin-top: 1.5rem; font-family: &amp;quot;ITC Charter&amp;quot;, sans-serif; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-style: initial; text-decoration-color: initial;" pid="13">The source, channel, and sink components are parts of the Flume agent. When streaming large volumes of data, multiple Flume agents can be configured to receive data from multiple sources, and the data can be streamed in parallel to multiple destinations.</p>
+<p style="box-sizing: border-box; color: rgb(51, 51, 51); font-size: 18px; line-height: inherit; margin-bottom: 1.5rem; margin-top: 1.5rem; font-family: &amp;quot;ITC Charter&amp;quot;, sans-serif; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-style: initial; text-decoration-color: initial;" pid="14">Flume architecture can vary based on data streaming requirements. Flume can be configured to stream data from multiple sources and clients to a single destination or from a single source to multiple destinations. This flexibility is very helpful. Below are two examples of how this flexibility can be built into the Flume architecture:&nbsp;</p>
+<ol style="box-sizing: border-box; margin-top: 1.5rem; margin-bottom: 1.5rem; color: rgb(51, 51, 51); font-size: 18px; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-style: initial; text-decoration-color: initial;">
+ <li style="">Streaming from multiple sources to a single destination</li>
+</ol>
+<p style="box-sizing: border-box; color: rgb(51, 51, 51); font-size: 18px; line-height: inherit; margin-bottom: 1.5rem; margin-top: 1.5rem; font-family: &amp;quot;ITC Charter&amp;quot;, sans-serif; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-style: initial; text-decoration-color: initial;" pid="15"><a href="https://logz.io/wp-content/uploads/2019/07/centralized-data-store.png" target="_blank"><img alt="centralized data store" class="fr-fil fr-dii" data-image-enhancer="larger than 578" data-original="https://logz.io/wp-content/uploads/2019/07/centralized-data-store.png" data-pre-sourced="yes" data-sourced="yes" data-src="https://logz.io/wp-content/uploads/2019/07/centralized-data-store.png" id="image3" src="https://logz.io/wp-content/uploads/2019/07/centralized-data-store.png" title="centralized data store" /></a></p>
+<figcaption style="text-align:center">
+ <em>Centralized data store</em>
+</figcaption>
+<p pid="39"><br /></p>
+<p style="box-sizing: border-box; color: rgb(51, 51, 51); font-size: 18px; line-height: inherit; margin-bottom: 1.5rem; margin-top: 1.5rem; font-family: &amp;quot;ITC Charter&amp;quot;, sans-serif; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-style: initial; text-decoration-color: initial;" pid="16">In this architecture, data can be streamed from multiple clients to multiple agents. The data collector picks up the data from all three agents and sends it across to the destination, a centralized data store.</p>
+<ol start="2" style="box-sizing: border-box; margin-top: 1.5rem; margin-bottom: 1.5rem; color: rgb(51, 51, 51); font-size: 18px; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-style: initial; text-decoration-color: initial;">
+ <li style="">Data streamed from a single client to multiple destinations</li>
+</ol>
+<p style="box-sizing: border-box; color: rgb(51, 51, 51); font-size: 18px; line-height: inherit; margin-bottom: 1.5rem; margin-top: 1.5rem; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-style: initial; text-decoration-color: initial;" pid="17"><img class="fr-fin fr-dib" data-image-enhancer="larger than 578" data-original="https://logz.io/wp-content/uploads/2019/07/client.png" data-pre-sourced="yes" data-sourced="yes" data-src="https://logz.io/wp-content/uploads/2019/07/client.png" id="image4" src="https://logz.io/wp-content/uploads/2019/07/client.png" title="client" /></p>
+<figcaption style="text-align:center">
+ <i>Client</i>
+</figcaption>
+<p pid="40"><br /></p>
+<p style="box-sizing: border-box; color: rgb(51, 51, 51); font-size: 18px; line-height: inherit; margin-bottom: 1.5rem; margin-top: 1.5rem; font-family: &amp;quot;ITC Charter&amp;quot;, sans-serif; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-style: initial; text-decoration-color: initial;" pid="18">In this example, two Apache agents (more can be configured based on the requirements) pick up the data and sync it across to multiple destinations.</p>
+<p style="box-sizing: border-box; color: rgb(51, 51, 51); font-size: 18px; line-height: inherit; margin-bottom: 1.5rem; margin-top: 1.5rem; font-family: &amp;quot;ITC Charter&amp;quot;, sans-serif; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-style: initial; text-decoration-color: initial;" pid="19">This architecture is helpful when streaming different sets of data from one client to two different destinations (for example, HDFS and HBase for analytical purposes) is necessary. Flume can recognize specific sources and destinations.</p>
+<h2>Integrating Flume With Distributed Databases and Tools</h2>
+<p style="box-sizing: border-box; color: rgb(51, 51, 51); font-size: 18px; line-height: inherit; margin-bottom: 1.5rem; margin-top: 1.5rem; font-family: &amp;quot;ITC Charter&amp;quot;, sans-serif; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-style: initial; text-decoration-color: initial;" pid="20">In addition to being able to stream data from multiple sources to multiple destinations, Flume can integrate with a wide range of tools and products. It can pull data from almost any type of source, including web server log files, CSV files generated from an RDBMS database, and events. Similarly, Flume can push data to destinations like HDFS, HBase, and Hive.</p>
+<p style="box-sizing: border-box; color: rgb(51, 51, 51); font-size: 18px; line-height: inherit; margin-bottom: 1.5rem; margin-top: 1.5rem; font-family: &amp;quot;ITC Charter&amp;quot;, sans-serif; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-style: initial; text-decoration-color: initial;" pid="21">Flume can even integrate with other data streaming tools like Kafka and Spark.&nbsp;</p>
+<p style="box-sizing: border-box; color: rgb(51, 51, 51); font-size: 18px; line-height: inherit; margin-bottom: 1.5rem; margin-top: 1.5rem; font-family: &amp;quot;ITC Charter&amp;quot;, sans-serif; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-style: initial; text-decoration-color: initial;" pid="22">The examples below illustrate Flume’s integration capabilities.&nbsp;</p>
+<h3>Streaming Log Data to HDFS from Twitter</h3>
+<p style="box-sizing: border-box; color: rgb(51, 51, 51); font-size: 18px; line-height: inherit; margin-bottom: 1.5rem; margin-top: 1.5rem; font-family: &amp;quot;ITC Charter&amp;quot;, sans-serif; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-style: initial; text-decoration-color: initial;" pid="23">As mentioned earlier, Flume can stream data from a web source like Twitter to a directory residing on HDFS. This is a typical requirement of a real-time scenario. To make this happen, Flume must be configured to pick up data from the source (source type) and sink the data to the destination (destination type). The source type here is Twitter, and the sink type is HDFS-SINK. Once the sink is done, applications like Spark can perform analytics on HDFS.</p>
+<p style="box-sizing: border-box; color: rgb(51, 51, 51); font-size: 18px; line-height: inherit; margin-bottom: 1.5rem; margin-top: 1.5rem; font-family: &amp;quot;ITC Charter&amp;quot;, sans-serif; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-style: initial; text-decoration-color: initial;" pid="24"><a href="https://logz.io/wp-content/uploads/2019/07/webserver.png" target="_blank"><img alt="Log data to HDFS from Twitter" class="fr-fin fr-dib" data-image-enhancer="larger than 578" data-original="https://logz.io/wp-content/uploads/2019/07/webserver.png" data-pre-sourced="yes" data-sourced="yes" data-src="https://logz.io/wp-content/uploads/2019/07/webserver.png" id="image5" src="https://logz.io/wp-content/uploads/2019/07/webserver.png" title="Log data to HDFS from Twitter" width="590" /></a></p>
+<figcaption style="text-align:center">
+ <em>Log data to HDFS from Twitter</em>
+</figcaption>
+<p pid="41"><br /></p>
+<h3>Streaming Log Data From Kafka to HDFS Using Flume</h3>
+<p style="box-sizing: border-box; color: rgb(51, 51, 51); font-size: 18px; line-height: inherit; margin-bottom: 1.5rem; margin-top: 1.5rem; font-family: &amp;quot;ITC Charter&amp;quot;, sans-serif; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-style: initial; text-decoration-color: initial;" pid="25">Kafka is a message broker, which can stream live data and messages generated on web pages to a destination like a database. If you need to stream these messages to a location on HDFS, Flume can use Kafka Source to extract the data and then sync it to HDFS using HDFS Sink.&nbsp;</p>
+<p style="box-sizing: border-box; color: rgb(51, 51, 51); font-size: 18px; line-height: inherit; margin-bottom: 1.5rem; margin-top: 1.5rem; font-family: &amp;quot;ITC Charter&amp;quot;, sans-serif; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-style: initial; text-decoration-color: initial;" pid="26"><a href="https://logz.io/wp-content/uploads/2019/07/kafka-source-2.png" target="_blank"><img alt="Log data from Kafka to HDFS from Flume" class="fr-fin fr-dib" data-image-enhancer="larger than 578" data-original="https://logz.io/wp-content/uploads/2019/07/kafka-source-2.png" data-pre-sourced="yes" data-sourced="yes" data-src="https://logz.io/wp-content/uploads/2019/07/kafka-source-2.png" id="image6" src="https://logz.io/wp-content/uploads/2019/07/kafka-source-2.png" title="Log data from Kafka to HDFS from Flume" width="740" /></a></p>
+<figcaption style="text-align:center">
+ <em>Log data from Kafka from HDFS</em>
+</figcaption>
+<p pid="42"><br /></p>
+<h3>Streaming Log Data to Elasticsearch</h3>
+<p style="box-sizing: border-box; color: rgb(51, 51, 51); font-size: 18px; line-height: inherit; margin-bottom: 1.5rem; margin-top: 1.5rem; font-family: &amp;quot;ITC Charter&amp;quot;, sans-serif; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-style: initial; text-decoration-color: initial;" pid="27">Flume can be used to stream log data to Elasticsearch, a popular open-source tool that can be used to quickly perform complex text search operations on large volumes of JSON data in a distributed environment in a scalable manner. It is built on top of Lucene and leverages Lucene's capabilities to perform index-based searching across JSON.</p>
+<p style="box-sizing: border-box; color: rgb(51, 51, 51); font-size: 18px; line-height: inherit; margin-bottom: 1.5rem; margin-top: 1.5rem; font-family: &amp;quot;ITC Charter&amp;quot;, sans-serif; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-style: initial; text-decoration-color: initial;" pid="28">Flume can stream JSON documents from a web server to Elasticsearch, so that applications can access the data from Elasticsearch. The JSON documents can be streamed directly to Elasticsearch quickly and reliably on a distributed environment. Flume recognizes an ELK destination with its&nbsp;<a href="https://flume.apache.org/FlumeUserGuide.html#elasticsearchsink" rel="noopener" target="_blank">ElasticsearchSink</a>capability. Elasticsearch should be installed with a FlumeSink plugin so that it recognizes Flume as a source from which to accept data streams. Flume streams data in the form of index files to the Elasticsearch destination. By default, one index file is streamed per day with a default naming format “flume-yyyy-MM-dd,” which can be changed in the Flume config file.</p>
+<p style="box-sizing: border-box; color: rgb(51, 51, 51); font-size: 18px; line-height: inherit; margin-bottom: 1.5rem; margin-top: 1.5rem; font-family: &amp;quot;ITC Charter&amp;quot;, sans-serif; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-style: initial; text-decoration-color: initial;" pid="29"><a href="https://logz.io/wp-content/uploads/2019/07/elasticsearch.png" target="_blank"><img alt="Log data to Elastisearch" class="fr-fin fr-dib" data-image-enhancer="larger than 578" data-original="https://logz.io/wp-content/uploads/2019/07/elasticsearch.png" data-pre-sourced="yes" data-sourced="yes" data-src="https://logz.io/wp-content/uploads/2019/07/elasticsearch.png" id="image7" src="https://logz.io/wp-content/uploads/2019/07/elasticsearch.png" title="Log data to Elastisearch" width="641" /></a></p>
+<figcaption style="text-align:center">
+ <em>Log data to Elastisearch</em>
+</figcaption>
+<p pid="43"><br /></p>
+<h2>The Limitations of Apache Flume</h2>
+<p style="box-sizing: border-box; color: rgb(51, 51, 51); font-size: 18px; line-height: inherit; margin-bottom: 1.5rem; margin-top: 1.5rem; font-family: &amp;quot;ITC Charter&amp;quot;, sans-serif; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-style: initial; text-decoration-color: initial;" pid="30">Apache Flume does have some limitations. For starters, its architecture can become complex and difficult to manage and maintain when streaming data from multiple sources to multiple destinations.&nbsp;</p>
+<p style="box-sizing: border-box; color: rgb(51, 51, 51); font-size: 18px; line-height: inherit; margin-bottom: 1.5rem; margin-top: 1.5rem; font-family: &amp;quot;ITC Charter&amp;quot;, sans-serif; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-style: initial; text-decoration-color: initial;" pid="31">In addition, Flume’s data streaming is not 100% real-time. Alternatives like Kafka can be used if more real-time data streaming is needed.</p>
+<p style="box-sizing: border-box; color: rgb(51, 51, 51); font-size: 18px; line-height: inherit; margin-bottom: 1.5rem; margin-top: 1.5rem; font-family: &amp;quot;ITC Charter&amp;quot;, sans-serif; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-style: initial; text-decoration-color: initial;" pid="32">While it is possible for Flume to stream duplicate data to the destination, it can be difficult to identify duplicate data. This challenge will vary depending upon the type of destination the data is being streamed to.</p>
+<h2>Summary</h2>
+<p style="box-sizing: border-box; color: rgb(51, 51, 51); font-size: 18px; line-height: inherit; margin-bottom: 1.5rem; margin-top: 1.5rem; font-family: &amp;quot;ITC Charter&amp;quot;, sans-serif; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-style: initial; text-decoration-color: initial;" pid="33">Apache Flume is a robust, reliable, and distributed tool that can help stream data from multiple sources, and it’s your best choice for streaming large volumes of raw log data. Its ability to integrate with modern, real-time data streaming tools makes it a popular and efficient option.</p></div>
+                </div>
+
+                  <div id="bottom-bumper-container"></div>
+                  <div class="article-tag-pill-container">
+                      <span class="article-tag-pill">Data (computing)</span>
+                      <span class="article-tag-pill">Apache Flume</span>
+                      <span class="article-tag-pill">hadoop</span>
+                      <span class="article-tag-pill">File system</span>
+                  </div>
+
+                  <div class="attribution">
+                      <p>Published at DZone with permission of <span>Daniel Berman<span>, DZone MVB</span></span>.
+                        <span>
+                          <a href="https://logz.io/blog/apache-flume/?" target="_blank">See the original article here.
+                            <i class="icon-link-ext-alt"></i>
+                          </a>
+                        </span>
+                      </p>
+                    <p>Opinions expressed by DZone contributors are their own.</p>
+                  </div>
+
+                    <div class="related">
+                      <h3>Popular on DZone</h3>
+                        <ul>
+                            <li class="relateddiv">
+                              <a href="/articles/27-open-source-web-ui-mockup-tools?fromrel=true">27 Free Web UI Mockup Tools</a>
+                            </li>
+                            <li class="relateddiv">
+                              <a href="/articles/modernizing-testing-with-data-pipelines?fromrel=true">Modernizing Testing With Data Pipelines</a>
+                            </li>
+                            <li class="relateddiv">
+                              <a href="/articles/java-how-to-leverage-method-chaining-to-add-smart?fromrel=true">How to Leverage Method Chaining To Add Smart Message Routing in Java</a>
+                            </li>
+                            <li class="relateddiv">
+                              <a href="/articles/adding-authentication-to-a-web-application-with-au?fromrel=true">Adding Authentication to a Web Application with Auth0, React, and JWT</a>
+                            </li>
+                        </ul>
+                      </div>
+<div class="comments-overlay"></div>
+<div id="comment-box">
+  <div class="comment-box-wrapper">
+    <div id="comment-input-editor"></div>
+  </div>
+  <div class="info hidden"></div>
+  <div class="comments-content">
+    <div class="comment-header">
+      <hr />
+      <span class="icon-comment">
+        <span class="numOfComments"></span> Comments
+      </span>
+    </div>
+    <div class="comments"></div>
+  </div>
+</div>
+            </article>
+          </div>
+
+            <div id="above-pr-ad" class="bottom-ad-container">
+              <div id="div-gpt-ad-1435246566686-11" data-gpt-slot="bottom"></div>
+            </div>
+            <div class="layout-card widget-top-border partner-resources-block" style="width:100%; margin-bottom: 1em;">
+              <div class="main-container">
+                <div class="featured-header">
+                  <h2>
+                      Big Data<span> Partner Resources</span>
+                  </h2>
+                </div>
+                <div class="partner-resources-container">
+                  <div id="div-gpt-ad-1435246566686-5" class="resource-block" data-gpt-slot="partner" data-gpt-position="pr1"></div>
+                  <div id="div-gpt-ad-1435246566686-6" class="resource-block" data-gpt-slot="partner" data-gpt-position="pr2"></div>
+                  <div id="div-gpt-ad-1435246566686-7" class="resource-block" data-gpt-slot="partner" data-gpt-position="pr3"></div>
+                </div>
+              </div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <div id="bsa-parent" class="bottom-sticky-ad-container hide">
+      <div class="container">
+        <div class="col-md-9">
+          <div class="fixed-bottom-div">
+            <div class="inline-block">
+              <div id="div-gpt-ad-1635294790718-12" data-gpt-desktop="true" class="bottom-sticky-ad"></div>
+            </div>
+            <div class="inline-block">
+              <span id="close" class="bottom-sticky-ad-close-button" onclick="removeBottomStickyAd()">
+                X
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  <div class="modal fade bd-example-modal-lg" id="modal-message" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header"></div>
+        <div class="modal-body"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script async>const articleTitle = 'Apache Flume and Data Pipelines'
+const articleUrl = 'https://dzone.com/articles/apache-flume-and-data-pipelines'
+
+const retweetLink = document.querySelector('#tweet-link')
+
+function retweet(event) {
+    event.preventDefault()
+    event.stopPropagation()
+
+    const twitter = 'https://twitter.com/intent/tweet'
+    const params = '?text=' + encodeURIComponent(articleTitle) + '&url=' + articleUrl + '&ref=dzone.com&via=DZoneInc'
+    const win = window.open(twitter + params, '_blank')
+    win.focus()
+}
+
+retweetLink.addEventListener('click', retweet);
+
+function showStatusMessage(options) {
+  var modal = document.getElementById("modal-message");
+
+  if(modal) {
+    modal.classList.add(options.type);
+    var modalBody = modal.querySelector(".modal-content .modal-body");
+    var modalHeader = modal.querySelector(".modal-content .modal-header");
+
+    modalHeader.innerText = options.header ? options.header : "";
+    modalBody.innerText = options.body ? options.body : "" ;
+
+    $(modal).modal("show");
+
+    $(modal).on('hidden.bs.modal', function () {
+      modal.classList.remove(options.type);
+    });
+  }
+}
+
+function showConfirmMessage(options) {
+  var modal = document.getElementById("modal-message");
+
+  if(modal) {
+    modal.classList.add(options.type);
+    var modalBody = modal.querySelector(".modal-content .modal-body");
+    var modalHeader = modal.querySelector(".modal-content .modal-header");
+
+    modalHeader.innerText = options.header ? options.header : "";
+    modalBody.innerText = options.body ? options.body : "" ;
+
+    if (options.textarea) {
+      const textareaDiv = document.createElement('div')
+      const textareaLabel = document.createElement('label')
+      textareaLabel.setAttribute('for', 'modal-textarea')
+      textareaLabel.innerText = options.textarea.label
+
+      const textarea = document.createElement('textarea')
+      textarea.id = 'modal-textarea'
+      textarea.placeholder = (options.textarea.placeholder || '')
+      textarea.setAttribute('rows', (options.textarea.rows || 3))
+      textarea.classList.add('form-control', 'not-resizable')
+
+      if (options.textarea.maxlength) {
+        textarea.maxLength = options.textarea.maxlength
+      }
+
+      textareaDiv.appendChild(textareaLabel)
+      textareaDiv.appendChild(textarea)
+      modalBody.appendChild(textareaDiv)
+    }
+
+    var btnContainer = document.createElement("div");
+    btnContainer.classList.add("btn-container");
+
+    var noBtn = document.createElement("button");
+    noBtn.innerText = options.noBtnText ? options.noBtnText : "No";
+    noBtn.classList.add("no-btn");
+
+    var yesBtn = document.createElement("button");
+    yesBtn.innerText = options.yesBtnText ? options.yesBtnText : "Yes";
+    yesBtn.classList.add("yes-btn");
+
+    btnContainer.appendChild(noBtn);
+    btnContainer.appendChild(yesBtn);
+
+    modalBody.appendChild(btnContainer);
+
+    $(modal).modal("show");
+
+    $(noBtn).one("click", function() {
+      $(modal).modal("hide");
+
+      if(options.noCallback) {
+        $(modal).one('hidden.bs.modal', function () {
+          options.noCallback();
+        });
+      }
+    });
+
+    $(yesBtn).one("click", function() {
+      $(modal).modal("hide");
+
+      if(options.yesCallback) {
+        $(modal).one('hidden.bs.modal', function () {
+          options.yesCallback();
+        });
+      }
+    });
+
+    $(modal).on('hidden.bs.modal', function () {
+      modal.classList.remove(options.type);
+    });
+  }
+}
+</script><link rel="stylesheet" media="all" href="https://dz2cdn1.dzone.com/themes/dz20/ftl/footer/styles.css">
+
+<div id="ftl-footer">
+  <div class="container-fluid footerOuter">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="container">
+          <div class="row footer">
+            <div class="col-md-12 footerWidget">
+              <div class="row footerContainer footer">
+                <div class="left col-xs-12 col-sm-7">
+                  <div class="col-xs-12 social-media-icons footer-mobile">
+                    <ul class="icons-only">
+                      <li class="rss-icon" id="rss-footer-1">
+                        <a href="/pages/feeds" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-rss-1"></i>
+                        </a>
+                      </li>
+                      <li class="twitter-icon">
+                        <a href="https://twitter.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-twitter"></i>
+                        </a>
+                      </li>
+                      <li class="facebook-icon">
+                        <a href="https://www.facebook.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-facebook-1"></i>
+                        </a>
+                      </li>
+                      <li class="linkedin-icon">
+                        <a href="https://www.linkedin.com/company/dzone/" target="_blank"
+                           rel="noreferrer noopener">
+                          <i class="icon-linkedin-1"></i>
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div class="top-section col-xs-12">
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">ABOUT US</p>
+                      <ul class="link-group">
+                        <li><a href="/pages/about" rel="noreferrer noopener">About DZone</a></li>
+                        <li><a href="mailto:support@dzone.com" rel="noreferrer noopener">Send feedback</a></li>
+                        <li><a href="https://careers.dzone.com/" target="_blank" rel="noreferrer noopener">Careers</a></li>
+                          <li><a href="/sitemap" rel="noreferrer noopener">Sitemap</a></li>
+                      </ul>
+                    </div>
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">ADVERTISE</p>
+                      <ul class="link-group">
+                        <li><a href="https://advertise.dzone.com" target="_blank" rel="noreferrer noopener">Advertise with DZone</a></li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div class="bottom-section col-xs-12">
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">CONTRIBUTE ON DZONE</p>
+                      <ul class="bottom-top-list link-group">
+                        <li><a href="/articles/dzones-article-submission-guidelines">Article Submission Guidelines</a></li>
+                        <li><a href="/pages/mvb" rel="noreferrer noopener">MVB Program</a></li>
+                        <li><a href="/pages/contribute" rel="noreferrer noopener">Become a Contributor</a></li>
+                        <li><a href="/writers-zone" rel="noreferrer noopener">Visit the Writers' Zone</a></li>
+                      </ul>
+
+                      <p class="section-header">LEGAL</p>
+                      <ul class="link-group">
+                        <li><a href="/pages/tos" rel="noreferrer noopener">Terms of Service</a></li>
+                        <li><a href="/pages/privacy" rel="noreferrer noopener">Privacy Policy</a></li>
+                      </ul>
+                    </div>
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">CONTACT US</p>
+                      <ul class="link-group">
+                        <li>600 Park Offices Drive</li>
+                        <li>Suite 300</li>
+                        <li>Durham, NC 27709</li>
+                        <li><a href="mailto:support@dzone.com" rel="noreferrer noopener">support@dzone.com</a></li>
+                        <li><a href="tel:+19196780300" rel="noreferrer noopener">+1 (919) 678-0300</a></li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="right col-xs-12 col-sm-5">
+
+                  <p class="connect-text">Let's be friends:</p>
+                  <div class="col-xs-12 social-media-icons footer-wide">
+                    <ul class="icons-only">
+                      <li class="rss-icon" id="rss-footer-1">
+                        <a href="/pages/feeds" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-rss-1"></i>
+                        </a>
+                      </li>
+                      <li class="twitter-icon">
+                        <a href="https://twitter.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-twitter"></i>
+                        </a>
+                      </li>
+                      <li class="facebook-icon">
+                        <a href="https://www.facebook.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-facebook-1"></i>
+                        </a>
+                      </li>
+                      <li class="linkedin-icon">
+                        <a href="https://www.linkedin.com/company/dzone/" target="_blank"
+                           rel="noreferrer noopener">
+                          <i class="icon-linkedin-1"></i>
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div class="col-xs-12 powered-by">
+                    <p>DZone.com is powered by&nbsp;</p>
+                    <a href="https://devada.com/answerhub/" rel="noreferrer noopener">
+                      <img src=""
+                           data-src="https://dz2cdn1.dzone.com/themes/dz20/images/answerhub_logo_white_footer.png"
+                           width="150"
+                           height="56"
+                           class="lazyload"
+                           alt="AnswerHub logo">
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  <script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"></script>
+
+  <script async>
+      (function(w, d, s, l, i) {
+          w[l] = w[l] || [];
+          w[l].push({'gtm.start': new Date().getTime(), event: 'gtm.js'});
+          var f = d.getElementsByTagName(s)[0], j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : '';
+          j.async = true;
+          j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+          f.parentNode.insertBefore(j,f);
+      })(window, document, 'script', 'dataLayer', 'GTM-K25QL22');
+  </script>
+
+  <script>
+      window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+      ga('create', 'UA-410289-1', 'auto');
+      ga('require', 'linkid', 'linkid.js');
+      ga('require', 'GTM-TSD9TZP');
+      ga('set', 'siteSpeedSampleRate', 25);
+  </script>
+  <script async src="https://www.google-analytics.com/analytics.js"></script>
+  <script async>const analytics = {
+    'dimension1': 'big-data',
+    'dimension2': 'article/opinion',
+    'dimension3': '2019-08-09',
+    'dimension4': '0',
+    'dimension5': '',
+    'dimension7': 'data, Apache Flume, hadoop, File system',
+    'dimension8': 'proudboffin',
+    'dimension9': 'undefined',
+    'dimension10': 'logz.io'
+}
+
+if (window.ga) {
+    Object.keys(analytics).forEach(function(key) {
+        window.ga('set', key, analytics[key])
+    })
+
+    window.ga('send', 'pageview')
+}</script>
+
+  <script>
+      !function (e, o, n, i) {
+          if (!e) {
+              e = e || {}, window.permutive = e, e.q = [];
+              var t = function () {
+                  return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, function (e) {
+                      return (e ^ (window.crypto || window.msCrypto).getRandomValues(new Uint8Array(1))[0] & 15 >> e / 4).toString(16)
+                  })
+              };
+              e.config = i || {}, e.config.apiKey = o, e.config.workspaceId = n, e.config.environment = e.config.environment || "production", (window.crypto || window.msCrypto) && (e.config.viewId = t());
+              for (var g = ["addon", "identify", "track", "trigger", "query", "segment", "segments", "ready", "on", "once", "user", "consent"], r = 0; r < g.length; r++) {
+                  var w = g[r];
+                  e[w] = function (o) {
+                      return function () {
+                          var n = Array.prototype.slice.call(arguments, 0);
+                          e.q.push({
+                              functionName: o,
+                              arguments: n
+                          })
+                      }
+                  }(w)
+              }
+          }
+      }(window.permutive, "bca90777-e088-4f2a-96c2-13ad18deeccc", "18ad0c5b-460c-4d19-a729-dc537805538f", {});
+      window.googletag = window.googletag || {}, window.googletag.cmd = window.googletag.cmd || [], window.googletag.cmd.push(function () {
+          if (0 === window.googletag.pubads().getTargeting("permutive").length) {
+              var e = window.localStorage.getItem("_pdfps");
+              window.googletag.pubads().setTargeting("permutive", e ? JSON.parse(e) : []);
+              var o = window.localStorage.getItem("permutive-id");
+              o && (window.googletag.pubads().setTargeting("puid", o), window.googletag.pubads().setTargeting("ptime", Date.now().toString())), window.permutive.config.viewId && window.googletag.pubads().setTargeting("prmtvvid", window.permutive.config.viewId), window.permutive.config.workspaceId && window.googletag.pubads().setTargeting("prmtvwid", window.permutive.config.workspaceId)
+          }
+      });
+
+
+      permutive.addon('web', {
+          'page': {
+              'category': 'Big Data',
+              'node': {
+                  'authorCompany': 'logz.io',
+                  'authors': [2757213, ],
+                  'publishDate': new Date(1565308800000),
+                  'sponsorAuthor': false,
+                  'tags': ['data', 'Apache Flume', 'hadoop', 'File system', ],
+                  'title': 'Apache Flume and Data Pipelines',
+                  'type': 'article',
+              },
+              'section': 'article',
+          }
+      });
+  </script>
+  <script async src="https://18ad0c5b-460c-4d19-a729-dc537805538f.edge.permutive.app/18ad0c5b-460c-4d19-a729-dc537805538f-web.js"></script>
+
+  <script>
+      const csrf = '3478044952003818665'
+      const articleId = 2849130
+      const likes = 2
+      const assetDomain = 'https://dz2cdn1.dzone.com'
+      const codemirrorVars = {
+          modeURI: 'https://dz2cdn1.dzone.com/themes/dz20/lib/codemirror/mode/',
+          requiredScripts: [
+              'https://dz2cdn1.dzone.com/themes/dz20/lib/codemirror/lib/codemirror.js',
+              'https://dz2cdn1.dzone.com/themes/dz20/lib/codemirror/mode/meta.js'
+          ]
+      }
+
+      const gptTags = {
+          'zone': 'big_data',
+          'topicTag': 'data,Apache Flume,hadoop,File system',
+          'company': '',
+          'siteSection': 'Zones',
+          'articleCategory': 'opinion',
+          'nodeID': '2849130',
+          'authorID': '2757213',
+          'publishYear': '2019',
+          'publishMonth': '08',
+          'jobRole': '',
+          'companySize': ''
+      }
+
+      const minCommentChar = 10;
+      const peer39Enabled = true;
+  </script>
+
+  <script src="https://dz2cdn1.dzone.com/themes/dz20/lib/static/jquery/jquery.min.js"></script>
+  <script async src="https://dz2cdn1.dzone.com/themes/dz20/lib/static/bootstrap/bootstrap.min.js"></script>
+  <script async src="https://dz2cdn1.dzone.com/themes/dz20/ftl/article/ads.js"></script>
+
+
+
+  <script>
+      function loadScript(src) {
+          return new Promise(function (resolve, reject) {
+              const s = document.createElement('script')
+              s.src = src
+              s.onload = resolve
+              s.onerror = reject
+              document.head.appendChild(s)
+          })
+      }
+
+      function loadStyle(href) {
+          const link = document.createElement('link')
+          link.rel = 'stylesheet'
+          link.href = href
+          document.head.appendChild(link)
+      }
+
+      function loadScriptsSync(deferred) {
+          var p = Promise.resolve()
+          for (var i = 0; i < deferred.length; i++) {
+              let script = deferred[i]
+              p = p.then(function() {
+                  return loadScript(script)
+              })
+          }
+          return p
+      }
+
+      function loadStyles() {
+          const deferred = [
+              'https://dz2cdn1.dzone.com/themes/dz20/lib/codemirror/lib/codemirror.css',
+              'https://dz2cdn1.dzone.com/themes/dz20/ftl/comments/styles.css',
+              'https://dz2cdn1.dzone.com/themes/dz20/lib/froala3/css/froala_editor.pkgd.min.css',
+              'https://dz2cdn1.dzone.com/themes/dz20/lib/froala3/css/themes/gray.min.css',
+              'https://dz2cdn1.dzone.com/themes/dz20/ftl/article/mini-profile.css'
+          ]
+
+          for (var i = 0; i < deferred.length; i++) {
+              loadStyle(deferred[i])
+          }
+      }
+
+      window.addEventListener('load', function(event) {
+          loadStyles()
+          loadScriptsSync([
+              'https://dz2cdn1.dzone.com/themes/dz20/ftl/header/auth-status.js',
+              'https://dz2cdn1.dzone.com/themes/dz20/lib/lazysizes.min.js',
+              'https://dz2cdn1.dzone.com/themes/dz20/ftl/article/codeblocks.js',
+              'https://dz2cdn1.dzone.com/themes/dz20/ftl/article/activity-bar.js',
+              'https://dz2cdn1.dzone.com/themes/dz20/lib/froala3/js/froala_editor.pkgd.min.js',
+              'https://dz2cdn1.dzone.com/themes/dz20/ftl/froala/content.js',
+              'https://dz2cdn1.dzone.com/themes/dz20/ftl/comments/content.js',
+              'https://dz2cdn1.dzone.com/themes/dz20/ftl/article/content.js'
+          ])
+      })
+  </script>
+</body>
+</html>

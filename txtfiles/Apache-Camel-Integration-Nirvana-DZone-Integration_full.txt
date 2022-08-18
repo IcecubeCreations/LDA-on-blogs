@@ -1,0 +1,546 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Apache Camel: Integration Nirvana - DZone Integration
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Integration Zone
+
+
+
+Thanks for visiting DZone today,
+
+
+
+
+
+
+
+
+Edit Profile
+
+
+Manage Email Subscriptions
+
+
+                          How to Post to DZone
+                        
+
+
+
+                          Article Submission Guidelines
+                        
+
+
+
+Sign Out
+View Profile
+
+
+
+
+
+Post
+
+
+
+
+
+
+
+Post an Article
+
+
+Manage My Drafts
+
+
+
+
+
+
+
+Over 2 million developers have joined DZone.
+
+Log In
+/
+Join
+
+
+
+
+
+
+
+
+
+
+
+
+
+Refcardz
+
+
+
+
+Trend Reports
+
+
+
+
+Webinars
+
+
+
+
+
+                  Zones
+                  
+
+
+
+
+
+
+|
+
+
+
+Agile
+
+
+AI
+
+
+Big Data
+
+
+Cloud
+
+
+Database
+
+
+DevOps
+
+
+Integration
+
+
+IoT
+
+
+Java
+
+
+Microservices
+
+
+Open Source
+
+
+Performance
+
+
+Security
+
+
+Web Dev
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+DZone
+                    >
+                      Integration Zone
+                      >
+                      Apache Camel: Integration Nirvana
+
+
+
+Apache Camel: Integration Nirvana
+
+
+
+
+
+
+
+                          by
+
+                          
+
+Jonathan Anstey
+
+
+
+
+
+
+                          ·
+                        
+
+                        Mar. 23, 09
+                      
+                      ·
+                        
+Integration Zone
+
+                      ·
+                      Interview
+
+
+
+
+
+
+
+Like
+
+
+(8)
+
+
+
+
+
+
+                      Comment
+                      
+
+
+
+
+Save
+
+
+
+
+
+Tweet
+
+
+
+
+ 219.54K
+                      Views
+
+
+
+
+Join the DZone community and get the full member experience.
+Join For Free
+
+
+
+
+Take any integration project and you have multiple applications talking over multiple transports on multiple platforms. As you can imagine, in large enterprise applications this can get complex very fast. Much of the complexity stems from two issues:1.    dealing with the specifics of applications and transports, and2.    coming up with good solutions to integration problems. Making your applications speak transports and APIs is relatively easy on its own. I'm sure everyone knows how to send JMS messages to their broker of choice; though it still requires in depth knowledge of the JMS specification, which many developers may not have. On top of that, what happens when you want to route that JMS message to another application? You then have to take care of mapping the JMS message to the application plus handle any new concepts related to the application. Add a dozen other applications into the mix and you've got quite a headache on your hands.Ignoring the mechanics of how to connect with multiple transports and APIs, we can focus on the high level design of how applications interact. Fortunately, most solutions to enterprise integration problems have been formalized already. Gregor Hohpe and Bobby Woolfe's book, Enterprise Integration Patterns: Designing, Building, and Deploying Messaging Solutions, boils down years of experience from enterprise architects into a set of sixty five Enterprise Integration Patterns (EIPs). This is great but we still have to hand code all parts of these patterns; these are not packaged solutions, only recommendations.   Apache Camel was created with the intention of addressing these two issues. In this article I'll show you how it actually does this.What is Camel? Apache Camel is an open source Java framework that focuses on making integration easier and more accessible to developers. It does this by providing:•    concrete implementations of all the widely used EIPs •    connectivity to a great variety of transports and APIs•    easy to use Domain Specific Language (DSL) to wire EIPs and transports together Figure 1 shows how these three items actually map to Camel concepts. To give you a good understanding of how Camel is organized, we will discuss Components, Endpoints, Processors, and the Domain Specific Language (DSL). There is of course a lot more going on here under the hood but we'll leave that for another discussion.   
+
+ Figure 1: High level view of Camel's architecture.Components are the extension point in Camel to add connectivity to other systems. The core of Camel is very small to keep dependencies low, promote embeddability, etc. and as a result contains only 12 essential components. There are over 60 components outside the core. To expose these systems to the rest of Camel, Components provide an Endpoint interface. By using URIs, you can send or receive messages on Endpoints in a uniform way. For instance, to receive messages from a JMS queue aQueue and send them to a file system directory "c:/tmp", you could use URIs like "jms:aQueue" and "file:c:\tmp".Processors are used to manipulate and mediate messages in between Endpoints. All of the EIPs are defined as Processors or sets of Processors. As of writing, Camel supports 41 patterns from the EIP book, 6 other integration patterns, and many other useful Processors.To wire Processors and Endpoints together, Camel defines a Java DSL. The term DSL is used a bit loosely here as it usually implies the involvement of a compiler or interpreter that can process keywords specific to a particular domain. In Camel, DSL means a fluent Java API that contains methods named like terms from the EIP book. Its best explained with an examplefrom("jms:aQueue")  .filter().xpath("/person[@name='Jon']")  .to("file:c:\tmp");Here we define a routing rule in a single Java statement that will consume messages from the "jms:aQueue" Endpoint, send them through a Message Filter Processor, which will then send on messages passing the XPath condition to the "file:c:\tmp" endpoint. Messages failing the condition will be dropped.You can also configure your routes in a XML-based Spring configuration file. This configuration file is a lot more verbose and less auto complete friendly than the Java DSL; many prefer it though because of its direct access to Spring concepts and no requirement for compilation after changes. Here is what the earlier example would look like in Spring:<camelContext xmlns="http://camel.apache.org/schema/spring">  <route>    <from uri="jms:aQueue"/>    <filter>      <xpath>/person[@name='Jon']</xpath>      <to uri="file:c:\tmp"/>    </filter>  </route></camelContext>
+
+
+These are the concepts that Camel was built upon. Since then many other interesting features have been added. Details of these are left up to the reader to investigate. To get you started, some of these include:•    Pluggable data formats and type converters for easy message transformation between Artix Data Services, CSV, EDI, Flatpack, HL7, JAXB, JSON, XmlBeans, XStream, Zip, Camel-bindy, etc. •    Pluggable languages to create expressions or predicates for use in the DSL. Some of these languages include: EL, JXPath, Mvel, OGNL, BeanShell, JavaScript, Groovy, Python, PHP, Ruby, SQL, XPath, XQuery, etc.  •    Support for the integration of beans and POJOs in various places in Camel. •    Excellent support for testing distributed and asynchronous systems using a messaging approach•    and much more... Example A motorcycle parts business, Rider Auto Parts, supplies parts to motorcycle manufacturers. Over the years they've changed the way they receive orders several times. Initially, orders were placed by uploading CSV files to an FTP server. The message format was later changed to XML. Currently they provide a web site to submit orders as XML messages over HTTP. All of these messages are converted to an internal POJO format before processing.Rider Auto Parts states to any new customers to use the web interface to place orders. However, because of existing agreements with customers, they must keep all the old message formats and interfaces up and running.Solution using EIPs Rider Auto Parts faces a pretty common problem; over years of operation businesses acquire software baggage in the form of transports/data formats that are popular at the time. Using patterns from the EIP book we can envision the solution as something like Figure 2.    
+
+ Figure 2: This shows the solution to Rider Auto Parts integration problem using notation from the Enterprise Integration Patterns book.So we have several patterns in use here.1. There are two Message Endpoints; one for FTP connectivity and another for HTTP.2. Messages from these endpoints are fed into the incomingOrderQueue Message Channel3. The messages are consumed from the incomingOrderQueue and routed by a Content-Based Router to one of two Message Translators. As the EIP name implies, the routing destination depends on the content of the message. In this case we need to route based on whether the content is a CSV or XML file.4. Both Message Translators convert the message content into a POJO, which is fed into the orderQueue Message Channel.The whole section that uses a Content-Based Router and several Message Translators is referred to as a Normalizer. This composite pattern has a unique graphic to depict it but was left out here in favor of its sub-patterns to make things clearer. Implementation using Camel As mentioned before, Camel has a small core set of components included by default. The rest of the components exist as separate modules. In applications that require many types of connectivity it is useful to figure out what Camel modules to include. Listing 1 shows the dependencies using Apache Maven for the Camel implementation of the Rider Auto Parts example. Of course, you don't need to use Apache Maven for dependencies - it is just the easiest way to rapidly add new dependencies to your applications. The list of dependencies includes support for core Camel, ActiveMQ, JAXB marshaling, CSV marshaling, and HTTP. To make the example easier to try out, I've opted to use the File endpoint instead of the FTP. If we were using the FTP endpoint we would need to add a dependency on the camel-ftp module as well.Listing 1: Maven dependencies for the Camel implementation  <dependencies>    <!-- Core Camel support -->         <dependency>      <groupId>org.apache.camel</groupId>      <artifactId>camel-core</artifactId>      <version>${camel-version}</version>    </dependency>    <dependency>      <groupId>org.apache.camel</groupId>      <artifactId>camel-spring</artifactId>      <version>${camel-version}</version>    </dependency>        <!-- ActiveMQ connectivity for Camel -->                <dependency>      <groupId>org.apache.activemq</groupId>      <artifactId>activemq-camel</artifactId>      <version>${activemq-version}</version>    </dependency>        <!-- Add support for JAXB marshaling -->    <dependency>      <groupId>org.apache.camel</groupId>      <artifactId>camel-jaxb</artifactId>      <version>${camel-version}</version>    </dependency>        <!-- Add support for CSV marshaling -->        <dependency>      <groupId>org.apache.camel</groupId>      <artifactId>camel-csv</artifactId>      <version>${camel-version}</version>   </dependency>        <!-- Add support for HTTP -->    <dependency>      <groupId>org.apache.camel</groupId>      <artifactId>camel-jetty</artifactId>      <version>${camel-version}</version>    </dependency>    <!-- Embedded ActiveMQ broker -->    <dependency>      <groupId>org.apache.activemq</groupId>      <artifactId>activemq-core</artifactId>      <version>${activemq-version}</version>    </dependency>    <dependency>      <groupId>org.apache.xbean</groupId>      <artifactId>xbean-spring</artifactId>      <version>${xbean-spring-version}</version>    </dependency>  </dependencies>
+
+
+
+
+While it is perfectly legitimate to use Camel as a standalone Java application, it is often useful to embed it in a container. In this case, we will be loading Camel from Spring. The Spring beans XML file is shown in Listing 2. First we start an embedded Apache ActiveMQ broker and connect Camel to it. We also load up some helper beans that we will reference from the DSL. Finally, the camelContext element tells Camel to look for routes in the org.fusesource.camel package. Routes are Java classes that extend the RouteBuilder class in Camel.Listing 2: Spring XML file that configures an embedded ActiveMQ broker, several beans used in the Camel route, and initializes the Camel Context to search for routes in the org.fusesource.camel package.<beans xmlns="http://www.springframework.org/schema/beans"       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"       xsi:schemaLocation="       http://www.springframework.org/schema/beans       http://www.springframework.org/schema/beans/spring-beans-2.5.xsd       http://activemq.apache.org/camel/schema/spring       http://activemq.apache.org/camel/schema/spring/camel-spring.xsd       http://activemq.apache.org/schema/core       http://activemq.apache.org/schema/core/activemq-core.xsd">  <broker xmlns="http://activemq.apache.org/schema/core" useJmx="false" persistent="false">    <transportConnectors>      <transportConnector uri="tcp://localhost:61616" />    </transportConnectors>  </broker>  <bean id="jms" class="org.apache.activemq.camel.component.ActiveMQComponent">    <property name="brokerURL" value="tcp://localhost:61616"/>  </bean>  <bean id="normalizer" class="org.fusesource.camel.OrderNormalizer"/>  <bean id="orderHelper" class="org.fusesource.camel.OrderHelper"/>   <camelContext xmlns="http://activemq.apache.org/camel/schema/spring">    <package>org.fusesource.camel</package>  </camelContext></beans>The real meat of the Camel implementation lies in the OrderRouter class (shown in Listing 3). This class extends RouteBuilder, so it will be automatically picked up and loaded by Camel's runtime.Looking back at Figure 2, we need to receive orders from an FTP (substituted with File) and HTTP endpoint, formatted as shown in Listing 4. In the DSL we can specify these incoming endpoints with two from elements. Both from elements are connected to a to("jms:incomingOrderQueue") element, which will send the messages to a queue on the ActiveMQ broker.Listing 3: Route definitions for the example. The routing rules are specified using a fluent API, referred to as Camel's DSL.public class OrderRouter extends RouteBuilder {    @Override    public void configure() throws Exception {        JaxbDataFormat jaxb = new JaxbDataFormat("org.fusesource.camel");                // Receive orders from two endpoints        from("file:src/data?noop=true").to("jms:incomingOrderQueue");        from("jetty:http://localhost:8888/placeorder")          .inOnly().to("jms:incomingOrderQueue")          .transform().constant("OK");        // Do the normalization        from("jms:incomingOrderQueue")         .convertBodyTo(String.class)         .choice()           .when().method("orderHelper", "isXml")             .unmarshal(jaxb)             .to("jms:orderQueue")           .when().method("orderHelper", "isCsv")             .unmarshal().csv()                      .to("bean:normalizer")             .to("jms:orderQueue");    }}In the case of the HTTP endpoint, there are a couple of extra things to mention. First off the HTTP client will be expecting a response from the application so we have to handle that. In Camel, we have full control over what the client gets back from the HTTP endpoint. Each response is determined by the last method in our current route definition (each Java statement is a route definition). In our case we use the transform method to set the response to the constant string "OK". Since we handle the response ourselves, we don’t want any response to come from the JMS incomingOrderQueue. To send to this queue in a fire-and-forget fashion we add the inOnly modifier.  It is important to note at this point that when writing Camel DSL in a modern Java IDE, selection of the next processing step is easy because of auto complete. The auto complete feature basically gives you a list of processors (i.e. EIPs) to choose from at any point in your route. Since fluent APIs chain methods together, the only method you need to remember is the from; all other methods are shown via auto complete.Listing 4: Incoming message formats; XML on top, CSV below.<?xml version="1.0" encoding="UTF-8"?><order name="motor" amount="1"/>"name", "amount""brake pad", "2"The next section of DSL in Listing 3 specifies the Normalizer, complete with Content-Based Router and two Message Translators. First we specify that we want to consume messages from the incomingOrderQueue on the ActiveMQ broker. The content based routing of the messages is done with the choice and when methods. In our case, we want to send CSV messages to one Message Translator and XML messages to another. To check what type of message we have we will be using a simple Java bean shown in Listing 5. Of course, this is demonstration code only; for production cases you would want to add more thorough checking of content types.Listing 5: Java bean that contains helper methods to be used in the DSL.public class OrderHelper {    public boolean isCsv(String body) {        return !body.contains("<?xml");    }        public boolean isXml(String body) {        return body.contains("<?xml");    }}If the message has XML content, we use the JAXB data format to unmarshal the XML payload into an Order object. As shown in Listing 6, the Order object has JAXB annotations to describe the mapping to XML. You of course don't need to use JAXB here; it just makes things very easy as you don't have to do any nasty XML parsing by hand.Listing 6: The Order domain class with JAXB annotations for easy mapping to and from XML.@XmlRootElement@XmlAccessorType(XmlAccessType.FIELD)public class Order implements Serializable {    @XmlAttribute    private String name;    @XmlAttribute    private int amount;        public Order() {    }        public Order(String name, int amount) {        this.name = name;        this.amount = amount;    }        @Override    public String toString() {        return "Order[" + name + " , " + amount + "]";    }}For the transformation from CSV to Order object, we don't have a nice JAXB analogue. We do have support in Camel for unmarhsaling CSV content into a List though. We use this in combination with a custom bean to do the complete transformation. The OrderNormalizer bean shown in Listing 7 takes the List of Lists created by the CSV unmarshaler and creates a new Order object from it.Listing 7: Java bean that takes the CSV data and creates a new Order domain object from it.public class OrderNormalizer {    public Order fromCsvToOrder(List<List<String>> body) {        List<String> orderHeaders = body.get(0);        List<String> orderValues = body.get(1);        return new Order(orderValues.get(0), Integer.parseInt(orderValues.get(1)));    }}At this point, successfully normalized messages are sent to the orderQueue for processing by some other application at the Rider Auto Parts business.Conclusion In this article I've shown two common problems that an integration developer may face: dealing with the specifics of applications and transports, and coming up with good solutions to integration problems. The Apache Camel project provides a nice answer to both of these problems. As the example has shown, solving integration problems with Camel is straight forward and results in relatively concise code. In my opinion it is the closest thing to integration nirvana that we have today.LinksApache Camel – http://camel.apache.orgFUSE Mediation Router (based on Apache Camel) – http://fusesource.com/products/enterprise-camelEnterprise Integration Patterns – http://www.enterpriseintegrationpatterns.comJon’s Blog – http://janstey.blogspot.comCamel in Action book - http://www.manning.com/ibsen Article source code - http://repo.fusesource.com/maven2/org/fusesource/examples/rider-auto-example/1.0/rider-auto-example-1.0.zipAuthorJonathan Anstey is a senior engineer working for Progress Software Corporation specializing in the enterprise integration space. Jon focuses mostly on Apache Camel and its Progress endorsed likeness, FUSE Mediation Router. He also works on the Apache ActiveMQ and Apache ServiceMix projects   
+
+
+
+Enterprise integration
+Apache Camel
+Domain-Specific Language
+Listing (computer)
+application
+Spring Framework
+Apache Maven
+file IO
+Java (programming language)
+XML
+
+
+Opinions expressed by DZone contributors are their own.
+
+
+Popular on DZone
+
+
+Maven Tutorial: Nice and Easy [Video]
+
+
+Testing Schema Registry: Spring Boot and Apache Kafka With JSON Schema
+
+
+Creating Event-Based Architecture on Top of Existing API Ecosystem
+
+
+What Is HttpSession in Servlets?
+
+
+
+
+
+
+
+
+
+
+
+
+
+ Comments
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+                      Integration Partner Resources
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                X
+              
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ABOUT US
+
+About DZone
+Send feedback
+Careers
+Sitemap
+
+
+
+ADVERTISE
+
+Advertise with DZone
+
+
+
+
+
+CONTRIBUTE ON DZONE
+
+Article Submission Guidelines
+MVB Program
+Become a Contributor
+Visit the Writers' Zone
+
+LEGAL
+
+Terms of Service
+Privacy Policy
+
+
+
+CONTACT US
+
+600 Park Offices Drive
+Suite 300
+Durham, NC 27709
+support@dzone.com
++1 (919) 678-0300
+
+
+
+
+
+Let's be friends:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+DZone.com is powered by 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

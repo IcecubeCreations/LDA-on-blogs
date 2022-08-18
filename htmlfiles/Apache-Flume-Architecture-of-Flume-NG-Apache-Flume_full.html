@@ -1,0 +1,2504 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Apache Flume - Architecture of Flume NG : Apache Flume</title>
+       <link rel="EditURI"   type="application/rsd+xml" title="RSD" href="https://blogs.apache.org/flume/rsd"/>
+
+        <link rel="alternate" type="application/atom+xml" title="Recent Entries (Atom)"  href="https://blogs.apache.org/flume/feed/entries/atom" />
+    <link rel="alternate" type="application/rss+xml"  title="Recent Entries (RSS)"   href="https://blogs.apache.org/flume/feed/entries/rss" />
+    <link rel="alternate" type="application/atom+xml" title="Recent Comments (Atom)" href="https://blogs.apache.org/flume/feed/comments/atom" />
+    <link rel="alternate" type="application/rss+xml"  title="Recent Comments (RSS)"  href="https://blogs.apache.org/flume/feed/comments/rss" />
+
+
+        <link rel="search"
+            title="OpenSearch Descriptor for Apache Software Foundation Blogs"
+            type="application/opensearchdescription+xml"
+            href="https://blogs.apache.org/roller-services/opensearch" />
+    <link rel="stylesheet" type="text/css" media="all" href="/flume/page/asf-custom.css">
+</head>
+<body>
+<div class="navigation">
+    <ul>
+        <li><a href="https://apache.org/foundation" title="About the Foundation">Foundation</a></li>
+        <li><a href="https://projects.apache.org" title="Apache Projects">Projects</a></li>
+        <li><a href="https://home.apache.org" title="Apache People">People</a></li>
+        <li><a href="https://apache.org/foundation/getinvolved.html" title="Get involved in Apache">Get Involved</a></li>
+        <li><a href="https://apache.org/foundation/sponsorship.html" title="Support the mission of Apache">Support Apache</a></li>
+        <li class="dlink"><a href="https://apache.org/dyn/closer.cgi" title="Download Apache projects">Download</a></li>
+    </ul>
+	</div>
+      <div id="header">
+                          <h1>The Apache Software Foundation<br />
+  <span class="alt"><small>Blogging in Action.</small></span></h1>
+<!-- template:./apache-tomcat-6.0.18/webapps/ROOT/themes/asf/permalink.vm -->
+<!-- template:./themes/asf/permalink.vm -->
+
+<br /><br />
+<hr class="grey" />
+               </div>
+<div class="content_wrapper">
+  <div class="content">
+    <h1 class="weblogName">Apache Flume</h1>
+
+                <div class="next-previous">
+        <a href="/flume/">Main</a>
+        | <a href="https://blogs.apache.org/flume/entry/apache_flume_hackathon">Apache Flume Hackath...</a> &raquo;
+        </div>
+
+        <!-- _day -->
+<div class="dayBox">
+
+    <div class="dayTitle">
+      Friday December 09, 2011
+    </div>
+
+    <div class="entryBox">
+        <a name="flume_ng_architecture" id="flume_ng_architecture"></a>
+        <p class="entryTitle">Apache Flume - Architecture of Flume NG</p>
+        <p class="entryContent">
+                <div style="background-color:transparent;"> 
+    <p><span style="font-size:15px;font-family:Arial;background-color:transparent;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;">Apache Flume is a distributed, reliable, and available system for efficiently collecting, aggregating and moving large amounts of log data from many different sources to a centralized data store. Flume is currently undergoing incubation at The Apache Software Foundation. More information on this project can be found at </span><a href="http://incubator.apache.org/flume"><span style="font-size:15px;font-family:Arial;color:#000099;background-color:transparent;text-decoration:underline;vertical-align:baseline;white-space:pre-wrap;">http://incubator.apache.org/flume</span></a><span style="font-size:15px;font-family:Arial;background-color:transparent;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;">. <i>Flume NG</i> is work related to new major revision of Flume and is the subject of this post.</span><br><span style="font-size:15px;font-family:Arial;background-color:transparent;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;"></span><br><span style="font-size:15px;font-family:Arial;background-color:transparent;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;">Prior to entering the incubator, Flume saw incremental releases leading up to version 0.9.4. As Flume became adopted it became clear that certain design choices would need to be reworked in order to address problems reported in the field. The work necessary to make this change began a few months ago under the JIRA issue </span><a href="https://issues.apache.org/jira/browse/FLUME-728"><span style="font-size:15px;font-family:Arial;color:#000099;background-color:transparent;text-decoration:underline;vertical-align:baseline;white-space:pre-wrap;">FLUME-728</span></a><span style="font-size:15px;font-family:Arial;background-color:transparent;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;">. This work currently resides on a separate branch by the name </span><span style="font-size:15px;font-family:Arial;background-color:transparent;font-style:italic;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;">flume-728</span><span style="font-size:15px;font-family:Arial;background-color:transparent;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;">, and is informally referred to as Flume NG. At the time of writing this post Flume NG had gone through two internal milestones - <i>NG Alpha 1</i>, and <i>NG Alpha 2</i> and a formal incubator release of Flume NG is in the works.</span><br><span style="font-size:15px;font-family:Arial;background-color:transparent;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;"></span><br><span style="font-size:15px;font-family:Arial;background-color:transparent;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;">At a high-level, Flume NG uses a single-hop message delivery guarantee semantics to provide end-to-end reliability for the system. To accomplish this, certain new concepts have been incorporated into its design, while certain other existing concepts have been either redefined, reused or dropped completely.</span><br><span style="font-size:15px;font-family:Arial;background-color:transparent;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;"></span><br><span style="font-size:15px;font-family:Arial;background-color:transparent;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;">In this blog post, I will describe the fundamental concepts incorporated in Flume NG and talk about it’s high-level architecture. This is a first in a series of blog posts by Flume team that will go into further details of it’s design and implementation.</span></p> 
+    <div style="background-color:transparent;"> 
+      <h3><span id="internal-source-marker_0.03839341760613024" style="font-size:15px;font-family:Arial;background-color:transparent;font-weight:bold;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;">Core Concepts</span></h3><span style="font-size:15px;font-family:Arial;background-color:transparent;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;"></span><br><span style="font-size:15px;font-family:Arial;background-color:transparent;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;">The purpose of Flume is to provide a distributed, reliable, and available system for efficiently collecting, aggregating and moving large amounts of log data from many different sources to a centralized data store. The architecture of Flume NG is based on a few concepts that together help achieve this objective. Some of these concepts have existed in the past implementation, but have changed drastically. Here is a summary of concepts that Flume NG introduces, redefines, or reuses from earlier implementation:</span><br><span style="font-size:15px;font-family:Arial;background-color:transparent;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;"></span> 
+      <ul> 
+        <li style="list-style-type:disc;font-size:15px;font-family:Arial;background-color:transparent;text-decoration:none;vertical-align:baseline;"><span style="background-color:transparent;font-weight:bold;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;">Event: </span><span style="background-color:transparent;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;">A byte payload with optional string headers that represent the unit of data that Flume can transport from it’s point of origination to it’s final destination.</span></li> 
+        <li style="list-style-type:disc;font-size:15px;font-family:Arial;background-color:transparent;text-decoration:none;vertical-align:baseline;"><span style="background-color:transparent;font-weight:bold;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;">Flow:</span><span style="background-color:transparent;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;"> Movement of events from the point of origin to their final destination is considered a data flow, or simply flow. This is not a rigorous definition and is used only at a high level for description purposes. </span></li> 
+        <li style="list-style-type:disc;font-size:15px;font-family:Arial;background-color:transparent;text-decoration:none;vertical-align:baseline;"><span style="background-color:transparent;font-weight:bold;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;">Client: </span><span style="background-color:transparent;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;">An interface implementation that operates at the point of origin of events and delivers them to a Flume agent. Clients typically operate in the process space of the application they are consuming data from. For example, </span><span style="background-color:transparent;font-style:italic;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;">Flume Log4j Appender</span><span style="background-color:transparent;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;"> is a client.</span></li> 
+        <li style="list-style-type:disc;font-size:15px;font-family:Arial;background-color:transparent;text-decoration:none;vertical-align:baseline;"><span style="background-color:transparent;font-weight:bold;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;">Agent:</span><span style="background-color:transparent;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;"> An independent process that hosts flume components such as sources, channels and sinks, and thus has the ability to receive, store and forward events to their next-hop destination. </span></li> 
+        <li style="list-style-type:disc;font-size:15px;font-family:Arial;background-color:transparent;text-decoration:none;vertical-align:baseline;"><span style="background-color:transparent;font-weight:bold;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;">Source:</span><span style="background-color:transparent;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;"> An interface implementation that can consume events delivered to it via a specific mechanism. For example, an Avro source is a source implementation that can be used to receive Avro events from clients or other agents in the flow. When a source receives an event, it hands it over to one or more channels.</span></li> 
+        <li style="list-style-type:disc;font-size:15px;font-family:Arial;background-color:transparent;text-decoration:none;vertical-align:baseline;"><span style="background-color:transparent;font-weight:bold;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;">Channel:</span><span style="background-color:transparent;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;"> A transient store for events, where events are delivered to the channel via sources operating within the agent. An event put in a channel stays in that channel until a sink removes it for further transport. An example of channel is the JDBC channel that uses a file-system backed embedded database to persist the events until they are removed by a sink. Channels play an important role in ensuring durability of the flows.</span></li> 
+        <li style="list-style-type:disc;font-size:15px;font-family:Arial;background-color:transparent;text-decoration:none;vertical-align:baseline;"><span style="background-color:transparent;font-weight:bold;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;">Sink:</span><span style="background-color:transparent;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;"> An interface implementation that can remove events from a channel and transmit them to the next agent in the flow, or to the event’s final destination. Sinks that transmit the event to it’s final destination are also known as terminal sinks. The </span><span style="background-color:transparent;font-style:italic;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;">Flume HDFS sink</span><span style="background-color:transparent;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;"> is an example of a terminal sink. Whereas the Flume Avro sink is an example of a regular sink that can transmit messages to other agents that are running an Avro source.</span></li> 
+      </ul> 
+    </div> 
+    <p><span style="font-family:Arial;font-size:15px;white-space:pre-wrap;">These concepts help in simplifying the architecture, implementation, configuration and deployment of Flume. </span></p> 
+    <div style="background-color:transparent;"> 
+      <h3><span id="internal-source-marker_0.03839341760613024" style="font-size:15px;font-family:Arial;background-color:transparent;font-weight:bold;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;">Flow Pipeline</span></h3><span style="font-size:15px;font-family:Arial;background-color:transparent;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;"></span><br><span style="font-size:15px;font-family:Arial;background-color:transparent;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;">A flow in Flume NG starts from the client. The client transmits the event to it’s next hop destination. This destination is an agent. More precisely, the destination is a source operating within the agent. The source receiving this event will then deliver it to one or more channels. The channels that receive the event are drained by one or more sinks operating within the same agent. If the sink is a regular sink, it will forward the event to it’s next-hop destination which will be another agent. If instead it is a terminal sink, it will forward the event to it’s final destination. Channels allow the decoupling of sources from sinks using the familiar producer-consumer model of data exchange. This allows sources and sinks to have different performance and runtime characteristics and yet be able to effectively use the physical resources available to the system. </span><br><span style="font-size:15px;font-family:Arial;background-color:transparent;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;"></span><br> 
+    </div> 
+    <p><span style="font-family:Arial;font-size:15px;white-space:pre-wrap;">Figure 1 below shows how the various components interact with each other within a flow pipeline.</span> </p> 
+    <p style="text-align:center;"><img src="https://blogs.apache.org/flume/mediaresource/ab0d50f6-a960-42cc-971e-3da38ba3adad" alt="Schematic showing logical components in a flow. The arrows represent the direction in which events travel across the system. This also illustrates how flows can fan-out by having one source write the event out to multiple channels."> </p> 
+    <p> </p> 
+    <p style="text-align:center;"> <span style="text-align:center;background-color:transparent;font-size:15px;font-family:Arial;font-weight:bold;font-style:italic;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;">Figure 1: </span><span style="text-align:center;background-color:transparent;font-size:15px;font-family:Arial;font-style:italic;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;">Schematic showing logical components in a flow. The arrows represent the direction in which events travel across the system. This also illustrates how flows can fan-out by having one source write the event out to multiple channels.</span></p> 
+    <p> </p> 
+    <div style="background-color:transparent;"><span id="internal-source-marker_0.03839341760613024" style="font-size:15px;font-family:Arial;background-color:transparent;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;">By configuring a source to deliver the event to more than one channel, flows can fan-out to more than one destination. This is illustrated in Figure 1 where the source within the operating Agent writes the event out to two channels - Channel 1 and Channel 2.</span><br><span style="font-size:15px;font-family:Arial;background-color:transparent;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;"></span><br></div> 
+    <p><span style="font-family:Arial;font-size:15px;white-space:pre-wrap;">Conversely, flows can be converged by having multiple sources operating within the same agent write to the same channel. A example of the physical layout of a converging flow is show in Figure 2 below.</span></p> 
+    <p> </p> 
+    <p style="text-align:center;"><img src="https://blogs.apache.org/flume/mediaresource/268bf8db-43c7-497b-a0ef-63c482371eef" alt=" A simple converging flow on Flume NG."> </p> 
+    <p style="text-align:center;"> <span style="text-align:center;background-color:transparent;font-size:15px;font-family:Arial;font-weight:bold;font-style:italic;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;">Figure 2:</span><span style="text-align:center;background-color:transparent;font-size:15px;font-family:Arial;font-style:italic;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;"> A simple converging flow on Flume NG.</span></p> 
+    <p> </p> 
+    <h3><span style="font-family:Arial;font-size:15px;font-weight:bold;white-space:pre-wrap;">Reliability and Failure Handling</span></h3> 
+    <div style="background-color:transparent;"> 
+      <p><span style="font-size:15px;font-family:Arial;background-color:transparent;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;"></span><br><span style="font-size:15px;font-family:Arial;background-color:transparent;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;">Flume NG uses channel-based transactions to guarantee reliable message delivery. When a message moves from one agent to another, two transactions are started, one on the agent that delivers the event and the other on the agent that receives the event. In order for the sending agent to commit it’s transaction, it must receive success indication from the receiving agent. The receiving agent only returns a success indication if it’s own transaction commits properly first. This ensures guaranteed delivery semantics between the hops that the flow makes. Figure 3 below shows a sequence diagram that illustrates the relative scope and duration of the transactions operating within the two interacting agents.</span></p> 
+      <p style="text-align:center;"><img src="https://blogs.apache.org/flume/mediaresource/a15d9347-da9e-4824-b45f-6c00f0720590" alt="Transactional exchange of events between agents."> </p> 
+      <p style="text-align:center;"> <span style="text-align:center;background-color:transparent;font-size:15px;font-family:Arial;font-weight:bold;font-style:italic;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;">Figure 3: </span><span style="text-align:center;background-color:transparent;font-size:15px;font-family:Arial;font-style:italic;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;">Transactional exchange of events between agents.</span></p> 
+      <p> </p> 
+      <div style="background-color:transparent;"><span id="internal-source-marker_0.03839341760613024" style="font-size:15px;font-family:Arial;background-color:transparent;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;">This mechanism also forms the basis for failure handling in Flume NG. When a flow that passes through many different agents encounters a communication failure on any leg of the flow, the affected events start getting buffered at the last unaffected agent in the flow. If the failure is not resolved on time, this may lead to the failure of the last unaffected agent, which then would force the agent before it to start buffering the events. Eventually if the failure occurs when the client transmits the event to its first-hop destination, the failure will be reported back to the client which can then allow the application generating the events to take appropriate action.</span><br><span style="font-size:15px;font-family:Arial;background-color:transparent;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;"></span><br></div> 
+      <p><span style="font-family:Arial;font-size:15px;white-space:pre-wrap;">On the other hand, if the failure is resolved before the first-hop agent fails, the buffered events in various agents downstream will start draining towards their destination. Eventually the flow will be restored to its original characteristic throughput levels. Figure 4 below illustrates a scenario where a flow comprising of two intermediary agents between the client and the central store go through a transient failure. The failure occurs between agent 2 and the central store, resulting in the events getting buffered at the agent 2 itself. Once the failing link has been restored to normal, the buffered events drain out to the central store and the flow is restored to its original throughput characteristics.</span></p> 
+      <p style="text-align:center;"><img src="https://blogs.apache.org/flume/mediaresource/ac9d1c83-1089-4730-9546-fe8de509b34c" alt="Failure handling in flows. In (a) the flow is normal and events can travel from the client to the central store. In (b) a communication failure occurs between Agent 2 and the event store resulting in events being buffered on Agent 2. In (c) the cause of failure was addressed and the flow was restored and any events buffered in Agent 2 were drained to the store."> </p> 
+      <p style="text-align:center;"> <span style="text-align:center;background-color:transparent;font-size:15px;font-family:Arial;font-weight:bold;font-style:italic;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;">Figure 4: </span><span style="text-align:center;background-color:transparent;font-size:15px;font-family:Arial;font-style:italic;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;">Failure handling in flows. In (a) the flow is normal and events can travel from the client to the central store. In (b) a communication failure occurs between Agent 2 and the event store resulting in events being buffered on Agent 2. In (c) the cause of failure was addressed and the flow was restored and any events buffered in Agent 2 were drained to the store.</span></p> 
+      <p> </p> 
+      <div style="background-color:transparent;"> 
+        <h3><span id="internal-source-marker_0.03839341760613024" style="font-size:15px;font-family:Arial;background-color:transparent;font-weight:bold;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;">Wrapping up</span></h3> 
+      </div> 
+      <p><span style="font-family:Arial;font-size:15px;white-space:pre-wrap;">In this post I described the various concepts that are a part of Flume NG and its high-level architecture. This is first of a series of posts from the Flume team that will highlight the design and implementation of this system. In the meantime, if you need anymore information, please feel free to drop an email on the project’s user or developer lists, or alternatively file the appropriate JIRA issues. Your contribution in any form is welcome on the project.</span> </p> 
+      <p> </p> 
+      <div style="background-color:transparent;"> 
+        <h3><span id="internal-source-marker_0.03839341760613024" style="font-size:15px;font-family:Arial;background-color:transparent;font-weight:bold;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;">Links:</span></h3> 
+        <p><span style="font-size:15px;font-family:Arial;background-color:transparent;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;"></span><br><span style="font-size:15px;font-family:Arial;background-color:transparent;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;">Project Website: </span><a href="http://incubator.apache.org/flume/"><span style="font-size:15px;font-family:Arial;color:#000099;background-color:transparent;text-decoration:underline;vertical-align:baseline;white-space:pre-wrap;">http://incubator.apache.org/flume/</span></a></p> 
+        <p><span style="font-size:15px;font-family:Arial;background-color:transparent;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;">Flume NG Getting Started Guide: </span><a href="https://cwiki.apache.org/confluence/display/FLUME/Getting+Started"><span style="font-size:15px;font-family:Arial;color:#000099;background-color:transparent;text-decoration:underline;vertical-align:baseline;white-space:pre-wrap;">https://cwiki.apache.org/confluence/display/FLUME/Getting+Started</span></a></p> 
+        <p><span style="font-size:15px;font-family:Arial;background-color:transparent;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;">Mailing Lists: </span><a href="http://incubator.apache.org/flume/mail-lists.html"><span style="font-size:15px;font-family:Arial;color:#000099;background-color:transparent;text-decoration:underline;vertical-align:baseline;white-space:pre-wrap;">http://incubator.apache.org/flume/mail-lists.html</span></a></p> 
+        <p><span style="font-size:15px;font-family:Arial;background-color:transparent;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;">Issue Tracking: </span><a href="https://issues.apache.org/jira/browse/FLUME"><span style="font-size:15px;font-family:Arial;color:#000099;background-color:transparent;text-decoration:underline;vertical-align:baseline;white-space:pre-wrap;">https://issues.apache.org/jira/browse/FLUME</span></a></p> 
+      </div> 
+      <p><span style="font-family:Arial;font-size:15px;white-space:pre-wrap;">IRC Channel: #flume on irc.freenode.net</span> </p> 
+      <p> </p> 
+      <p> </p> 
+    </div> 
+    <p> </p> 
+    <p> </p> 
+    <p> </p> 
+  </div>
+        </p>
+        <p class="entryInfo">
+            Posted at <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture">10:30AM Dec 09, 2011</a>
+            by arvind in <span class="category">General</span> &nbsp;|&nbsp;
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comments" class="commentsLink">Comments [128]</a>
+            
+            &nbsp;|&nbsp;
+            <a href="http://www.facebook.com/sharer.php?u=https://blogs.apache.org/flume/entry/flume_ng_architecture" target="_blank" title="Share on Facebook"><img src="/images/facebook_icon.png"></a>
+            <a href="http://twitter.com/home?status=Apache+Flume+-+Architecture+of+Flume+NG%20https%3A%2F%2Fblogs.apache.org%2Fflume%2Fentry%2Fflume_ng_architecture" target="_blank" title="Share on Twitter"><img src="/images/twitter_icon.png"></a>
+
+        </p>
+    </div>
+
+</div>
+
+
+            <a name="comments"></a>
+    <div class="comments" id="comments">
+
+        <div class="comments-head">Comments:</div>
+
+    <br/>
+            <a name="comment-1337880984000" id="comment-1337880984000"></a>
+            <div class="comment even" id="comment0">
+
+                [Trackback] Facebook Scribe vs Cloudera Flume&nbsp;Comparison Matri
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://wiki.kthcorp.com/display/DITEAM/Scribe+vs+Flume+Comparison"><b>Confluence: 데이터지능팀</b></a>
+
+                on May 24, 2012 at 10:36 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1337880984000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1337881939000" id="comment-1337881939000"></a>
+            <div class="comment odd" id="comment1">
+
+                [Trackback] Overview https://github.com/cloudera/flume Clouder
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://wiki.kthcorp.com/display/DITEAM/Cloudera+Flume"><b>Confluence: 데이터지능팀</b></a>
+
+                on May 24, 2012 at 10:52 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1337881939000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1337881960000" id="comment-1337881960000"></a>
+            <div class="comment even" id="comment2">
+
+                [Trackback] Overview https://github.com/cloudera/flume Clouder
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://wiki.kthcorp.com/display/DITEAM/Cloudera+Flume"><b>Confluence: 데이터지능팀</b></a>
+
+                on May 24, 2012 at 10:52 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1337881960000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1337882951000" id="comment-1337882951000"></a>
+            <div class="comment odd" id="comment3">
+
+                [Trackback] Overview https://github.com/apache/flume Flume의 차세
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://wiki.kthcorp.com/display/DITEAM/Apache+Flume+-+Flume+NG"><b>Confluence: 데이터지능팀</b></a>
+
+                on May 24, 2012 at 11:09 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1337882951000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1337882961000" id="comment-1337882961000"></a>
+            <div class="comment even" id="comment4">
+
+                [Trackback] Table of Contents Overview https://github.com/apac
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://wiki.kthcorp.com/display/DITEAM/Apache+Flume+-+Flume+NG"><b>Confluence: 데이터지능팀</b></a>
+
+                on May 24, 2012 at 11:09 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1337882961000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1337883070000" id="comment-1337883070000"></a>
+            <div class="comment odd" id="comment5">
+
+                [Trackback] Table of Contents Overview https://github.com/apac
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://wiki.kthcorp.com/display/DITEAM/Apache+Flume+-+Flume+NG"><b>Confluence: 데이터지능팀</b></a>
+
+                on May 24, 2012 at 11:11 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1337883070000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1337885006000" id="comment-1337885006000"></a>
+            <div class="comment even" id="comment6">
+
+                [Trackback] Facebook Scribe vs Cloudera Flume&nbsp;Comparison Matri
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://wiki.kthcorp.com/display/DITEAM/Scribe+vs+Flume+Comparison"><b>Confluence: 데이터지능팀</b></a>
+
+                on May 24, 2012 at 11:43 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1337885006000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1337885032000" id="comment-1337885032000"></a>
+            <div class="comment odd" id="comment7">
+
+                [Trackback] Facebook Scribe vs Cloudera Flume&nbsp;Comparison Matri
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://wiki.kthcorp.com/display/DITEAM/Scribe+vs+Flume+Comparison"><b>Confluence: 데이터지능팀</b></a>
+
+                on May 24, 2012 at 11:43 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1337885032000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1357318876000" id="comment-1357318876000"></a>
+            <div class="comment even" id="comment8">
+
+                [Trackback] Table of Contents Overview https://github.com/apac
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://wiki.kthcorp.com/display/DITEAM/Apache+Flume+-+Flume+NG"><b>Confluence: 데이터지능팀</b></a>
+
+                on January 04, 2013 at 09:01 AM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1357318876000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1362985667000" id="comment-1362985667000"></a>
+            <div class="comment odd" id="comment9">
+
+                [Trackback] Facebook Scribe vs Cloudera Flume&nbsp;Comparison Matri
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://wiki.kthcorp.com/display/SmartVOD/Scribe+vs+Flume+Comparison"><b>Confluence: Smart VOD사업팀</b></a>
+
+                on March 11, 2013 at 12:07 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1362985667000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1362985685000" id="comment-1362985685000"></a>
+            <div class="comment even" id="comment10">
+
+                [Trackback] Overview https://github.com/cloudera/flume Clouder
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://wiki.kthcorp.com/display/SmartVOD/Cloudera+Flume"><b>Confluence: Smart VOD사업팀</b></a>
+
+                on March 11, 2013 at 12:08 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1362985685000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1362985706000" id="comment-1362985706000"></a>
+            <div class="comment odd" id="comment11">
+
+                [Trackback] Facebook Scribe vs Cloudera Flume&nbsp;Comparison Matri
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://wiki.kthcorp.com/display/SmartVOD/Scribe+vs+Flume+Comparison"><b>Confluence: Smart VOD사업팀</b></a>
+
+                on March 11, 2013 at 12:08 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1362985706000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1362985727000" id="comment-1362985727000"></a>
+            <div class="comment even" id="comment12">
+
+                [Trackback] Facebook Scribe vs Cloudera Flume&nbsp;Comparison Matri
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://wiki.kthcorp.com/display/SmartVOD/Scribe+vs+Flume+Comparison"><b>Confluence: Smart VOD사업팀</b></a>
+
+                on March 11, 2013 at 12:08 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1362985727000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1362985779000" id="comment-1362985779000"></a>
+            <div class="comment odd" id="comment13">
+
+                [Trackback] Table of Contents Overview https://github.com/apac
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://wiki.kthcorp.com/display/SmartVOD/Apache+Flume+-+Flume+NG"><b>Confluence: Smart VOD사업팀</b></a>
+
+                on March 11, 2013 at 12:09 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1362985779000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1364397189000" id="comment-1364397189000"></a>
+            <div class="comment even" id="comment14">
+
+                [Trackback] Introduction This document describes the proposed 
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://confluence.xing.hh/confluence/display/ds/Hadoop+Cluster+Archuitecture"><b>Confluence: Data Science</b></a>
+
+                on March 27, 2013 at 08:13 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1364397189000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1364403485000" id="comment-1364403485000"></a>
+            <div class="comment odd" id="comment15">
+
+                [Trackback] Introduction This document describes the proposed 
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://confluence.xing.hh/confluence/display/ds/Hadoop+Cluster+Archuitecture"><b>Confluence: Data Science</b></a>
+
+                on March 27, 2013 at 09:58 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1364403485000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1364460544000" id="comment-1364460544000"></a>
+            <div class="comment even" id="comment16">
+
+                [Trackback] Introduction This document describes the proposed 
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://confluence.xing.hh/confluence/display/ds/Hadoop+Cluster+Archuitecture"><b>Confluence: Data Science</b></a>
+
+                on March 28, 2013 at 01:49 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1364460544000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1364462045000" id="comment-1364462045000"></a>
+            <div class="comment odd" id="comment17">
+
+                [Trackback] Introduction This document describes the proposed 
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://confluence.xing.hh/confluence/display/ds/Hadoop+Cluster+Archuitecture"><b>Confluence: Data Science</b></a>
+
+                on March 28, 2013 at 02:14 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1364462045000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1364462105000" id="comment-1364462105000"></a>
+            <div class="comment even" id="comment18">
+
+                [Trackback] Introduction This document describes the proposed 
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://confluence.xing.hh/confluence/display/ds/Hadoop+Cluster+Archuitecture"><b>Confluence: Data Science</b></a>
+
+                on March 28, 2013 at 02:15 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1364462105000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1364463125000" id="comment-1364463125000"></a>
+            <div class="comment odd" id="comment19">
+
+                [Trackback] Introduction This document describes the proposed 
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://confluence.xing.hh/confluence/display/ds/Hadoop+Cluster+Archuitecture"><b>Confluence: Data Science</b></a>
+
+                on March 28, 2013 at 02:32 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1364463125000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1364463724000" id="comment-1364463724000"></a>
+            <div class="comment even" id="comment20">
+
+                [Trackback] Introduction This document describes the proposed 
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://confluence.xing.hh/confluence/display/ds/Hadoop+Cluster+Archuitecture"><b>Confluence: Data Science</b></a>
+
+                on March 28, 2013 at 02:42 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1364463724000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1364465047000" id="comment-1364465047000"></a>
+            <div class="comment odd" id="comment21">
+
+                [Trackback] Introduction This document describes the proposed 
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://confluence.xing.hh/confluence/display/ds/Hadoop+Cluster+Archuitecture"><b>Confluence: Data Science</b></a>
+
+                on March 28, 2013 at 03:04 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1364465047000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1364465465000" id="comment-1364465465000"></a>
+            <div class="comment even" id="comment22">
+
+                [Trackback] Introduction This document describes the proposed 
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://confluence.xing.hh/confluence/display/ds/Hadoop+Cluster+Archuitecture"><b>Confluence: Data Science</b></a>
+
+                on March 28, 2013 at 03:11 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1364465465000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1364478726000" id="comment-1364478726000"></a>
+            <div class="comment odd" id="comment23">
+
+                [Trackback] Introduction This document describes the proposed 
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://confluence.xing.hh/confluence/display/ds/Hadoop+Cluster+Archuitecture"><b>Confluence: Data Science</b></a>
+
+                on March 28, 2013 at 06:52 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1364478726000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1364481125000" id="comment-1364481125000"></a>
+            <div class="comment even" id="comment24">
+
+                [Trackback] Introduction This document describes the proposed 
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://confluence.xing.hh/confluence/display/ds/Hadoop+Cluster+Archuitecture"><b>Confluence: Data Science</b></a>
+
+                on March 28, 2013 at 07:32 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1364481125000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1364484545000" id="comment-1364484545000"></a>
+            <div class="comment odd" id="comment25">
+
+                [Trackback] Introduction This document describes the proposed 
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://confluence.xing.hh/confluence/display/ds/Hadoop+Cluster+Architecture"><b>Confluence: Data Science</b></a>
+
+                on March 28, 2013 at 08:29 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1364484545000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1380896528000" id="comment-1380896528000"></a>
+            <div class="comment even" id="comment26">
+
+                [Trackback] Introduction This document describes the proposed 
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://confluence.xing.hh/confluence/display/ds/Hadoop+Cluster+Architecture"><b>Confluence: Data Science</b></a>
+
+                on October 04, 2013 at 07:22 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1380896528000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1380896537000" id="comment-1380896537000"></a>
+            <div class="comment odd" id="comment27">
+
+                [Trackback] Introduction This document describes the proposed 
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://confluence.xing.hh/confluence/display/ds/Hadoop+Cluster+Architecture"><b>Confluence: Data Science</b></a>
+
+                on October 04, 2013 at 07:22 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1380896537000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1380896768000" id="comment-1380896768000"></a>
+            <div class="comment even" id="comment28">
+
+                [Trackback] Introduction This document describes the proposed 
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://confluence.xing.hh/confluence/display/ds/Hadoop+Cluster+Architecture"><b>Confluence: Data Science</b></a>
+
+                on October 04, 2013 at 07:26 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1380896768000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1390230923000" id="comment-1390230923000"></a>
+            <div class="comment odd" id="comment29">
+
+                [Trackback] With increased customer adoption, there are now hu
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://confluence.lab.nsslabs.com/display/CLOUD/2014/01/20/Hadoop+-+Big+Data+Analytics"><b>Confluence: Cloud</b></a>
+
+                on January 20, 2014 at 07:15 AM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1390230923000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1390272715000" id="comment-1390272715000"></a>
+            <div class="comment even" id="comment30">
+
+                [Trackback] Facebook Scribe vs Cloudera Flume&nbsp;Comparison Matri
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://wiki.kthcorp.com/display/SmartVOD/Scribe+vs+Flume+Comparison"><b>Confluence: Smart VOD사업팀</b></a>
+
+                on January 20, 2014 at 06:51 PM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1390272715000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1390272744000" id="comment-1390272744000"></a>
+            <div class="comment odd" id="comment31">
+
+                [Trackback] Overview https://github.com/cloudera/flume Clouder
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://wiki.kthcorp.com/display/SmartVOD/Cloudera+Flume"><b>Confluence: Smart VOD사업팀</b></a>
+
+                on January 20, 2014 at 06:52 PM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1390272744000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1390272801000" id="comment-1390272801000"></a>
+            <div class="comment even" id="comment32">
+
+                [Trackback] Table of Contents Overview https://github.com/apac
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://wiki.kthcorp.com/display/SmartVOD/Apache+Flume+-+Flume+NG"><b>Confluence: Smart VOD사업팀</b></a>
+
+                on January 20, 2014 at 06:53 PM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1390272801000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1393667958000" id="comment-1393667958000"></a>
+            <div class="comment odd" id="comment33">
+
+                [Trackback] Facebook Scribe vs Cloudera Flume&nbsp;Comparison Matri
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://wiki.kthcorp.com/display/DITEAM/Scribe+vs+Flume+Comparison"><b>Confluence: 데이터지능팀</b></a>
+
+                on March 01, 2014 at 01:59 AM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1393667958000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1393667979000" id="comment-1393667979000"></a>
+            <div class="comment even" id="comment34">
+
+                [Trackback] Overview https://github.com/cloudera/flume Clouder
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://wiki.kthcorp.com/display/DITEAM/Cloudera+Flume"><b>Confluence: 데이터지능팀</b></a>
+
+                on March 01, 2014 at 01:59 AM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1393667979000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1393668006000" id="comment-1393668006000"></a>
+            <div class="comment odd" id="comment35">
+
+                [Trackback] Facebook Scribe vs Cloudera Flume&nbsp;Comparison Matri
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://wiki.kthcorp.com/display/DITEAM/Scribe+vs+Flume+Comparison"><b>Confluence: 데이터지능팀</b></a>
+
+                on March 01, 2014 at 02:00 AM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1393668006000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1393668063000" id="comment-1393668063000"></a>
+            <div class="comment even" id="comment36">
+
+                [Trackback] Facebook Scribe vs Cloudera Flume&nbsp;Comparison Matri
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://wiki.kthcorp.com/display/DITEAM/Scribe+vs+Flume+Comparison"><b>Confluence: 데이터지능팀</b></a>
+
+                on March 01, 2014 at 02:01 AM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1393668063000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1393668085000" id="comment-1393668085000"></a>
+            <div class="comment odd" id="comment37">
+
+                [Trackback] Table of Contents Overview https://github.com/apac
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://wiki.kthcorp.com/display/DITEAM/Apache+Flume+-+Flume+NG"><b>Confluence: 데이터지능팀</b></a>
+
+                on March 01, 2014 at 02:01 AM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1393668085000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1393670838000" id="comment-1393670838000"></a>
+            <div class="comment even" id="comment38">
+
+                [Trackback] Facebook Scribe vs Cloudera Flume&nbsp;Comparison Matri
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://wiki.kthcorp.com/display/DITEAM/Scribe+vs+Flume+Comparison"><b>Confluence: 데이터지능팀</b></a>
+
+                on March 01, 2014 at 02:47 AM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1393670838000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1393670857000" id="comment-1393670857000"></a>
+            <div class="comment odd" id="comment39">
+
+                [Trackback] Overview https://github.com/cloudera/flume Clouder
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://wiki.kthcorp.com/display/DITEAM/Cloudera+Flume"><b>Confluence: 데이터지능팀</b></a>
+
+                on March 01, 2014 at 02:47 AM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1393670857000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1393670905000" id="comment-1393670905000"></a>
+            <div class="comment even" id="comment40">
+
+                [Trackback] Table of Contents Overview https://github.com/apac
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://wiki.kthcorp.com/display/DITEAM/Apache+Flume+-+Flume+NG"><b>Confluence: 데이터지능팀</b></a>
+
+                on March 01, 2014 at 02:48 AM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1393670905000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1448906004000" id="comment-1448906004000"></a>
+            <div class="comment odd" id="comment41">
+
+                In Flume NG architecture, what is a purpose of redistributing source data into multiple channels? Is it becuase of the throughput performance and/or redundancy &amp; HA?
+
+                <p class="comment-details">
+                Posted by
+                    <b>Brandon Lee</b>
+
+                on November 30, 2015 at 09:53 AM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1448906004000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1451476394000" id="comment-1451476394000"></a>
+            <div class="comment even" id="comment42">
+
+                I assume, Agent is a Java programs or process. 
+
+If these are processes, how they are communicating with each other, IPC?
+
+If they are programs, are they running on same JVM?
+
+A little inside Transactions handling would help.
+
+Thanks.
+
+
+                <p class="comment-details">
+                Posted by
+                    <b>Manjeet</b>
+
+                on December 30, 2015 at 03:53 AM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1451476394000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1477576648000" id="comment-1477576648000"></a>
+            <div class="comment odd" id="comment43">
+
+                It's =&gt; short for It is
+Its =&gt; possesive form
+
+its shape, it is round
+
+it's far from its centre 
+
+
+
+                <p class="comment-details">
+                Posted by
+                    <b>Bee</b>
+
+                on October 27, 2016 at 06:57 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1477576648000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1503466625000" id="comment-1503466625000"></a>
+            <div class="comment even" id="comment44">
+
+                Hi Team,
+
+Your link is really Good! I'm first time reading this link without any background &amp; I like it really!
+
+Awesome content!
+
+If possible pls share some use cases.
+
+
+Regards,
+Mikhil
+
+                <p class="comment-details">
+                Posted by
+                    <b>Mikhil Nagarale</b>
+
+                on August 22, 2017 at 10:37 PM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1503466625000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1549704045000" id="comment-1549704045000"></a>
+            <div class="comment odd" id="comment45">
+
+                The Service Management of MC Donald is conducting the MC Donald&rsquo;s Customer Satisfaction Survey.
+
+<a href="http://mcdvoice.online/">http://mcdvoice.online/</a>
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://mcdvoice.online/"><b>mcdvoice</b></a>
+
+                on February 09, 2019 at 01:20 AM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1549704045000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1553169532000" id="comment-1553169532000"></a>
+            <div class="comment even" id="comment46">
+
+                My someone that I very like your calculation machine on-line and affirm the mass your post's to be solely what i'm gazing. ar you able to very offer visitant manufacturers to form content material for you? i might not neural structure subsidence a post or explaining on assortment of the topic downside you compose with regard to here. once more, awe-inspiring weblog! 
+<a href="https://instagramcaptions.org/savage-captions/">https://instagramcaptions.org/savage-captions/</a>
+<a href="https://instagramcaptions.org/">https://instagramcaptions.org/</a>
+
+                <p class="comment-details">
+                Posted by
+                    <b>instagramcaptions</b>
+
+                on March 21, 2019 at 04:58 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1553169532000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1553169664000" id="comment-1553169664000"></a>
+            <div class="comment odd" id="comment47">
+
+                We staggered here stand-out process machine and thought i might additional investigate things out. I merely like what I see thus by and by i am tailing you. foresee seeing your registering machine as a rule. 
+<a href="https://www.neet2019.in/">https://www.neet2019.in/</a>
+<a href="https://www.neet2019.in/neet-admit-card-2019/">https://www.neet2019.in/neet-admit-card-2019/</a>
+
+                <p class="comment-details">
+                Posted by
+                    <b>NEET official website</b>
+
+                on March 21, 2019 at 05:01 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1553169664000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1556272792000" id="comment-1556272792000"></a>
+            <div class="comment even" id="comment48">
+
+                All the Apache blog users are welcoming to take your favorite store or restaurant surveys at <a href="https://patronsurvey.com/">https://patronsurvey.com/</a> . Because the patronsurvey website providing all the instructions to complete the feedback survey without any mistake. Win $500 by completing a food lion survey on the patronsurvey website.
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://patronsurvey.com/www-talktofoodlion-com-survey/"><b>talktofoodlion com survey</b></a>
+
+                on April 26, 2019 at 02:59 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1556272792000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1561472684000" id="comment-1561472684000"></a>
+            <div class="comment odd" id="comment49">
+
+                It is possible to configure Flume to get data from log files on Apache web server?
+
+While doing the last-minute config change for <a href="https://betjedi.net/,">https://betjedi.net/,</a> I ran into the issue that I had missed my Flume package and I thought I would have to reinstall it manually.
+
+                <p class="comment-details">
+                Posted by
+                    <b>enakinkenobi</b>
+
+                on June 25, 2019 at 07:24 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1561472684000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1561609710000" id="comment-1561609710000"></a>
+            <div class="comment even" id="comment50">
+
+                ایرنیک
+<a href="https://www.reddit.com/r/RegisterDomain/comments/c60vb2/%D8%AB%D8%A8%D8%AA_%D8%AF%D8%A7%D9%85%D9%86%D9%87_%D8%AF%D8%B1_%D8%A7%DB%8C%D8%B1%D8%A7%D9%86_%D8%B3%D8%B1%D9%88%D8%B1/">https://www.reddit.com/r/RegisterDomain/comments/c60vb2/%D8%AB%D8%A8%D8%AA_%D8%AF%D8%A7%D9%85%D9%86%D9%87_%D8%AF%D8%B1_%D8%A7%DB%8C%D8%B1%D8%A7%D9%86_%D8%B3%D8%B1%D9%88%D8%B1/</a>
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://www.reddit.com/r/registerdomain/comments/c60vb2/%d8%ab%d8%a8%d8%aa_%d8%af%d8%a7%d9%85%d9%86%d9%87_%d8%af%d8%b1_%d8%a7%db%8c%d8%b1%d8%a7%d9%86_%d8%b3%d8%b1%d9%88%d8%b1/"><b>ایرنیک</b></a>
+
+                on June 26, 2019 at 09:28 PM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1561609710000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1561838653000" id="comment-1561838653000"></a>
+            <div class="comment odd" id="comment51">
+
+                Notify me by email of new commentsNotify me by email of new commentsNotify me by email of new commentsNotify me by email of new comments
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://altyazilifilm.live"><b>film izle</b></a>
+
+                on June 29, 2019 at 01:04 PM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1561838653000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1563208833000" id="comment-1563208833000"></a>
+            <div class="comment even" id="comment52">
+
+                by email of new commentsNotify me by email of new comments
+<a href="http://www.gtagame100.com">http://www.gtagame100.com</a>
+<a href="http://www.subway-game.blogspot.com">http://www.subway-game.blogspot.com</a>
+
+                <p class="comment-details">
+                Posted by
+                    <b>zain david</b>
+
+                on July 15, 2019 at 09:40 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1563208833000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1563209216000" id="comment-1563209216000"></a>
+            <div class="comment odd" id="comment53">
+
+                nice post.
+ <a href="http://www.zumagame100.blogspot.com">http://www.zumagame100.blogspot.com</a>
+
+                <p class="comment-details">
+                Posted by
+                    <b>zain david</b>
+
+                on July 15, 2019 at 09:46 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1563209216000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1563247422000" id="comment-1563247422000"></a>
+            <div class="comment even" id="comment54">
+
+                bssc result <a href="http://supremecourtjudgements.in">http://supremecourtjudgements.in</a>
+
+                <p class="comment-details">
+                Posted by
+                    <b>Ramesh</b>
+
+                on July 15, 2019 at 08:23 PM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1563247422000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1563363552000" id="comment-1563363552000"></a>
+            <div class="comment odd" id="comment55">
+
+                great Apache Flume
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://farmacia-online-italia.com/category/erectile%20dysfunction?categoryid=erectile%20dysfunction&amp;lang=it"><b>DISFUNZIONE</b></a>
+
+                on July 17, 2019 at 04:39 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1563363552000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1563363677000" id="comment-1563363677000"></a>
+            <div class="comment even" id="comment56">
+
+                Erectile Dysfunction
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://safe-canada-store.com/erectile-dysfunction.html"><b>Erectile Dysfunction</b></a>
+
+                on July 17, 2019 at 04:41 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1563363677000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1563363820000" id="comment-1563363820000"></a>
+            <div class="comment odd" id="comment57">
+
+                Architecture of Flume NG
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://safe-canadian-store.com/erectile-dysfunction.html"><b>Dysfunction Erectile</b></a>
+
+                on July 17, 2019 at 04:43 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1563363820000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1563363879000" id="comment-1563363879000"></a>
+            <div class="comment even" id="comment58">
+
+                This mechanism also forms the basis 
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://trusted-canadian-online-pharmacy.com/erectile-dysfunction.html"><b>Dysfunction</b></a>
+
+                on July 17, 2019 at 04:44 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1563363879000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1563364099000" id="comment-1563364099000"></a>
+            <div class="comment odd" id="comment59">
+
+                When a message moves from one agent to another,
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://de-online-apotheke.com/category/erectile%20dysfunction?categoryid=erectile%20dysfunction&amp;lang=de"><b>POTENZMITTEL</b></a>
+
+                on July 17, 2019 at 04:48 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1563364099000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1563364783000" id="comment-1563364783000"></a>
+            <div class="comment even" id="comment60">
+
+                The purpose of Flume is to provide a distributed
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://houstonmedic.com/erectile-dysfunction_es.html"><b>DISFUNCI&Oacute;N ER&Eacute;CTIL</b></a>
+
+                on July 17, 2019 at 04:59 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1563364783000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1563364829000" id="comment-1563364829000"></a>
+            <div class="comment odd" id="comment61">
+
+                Flume NG uses channel-based transactions to guarantee reliable message delivery
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://atopy-pharmacy.com/erectile-dysfunction_fr.html"><b>La Dysfonction &eacute;rectile</b></a>
+
+                on July 17, 2019 at 05:00 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1563364829000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1563364884000" id="comment-1563364884000"></a>
+            <div class="comment even" id="comment62">
+
+                A flow in Flume NG starts from the client.
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://pharmachemicalsonline.com/erectile-dysfunction.html"><b>Erectile Dysfunction</b></a>
+
+                on July 17, 2019 at 05:01 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1563364884000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1563641254000" id="comment-1563641254000"></a>
+            <div class="comment odd" id="comment63">
+
+                Thank you for sharing! Stunningly inspiring. 6666666666
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://blogs.apache.org/usergrid/entry/usergrid_10k_part1"><b>mengingmahis1973</b></a>
+
+                on July 20, 2019 at 09:47 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1563641254000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1563641657000" id="comment-1563641657000"></a>
+            <div class="comment even" id="comment64">
+
+                Appealing Colors! so delicately illustrated. Love to see in large print
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://blogs.apache.org/openejb/entry/openejb_eclipse_plugin_alpha_release"><b>ciaverscoorru1974</b></a>
+
+                on July 20, 2019 at 09:54 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1563641657000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1563644137000" id="comment-1563644137000"></a>
+            <div class="comment odd" id="comment65">
+
+                epic! great concept
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://blogs.apache.org/netbeans/entry/announce-apache-netbeans-incubating-92"><b>spinunelul1989</b></a>
+
+                on July 20, 2019 at 10:35 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1563644137000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1563644959000" id="comment-1563644959000"></a>
+            <div class="comment even" id="comment66">
+
+                sixsixsix Awwwwwsssssooommmeee
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://blogs.apache.org/lucenenet/entry/apache_lucene_net_2_9"><b>izsitaphe1977</b></a>
+
+                on July 20, 2019 at 10:49 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1563644959000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1563646905000" id="comment-1563646905000"></a>
+            <div class="comment odd" id="comment67">
+
+                Beautiful ❤️❤️ trendy :)
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://blogs.apache.org/aries/entry/enterprise_osgi_4_2_draft"><b>unnymmistlu1985</b></a>
+
+                on July 20, 2019 at 11:21 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1563646905000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1563650873000" id="comment-1563650873000"></a>
+            <div class="comment even" id="comment68">
+
+                I love the video and UI, but the music throw me off a bit. Style!!!!!
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://blogs.apache.org/sentry/entry/getting_started"><b>pyouderjasa1989</b></a>
+
+                on July 20, 2019 at 12:27 PM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1563650873000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1563665060000" id="comment-1563665060000"></a>
+            <div class="comment odd" id="comment69">
+
+                Engaging and thought provoking photos - love the streaks of concealer on faces and the unusual pottery! Awesome illustration style!
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://blogs.apache.org/tomee/entry/apache_tomee_1_6_01"><b>wotounoga1977</b></a>
+
+                on July 20, 2019 at 04:24 PM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1563665060000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1563668042000" id="comment-1563668042000"></a>
+            <div class="comment even" id="comment70">
+
+                nice !!! Real great job
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://blogs.apache.org/couchdb/entry/couchdb_weekly_news_may_16"><b>logrisenka1975</b></a>
+
+                on July 20, 2019 at 05:14 PM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1563668042000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1563671216000" id="comment-1563671216000"></a>
+            <div class="comment odd" id="comment71">
+
+                @Carol uu 嗷嗷嗷嗷 好的好的 Legal demais, parab&eacute;ns.
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://blogs.apache.org/couchdb/entry/apache_couchdb_is_supporting_the"><b>billchidanur1979</b></a>
+
+                on July 20, 2019 at 06:06 PM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1563671216000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1563677172000" id="comment-1563677172000"></a>
+            <div class="comment even" id="comment72">
+
+                Amazing project, I love it! 可爱
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://blogs.apache.org/lucenenet/entry/apache_lucene_net_2_9"><b>kickkalliacong1978</b></a>
+
+                on July 20, 2019 at 07:46 PM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1563677172000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1563684349000" id="comment-1563684349000"></a>
+            <div class="comment odd" id="comment73">
+
+                Very cool work! I did notice that there's a typo (I think) in one of the animated sequences. no doubt it's a great design, smart and organic
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://blogs.apache.org/logging/entry/apache_log4j_2_0_rc1"><b>meevesinpopp1988</b></a>
+
+                on July 20, 2019 at 09:45 PM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1563684349000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1563686240000" id="comment-1563686240000"></a>
+            <div class="comment even" id="comment74">
+
+                Awsome. fant&aacute;stico! muito bom!!
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://blogs.apache.org/logging/entry/log4j_2_6_2_released"><b>themvogaca1986</b></a>
+
+                on July 20, 2019 at 10:17 PM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1563686240000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1563688712000" id="comment-1563688712000"></a>
+            <div class="comment odd" id="comment75">
+
+                So cool! ✨ Reminds me of Moebius, great stuff.
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://blogs.apache.org/logging/entry/gary_gregory_to_join_the"><b>totirudis1972</b></a>
+
+                on July 20, 2019 at 10:58 PM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1563688712000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1563690684000" id="comment-1563690684000"></a>
+            <div class="comment even" id="comment76">
+
+                Muchas gracias @Mariano Diez ! Another great work!
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://blogs.apache.org/ofbiz/entry/apache_ofbiz_news_june_2015"><b>hardportvermalt1971</b></a>
+
+                on July 20, 2019 at 11:31 PM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1563690684000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1563692647000" id="comment-1563692647000"></a>
+            <div class="comment odd" id="comment77">
+
+                this is a jewelry job!! So beautifull !
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://blogs.apache.org/tomee/entry/apache_tomee_1_7_1"><b>concourenlooks1970</b></a>
+
+                on July 21, 2019 at 12:04 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1563692647000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1563694577000" id="comment-1563694577000"></a>
+            <div class="comment even" id="comment78">
+
+                So much fun I love these :D Nice work! The use of the colors and textures are great! :)
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://blogs.apache.org/couchdb/entry/couchdb_will_go_multilingual_looking"><b>sporfulcuro1978</b></a>
+
+                on July 21, 2019 at 12:36 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1563694577000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1563696491000" id="comment-1563696491000"></a>
+            <div class="comment odd" id="comment79">
+
+                I love it! Nice job @Hea Lin Kwon 哪个在屠宰场的猪。。。是不是玩的太专注了
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://blogs.apache.org/openejb/entry/how_much_time_have_you"><b>detitimi1983</b></a>
+
+                on July 21, 2019 at 01:08 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1563696491000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1563698411000" id="comment-1563698411000"></a>
+            <div class="comment even" id="comment80">
+
+                S&uacute;per! I love your colours! Really original work
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://blogs.apache.org/click/entry/apache_click_v2_2_0"><b>doubtvedergui1972</b></a>
+
+                on July 21, 2019 at 01:40 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1563698411000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1563702346000" id="comment-1563702346000"></a>
+            <div class="comment odd" id="comment81">
+
+                Wow. Amazing THIS IS INSANE! LOVE IT
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://blogs.apache.org/logging/entry/apache_log4j_2_0_beta9"><b>ghetatanach1970</b></a>
+
+                on July 21, 2019 at 02:45 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1563702346000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1563704362000" id="comment-1563704362000"></a>
+            <div class="comment even" id="comment82">
+
+                 @Eveling Salazar @V&eacute;b&eacute; &reg; @Ramon Li - thank you for your kind comments and support!
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://blogs.apache.org/couchdb/entry/apache_couchdb_1_0_4"><b>dawdticonmi1980</b></a>
+
+                on July 21, 2019 at 03:19 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1563704362000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1563800462000" id="comment-1563800462000"></a>
+            <div class="comment odd" id="comment83">
+
+                It's a great article. 
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://behsazanhost.com/wordpress-hosting.html"><b>هاست وردپرس</b></a>
+
+                on July 22, 2019 at 06:01 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1563800462000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1566404144000" id="comment-1566404144000"></a>
+            <div class="comment even" id="comment84">
+
+                If you want to participate in survey ant win exciting gifts for yourself then you can visit our website onlinesurvey. <a href="http://onlinesurvey.tech/www-survey-walmart-com/">http://onlinesurvey.tech/www-survey-walmart-com/</a>
+
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://onlinesurvey.tech/mycfavisit/"><b>MyCFAVisit</b></a>
+
+                on August 21, 2019 at 09:15 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1566404144000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1569353890000" id="comment-1569353890000"></a>
+            <div class="comment odd" id="comment85">
+
+                In modern world you have no need to travel thousand miles to plunge into the atmosphere of casino and play your favorite games on money. Today you have no need to spend your money at expensive casino services such as food, drinks and tips. Modern technologies allow you to play at web based casinos, which are very similar to the common ones, but you can visit them any time when you have internet access as they are available online.
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://safegamblingcasinos.com/"><b>petrufc4</b></a>
+
+                on September 24, 2019 at 12:38 PM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1569353890000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1570206225000" id="comment-1570206225000"></a>
+            <div class="comment even" id="comment86">
+
+                There are no things more important for roulette players than understanding of game rules and principles of betting. When <a href="https://rouletteonlineart.com/">https://rouletteonlineart.com/</a> you know them you may be sure that sooner or later you will win, but if you have no idea on how to bet at the roulette table, you can meet a lot of problems. Besides, it is also important to have some strategy to bet in roulette game.
+
+
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://rouletteonlineart.com/"><b>tomarapupkina</b></a>
+
+                on October 04, 2019 at 09:23 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1570206225000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1570974246000" id="comment-1570974246000"></a>
+            <div class="comment odd" id="comment87">
+
+                Playing <a href="https://pokercasinosfan.com/">https://pokercasinosfan.com/</a> may be very beneficial as in this game you may easily control situation at the table.
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://pokercasinosfan.com/"><b>MarinaSamoylova</b></a>
+
+                on October 13, 2019 at 06:44 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1570974246000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1571505076000" id="comment-1571505076000"></a>
+            <div class="comment even" id="comment88">
+
+                Here I will teach you how not be a complete loser in poker <a href="http://pokerpromotionsgiant.com/">http://pokerpromotionsgiant.com/</a> game. You should know at least the basic rules and hints to play with your friends or in the neighborhood poker room. It's not fun poems like &quot;My name's Jacqueline, I'm seventeen&quot; but real stuff. So read and learn.
+
+
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://pokerpromotionsgiant.com/"><b>MarkKhudobyak</b></a>
+
+                on October 19, 2019 at 10:11 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1571505076000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1571509684000" id="comment-1571509684000"></a>
+            <div class="comment odd" id="comment89">
+
+                Ruby Rains was born and grew up in typical Texas family that means competition and cards were deep in her blood. Card play was a thing that made the whole family keep together and forget about life problems. Free blackjack <a href="http://pokerrulesguru.com/">http://pokerrulesguru.com/</a> was a favorite game among Ruby's family members. She was smart enough to go to Jefferson University and get degree in psychology and later PhD. She got married to her classmate Jason Simmons and became Ruby Simmons. Her husband was fond of poker and took his wife to local poker rooms with him. That started an era of Ruby as a poker player. But there were so many things about gambling to know! And one of them was comprehension of all game rules. Ruby succeeded in that. Want to be like she is? Check out gambling.com for the top online roulette site reviews, bonus offers, and more.
+
+
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://pokerrulesguru.com/"><b>YefimKryukov</b></a>
+
+                on October 19, 2019 at 11:28 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1571509684000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1572174256000" id="comment-1572174256000"></a>
+            <div class="comment even" id="comment90">
+
+                Interesting post take a look <a href="https://devrant.com/users/dgcustomerfirst">https://devrant.com/users/dgcustomerfirst</a>
+
+
+                <p class="comment-details">
+                Posted by
+                    <b>dgcustomerfirst-com.com</b>
+
+                on October 27, 2019 at 04:04 AM PDT
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1572174256000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1574939506000" id="comment-1574939506000"></a>
+            <div class="comment odd" id="comment91">
+
+                Really nice way to express your experiment, if you free please have look at our site, which is design nicely. But your opinion would be appreciable.
+
+<a href="https://indianfestwishesquotes.blogspot.com">https://indianfestwishesquotes.blogspot.com</a>
+
+Thanks for your Time!
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://inspiringwishes.com"><b>https://inspiringwishes.com</b></a>
+
+                on November 28, 2019 at 03:11 AM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1574939506000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1576400720000" id="comment-1576400720000"></a>
+            <div class="comment even" id="comment92">
+
+                Interesting read, thank you for sharing with us. This is also a good read <a href="https://tech25s.com">https://tech25s.com</a>
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://tech25s.com"><b>Tech 25</b></a>
+
+                on December 15, 2019 at 01:05 AM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1576400720000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1576404177000" id="comment-1576404177000"></a>
+            <div class="comment odd" id="comment93">
+
+                hich is design nicely
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://www.ajorara.ir/service/%d8%a2%d8%ac%d8%b1-%d9%84%d8%b9%d8%a7%d8%a8%db%8c"><b>آجر نما لعابدار اصفهان</b></a>
+
+                on December 15, 2019 at 02:02 AM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1576404177000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1577414188000" id="comment-1577414188000"></a>
+            <div class="comment even" id="comment94">
+
+                nice web design thank you for share this 
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://389sports.org/"><b>https://389sports.org/</b></a>
+
+                on December 26, 2019 at 06:36 PM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1577414188000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1577414247000" id="comment-1577414247000"></a>
+            <div class="comment odd" id="comment95">
+
+                i like your website. it help me alot
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://tunasbola.org/link-alternatif-sbobet/"><b>sbobet</b></a>
+
+                on December 26, 2019 at 06:37 PM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1577414247000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1577414365000" id="comment-1577414365000"></a>
+            <div class="comment even" id="comment96">
+
+                nice website very helpful
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://slotcasino88.com/"><b>http://slotcasino88.com/</b></a>
+
+                on December 26, 2019 at 06:39 PM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1577414365000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1577414398000" id="comment-1577414398000"></a>
+            <div class="comment odd" id="comment97">
+
+                nice architecture of website thanks
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://www.tunaspoker.online/"><b>http://www.tunaspoker.online/</b></a>
+
+                on December 26, 2019 at 06:39 PM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1577414398000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1577943966000" id="comment-1577943966000"></a>
+            <div class="comment even" id="comment98">
+
+                nice blog for flume architecture.
+for more details follow <a href="http://www.greatonlinestore.in/men-fashion/">http://www.greatonlinestore.in/men-fashion/</a>
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://www.greatonlinestore.in/men-fashion/"><b>Akoya</b></a>
+
+                on January 01, 2020 at 09:46 PM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1577943966000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1578502116000" id="comment-1578502116000"></a>
+            <div class="comment odd" id="comment99">
+
+                nice info. 5/5
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://www.tutorialsmate.com/"><b>Free Tutorials</b></a>
+
+                on January 08, 2020 at 08:48 AM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1578502116000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1578502146000" id="comment-1578502146000"></a>
+            <div class="comment even" id="comment100">
+
+                thanks everyone
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://www.tutorialsmate.com/p/frameworks.html"><b>Apache</b></a>
+
+                on January 08, 2020 at 08:49 AM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1578502146000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1579417106000" id="comment-1579417106000"></a>
+            <div class="comment odd" id="comment101">
+
+                Hey really nice article by apache fashion <a href="https://bestwalletformen.com/">https://bestwalletformen.com/</a>
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://bestwalletformen.com/"><b>Wallet Men </b></a>
+
+                on January 18, 2020 at 10:58 PM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1579417106000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1579442482000" id="comment-1579442482000"></a>
+            <div class="comment even" id="comment102">
+
+                It great thought, you must be an expert in your coding. Thanks for Sharing
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://wolarseo.booklikes.com/"><b>Different Type Of SEO</b></a>
+
+                on January 19, 2020 at 06:01 AM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1579442482000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1579515169000" id="comment-1579515169000"></a>
+            <div class="comment odd" id="comment103">
+
+                Related Article By Meetanshi <a href="https://meetanshi.com/blog/install-magento-2-on-localhost-using-xampp/">https://meetanshi.com/blog/install-magento-2-on-localhost-using-xampp/</a>
+<a href="https://meetanshi.com/">https://meetanshi.com/</a>
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://meetanshi.com/"><b>Andrew</b></a>
+
+                on January 20, 2020 at 02:12 AM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1579515169000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1579705727000" id="comment-1579705727000"></a>
+            <div class="comment even" id="comment104">
+
+                hi new post
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://napconline.org/www-biglotssurvey-com-big-lots-survey/"><b>napconline</b></a>
+
+                on January 22, 2020 at 07:08 AM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1579705727000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1580175336000" id="comment-1580175336000"></a>
+            <div class="comment odd" id="comment105">
+
+                Thank you. 
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://www.vip-taxi.at"><b>Merlin</b></a>
+
+                on January 27, 2020 at 05:35 PM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1580175336000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1580175576000" id="comment-1580175576000"></a>
+            <div class="comment even" id="comment106">
+
+                Programming is hard nowadays guys. 
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://www.vip-taxi.at/mobile"><b>Merlin</b></a>
+
+                on January 27, 2020 at 05:39 PM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1580175576000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1580175642000" id="comment-1580175642000"></a>
+            <div class="comment odd" id="comment107">
+
+                Still looking forward. 
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://www.brilliant-clean.at"><b>Merlin</b></a>
+
+                on January 27, 2020 at 05:40 PM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1580175642000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1580350524000" id="comment-1580350524000"></a>
+            <div class="comment even" id="comment108">
+
+                Very decent work! I did notice that there is a typo (I believe) in one of the animated sequences. no doubt these are all great designs, smart and natural <a href="http://clarenceusa.bravesites.com/">http://clarenceusa.bravesites.com/</a>
+<a href="https://cullencanada.tumblr.com/">https://cullencanada.tumblr.com/</a>
+<a href="https://armanionlineusa.webnode.com/">https://armanionlineusa.webnode.com/</a>
+<a href="https://adysononline.shutterfly.com/">https://adysononline.shutterfly.com/</a>
+The web design is fantastic.
+
+                <p class="comment-details">
+                Posted by
+                    <b>Florida</b>
+
+                on January 29, 2020 at 06:15 PM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1580350524000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1580380115000" id="comment-1580380115000"></a>
+            <div class="comment odd" id="comment109">
+
+                Thank you, is work.
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://www.sbobethub.com/"><b>Sbobethub</b></a>
+
+                on January 30, 2020 at 02:28 AM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1580380115000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1580603643000" id="comment-1580603643000"></a>
+            <div class="comment even" id="comment110">
+
+                Moving within/from Vancouver, (North, West, East) BC? We&rsquo;re here for all your moving, packing, and storage needs. <a href="https://www.1promovingandshipping.com/">https://www.1promovingandshipping.com/</a> At 1 Pro, our movers have extensive experience moving people and their belongings within and out of the area. 
+
+                <p class="comment-details">
+                Posted by
+                    <b>Vancouver</b>
+
+                on February 01, 2020 at 04:34 PM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1580603643000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1580817757000" id="comment-1580817757000"></a>
+            <div class="comment odd" id="comment111">
+
+                Related Article By Magento Store Manager <a href="https://www.mag-manager.com/useful-articles/about-magento-shopping-cart/how-to-install-magento-on-localhost-like-xampp/">https://www.mag-manager.com/useful-articles/about-magento-shopping-cart/how-to-install-magento-on-localhost-like-xampp/</a>
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://www.mag-manager.com/useful-articles/about-magento-shopping-cart/how-to-install-magento-on-localhost-like-xampp/"><b>alex</b></a>
+
+                on February 04, 2020 at 04:02 AM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1580817757000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1580916467000" id="comment-1580916467000"></a>
+            <div class="comment even" id="comment112">
+
+                good post
+thank you
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="http://bit.ly/2r6qaty"><b>agahi rayegan</b></a>
+
+                on February 05, 2020 at 07:27 AM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1580916467000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1581146428000" id="comment-1581146428000"></a>
+            <div class="comment odd" id="comment113">
+
+                Interesting read, thank you for sharing with us. 
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://www.magespark.com/hire-magento-developer.html"><b>Eric Wurfel</b></a>
+
+                on February 07, 2020 at 11:20 PM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1581146428000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1581146467000" id="comment-1581146467000"></a>
+            <div class="comment even" id="comment114">
+
+                Interesting read, thank you for sharing with us. 
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://www.magespark.com/hire-magento-developer.html"><b>Eric Wurfel</b></a>
+
+                on February 07, 2020 at 11:21 PM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1581146467000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1581146672000" id="comment-1581146672000"></a>
+            <div class="comment odd" id="comment115">
+
+                Nice Information. always helpful content.
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://www.magespark.com/magento-2-migration-service.html"><b>Susanne Eisenhauer</b></a>
+
+                on February 07, 2020 at 11:24 PM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1581146672000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1581471935000" id="comment-1581471935000"></a>
+            <div class="comment even" id="comment116">
+
+                Amazing designs! Your custom cabinets are flawless. <a href="http://stpeterandbrotherrod.ca/">http://stpeterandbrotherrod.ca/</a>
+
+                <p class="comment-details">
+                Posted by
+                    <b>Maple Ridge</b>
+
+                on February 11, 2020 at 05:45 PM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1581471935000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1581472079000" id="comment-1581472079000"></a>
+            <div class="comment odd" id="comment117">
+
+                These useful concepts help in simplifying the whole towing and removal process. <a href="https://nobletowing.ca/">https://nobletowing.ca/</a>
+
+                <p class="comment-details">
+                Posted by
+                    <b>Vancouver </b>
+
+                on February 11, 2020 at 05:47 PM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1581472079000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1581472211000" id="comment-1581472211000"></a>
+            <div class="comment even" id="comment118">
+
+                Thank you Flume. My goal with the website <a href="https://psychictoronto.ca/">https://psychictoronto.ca/</a> is to provide a distributed, reliable, and available system for efficiently predicting the future!.
+
+                <p class="comment-details">
+                Posted by
+                    <b>Toronto</b>
+
+                on February 11, 2020 at 05:50 PM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1581472211000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1581472382000" id="comment-1581472382000"></a>
+            <div class="comment odd" id="comment119">
+
+                Amazing local SEO project, I approve of it!
+<a href="http://co60q.esa.int/Lists/ESTEC%20Co60%20Customer%20Satisfaction/DispForm.aspx?ID=1175">http://co60q.esa.int/Lists/ESTEC%20Co60%20Customer%20Satisfaction/DispForm.aspx?ID=1175</a>
+
+                <p class="comment-details">
+                Posted by
+                    <b>Nanaimo</b>
+
+                on February 11, 2020 at 05:53 PM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1581472382000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1581487229000" id="comment-1581487229000"></a>
+            <div class="comment even" id="comment120">
+
+                Hey, It's Great to read about this. <a href="https://magecomp.com/magento-2-extensions.html">https://magecomp.com/magento-2-extensions.html</a>
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://magecomp.com/"><b>Gaurav Jain</b></a>
+
+                on February 11, 2020 at 10:00 PM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1581487229000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1581488280000" id="comment-1581488280000"></a>
+            <div class="comment odd" id="comment121">
+
+                Hey, Thanks for posting about this. 
+<a href="https://magecomp.com/">https://magecomp.com/</a>
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://magecomp.com/"><b>Zoya Scoot</b></a>
+
+                on February 11, 2020 at 10:18 PM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1581488280000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1581736360000" id="comment-1581736360000"></a>
+            <div class="comment even" id="comment122">
+
+                nice post, I learned alot! 
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://www.getzq.com"><b>GetZQ protocol</b></a>
+
+                on February 14, 2020 at 07:12 PM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1581736360000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1581736434000" id="comment-1581736434000"></a>
+            <div class="comment odd" id="comment123">
+
+                Cool place! 
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://www.getzq.com/p/submit-to-getzq.html"><b>add website</b></a>
+
+                on February 14, 2020 at 07:13 PM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1581736434000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1581965906000" id="comment-1581965906000"></a>
+            <div class="comment even" id="comment124">
+
+                Thank you for your consideration <a href="https://www.1promovingandshipping.com/office-moving/">https://www.1promovingandshipping.com/office-moving/</a> and yes, there are way too many local office movers in bc.
+
+                <p class="comment-details">
+                Posted by
+                    <b>Burnaby BC</b>
+
+                on February 17, 2020 at 10:58 AM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1581965906000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1582114619000" id="comment-1582114619000"></a>
+            <div class="comment odd" id="comment125">
+
+                Even if you &quot;only&quot; have Gestational Diabetes, it is especially important for you to monitor your blood glucose levels. Your baby will be impacted by the slightest peak you might have as the insulin does cross the placenta, so make sure to keep your levels even so your baby will grow normally.
+[<a href="https://www.lucktest.in/ResultChart.php](play">https://www.lucktest.in/ResultChart.php](play</a> bazaar)
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://www.lucktest.in/resultchart.php"><b>Play Bazaar</b></a>
+
+                on February 19, 2020 at 04:16 AM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1582114619000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1582114704000" id="comment-1582114704000"></a>
+            <div class="comment even" id="comment126">
+
+                Smoking is dangerous for anybody, but it is even mroe problematic for diabetics. Having this habit will expose you to a lot of unhealthy effects. When you smoke it makes your insulin resistant and if you are not already diabetic, it will increase your risk for developing type 2 diabetes.
+(play bazaar)[<a href="https://www.lucktest.in/ResultChart.php]">https://www.lucktest.in/ResultChart.php]</a>
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://www.lucktest.in/resultchart.php"><b>Play Bazaar</b></a>
+
+                on February 19, 2020 at 04:18 AM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1582114704000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+            <a name="comment-1582204281000" id="comment-1582204281000"></a>
+            <div class="comment odd" id="comment127">
+
+                The content of your article page is very good, I find the content quite good and helpful to me, thank you for
+
+                <p class="comment-details">
+                Posted by
+                    <a rel="nofollow" href="https://ghdsportsapk.com/"><b>Download GHD SPORTS</b></a>
+
+                on February 20, 2020 at 05:11 AM PST
+
+                <a href="https://blogs.apache.org/flume/entry/flume_ng_architecture#comment-1582204281000"
+                   class="entrypermalink" title="comment permalink">#</a>
+                </p>
+
+            </div>
+
+    </div>
+
+    <div class="comments-form">
+    <div class="comments-head">Post a Comment:</div>
+    <a name="comment-form"></a>
+
+    <span class="status">Comments are closed for this entry.</span>
+    </div>
+
+  </div>
+</div>
+
+<div class="rightbar_wrapper">
+  <div class="rightbar">
+
+    <h2>Calendar</h2>
+    <div class="sidebar">
+<table cellspacing="0" border="0"  summary="Blog Archive Calendar" class="hCalendarTable"><tr><td colspan="7" align="center" class="hCalendarMonthYearRow"><a href="/flume/date/201301" title="Prev" class="hCalendarNavBar">&laquo;</a> May 2022</td></tr><tr><th class="hCalendarDayNameRow" align="center">Sun</th><th class="hCalendarDayNameRow" align="center">Mon</th><th class="hCalendarDayNameRow" align="center">Tue</th><th class="hCalendarDayNameRow" align="center">Wed</th><th class="hCalendarDayNameRow" align="center">Thu</th><th class="hCalendarDayNameRow" align="center">Fri</th><th class="hCalendarDayNameRow" align="center">Sat</th></tr><tr><td class="hCalendarDay"><div class="hCalendarDayTitle">1</div></td><td class="hCalendarDay"><div class="hCalendarDayTitle">2</div></td><td class="hCalendarDay"><div class="hCalendarDayTitle">3</div></td><td class="hCalendarDay"><div class="hCalendarDayTitle">4</div></td><td class="hCalendarDay"><div class="hCalendarDayTitle">5</div></td><td class="hCalendarDay"><div class="hCalendarDayTitle">6</div></td><td class="hCalendarDay"><div class="hCalendarDayTitle">7</div></td></tr><tr><td class="hCalendarDay"><div class="hCalendarDayTitle">8</div></td><td class="hCalendarDay"><div class="hCalendarDayTitle">9</div></td><td class="hCalendarDay"><div class="hCalendarDayTitle">10</div></td><td class="hCalendarDay"><div class="hCalendarDayTitle">11</div></td><td class="hCalendarDay"><div class="hCalendarDayTitle">12</div></td><td class="hCalendarDay"><div class="hCalendarDayTitle">13</div></td><td class="hCalendarDay"><div class="hCalendarDayTitle">14</div></td></tr><tr><td class="hCalendarDay"><div class="hCalendarDayTitle">15</div></td><td class="hCalendarDay"><div class="hCalendarDayTitle">16</div></td><td class="hCalendarDay"><div class="hCalendarDayTitle">17</div></td><td class="hCalendarDay"><div class="hCalendarDayTitle">18</div></td><td class="hCalendarDay"><div class="hCalendarDayTitle">19</div></td><td class="hCalendarDay"><div class="hCalendarDayTitle">20</div></td><td class="hCalendarDay"><div class="hCalendarDayTitle">21</div></td></tr><tr><td class="hCalendarDay"><div class="hCalendarDayTitle">22</div></td><td class="hCalendarDay"><div class="hCalendarDayTitle">23</div></td><td class="hCalendarDay"><div class="hCalendarDayTitle">24</div></td><td class="hCalendarDay"><div class="hCalendarDayTitle">25</div></td><td class="hCalendarDayCurrent"><div class="hCalendarDayTitle">26</div></td><td class="hCalendarDay"><div class="hCalendarDayTitle">27</div></td><td class="hCalendarDay"><div class="hCalendarDayTitle">28</div></td></tr><tr><td class="hCalendarDay"><div class="hCalendarDayTitle">29</div></td><td class="hCalendarDay"><div class="hCalendarDayTitle">30</div></td><td class="hCalendarDay"><div class="hCalendarDayTitle">31</div></td><td class="hCalendarDayNotInMonth">&nbsp;</td><td class="hCalendarDayNotInMonth">&nbsp;</td><td class="hCalendarDayNotInMonth">&nbsp;</td><td class="hCalendarDayNotInMonth">&nbsp;</td></tr><tr><td class="hCalendarDayNotInMonth">&nbsp;</td><td class="hCalendarDayNotInMonth">&nbsp;</td><td class="hCalendarDayNotInMonth">&nbsp;</td><td class="hCalendarDayNotInMonth">&nbsp;</td><td class="hCalendarDayNotInMonth">&nbsp;</td><td class="hCalendarDayNotInMonth">&nbsp;</td><td class="hCalendarDayNotInMonth">&nbsp;</td></tr><tr class="hCalendarNextPrev"><td colspan="7" align="center"><a href="/flume/" class="hCalendarNavBar">Today</a></td></tr></table>
+    </div>
+
+    <h2>Search</h2>
+    <div class="sidebar">
+    <form id="searchForm" method="get" action="/flume/search" style="margin: 0; padding: 0" onsubmit="return validateSearch(this)">
+        <p>
+          <input type="text" id="q" name="q" size="10" class="text small" maxlength="255" value="" />
+          <input type="submit" class="button" value="Search" id="searchbutton" />
+        </p>
+    </form>
+    <script>
+        function validateSearch(form) {
+            if (form.q.value == "") {
+                alert("Please enter a search term to continue.");
+                form.q.focus();
+                return false;
+            }
+            return true;
+        }
+    </script>
+    </div>
+
+    <h2>Hot Blogs (today's hits)</h2>
+    <div class="sidebar">
+    <div class="hotblogs">
+    <ul>
+    </ul>
+    </div>
+    </div>
+
+    <h2>Tag Cloud</h2>
+    <div class="sidebar">
+       <a class="tag s5" href="https://blogs.apache.org/flume/tags/flume" title="4">
+         flume
+       </a>
+       <a class="tag s4" href="https://blogs.apache.org/flume/tags/flume-ng" title="3">
+         flume-ng
+       </a>
+       <a class="tag s1" href="https://blogs.apache.org/flume/tags/hackathon" title="1">
+         hackathon
+       </a>
+       <a class="tag s3" href="https://blogs.apache.org/flume/tags/hadoop" title="2">
+         hadoop
+       </a>
+       <a class="tag s1" href="https://blogs.apache.org/flume/tags/hbase" title="1">
+         hbase
+       </a>
+       <a class="tag s1" href="https://blogs.apache.org/flume/tags/performance" title="1">
+         performance
+       </a>
+    </div>
+
+    <h2> Categories</h2>
+    <div class="sidebar">
+    <ul class="rCategory">
+        <li><a href="https://blogs.apache.org/flume/">All</a></li>
+            <li class="selected"><a href="https://blogs.apache.org/flume/category/General">General</a></li>
+            <li><a href="https://blogs.apache.org/flume/category/Status">Status</a></li>
+            <li><a href="https://blogs.apache.org/flume/category/Music">Music</a></li>
+    </ul>
+    </div>
+
+    <h2>Feeds</h2>
+    <div class="sidebar">
+    <ul class="rFeeds">
+    <li><a href="https://blogs.apache.org/flume/feed/entries/atom">All</a></li>
+        <li><a href="https://blogs.apache.org/flume/feed/entries/atom?cat=General">General</a></li>
+        <li><a href="https://blogs.apache.org/flume/feed/entries/atom?cat=Status">Status</a></li>
+        <li><a href="https://blogs.apache.org/flume/feed/entries/atom?cat=Music">Music</a></li>
+    <li><a href="https://blogs.apache.org/flume/feed/comments/atom">Comments</a></li>
+    </ul>
+    </div>
+
+    <h2>Links</h2>
+    <div class="sidebar">
+<ul class="rFolder">
+        <li class="rFolderItem">
+            <a href="http://apache.org" title="">Apache Software Foundation</a>
+        </li>
+        <li class="rFolderItem">
+            <a href="http://roller.apache.org" title="">Apache Roller Project</a>
+        </li>
+</ul>
+    </div>
+
+    <h2>Navigation</h2>
+    <div class="sidebar">
+    <ul class="rNavigationBar">
+        <li class="rNavItem">
+            <a href="/"><span>ASF Blogs</span></a>
+        </li>
+        <li class="rNavItem">
+            <a href="https://blogs.apache.org/flume/"><span>Weblog</span></a>
+        </li>
+                <li class="rNavItem">
+                    <a href="/roller-ui/login-redirect.rol"><span>Login</span></a>
+                </li>
+    </ul>
+
+
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>
+

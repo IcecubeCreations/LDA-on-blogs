@@ -1,0 +1,963 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="This brief article looks at the concept of Apache Kafka Queuing as well as explore, in detail, Kafka as a messaging system. Look at the need for Kafka queuing.">
+  <meta name="keywords" content="kafka">
+
+  <meta property="og:description" content="This brief article looks at the concept of Apache Kafka Queuing as well as explore, in detail, Kafka as a messaging system. Look at the need for Kafka queuing.">
+  <meta property="og:site_name" content="dzone.com">
+  <meta property="og:title" content="Kafka Queuing: Kafka as a Messaging System - DZone Integration">
+  <meta property="og:url" content="https://dzone.com/articles/kafka-queuing-kafka-as-a-messaging-system">
+  <meta property="og:image" content="https://dz2cdn3.dzone.com/storage/article-thumb/10290390-thumb.jpg">
+  <meta property="og:type" content="article">
+
+  <meta name="twitter:site" content="@DZoneInc">
+  <meta name="twitter:image" content="https://dz2cdn3.dzone.com/storage/article-thumb/10290390-thumb.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:description" content="This brief article looks at the concept of Apache Kafka Queuing as well as explore, in detail, Kafka as a messaging system. Look at the need for Kafka queuing.">
+  <meta name="twitter:title" content="Kafka Queuing: Kafka as a Messaging System - DZone Integration">
+
+  <meta name="referrer" content="origin-when-cross-origin">
+  <meta name="google-site-verification" content="kndbhxcupfEqWmZclhCpB6vlgOs7QSmx2UHAGGnP2mA">
+  <meta name="df-verify" content="df0d76632b4543">
+
+  <link rel="icon" type="image/x-icon" href="https://dz2cdn1.dzone.com/themes/dz20/images/favicon.png">
+  <link rel="image_src" href="https://dz2cdn3.dzone.com/storage/article-thumb/10290390-thumb.jpg">
+  <link rel="canonical" href="https://dzone.com/articles/kafka-queuing-kafka-as-a-messaging-system">
+
+  <title>Kafka Queuing: Kafka as a Messaging System - DZone Integration</title>
+
+  <link rel="preload" href="https://fonts.dzone.com/themes/dz20/font/fontello.woff?11773374" as="font" type="font/woff" crossorigin="anonymous">
+
+  <link rel="stylesheet" media="all" href="https://dz2cdn1.dzone.com/themes/dz20/ftl/icons.css">
+  <link rel="stylesheet" media="all" href="https://dz2cdn1.dzone.com/themes/dz20/lib/static/bootstrap/bootstrap.min.css">
+  <link rel="stylesheet" media="all" href="https://dz2cdn1.dzone.com/themes/dz20/ftl/article/global.css">
+  <link rel="stylesheet" media="all" href="https://dz2cdn1.dzone.com/themes/dz20/ftl/header/styles.css">
+</head>
+<body>
+<div id="ftl-header">
+  <div class="container-fluid header">
+    <div class="row">
+      <div class="col-md-12" style="padding: 0;">
+        <div class="header-top">
+          <div class="header-container">
+            <div class="pull-left logo-container">
+              <div class="logo">
+                <a class="inner" href="/">
+                  <picture>
+                    <source srcset="https://dz2cdn1.dzone.com/themes/dz20/images/dz_logo_2021_cropped.webp" type="image/webp">
+                    <source srcset="https://dz2cdn1.dzone.com/themes/dz20/images/dz_logo_2021_cropped.png" type="image/png">
+                    <img src="https://dz2cdn1.dzone.com/themes/dz20/images/dz_logo_2021_cropped.png" width="160" height="52" alt="DZone">
+                  </picture>
+                </a>
+              </div>
+
+                <div class="active-portal"><a href="/enterprise-integration-training-tools-news">Integration Zone</a></div>
+            </div>
+
+            <div class="pull-right login-and-search">
+              <div id="authenticated-block" class="logged-in">
+                <div class="welcome-back">Thanks for visiting DZone today,</div>
+                <div id="user-header" class="user-info">
+                  <button class="user-avatar">
+                    <span id="header-username" class="username"></span>
+                    <img id="header-avatar" src="" alt="user avatar">
+                  </button>
+                  <div id="user-dropdown" class="browse-user-menu">
+                    <div class="user-content">
+                      <a id="header-user-plug" href="#" class="user-description"></a>
+                      <a id="header-user-edit" href="#" class="edit-profile">Edit Profile</a>
+                    </div>
+                    <ul class="user-actions">
+                      <li id="first-user-action"><a id="header-dropdown-manage-email" href="#">Manage Email Subscriptions</a></li>
+                      <li>
+                        <a href="/articles/how-to-submit-a-post-to-dzone?utm_source=DZone&utm_medium=user_dropdown&utm_campaign=how_to_post">
+                          How to Post to DZone
+                        </a>
+                      </li>
+                      <li>
+                        <a href="/articles/dzones-article-submission-guidelines">
+                          Article Submission Guidelines
+                        </a>
+                      </li>
+                    </ul>
+                    <div class="bottom">
+                      <a href="/users/logout.html" class="sign-out">Sign Out</a>
+                      <a id="dropdown-view-profile" href="#" class="view-profile">View Profile</a>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="post-content">
+                  <button id="post-button" class="post-content--button">
+                    <span class="post-class">Post</span>
+                    <i class="icon-plus"></i>
+                  </button>
+
+                  <div id="post-menu" class="posting-links">
+                    <div class="posting-links-menu">
+                      <ul>
+                        <li>
+                          <img src="/themes/dz20/images/dz-postarticle.svg">
+                          <a href="/content/article/post.html">Post an Article</a>
+                        </li>
+                        <li>
+                          <a id="drafts-link" href="#">Manage My Drafts</a>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div id="unauthenticated-block">
+                <div class="dz-intro">Over 2 million developers have joined DZone.</div>
+                <div class="mobile-invisible sign-in-join">
+                  <a href="/users/login.html">Log In</a>
+                  <span class="dz-intro-span">/</span>
+                  <a href="/static/registration.html">Join</a>
+                </div>
+                <a class="join-icon" href="/users/login.html"><i class="icon-user"></i></a>
+              </div>
+              <div class="headerSearch">
+                <a class="icon-search dropdown-toggle" href="/search"></a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="header-bottom">
+
+
+          <ul class="portals header-container scrollable-ul">
+            <li>
+              <a href="/refcardz" id="header-refcardz">
+                <em>Refcardz</em>
+              </a>
+            </li>
+            <li>
+              <a href="/trendreports" id="header-research">
+                <em>Trend Reports</em>
+              </a>
+            </li>
+            <li>
+              <a href="/webinars" id="header-webinars">
+                <em>Webinars</em>
+              </a>
+            </li>
+            <li class="last-portal-link">
+              <a href="#" id="header-portals">
+                <em>
+                  Zones
+                  <span id="zone-arrow" class="collapsible-toggle">
+                    <i class="icon-angle-down"></i>
+                    <i class="icon-angle-up"></i>
+                  </span>
+                </em>
+              </a>
+            </li>
+
+            <li class="separator" aria-hidden="true" style="color: #d9dcdd;">|</li>
+            <li id="portal-list" class="portal-topics">
+              <ul>
+                  <li>
+                    <a href="/agile-methodology-training-tools-news" id="header-2">Agile</a>
+                  </li>
+                  <li>
+                    <a href="/artificial-intelligence-tutorials-tools-news" id="header-4001">AI</a>
+                  </li>
+                  <li>
+                    <a href="/big-data-analytics-tutorials-tools-news" id="header-3">Big Data</a>
+                  </li>
+                  <li>
+                    <a href="/cloud-computing-tutorials-tools-news" id="header-4">Cloud</a>
+                  </li>
+                  <li>
+                    <a href="/database-sql-nosql-tutorials-tools-news" id="header-5">Database</a>
+                  </li>
+                  <li>
+                    <a href="/devops-tutorials-tools-news" id="header-6">DevOps</a>
+                  </li>
+                  <li>
+                    <a href="/enterprise-integration-training-tools-news" id="header-7">Integration</a>
+                  </li>
+                  <li>
+                    <a href="/iot-developer-tutorials-tools-news-reviews" id="header-8">IoT</a>
+                  </li>
+                  <li>
+                    <a href="/java-jdk-development-tutorials-tools-news" id="header-1">Java</a>
+                  </li>
+                  <li>
+                    <a href="/microservices-news-tutorials-tools" id="header-6001">Microservices</a>
+                  </li>
+                  <li>
+                    <a href="/open-source-news-tutorials-tools" id="header-7001">Open Source</a>
+                  </li>
+                  <li>
+                    <a href="/apm-tools-performance-monitoring-optimization" id="header-10">Performance</a>
+                  </li>
+                  <li>
+                    <a href="/application-web-network-security" id="header-2001">Security</a>
+                  </li>
+                  <li>
+                    <a href="/web-development-programming-tutorials-tools-news" id="header-11">Web Dev</a>
+                  </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script async src="https://dz2cdn1.dzone.com/themes/dz20/ftl/header/bundle.js"></script><link rel="stylesheet" media="all" href="https://dz2cdn1.dzone.com/themes/dz20/ftl/article/styles.css">
+
+
+
+
+<div id="ftl-article" >
+  <div class="container-fluid body">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="articles-wrap">
+              <div class="ad-container">
+                <div id="div-gpt-ad-1435246566686-0" class="ads-billboard-article" data-gpt-slot="top"></div>
+              </div>
+
+
+          <div class="article-stream widget-top-border">
+                <div class="content-right-images">
+                  <div id="div-gpt-ad-1435246566686-2" class="sidebar-ad" data-gpt-desktop="true" data-gpt-slot="sidebar1"></div>
+                </div>
+
+                <script type="application/ld+json">
+                  {
+                    "@context": "http://schema.org",
+                    "@type": "Article",
+                    "headline": "Kafka Queuing: Kafka as a Messaging System",
+                    "author": {
+                      "@type": "Person",
+                      "name": "Rinu Gour"
+                    },
+                    "audience": "software developers",
+                    "keywords": "kafka,apache,integration,messaging system,kafka queuing,machine learning",
+                    "timeRequired": "PT4M",
+                    "commentCount": 1,
+                    "wordCount": "783",
+                    "accessMode": "textual, visual",
+                    "dateCreated": "2018-09-24T09:04:01Z",
+                    "datePublished": "2018-09-24T00:00:00Z",
+                    "dateModified": "2019-07-03T08:36:24Z",
+                    "articleSection": "enterprise-integration-training-tools-news",
+                    "publisher": {
+                      "@type": "Organization",
+                      "name": "DZone",
+                      "url": "https://dzone.com",
+                      "logo": {
+                        "@type": "ImageObject",
+                        "url": "https://dzone.com/themes/dz20/images/dz_logo_2021_cropped.png"
+                      }
+                    },
+                    "articleBody": "Objective In this article, we will learn the concept of Apache Kafka Queuing. Basically, Queuing in Kafka is one of the models for messaging traditionally. So, let’s begin with the brief introduction to Kafka as a Messaging System, which will help us to understand Kafka Queuing. Moreover, we will see some of the applications of Kafka Queue to clear the concept better. Kafka as a Messaging System There are two models for messaging traditionally, such as Kafka queuing and publish-subscribe in Kafka. Let’s discuss both Kafka models in detail: Kafka Queue In this Kafka messaging system, a pool of Kafka consumers may read from a server. Also, each record goes to one of them here. It has some strengths as well as some weakness. Its strength is that it permits us to divide up the processing of data over multiple consumer instances, that help us scale our processing. But its weakness is, it is not multi-subscriber, as soon as one process reads the data it’s gone. Kafka Publish-Subscribe Whereas in this Kafka Publish-Subscribe system, the record is broadcast to all the Kafka consumers. It permits us to broadcast data to multiple processes. However, it also has some limitations, like there is no way of scaling processing because here every message goes to every subscriber. In Kafka, these two concepts are generalized by the Kafka consumer group. However, the consumer group in Kafka permits us to divide up processing over a collection of processes, with a Kafka queue. Here the collection of processes refers to the members of the consumer group. Moreover, Kafka permits us to broadcast messages to multiple consumer groups, with Kafka publish-subscribe. So, the main benefit of Kafka’s model is both these properties are available in every Kafka topic —it can scale processing as well as it is multi-subscriber. Hence, that implies we do not have to select one or the other. Kafka has stronger ordering guarantees than a traditional messaging system, too. Since there is no parallelism in the processing in the traditional system, Kafka performs it well with the notion of parallelism. Because Kafka can offer both ordering guarantees and load balancing over a pool of consumer processes. Need for Kafka Queuing One of Kafka Queuing application is Microservice architecture. It essentially demands some sort of message queuing system. Let’s understand microservice architecture first. It is a concept of decoupling an interconnected monolithic application into different independent modules as well as external data sources along with APIs. Thus, for the purpose of handling microservices-external-source and inter-microservice and communications, Message queuing comes into the picture. In addition, while we divide a big monolithic application into smaller, microservices (loosely-coupled), at that time the REST API calls increases which are amongst those microservices, and the number of connections to external data sources also increases. However, keeping this huge system synchronous is not desirable, because it can render the entire application unresponsive. Also, it can defeat the whole purpose of dividing into microservices in the first place. Hence, having Kafka at that time makes the whole data flow easier. Because it is distributed, highly fault-tolerant and also it has constant monitoring of broker nodes through services like Zookeeper. So, it makes it efficient to work. Message Queuing in ML Solutions Pipeline Apart from that, we can also use Kafka queuing for the various ML solution pipelines. However, ML solutions are built as: A user interface (on the client side, mobile/web) — →An API server and the database — →Machine learning (blackbox). However, ML black box is very compute-heavy and also it’s not practically easy to have those requests on a blocking synchronous mode. Moreover, all the requests can be in a queue and configure consumer API to take those requests one by one and feed them into the ML black box, in this scenario. So, while it comes to compute-intensive tasks, this pipeline can easily handle such as recognizing objects from thousands of images, that might take considerable time even without missing any requests. Basically, microservices deployed into containers, such as by fault-tolerant distributed clusters of Kafka broker nodes it is mediated and using a Zookeeper it monitors it, which seems like a new way of enterprising software development. So, this was all about Kafka Queuing: Kafka as a messaging system. Hope you like our explanation. Conclusion Hence, we have seen the complete concept of Kafka Queuing. Moreover, we discussed why Kafka as a message queuing. Along with this, we learned the two models- Kafka queue and Kafka publish-subscribe. Also, we saw why we need Kafka Queuing. Lastly, we discussed message queuing in ML solution pipeline. However, if any query occurs regarding Queuing in Kafka, feel free to ask through the comment section.",
+                    "mainEntityOfPage": {
+                      "@type": "WebPage",
+                      "@id": "https://dzone.com/articles/kafka-queuing-kafka-as-a-messaging-system"
+                    },
+                    "image": {
+                      "@type": "ImageObject",
+                      "url": "https://dzone.com//dz2cdn3.dzone.com/storage/article-thumb/10290390-thumb.jpg"
+                    }
+                  }
+                </script>
+
+                  <script type="application/ld+json">
+                    {
+                      "@context": "https://schema.org",
+                      "@type": "BreadcrumbList",
+                      "itemListElement": [{
+                        "@type": "ListItem",
+                        "position": 1,
+                        "name": "DZone",
+                        "item": "https://dzone.com"
+                      }, {
+                        "@type": "ListItem",
+                        "position": 2,
+                        "name": "Integration Zone",
+                        "item": "https://dzone.com/enterprise-integration-training-tools-news"
+                      }, {
+                        "@type": "ListItem",
+                        "position": 3,
+                        "name": "Kafka Queuing: Kafka as a Messaging System",
+                        "item": "https://dzone.com/articles/kafka-queuing-kafka-as-a-messaging-system"
+                      }]
+                    }
+                  </script>
+
+            <article>
+              <div class="content">
+                <div class="header">
+                  <div class="col-xs-12 breadcrumb-padding">
+                    <a href="/">DZone</a>
+                    >
+                      <a href="/enterprise-integration-training-tools-news">Integration Zone</a>
+                      >
+                      <a href="#">Kafka Queuing: Kafka as a Messaging System</a>
+                  </div>
+
+
+                  <div class="header-title">
+                    <div class="title">
+                      <h1 class="article-title">Kafka Queuing: Kafka as a Messaging System</h1>
+                    </div>
+
+                    <div class="subhead">
+                      <h3>In this article, we will learn the concept of Apache Kafka Queuing and explore Kafka as a messaging system.</h3>
+                    </div>
+
+                    <div class="publish-meta">
+                        <div class="article-author-meta">
+                          <img src="https://dz2cdn1.dzone.com/thumbnail?fid=10167935&w=80" class="avatar" alt="Rinu Gour user avatar" width="40">
+                          by
+
+                          <div class="author-info">
+                            <span class="author-name">
+                              <a href="/users/3416227/rinu.html" rel="nofollow">Rinu Gour</a>
+                            </span>
+                          </div>
+
+
+
+
+                          &middot;
+                        </div>
+                      <span class="author-date">
+                        Sep. 24, 18
+                      </span>
+                      &middot;
+                        <a href="/enterprise-integration-training-tools-news" id="portal-name">
+                          <span class="portal-name">Integration Zone</span>
+                        </a>
+                      &middot;
+                      <span>Opinion</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="author-n-useraction">
+                  <div class="like action">
+                    <div id="activity-like-icon" class="dz-like icon-thumbs-up">
+                      <span class="action-label">
+                        <span id="activity-like-text">Like</span>
+                      </span>
+                      <a href="#">
+                        <span id="activity-like-counter">(4)</span>
+                      </a>
+                    </div>
+                  </div>
+
+                  <div class="action">
+
+                    <button class="comment">
+                      <i class="icon-comment"></i>
+                      Comment
+                      <span id="activity-comment-counter" class="comment-count"></span>
+                    </button>
+                  </div>
+
+                  <div class="save action">
+                    <div id="activity-save-icon" class="save icon-star-empty">
+                      <span id="activity-save-text" class="action-label">Save</span>
+                    </div>
+                  </div>
+
+                  <div class="tweet action">
+                    <a id="tweet-link" href="" class="title" target="_blank">
+                      <span><i class="icon-twitter"></i></span>
+                      <span class="action-label">Tweet</span>
+                    </a>
+                  </div>
+
+                  <div class="pull-right">
+                    <div id="activity-view-container" class="article-views action">
+                      <i class="icon-eye"></i> 45.25K
+                      <span class="action-label">Views</span>
+                    </div>
+                  </div>
+                </div>
+
+                    <div class="signin-prompt">
+                      <p>Join the DZone community and get the full member experience.</p>
+                      <a id="article-signin-prompt" href="/static/registration.html">Join For Free</a>
+                    </div>
+                    <div class="arrow-down"></div>
+
+                  <div id="top-bumper-container"></div>
+
+                <div>
+                  <div class="content-html"><h2>Objective</h2> 
+<p pid="48">In this article, we will learn the concept of <a href="https://data-flair.training/blogs/apache-kafka-tutorial/" target="_blank">Apache Kafka</a> Queuing. Basically, Queuing in Kafka is one of the models for messaging traditionally. So, let’s begin with the brief introduction to Kafka as a Messaging System, which will help us to understand Kafka Queuing. Moreover, we will see some of the applications of Kafka Queue to clear the concept better.</p> 
+<h2 pid="3">Kafka as a Messaging System</h2> 
+<p pid="49">There are two models for messaging traditionally, such as Kafka queuing and publish-subscribe in Kafka.</p> 
+<p pid="50">Let’s discuss both Kafka models in detail:</p> 
+<h3>Kafka Queue</h3> 
+<p pid="51">In this Kafka messaging system, a pool of <a href="https://data-flair.training/blogs/kafka-consumer/" target="_blank">Kafka consumers</a> may read from a server. Also, each record goes to one of them here. It has some strengths as well as some weakness. Its strength is that it permits us to divide up the processing of data over multiple consumer instances, that help us scale our processing. But its weakness is, it is not multi-subscriber, as soon as one process reads the data it’s gone.</p> 
+<h3>Kafka Publish-Subscribe</h3> 
+<p pid="52">Whereas in this Kafka Publish-Subscribe system, the record is broadcast to all the Kafka consumers. It permits us to broadcast data to multiple processes. However, it also has some limitations, like there is no way of scaling processing because here every message goes to every subscriber.</p> 
+<p pid="53">In Kafka, these two concepts are generalized by the Kafka consumer group. However, the consumer group in Kafka permits us to divide up processing over a collection of processes, with a Kafka queue. Here the collection of processes refers to the members of the consumer group. Moreover, Kafka permits us to broadcast messages to multiple consumer groups, with Kafka publish-subscribe.</p> 
+<p pid="54">So, the main benefit of Kafka’s model is both these properties are available in every Kafka topic —it can scale processing as well as it is multi-subscriber. Hence, that implies we do not have to select one or the other.</p> 
+<p pid="55">Kafka has stronger ordering guarantees than a traditional messaging system, too.</p> 
+<p pid="56">Since there is no parallelism in the processing in the traditional system, Kafka performs it well with the notion of parallelism. Because Kafka can offer both ordering guarantees and load balancing over a pool of consumer processes.</p> 
+<h2>Need for Kafka Queuing</h2> 
+<p pid="57">One of Kafka Queuing application is Microservice architecture. It essentially demands some sort of message queuing system. Let’s understand microservice architecture first. It is a concept of decoupling an interconnected monolithic application into different independent modules as well as external data sources along with APIs. Thus, for the purpose of handling microservices-external-source and inter-microservice and communications, Message queuing comes into the picture.</p> 
+<p pid="58">In addition, while we divide a big monolithic application into smaller, microservices (loosely-coupled), at that time the REST API calls increases which are amongst those microservices, and the number of connections to external data sources also increases.</p> 
+<p pid="59">However, keeping this huge system synchronous is not desirable, because it can render the entire application unresponsive. Also, it can defeat the whole purpose of dividing into microservices in the first place.</p> 
+<p pid="60">Hence, having Kafka at that time makes the whole data flow easier. Because it is distributed, highly fault-tolerant and also it has constant monitoring of broker nodes through services like Zookeeper. So, it makes it efficient to work.</p> 
+<h2>Message Queuing in ML Solutions Pipeline</h2> 
+<p pid="61">Apart from that, we can also use Kafka queuing for the various ML solution pipelines. However, ML solutions are built as:</p> 
+<p pid="62"><strong>A user interface (on the client side, mobile/web) — →An API server and the database — →Machine learning (blackbox).</strong></p> 
+<p pid="63">However, ML black box is very compute-heavy and also it’s not practically easy to have those requests on a blocking synchronous mode. Moreover, all the requests can be in a queue and configure consumer API to take those requests one by one and feed them into the ML black box, in this scenario. So, while it comes to compute-intensive tasks, this pipeline can easily handle such as recognizing objects from thousands of images, that might take considerable time even without missing any requests.</p> 
+<p pid="64">Basically, microservices deployed into containers, such as by fault-tolerant distributed clusters of <a href="https://data-flair.training/blogs/kafka-consumer/" target="_blank">Kafka broker</a> nodes it is mediated and using a Zookeeper it monitors it, which seems like a new way of enterprising software development.</p> 
+<p pid="65">So, this was all about Kafka Queuing: Kafka as a messaging system. Hope you like our explanation.</p> 
+<h2>Conclusion</h2> 
+<p pid="66">Hence, we have seen the complete concept of Kafka Queuing. Moreover, we discussed why Kafka as a message queuing. Along with this, we learned the two models- Kafka queue and Kafka publish-subscribe. Also, we saw why we need Kafka Queuing. Lastly, we discussed message queuing in ML solution pipeline. However, if any query occurs regarding Queuing in Kafka, feel free to ask through the comment section.</p></div>
+                </div>
+
+                  <div id="bottom-bumper-container"></div>
+                  <div class="article-tag-pill-container">
+                      <span class="article-tag-pill">kafka</span>
+                  </div>
+
+                  <div class="attribution">
+                      <p>Published at DZone with permission of <span>Rinu Gour</span>.
+                        <span>
+                          <a href="https://data-flair.training/blogs/kafka-queuing/" target="_blank">See the original article here.
+                            <i class="icon-link-ext-alt"></i>
+                          </a>
+                        </span>
+                      </p>
+                    <p>Opinions expressed by DZone contributors are their own.</p>
+                  </div>
+
+                    <div class="related">
+                      <h3>Popular on DZone</h3>
+                        <ul>
+                            <li class="relateddiv">
+                              <a href="/articles/functional-vs-non-functional-requirements-the-full?fromrel=true">Functional vs. Non-Functional Requirements: The Full Guide, Definitions, and Technical Examples</a>
+                            </li>
+                            <li class="relateddiv">
+                              <a href="/articles/how-to-optimize-mysql-queries-for-speed-and-perfor?fromrel=true">How to Optimize MySQL Queries for Speed and Performance</a>
+                            </li>
+                            <li class="relateddiv">
+                              <a href="/articles/how-to-hash-salt-and-verify-passwords-in-nodejs-py?fromrel=true">How to Hash, Salt, and Verify Passwords in NodeJS, Python, Golang, and Java</a>
+                            </li>
+                            <li class="relateddiv">
+                              <a href="/articles/a-simple-guide-to-heaps-stacks-references-and-valu?fromrel=true">A Simple Guide to Heaps, Stacks, References, and Values in JavaScript</a>
+                            </li>
+                        </ul>
+                      </div>
+<div class="comments-overlay"></div>
+<div id="comment-box">
+  <div class="comment-box-wrapper">
+    <div id="comment-input-editor"></div>
+  </div>
+  <div class="info hidden"></div>
+  <div class="comments-content">
+    <div class="comment-header">
+      <hr />
+      <span class="icon-comment">
+        <span class="numOfComments"></span> Comments
+      </span>
+    </div>
+    <div class="comments"></div>
+  </div>
+</div>
+            </article>
+          </div>
+
+            <div id="above-pr-ad" class="bottom-ad-container">
+              <div id="div-gpt-ad-1435246566686-11" data-gpt-slot="bottom"></div>
+            </div>
+            <div class="layout-card widget-top-border partner-resources-block" style="width:100%; margin-bottom: 1em;">
+              <div class="main-container">
+                <div class="featured-header">
+                  <h2>
+                      Integration<span> Partner Resources</span>
+                  </h2>
+                </div>
+                <div class="partner-resources-container">
+                  <div id="div-gpt-ad-1435246566686-5" class="resource-block" data-gpt-slot="partner" data-gpt-position="pr1"></div>
+                  <div id="div-gpt-ad-1435246566686-6" class="resource-block" data-gpt-slot="partner" data-gpt-position="pr2"></div>
+                  <div id="div-gpt-ad-1435246566686-7" class="resource-block" data-gpt-slot="partner" data-gpt-position="pr3"></div>
+                </div>
+              </div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <div id="bsa-parent" class="bottom-sticky-ad-container hide">
+      <div class="container">
+        <div class="col-md-9">
+          <div class="fixed-bottom-div">
+            <div class="inline-block">
+              <div id="div-gpt-ad-1635294790718-12" data-gpt-desktop="true" class="bottom-sticky-ad"></div>
+            </div>
+            <div class="inline-block">
+              <span id="close" class="bottom-sticky-ad-close-button" onclick="removeBottomStickyAd()">
+                X
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  <div class="modal fade bd-example-modal-lg" id="modal-message" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header"></div>
+        <div class="modal-body"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script async>const articleTitle = 'Kafka Queuing: Kafka as a Messaging System'
+const articleUrl = 'https://dzone.com/articles/kafka-queuing-kafka-as-a-messaging-system'
+
+const retweetLink = document.querySelector('#tweet-link')
+
+function retweet(event) {
+    event.preventDefault()
+    event.stopPropagation()
+
+    const twitter = 'https://twitter.com/intent/tweet'
+    const params = '?text=' + encodeURIComponent(articleTitle) + '&url=' + articleUrl + '&ref=dzone.com&via=DZoneInc'
+    const win = window.open(twitter + params, '_blank')
+    win.focus()
+}
+
+retweetLink.addEventListener('click', retweet);
+
+function showStatusMessage(options) {
+  var modal = document.getElementById("modal-message");
+
+  if(modal) {
+    modal.classList.add(options.type);
+    var modalBody = modal.querySelector(".modal-content .modal-body");
+    var modalHeader = modal.querySelector(".modal-content .modal-header");
+
+    modalHeader.innerText = options.header ? options.header : "";
+    modalBody.innerText = options.body ? options.body : "" ;
+
+    $(modal).modal("show");
+
+    $(modal).on('hidden.bs.modal', function () {
+      modal.classList.remove(options.type);
+    });
+  }
+}
+
+function showConfirmMessage(options) {
+  var modal = document.getElementById("modal-message");
+
+  if(modal) {
+    modal.classList.add(options.type);
+    var modalBody = modal.querySelector(".modal-content .modal-body");
+    var modalHeader = modal.querySelector(".modal-content .modal-header");
+
+    modalHeader.innerText = options.header ? options.header : "";
+    modalBody.innerText = options.body ? options.body : "" ;
+
+    if (options.textarea) {
+      const textareaDiv = document.createElement('div')
+      const textareaLabel = document.createElement('label')
+      textareaLabel.setAttribute('for', 'modal-textarea')
+      textareaLabel.innerText = options.textarea.label
+
+      const textarea = document.createElement('textarea')
+      textarea.id = 'modal-textarea'
+      textarea.placeholder = (options.textarea.placeholder || '')
+      textarea.setAttribute('rows', (options.textarea.rows || 3))
+      textarea.classList.add('form-control', 'not-resizable')
+
+      if (options.textarea.maxlength) {
+        textarea.maxLength = options.textarea.maxlength
+      }
+
+      textareaDiv.appendChild(textareaLabel)
+      textareaDiv.appendChild(textarea)
+      modalBody.appendChild(textareaDiv)
+    }
+
+    var btnContainer = document.createElement("div");
+    btnContainer.classList.add("btn-container");
+
+    var noBtn = document.createElement("button");
+    noBtn.innerText = options.noBtnText ? options.noBtnText : "No";
+    noBtn.classList.add("no-btn");
+
+    var yesBtn = document.createElement("button");
+    yesBtn.innerText = options.yesBtnText ? options.yesBtnText : "Yes";
+    yesBtn.classList.add("yes-btn");
+
+    btnContainer.appendChild(noBtn);
+    btnContainer.appendChild(yesBtn);
+
+    modalBody.appendChild(btnContainer);
+
+    $(modal).modal("show");
+
+    $(noBtn).one("click", function() {
+      $(modal).modal("hide");
+
+      if(options.noCallback) {
+        $(modal).one('hidden.bs.modal', function () {
+          options.noCallback();
+        });
+      }
+    });
+
+    $(yesBtn).one("click", function() {
+      $(modal).modal("hide");
+
+      if(options.yesCallback) {
+        $(modal).one('hidden.bs.modal', function () {
+          options.yesCallback();
+        });
+      }
+    });
+
+    $(modal).on('hidden.bs.modal', function () {
+      modal.classList.remove(options.type);
+    });
+  }
+}
+</script><link rel="stylesheet" media="all" href="https://dz2cdn1.dzone.com/themes/dz20/ftl/footer/styles.css">
+
+<div id="ftl-footer">
+  <div class="container-fluid footerOuter">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="container">
+          <div class="row footer">
+            <div class="col-md-12 footerWidget">
+              <div class="row footerContainer footer">
+                <div class="left col-xs-12 col-sm-7">
+                  <div class="col-xs-12 social-media-icons footer-mobile">
+                    <ul class="icons-only">
+                      <li class="rss-icon" id="rss-footer-1">
+                        <a href="/pages/feeds" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-rss-1"></i>
+                        </a>
+                      </li>
+                      <li class="twitter-icon">
+                        <a href="https://twitter.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-twitter"></i>
+                        </a>
+                      </li>
+                      <li class="facebook-icon">
+                        <a href="https://www.facebook.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-facebook-1"></i>
+                        </a>
+                      </li>
+                      <li class="linkedin-icon">
+                        <a href="https://www.linkedin.com/company/dzone/" target="_blank"
+                           rel="noreferrer noopener">
+                          <i class="icon-linkedin-1"></i>
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div class="top-section col-xs-12">
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">ABOUT US</p>
+                      <ul class="link-group">
+                        <li><a href="/pages/about" rel="noreferrer noopener">About DZone</a></li>
+                        <li><a href="mailto:support@dzone.com" rel="noreferrer noopener">Send feedback</a></li>
+                        <li><a href="https://careers.dzone.com/" target="_blank" rel="noreferrer noopener">Careers</a></li>
+                          <li><a href="/sitemap" rel="noreferrer noopener">Sitemap</a></li>
+                      </ul>
+                    </div>
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">ADVERTISE</p>
+                      <ul class="link-group">
+                        <li><a href="https://advertise.dzone.com" target="_blank" rel="noreferrer noopener">Advertise with DZone</a></li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div class="bottom-section col-xs-12">
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">CONTRIBUTE ON DZONE</p>
+                      <ul class="bottom-top-list link-group">
+                        <li><a href="/articles/dzones-article-submission-guidelines">Article Submission Guidelines</a></li>
+                        <li><a href="/pages/mvb" rel="noreferrer noopener">MVB Program</a></li>
+                        <li><a href="/pages/contribute" rel="noreferrer noopener">Become a Contributor</a></li>
+                        <li><a href="/writers-zone" rel="noreferrer noopener">Visit the Writers' Zone</a></li>
+                      </ul>
+
+                      <p class="section-header">LEGAL</p>
+                      <ul class="link-group">
+                        <li><a href="/pages/tos" rel="noreferrer noopener">Terms of Service</a></li>
+                        <li><a href="/pages/privacy" rel="noreferrer noopener">Privacy Policy</a></li>
+                      </ul>
+                    </div>
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">CONTACT US</p>
+                      <ul class="link-group">
+                        <li>600 Park Offices Drive</li>
+                        <li>Suite 300</li>
+                        <li>Durham, NC 27709</li>
+                        <li><a href="mailto:support@dzone.com" rel="noreferrer noopener">support@dzone.com</a></li>
+                        <li><a href="tel:+19196780300" rel="noreferrer noopener">+1 (919) 678-0300</a></li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="right col-xs-12 col-sm-5">
+
+                  <p class="connect-text">Let's be friends:</p>
+                  <div class="col-xs-12 social-media-icons footer-wide">
+                    <ul class="icons-only">
+                      <li class="rss-icon" id="rss-footer-1">
+                        <a href="/pages/feeds" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-rss-1"></i>
+                        </a>
+                      </li>
+                      <li class="twitter-icon">
+                        <a href="https://twitter.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-twitter"></i>
+                        </a>
+                      </li>
+                      <li class="facebook-icon">
+                        <a href="https://www.facebook.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-facebook-1"></i>
+                        </a>
+                      </li>
+                      <li class="linkedin-icon">
+                        <a href="https://www.linkedin.com/company/dzone/" target="_blank"
+                           rel="noreferrer noopener">
+                          <i class="icon-linkedin-1"></i>
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div class="col-xs-12 powered-by">
+                    <p>DZone.com is powered by&nbsp;</p>
+                    <a href="https://devada.com/answerhub/" rel="noreferrer noopener">
+                      <img src=""
+                           data-src="https://dz2cdn1.dzone.com/themes/dz20/images/answerhub_logo_white_footer.png"
+                           width="150"
+                           height="56"
+                           class="lazyload"
+                           alt="AnswerHub logo">
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  <script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"></script>
+
+  <script async>
+      (function(w, d, s, l, i) {
+          w[l] = w[l] || [];
+          w[l].push({'gtm.start': new Date().getTime(), event: 'gtm.js'});
+          var f = d.getElementsByTagName(s)[0], j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : '';
+          j.async = true;
+          j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+          f.parentNode.insertBefore(j,f);
+      })(window, document, 'script', 'dataLayer', 'GTM-K25QL22');
+  </script>
+
+  <script>
+      window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+      ga('create', 'UA-410289-1', 'auto');
+      ga('require', 'linkid', 'linkid.js');
+      ga('require', 'GTM-TSD9TZP');
+      ga('set', 'siteSpeedSampleRate', 25);
+  </script>
+  <script async src="https://www.google-analytics.com/analytics.js"></script>
+  <script async>const analytics = {
+    'dimension1': 'integration',
+    'dimension2': 'article/opinion',
+    'dimension3': '2018-09-24',
+    'dimension4': '0',
+    'dimension5': '',
+    'dimension7': 'kafka',
+    'dimension8': 'Rinu',
+    'dimension9': 'undefined',
+    'dimension10': ''
+}
+
+if (window.ga) {
+    Object.keys(analytics).forEach(function(key) {
+        window.ga('set', key, analytics[key])
+    })
+
+    window.ga('send', 'pageview')
+}</script>
+
+  <script>
+      !function (e, o, n, i) {
+          if (!e) {
+              e = e || {}, window.permutive = e, e.q = [];
+              var t = function () {
+                  return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, function (e) {
+                      return (e ^ (window.crypto || window.msCrypto).getRandomValues(new Uint8Array(1))[0] & 15 >> e / 4).toString(16)
+                  })
+              };
+              e.config = i || {}, e.config.apiKey = o, e.config.workspaceId = n, e.config.environment = e.config.environment || "production", (window.crypto || window.msCrypto) && (e.config.viewId = t());
+              for (var g = ["addon", "identify", "track", "trigger", "query", "segment", "segments", "ready", "on", "once", "user", "consent"], r = 0; r < g.length; r++) {
+                  var w = g[r];
+                  e[w] = function (o) {
+                      return function () {
+                          var n = Array.prototype.slice.call(arguments, 0);
+                          e.q.push({
+                              functionName: o,
+                              arguments: n
+                          })
+                      }
+                  }(w)
+              }
+          }
+      }(window.permutive, "bca90777-e088-4f2a-96c2-13ad18deeccc", "18ad0c5b-460c-4d19-a729-dc537805538f", {});
+      window.googletag = window.googletag || {}, window.googletag.cmd = window.googletag.cmd || [], window.googletag.cmd.push(function () {
+          if (0 === window.googletag.pubads().getTargeting("permutive").length) {
+              var e = window.localStorage.getItem("_pdfps");
+              window.googletag.pubads().setTargeting("permutive", e ? JSON.parse(e) : []);
+              var o = window.localStorage.getItem("permutive-id");
+              o && (window.googletag.pubads().setTargeting("puid", o), window.googletag.pubads().setTargeting("ptime", Date.now().toString())), window.permutive.config.viewId && window.googletag.pubads().setTargeting("prmtvvid", window.permutive.config.viewId), window.permutive.config.workspaceId && window.googletag.pubads().setTargeting("prmtvwid", window.permutive.config.workspaceId)
+          }
+      });
+
+
+      permutive.addon('web', {
+          'page': {
+              'category': 'Integration',
+              'node': {
+                  'authorCompany': '',
+                  'authors': [3416227, ],
+                  'publishDate': new Date(1537747200000),
+                  'sponsorAuthor': false,
+                  'tags': ['kafka', ],
+                  'title': 'Kafka Queuing: Kafka as a Messaging System',
+                  'type': 'article',
+              },
+              'section': 'article',
+          }
+      });
+  </script>
+  <script async src="https://18ad0c5b-460c-4d19-a729-dc537805538f.edge.permutive.app/18ad0c5b-460c-4d19-a729-dc537805538f-web.js"></script>
+
+  <script>
+      const csrf = '-2709911212094997329'
+      const articleId = 2461508
+      const likes = 4
+      const assetDomain = 'https://dz2cdn1.dzone.com'
+      const codemirrorVars = {
+          modeURI: 'https://dz2cdn1.dzone.com/themes/dz20/lib/codemirror/mode/',
+          requiredScripts: [
+              'https://dz2cdn1.dzone.com/themes/dz20/lib/codemirror/lib/codemirror.js',
+              'https://dz2cdn1.dzone.com/themes/dz20/lib/codemirror/mode/meta.js'
+          ]
+      }
+
+      const gptTags = {
+          'zone': 'integration',
+          'topicTag': 'kafka',
+          'company': '',
+          'siteSection': 'Zones',
+          'articleCategory': 'opinion',
+          'nodeID': '2461508',
+          'authorID': '3416227',
+          'publishYear': '2018',
+          'publishMonth': '09',
+          'jobRole': '',
+          'companySize': ''
+      }
+
+      const minCommentChar = 10;
+      const peer39Enabled = true;
+  </script>
+
+  <script src="https://dz2cdn1.dzone.com/themes/dz20/lib/static/jquery/jquery.min.js"></script>
+  <script async src="https://dz2cdn1.dzone.com/themes/dz20/lib/static/bootstrap/bootstrap.min.js"></script>
+  <script async src="https://dz2cdn1.dzone.com/themes/dz20/ftl/article/ads.js"></script>
+
+
+
+  <script>
+      function loadScript(src) {
+          return new Promise(function (resolve, reject) {
+              const s = document.createElement('script')
+              s.src = src
+              s.onload = resolve
+              s.onerror = reject
+              document.head.appendChild(s)
+          })
+      }
+
+      function loadStyle(href) {
+          const link = document.createElement('link')
+          link.rel = 'stylesheet'
+          link.href = href
+          document.head.appendChild(link)
+      }
+
+      function loadScriptsSync(deferred) {
+          var p = Promise.resolve()
+          for (var i = 0; i < deferred.length; i++) {
+              let script = deferred[i]
+              p = p.then(function() {
+                  return loadScript(script)
+              })
+          }
+          return p
+      }
+
+      function loadStyles() {
+          const deferred = [
+              'https://dz2cdn1.dzone.com/themes/dz20/lib/codemirror/lib/codemirror.css',
+              'https://dz2cdn1.dzone.com/themes/dz20/ftl/comments/styles.css',
+              'https://dz2cdn1.dzone.com/themes/dz20/lib/froala3/css/froala_editor.pkgd.min.css',
+              'https://dz2cdn1.dzone.com/themes/dz20/lib/froala3/css/themes/gray.min.css',
+              'https://dz2cdn1.dzone.com/themes/dz20/ftl/article/mini-profile.css'
+          ]
+
+          for (var i = 0; i < deferred.length; i++) {
+              loadStyle(deferred[i])
+          }
+      }
+
+      window.addEventListener('load', function(event) {
+          loadStyles()
+          loadScriptsSync([
+              'https://dz2cdn1.dzone.com/themes/dz20/ftl/header/auth-status.js',
+              'https://dz2cdn1.dzone.com/themes/dz20/lib/lazysizes.min.js',
+              'https://dz2cdn1.dzone.com/themes/dz20/ftl/article/codeblocks.js',
+              'https://dz2cdn1.dzone.com/themes/dz20/ftl/article/activity-bar.js',
+              'https://dz2cdn1.dzone.com/themes/dz20/lib/froala3/js/froala_editor.pkgd.min.js',
+              'https://dz2cdn1.dzone.com/themes/dz20/ftl/froala/content.js',
+              'https://dz2cdn1.dzone.com/themes/dz20/ftl/comments/content.js',
+              'https://dz2cdn1.dzone.com/themes/dz20/ftl/article/content.js'
+          ])
+      })
+  </script>
+</body>
+</html>

@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html dir="ltr" lang="en-US"
+	prefix="og: https://ogp.me/ns#" >
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link rel="profile" href="http://gmpg.org/xfn/11">
+<link rel="pingback" href="https://blog.mi.hdm-stuttgart.de/xmlrpc.php">
+
+
+		<!-- All in One SEO 4.2.0 -->
+		<title>Distributed stream processing frameworks – what they are and how they perform | Computer Science Blog</title>
+		<meta name="description" content="An overview on stream processing, common frameworks as well as some insights on performance based on benchmarking data." />
+		<meta name="robots" content="max-image-preview:large" />
+		<meta name="keywords" content="stream processing,distributed stream processing,distributed systems" />
+		<link rel="canonical" href="https://blog.mi.hdm-stuttgart.de/index.php/2020/03/09/distributed-stream-processing-frameworks-what-they-are-and-how-they-perform/" />
+		<meta property="og:locale" content="en_US" />
+		<meta property="og:site_name" content="Computer Science Blog" />
+		<meta property="og:type" content="article" />
+		<meta property="og:title" content="Distributed stream processing frameworks – what they are and how they perform | Computer Science Blog" />
+		<meta property="og:description" content="An overview on stream processing, common frameworks as well as some insights on performance based on benchmarking data." />
+		<meta property="og:url" content="https://blog.mi.hdm-stuttgart.de/index.php/2020/03/09/distributed-stream-processing-frameworks-what-they-are-and-how-they-perform/" />
+		<meta property="og:image" content="https://blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/DAG.png" />
+		<meta property="og:image:secure_url" content="https://blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/DAG.png" />
+		<meta property="og:image:width" content="605" />
+		<meta property="og:image:height" content="559" />
+		<meta property="article:published_time" content="2020-03-09T10:28:56+00:00" />
+		<meta property="article:modified_time" content="2020-03-23T10:44:38+00:00" />
+		<meta name="twitter:card" content="summary" />
+		<meta name="twitter:title" content="Distributed stream processing frameworks – what they are and how they perform | Computer Science Blog" />
+		<meta name="twitter:description" content="An overview on stream processing, common frameworks as well as some insights on performance based on benchmarking data." />
+		<meta name="twitter:image" content="https://blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/DAG.png" />
+		<script type="application/ld+json" class="aioseo-schema">
+			{"@context":"https:\/\/schema.org","@graph":[{"@type":"WebSite","@id":"https:\/\/blog.mi.hdm-stuttgart.de\/#website","url":"https:\/\/blog.mi.hdm-stuttgart.de\/","name":"Computer Science Blog","description":"on computer science and media topics","inLanguage":"en-US","publisher":{"@id":"https:\/\/blog.mi.hdm-stuttgart.de\/#organization"}},{"@type":"Organization","@id":"https:\/\/blog.mi.hdm-stuttgart.de\/#organization","name":"Computer Science Blog","url":"https:\/\/blog.mi.hdm-stuttgart.de\/"},{"@type":"BreadcrumbList","@id":"https:\/\/blog.mi.hdm-stuttgart.de\/index.php\/2020\/03\/09\/distributed-stream-processing-frameworks-what-they-are-and-how-they-perform\/#breadcrumblist","itemListElement":[{"@type":"ListItem","@id":"https:\/\/blog.mi.hdm-stuttgart.de\/#listItem","position":1,"item":{"@type":"WebPage","@id":"https:\/\/blog.mi.hdm-stuttgart.de\/","name":"Home","description":"on computer science and media topics","url":"https:\/\/blog.mi.hdm-stuttgart.de\/"},"nextItem":"https:\/\/blog.mi.hdm-stuttgart.de\/index.php\/2020\/#listItem"},{"@type":"ListItem","@id":"https:\/\/blog.mi.hdm-stuttgart.de\/index.php\/2020\/#listItem","position":2,"item":{"@type":"WebPage","@id":"https:\/\/blog.mi.hdm-stuttgart.de\/index.php\/2020\/","name":"2020","url":"https:\/\/blog.mi.hdm-stuttgart.de\/index.php\/2020\/"},"nextItem":"https:\/\/blog.mi.hdm-stuttgart.de\/index.php\/2020\/03\/#listItem","previousItem":"https:\/\/blog.mi.hdm-stuttgart.de\/#listItem"},{"@type":"ListItem","@id":"https:\/\/blog.mi.hdm-stuttgart.de\/index.php\/2020\/03\/#listItem","position":3,"item":{"@type":"WebPage","@id":"https:\/\/blog.mi.hdm-stuttgart.de\/index.php\/2020\/03\/","name":"March","url":"https:\/\/blog.mi.hdm-stuttgart.de\/index.php\/2020\/03\/"},"nextItem":"https:\/\/blog.mi.hdm-stuttgart.de\/index.php\/2020\/03\/09\/#listItem","previousItem":"https:\/\/blog.mi.hdm-stuttgart.de\/index.php\/2020\/#listItem"},{"@type":"ListItem","@id":"https:\/\/blog.mi.hdm-stuttgart.de\/index.php\/2020\/03\/09\/#listItem","position":4,"item":{"@type":"WebPage","@id":"https:\/\/blog.mi.hdm-stuttgart.de\/index.php\/2020\/03\/09\/","name":"9","url":"https:\/\/blog.mi.hdm-stuttgart.de\/index.php\/2020\/03\/09\/"},"nextItem":"https:\/\/blog.mi.hdm-stuttgart.de\/index.php\/2020\/03\/09\/distributed-stream-processing-frameworks-what-they-are-and-how-they-perform\/#listItem","previousItem":"https:\/\/blog.mi.hdm-stuttgart.de\/index.php\/2020\/03\/#listItem"},{"@type":"ListItem","@id":"https:\/\/blog.mi.hdm-stuttgart.de\/index.php\/2020\/03\/09\/distributed-stream-processing-frameworks-what-they-are-and-how-they-perform\/#listItem","position":5,"item":{"@type":"WebPage","@id":"https:\/\/blog.mi.hdm-stuttgart.de\/index.php\/2020\/03\/09\/distributed-stream-processing-frameworks-what-they-are-and-how-they-perform\/","name":"Distributed stream processing frameworks - what they are and how they perform","description":"An overview on stream processing, common frameworks as well as some insights on performance based on benchmarking data.","url":"https:\/\/blog.mi.hdm-stuttgart.de\/index.php\/2020\/03\/09\/distributed-stream-processing-frameworks-what-they-are-and-how-they-perform\/"},"previousItem":"https:\/\/blog.mi.hdm-stuttgart.de\/index.php\/2020\/03\/09\/#listItem"}]},{"@type":"Person","@id":"https:\/\/blog.mi.hdm-stuttgart.de\/index.php\/author\/am206\/#author","url":"https:\/\/blog.mi.hdm-stuttgart.de\/index.php\/author\/am206\/","name":"Alexander Merker","image":{"@type":"ImageObject","@id":"https:\/\/blog.mi.hdm-stuttgart.de\/index.php\/2020\/03\/09\/distributed-stream-processing-frameworks-what-they-are-and-how-they-perform\/#authorImage","url":"https:\/\/secure.gravatar.com\/avatar\/e2747c9a1c8d58ecc8af8f7edda2a1f8?s=96&d=mm&r=g","width":96,"height":96,"caption":"Alexander Merker"}},{"@type":"WebPage","@id":"https:\/\/blog.mi.hdm-stuttgart.de\/index.php\/2020\/03\/09\/distributed-stream-processing-frameworks-what-they-are-and-how-they-perform\/#webpage","url":"https:\/\/blog.mi.hdm-stuttgart.de\/index.php\/2020\/03\/09\/distributed-stream-processing-frameworks-what-they-are-and-how-they-perform\/","name":"Distributed stream processing frameworks \u2013 what they are and how they perform | Computer Science Blog","description":"An overview on stream processing, common frameworks as well as some insights on performance based on benchmarking data.","inLanguage":"en-US","isPartOf":{"@id":"https:\/\/blog.mi.hdm-stuttgart.de\/#website"},"breadcrumb":{"@id":"https:\/\/blog.mi.hdm-stuttgart.de\/index.php\/2020\/03\/09\/distributed-stream-processing-frameworks-what-they-are-and-how-they-perform\/#breadcrumblist"},"author":"https:\/\/blog.mi.hdm-stuttgart.de\/index.php\/author\/am206\/#author","creator":"https:\/\/blog.mi.hdm-stuttgart.de\/index.php\/author\/am206\/#author","datePublished":"2020-03-09T10:28:56+01:00","dateModified":"2020-03-23T10:44:38+01:00"},{"@type":"Article","@id":"https:\/\/blog.mi.hdm-stuttgart.de\/index.php\/2020\/03\/09\/distributed-stream-processing-frameworks-what-they-are-and-how-they-perform\/#article","name":"Distributed stream processing frameworks \u2013 what they are and how they perform | Computer Science Blog","description":"An overview on stream processing, common frameworks as well as some insights on performance based on benchmarking data.","inLanguage":"en-US","headline":"Distributed stream processing frameworks - what they are and how they perform","author":{"@id":"https:\/\/blog.mi.hdm-stuttgart.de\/index.php\/author\/am206\/#author"},"publisher":{"@id":"https:\/\/blog.mi.hdm-stuttgart.de\/#organization"},"datePublished":"2020-03-09T10:28:56+01:00","dateModified":"2020-03-23T10:44:38+01:00","articleSection":"Allgemein, Ultra Large Scale Systems, distributed stream processing, distributed systems, stream processing","mainEntityOfPage":{"@id":"https:\/\/blog.mi.hdm-stuttgart.de\/index.php\/2020\/03\/09\/distributed-stream-processing-frameworks-what-they-are-and-how-they-perform\/#webpage"},"isPartOf":{"@id":"https:\/\/blog.mi.hdm-stuttgart.de\/index.php\/2020\/03\/09\/distributed-stream-processing-frameworks-what-they-are-and-how-they-perform\/#webpage"},"image":{"@type":"ImageObject","@id":"https:\/\/blog.mi.hdm-stuttgart.de\/#articleImage","url":"https:\/\/i0.wp.com\/blog.mi.hdm-stuttgart.de\/wp-content\/uploads\/2020\/03\/DAG.png?fit=605%2C559&ssl=1","width":605,"height":559,"caption":"Directed Acyclic Graph"}}]}
+		</script>
+		<!-- All in One SEO -->
+
+<link rel='dns-prefetch' href='//cdnjs.cloudflare.com' />
+<link rel='dns-prefetch' href='//fonts.googleapis.com' />
+<link rel='dns-prefetch' href='//maxcdn.bootstrapcdn.com' />
+<link rel='dns-prefetch' href='//s.w.org' />
+<link rel='dns-prefetch' href='//v0.wordpress.com' />
+<link rel='dns-prefetch' href='//i0.wp.com' />
+<link rel="alternate" type="application/rss+xml" title="Computer Science Blog &raquo; Feed" href="https://blog.mi.hdm-stuttgart.de/index.php/feed/" />
+<link rel="alternate" type="application/rss+xml" title="Computer Science Blog &raquo; Comments Feed" href="https://blog.mi.hdm-stuttgart.de/index.php/comments/feed/" />
+<link rel="alternate" type="application/rss+xml" title="Computer Science Blog &raquo; Distributed stream processing frameworks &#8211; what they are and how they perform Comments Feed" href="https://blog.mi.hdm-stuttgart.de/index.php/2020/03/09/distributed-stream-processing-frameworks-what-they-are-and-how-they-perform/feed/" />
+<script type="text/javascript">
+window._wpemojiSettings = {"baseUrl":"https:\/\/s.w.org\/images\/core\/emoji\/13.1.0\/72x72\/","ext":".png","svgUrl":"https:\/\/s.w.org\/images\/core\/emoji\/13.1.0\/svg\/","svgExt":".svg","source":{"concatemoji":"https:\/\/blog.mi.hdm-stuttgart.de\/wp-includes\/js\/wp-emoji-release.min.js?ver=dd57b3bbfbc4f90208ae3657065a1911"}};
+/*! This file is auto-generated */
+!function(e,a,t){var n,r,o,i=a.createElement("canvas"),p=i.getContext&&i.getContext("2d");function s(e,t){var a=String.fromCharCode;p.clearRect(0,0,i.width,i.height),p.fillText(a.apply(this,e),0,0);e=i.toDataURL();return p.clearRect(0,0,i.width,i.height),p.fillText(a.apply(this,t),0,0),e===i.toDataURL()}function c(e){var t=a.createElement("script");t.src=e,t.defer=t.type="text/javascript",a.getElementsByTagName("head")[0].appendChild(t)}for(o=Array("flag","emoji"),t.supports={everything:!0,everythingExceptFlag:!0},r=0;r<o.length;r++)t.supports[o[r]]=function(e){if(!p||!p.fillText)return!1;switch(p.textBaseline="top",p.font="600 32px Arial",e){case"flag":return s([127987,65039,8205,9895,65039],[127987,65039,8203,9895,65039])?!1:!s([55356,56826,55356,56819],[55356,56826,8203,55356,56819])&&!s([55356,57332,56128,56423,56128,56418,56128,56421,56128,56430,56128,56423,56128,56447],[55356,57332,8203,56128,56423,8203,56128,56418,8203,56128,56421,8203,56128,56430,8203,56128,56423,8203,56128,56447]);case"emoji":return!s([10084,65039,8205,55357,56613],[10084,65039,8203,55357,56613])}return!1}(o[r]),t.supports.everything=t.supports.everything&&t.supports[o[r]],"flag"!==o[r]&&(t.supports.everythingExceptFlag=t.supports.everythingExceptFlag&&t.supports[o[r]]);t.supports.everythingExceptFlag=t.supports.everythingExceptFlag&&!t.supports.flag,t.DOMReady=!1,t.readyCallback=function(){t.DOMReady=!0},t.supports.everything||(n=function(){t.readyCallback()},a.addEventListener?(a.addEventListener("DOMContentLoaded",n,!1),e.addEventListener("load",n,!1)):(e.attachEvent("onload",n),a.attachEvent("onreadystatechange",function(){"complete"===a.readyState&&t.readyCallback()})),(n=t.source||{}).concatemoji?c(n.concatemoji):n.wpemoji&&n.twemoji&&(c(n.twemoji),c(n.wpemoji)))}(window,document,window._wpemojiSettings);
+</script>
+<style type="text/css">
+img.wp-smiley,
+img.emoji {
+	display: inline !important;
+	border: none !important;
+	box-shadow: none !important;
+	height: 1em !important;
+	width: 1em !important;
+	margin: 0 0.07em !important;
+	vertical-align: -0.1em !important;
+	background: none !important;
+	padding: 0 !important;
+}
+</style>
+	<link rel='stylesheet' id='wp-block-library-css'  href='https://blog.mi.hdm-stuttgart.de/wp-includes/css/dist/block-library/style.min.css?ver=dd57b3bbfbc4f90208ae3657065a1911' type='text/css' media='all' />
+<style id='wp-block-library-inline-css' type='text/css'>
+.has-text-align-justify{text-align:justify;}
+</style>
+<link rel='stylesheet' id='mediaelement-css'  href='https://blog.mi.hdm-stuttgart.de/wp-includes/js/mediaelement/mediaelementplayer-legacy.min.css?ver=4.2.16' type='text/css' media='all' />
+<link rel='stylesheet' id='wp-mediaelement-css'  href='https://blog.mi.hdm-stuttgart.de/wp-includes/js/mediaelement/wp-mediaelement.min.css?ver=dd57b3bbfbc4f90208ae3657065a1911' type='text/css' media='all' />
+<style id='global-styles-inline-css' type='text/css'>
+body{--wp--preset--color--black: #000000;--wp--preset--color--cyan-bluish-gray: #abb8c3;--wp--preset--color--white: #ffffff;--wp--preset--color--pale-pink: #f78da7;--wp--preset--color--vivid-red: #cf2e2e;--wp--preset--color--luminous-vivid-orange: #ff6900;--wp--preset--color--luminous-vivid-amber: #fcb900;--wp--preset--color--light-green-cyan: #7bdcb5;--wp--preset--color--vivid-green-cyan: #00d084;--wp--preset--color--pale-cyan-blue: #8ed1fc;--wp--preset--color--vivid-cyan-blue: #0693e3;--wp--preset--color--vivid-purple: #9b51e0;--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple: linear-gradient(135deg,rgba(6,147,227,1) 0%,rgb(155,81,224) 100%);--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan: linear-gradient(135deg,rgb(122,220,180) 0%,rgb(0,208,130) 100%);--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange: linear-gradient(135deg,rgba(252,185,0,1) 0%,rgba(255,105,0,1) 100%);--wp--preset--gradient--luminous-vivid-orange-to-vivid-red: linear-gradient(135deg,rgba(255,105,0,1) 0%,rgb(207,46,46) 100%);--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray: linear-gradient(135deg,rgb(238,238,238) 0%,rgb(169,184,195) 100%);--wp--preset--gradient--cool-to-warm-spectrum: linear-gradient(135deg,rgb(74,234,220) 0%,rgb(151,120,209) 20%,rgb(207,42,186) 40%,rgb(238,44,130) 60%,rgb(251,105,98) 80%,rgb(254,248,76) 100%);--wp--preset--gradient--blush-light-purple: linear-gradient(135deg,rgb(255,206,236) 0%,rgb(152,150,240) 100%);--wp--preset--gradient--blush-bordeaux: linear-gradient(135deg,rgb(254,205,165) 0%,rgb(254,45,45) 50%,rgb(107,0,62) 100%);--wp--preset--gradient--luminous-dusk: linear-gradient(135deg,rgb(255,203,112) 0%,rgb(199,81,192) 50%,rgb(65,88,208) 100%);--wp--preset--gradient--pale-ocean: linear-gradient(135deg,rgb(255,245,203) 0%,rgb(182,227,212) 50%,rgb(51,167,181) 100%);--wp--preset--gradient--electric-grass: linear-gradient(135deg,rgb(202,248,128) 0%,rgb(113,206,126) 100%);--wp--preset--gradient--midnight: linear-gradient(135deg,rgb(2,3,129) 0%,rgb(40,116,252) 100%);--wp--preset--duotone--dark-grayscale: url('#wp-duotone-dark-grayscale');--wp--preset--duotone--grayscale: url('#wp-duotone-grayscale');--wp--preset--duotone--purple-yellow: url('#wp-duotone-purple-yellow');--wp--preset--duotone--blue-red: url('#wp-duotone-blue-red');--wp--preset--duotone--midnight: url('#wp-duotone-midnight');--wp--preset--duotone--magenta-yellow: url('#wp-duotone-magenta-yellow');--wp--preset--duotone--purple-green: url('#wp-duotone-purple-green');--wp--preset--duotone--blue-orange: url('#wp-duotone-blue-orange');--wp--preset--font-size--small: 13px;--wp--preset--font-size--medium: 20px;--wp--preset--font-size--large: 36px;--wp--preset--font-size--x-large: 42px;}.has-black-color{color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-color{color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-color{color: var(--wp--preset--color--white) !important;}.has-pale-pink-color{color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-color{color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-color{color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-color{color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-color{color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-color{color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-color{color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-color{color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-color{color: var(--wp--preset--color--vivid-purple) !important;}.has-black-background-color{background-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-background-color{background-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-background-color{background-color: var(--wp--preset--color--white) !important;}.has-pale-pink-background-color{background-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-background-color{background-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-background-color{background-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-background-color{background-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-background-color{background-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-background-color{background-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-background-color{background-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-background-color{background-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-background-color{background-color: var(--wp--preset--color--vivid-purple) !important;}.has-black-border-color{border-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-border-color{border-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-border-color{border-color: var(--wp--preset--color--white) !important;}.has-pale-pink-border-color{border-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-border-color{border-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-border-color{border-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-border-color{border-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-border-color{border-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-border-color{border-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-border-color{border-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-border-color{border-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-border-color{border-color: var(--wp--preset--color--vivid-purple) !important;}.has-vivid-cyan-blue-to-vivid-purple-gradient-background{background: var(--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple) !important;}.has-light-green-cyan-to-vivid-green-cyan-gradient-background{background: var(--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan) !important;}.has-luminous-vivid-amber-to-luminous-vivid-orange-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange) !important;}.has-luminous-vivid-orange-to-vivid-red-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-orange-to-vivid-red) !important;}.has-very-light-gray-to-cyan-bluish-gray-gradient-background{background: var(--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray) !important;}.has-cool-to-warm-spectrum-gradient-background{background: var(--wp--preset--gradient--cool-to-warm-spectrum) !important;}.has-blush-light-purple-gradient-background{background: var(--wp--preset--gradient--blush-light-purple) !important;}.has-blush-bordeaux-gradient-background{background: var(--wp--preset--gradient--blush-bordeaux) !important;}.has-luminous-dusk-gradient-background{background: var(--wp--preset--gradient--luminous-dusk) !important;}.has-pale-ocean-gradient-background{background: var(--wp--preset--gradient--pale-ocean) !important;}.has-electric-grass-gradient-background{background: var(--wp--preset--gradient--electric-grass) !important;}.has-midnight-gradient-background{background: var(--wp--preset--gradient--midnight) !important;}.has-small-font-size{font-size: var(--wp--preset--font-size--small) !important;}.has-medium-font-size{font-size: var(--wp--preset--font-size--medium) !important;}.has-large-font-size{font-size: var(--wp--preset--font-size--large) !important;}.has-x-large-font-size{font-size: var(--wp--preset--font-size--x-large) !important;}
+</style>
+<link rel='stylesheet' id='penscratch-style-css'  href='https://blog.mi.hdm-stuttgart.de/wp-content/themes/penscratch/style.css?ver=dd57b3bbfbc4f90208ae3657065a1911' type='text/css' media='all' />
+<link rel='stylesheet' id='penscratch-fonts-css'  href='https://fonts.googleapis.com/css?family=Roboto+Slab:300,400,700&#038;subset=latin%2Clatin-ext' type='text/css' media='all' />
+<link rel='stylesheet' id='genericons-css'  href='https://blog.mi.hdm-stuttgart.de/wp-content/plugins/jetpack/_inc/genericons/genericons/genericons.css?ver=3.1' type='text/css' media='all' />
+<link rel='stylesheet' id='font-awesome-css'  href='//maxcdn.bootstrapcdn.com/font-awesome/4.6.2/css/font-awesome.min.css?ver=0.3.7' type='text/css' media='all' />
+<link rel='stylesheet' id='amarkal-css'  href='https://blog.mi.hdm-stuttgart.de/wp-content/plugins/mivhak/vendor/askupa-software/amarkal-framework/Assets/css/amarkal.min.css?ver=0.3.7' type='text/css' media='all' />
+<link rel='stylesheet' id='select2-css'  href='https://blog.mi.hdm-stuttgart.de/wp-content/plugins/mivhak/vendor/askupa-software/amarkal-framework/Assets/css/select2.min.css?ver=0.3.7' type='text/css' media='all' />
+<link rel='stylesheet' id='mivhak-css'  href='https://blog.mi.hdm-stuttgart.de/wp-content/plugins/mivhak/assets/css/mivhak.min.css?ver=1.3.6' type='text/css' media='all' />
+<link rel='stylesheet' id='cookie-notice-front-css'  href='https://blog.mi.hdm-stuttgart.de/wp-content/plugins/cookie-notice/includes/../css/front.min.css?ver=dd57b3bbfbc4f90208ae3657065a1911' type='text/css' media='all' />
+<link rel='stylesheet' id='jetpack_css-css'  href='https://blog.mi.hdm-stuttgart.de/wp-content/plugins/jetpack/css/jetpack.css?ver=10.9' type='text/css' media='all' />
+<script type='text/javascript' id='jetpack_related-posts-js-extra'>
+/* <![CDATA[ */
+var related_posts_js_options = {"post_heading":"h4"};
+/* ]]> */
+</script>
+<script type='text/javascript' src='https://blog.mi.hdm-stuttgart.de/wp-content/plugins/jetpack/_inc/build/related-posts/related-posts.min.js?ver=20211209' id='jetpack_related-posts-js'></script>
+<script type='text/javascript' src='https://blog.mi.hdm-stuttgart.de/wp-includes/js/jquery/jquery.min.js?ver=3.6.0' id='jquery-core-js'></script>
+<script type='text/javascript' src='https://blog.mi.hdm-stuttgart.de/wp-includes/js/jquery/jquery-migrate.min.js?ver=3.3.2' id='jquery-migrate-js'></script>
+<script type='text/javascript' id='cookie-notice-front-js-extra'>
+/* <![CDATA[ */
+var cnArgs = {"ajaxUrl":"https:\/\/blog.mi.hdm-stuttgart.de\/wp-admin\/admin-ajax.php","nonce":"e5e065f40e","hideEffect":"fade","position":"bottom","onScroll":"0","onScrollOffset":"100","onClick":"0","cookieName":"cookie_notice_accepted","cookieTime":"2592000","cookieTimeRejected":"2592000","cookiePath":"\/","cookieDomain":"","redirection":"0","cache":"0","refuse":"0","revokeCookies":"0","revokeCookiesOpt":"automatic","secure":"1"};
+/* ]]> */
+</script>
+<script async type='text/javascript' src='https://blog.mi.hdm-stuttgart.de/wp-content/plugins/cookie-notice/includes/../js/front.min.js?ver=2.2.3' id='cookie-notice-front-js'></script>
+<link rel="https://api.w.org/" href="https://blog.mi.hdm-stuttgart.de/index.php/wp-json/" /><link rel="alternate" type="application/json" href="https://blog.mi.hdm-stuttgart.de/index.php/wp-json/wp/v2/posts/10289" /><link rel="EditURI" type="application/rsd+xml" title="RSD" href="https://blog.mi.hdm-stuttgart.de/xmlrpc.php?rsd" />
+<link rel="wlwmanifest" type="application/wlwmanifest+xml" href="https://blog.mi.hdm-stuttgart.de/wp-includes/wlwmanifest.xml" /> 
+
+<link rel='shortlink' href='https://wp.me/p71Rzi-2FX' />
+<link rel="alternate" type="application/json+oembed" href="https://blog.mi.hdm-stuttgart.de/index.php/wp-json/oembed/1.0/embed?url=https%3A%2F%2Fblog.mi.hdm-stuttgart.de%2Findex.php%2F2020%2F03%2F09%2Fdistributed-stream-processing-frameworks-what-they-are-and-how-they-perform%2F" />
+<link rel="alternate" type="text/xml+oembed" href="https://blog.mi.hdm-stuttgart.de/index.php/wp-json/oembed/1.0/embed?url=https%3A%2F%2Fblog.mi.hdm-stuttgart.de%2Findex.php%2F2020%2F03%2F09%2Fdistributed-stream-processing-frameworks-what-they-are-and-how-they-perform%2F&#038;format=xml" />
+<style type='text/css'>img#wpstats{display:none}</style>
+	<style type="text/css" id="wp-custom-css">.wp-statistics-opt-out {
+	background-color: #000;
+	color: #eee;
+}
+
+.wp-statistics-opt-out a {
+	color: #fff;
+	text-decoration: underline;
+}</style></head>
+
+<body class="post-template-default single single-post postid-10289 single-format-standard group-blog cookies-not-set">
+<div id="page" class="hfeed site">
+	<a class="skip-link screen-reader-text" href="#content">Skip to content</a>
+	<header id="masthead" class="site-header" role="banner">
+		<div class="site-branding">
+			<a href="https://blog.mi.hdm-stuttgart.de/" class="site-logo-link" rel="home" itemprop="url"></a>			<h1 class="site-title"><a href="https://blog.mi.hdm-stuttgart.de/" rel="home">Computer Science Blog</a></h1>
+			<h2 class="site-description">on computer science and media topics</h2>
+		</div>
+
+		<nav id="site-navigation" class="main-navigation" role="navigation">
+			<button class="menu-toggle">Menu</button>
+			<div class="menu"><ul>
+<li ><a href="https://blog.mi.hdm-stuttgart.de/">Home</a></li><li class="page_item page-item-3690"><a href="https://blog.mi.hdm-stuttgart.de/index.php/privacy-policy/">Privacy Policy</a></li>
+<li class="page_item page-item-555"><a href="https://blog.mi.hdm-stuttgart.de/index.php/projects/">Projects</a></li>
+<li class="page_item page-item-82"><a href="https://blog.mi.hdm-stuttgart.de/index.php/systems-engineering/">System Engineering</a></li>
+<li class="page_item page-item-731"><a href="https://blog.mi.hdm-stuttgart.de/index.php/bibliography/">Bibliography</a></li>
+<li class="page_item page-item-126"><a href="https://blog.mi.hdm-stuttgart.de/index.php/impressum/">Impressum</a></li>
+</ul></div>
+		</nav><!-- #site-navigation -->
+	</header><!-- #masthead -->
+
+	<div id="content" class="site-content">
+		
+	<div id="primary" class="content-area">
+		<main id="main" class="site-main" role="main">
+
+		
+			
+<article id="post-10289" class="post-10289 post type-post status-publish format-standard hentry category-allgemein category-ultra-large-scale-systems tag-distributed-stream-processing tag-distributed-systems tag-stream-processing">
+	<header class="entry-header">
+		<h1 class="entry-title">Distributed stream processing frameworks &#8211; what they are and how they perform</h1>
+		<div class="entry-meta">
+						<span class="posted-on"><a href="https://blog.mi.hdm-stuttgart.de/index.php/2020/03/09/distributed-stream-processing-frameworks-what-they-are-and-how-they-perform/" rel="bookmark"><time class="entry-date published" datetime="2020-03-09T11:28:56+01:00">9. March 2020</time><time class="updated" datetime="2020-03-23T11:44:38+01:00">23. March 2020</time></a></span><span class="byline"><span class="sep"> ~ </span><span class="author vcard"><a class="url fn n" href="https://blog.mi.hdm-stuttgart.de/index.php/author/am206/">Alexander Merker</a></span></span>					</div><!-- .entry-meta -->
+	</header><!-- .entry-header -->
+
+	<div class="entry-content">
+		
+<p>This blog aims to provide an overview about the topic of stream processing and its capabilites in a large scale environment. The post starts with an introduction to stream processing. After that, it explains how stream processing works and shows different areas of application as well as some common stream processing frameworks. Finally, this article will provide a performance comparison of several common frameworks based on benchmarking data.</p>
+
+
+<p><span id="more-10289"></span></p>
+
+
+
+<p>Let&#8217;s begin with an introduction to stream processing.</p>
+
+
+
+<p>Distributed stream processing engines are gaining popularity over the last years. Stream processing is a technology that can query continous streams of data in real-time and perform operations on the received data. It also goes by the name event-processing, Complex Event Processing, real-time-analytics or stream analytics. It allows to process data in real time as soon as it arrives in the system and can be used to quickly detect conditions in the received data. As an example imagine a temperature sensor that continously sends the temperature level. Once a certain temperature level is reached the system can trigger an alert based on the received data. [1]  </p>
+
+
+
+<p> At a more technical level the stream processing engines process data in a pipeline-like structure. Data gets processed in terms of a Directed Acyclic Graph (see below). The processing can chain various functions together but never go back to an earlier point in the graph. Depending on the processed data steps in the chain can be skipped.</p>
+
+
+
+<div class="wp-block-image"><figure class="aligncenter size-large is-resized"><img data-attachment-id="10290" data-permalink="https://blog.mi.hdm-stuttgart.de/index.php/2020/03/09/distributed-stream-processing-frameworks-what-they-are-and-how-they-perform/dag/" data-orig-file="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/DAG.png?fit=605%2C559&amp;ssl=1" data-orig-size="605,559" data-comments-opened="0" data-image-meta="{&quot;aperture&quot;:&quot;0&quot;,&quot;credit&quot;:&quot;&quot;,&quot;camera&quot;:&quot;&quot;,&quot;caption&quot;:&quot;&quot;,&quot;created_timestamp&quot;:&quot;0&quot;,&quot;copyright&quot;:&quot;&quot;,&quot;focal_length&quot;:&quot;0&quot;,&quot;iso&quot;:&quot;0&quot;,&quot;shutter_speed&quot;:&quot;0&quot;,&quot;title&quot;:&quot;&quot;,&quot;orientation&quot;:&quot;0&quot;}" data-image-title="DAG" data-image-description="" data-image-caption="" data-medium-file="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/DAG.png?fit=300%2C277&amp;ssl=1" data-large-file="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/DAG.png?fit=605%2C559&amp;ssl=1" src="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/DAG.png?resize=303%2C280&#038;ssl=1" alt="Directed Acyclic Graph" class="wp-image-10290" width="303" height="280" srcset="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/DAG.png?w=605&amp;ssl=1 605w, https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/DAG.png?resize=300%2C277&amp;ssl=1 300w" sizes="(max-width: 303px) 100vw, 303px" data-recalc-dims="1" /><figcaption>Directed Acyclic Graph. Source: [5]</figcaption></figure></div>
+
+
+
+<p>
+The
+available frameworks approach this differently. Some frameworks let
+the developer define the graph explicitly, thus the coding is at a
+much lower level. In these frameworks like Apache Storm or Apache
+Samza the developer has full control over the code but it is possible
+to write inefficient code.</p>
+
+
+
+<p>In
+other frameworks like Apache Flink or Apache Spark the developer can
+simply chain functions together and the framework constructs the
+graph. Thus the code is shaped in a very functional style as shown in
+the example code snippet below. The code snippet shows a simple
+application that counts words from an incoming stream for five
+seconds. [5]</p>
+
+
+
+<figure class="wp-block-image size-large"><img data-attachment-id="10292" data-permalink="https://blog.mi.hdm-stuttgart.de/index.php/2020/03/09/distributed-stream-processing-frameworks-what-they-are-and-how-they-perform/wordcountexample/" data-orig-file="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/wordcountexample.png?fit=786%2C609&amp;ssl=1" data-orig-size="786,609" data-comments-opened="0" data-image-meta="{&quot;aperture&quot;:&quot;0&quot;,&quot;credit&quot;:&quot;&quot;,&quot;camera&quot;:&quot;&quot;,&quot;caption&quot;:&quot;&quot;,&quot;created_timestamp&quot;:&quot;0&quot;,&quot;copyright&quot;:&quot;&quot;,&quot;focal_length&quot;:&quot;0&quot;,&quot;iso&quot;:&quot;0&quot;,&quot;shutter_speed&quot;:&quot;0&quot;,&quot;title&quot;:&quot;&quot;,&quot;orientation&quot;:&quot;0&quot;}" data-image-title="wordcountexample" data-image-description="" data-image-caption="" data-medium-file="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/wordcountexample.png?fit=300%2C232&amp;ssl=1" data-large-file="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/wordcountexample.png?fit=656%2C508&amp;ssl=1" loading="lazy" width="656" height="508" src="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/wordcountexample.png?resize=656%2C508&#038;ssl=1" alt="Apache Flink word count example code" class="wp-image-10292" srcset="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/wordcountexample.png?w=786&amp;ssl=1 786w, https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/wordcountexample.png?resize=300%2C232&amp;ssl=1 300w, https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/wordcountexample.png?resize=768%2C595&amp;ssl=1 768w" sizes="(max-width: 656px) 100vw, 656px" data-recalc-dims="1" /><figcaption>Apache Flink word count example code. Source: [4]</figcaption></figure>
+
+
+
+<p> On the contrary there is the &#8220;classic&#8221; approach of batch processing. Processing happens on blocks of data that have been collected and stored over a period of time. Depending on the size of the application this can be a huge amount of data with possibly millions of records.[1]<br></p>
+
+
+
+<h2><br><strong>So why use stream processing instead of just processing the data in batches? And when?</strong></h2>
+
+
+
+<p>Some data that has to be processed inside an application naturally comes as a never-ending stream of data. For example healthcare sensor data, traffic sensor data or almost all IOT devices produce events continously. These types of data are time-series data for which the time of arrival or the time at which the event occured is important. Stream Processing frameworks naturally fit this model of time-series data. Detecting patterns and anomalies within data streams becomes easy. Additionally, you can inspect multiple data streams at once. [1]</p>
+
+
+
+<p>Processing constantly arriving streaming data in batches would require to stop data collection at some point, store the data and then process it. Then you&#8217;ll have to worry about aggregation across multiple batches. So using a framework that fits this model makes perfect sense. [1]</p>
+
+
+
+<p>Now let&#8217;s look at some example usecases where streaming can be used beneficially:<br></p>
+
+
+
+<h2> <br><strong>Event-driven applications</strong></h2>
+
+
+
+<p>An event-driven application retrieves events from possibly multiple sources and performs operations on these events. Instead of writing data to a transactional database the data and state of the application are kept on the local system. By keeping the data on the local system the performance (latency and throughput) of the application is improved and possible network failure will be avoided. The application writes checkpoints periodically for fault-tolerance but this can happen asynchronously and does not impact performance. Examples for event-driven applications can be fraud detection, anomaly detection or rule-based alerting. [2]</p>
+
+
+
+<p>The following image, taken from Apache Flink, illustrates how the architecture of an event-driven application is structured. (Apache Flink will be described later in this blog post)</p>
+
+
+
+<figure class="wp-block-image size-large"><img data-attachment-id="10293" data-permalink="https://blog.mi.hdm-stuttgart.de/index.php/2020/03/09/distributed-stream-processing-frameworks-what-they-are-and-how-they-perform/usecases-eventdrivenapps/" data-orig-file="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/usecases-eventdrivenapps.png?fit=1372%2C687&amp;ssl=1" data-orig-size="1372,687" data-comments-opened="0" data-image-meta="{&quot;aperture&quot;:&quot;0&quot;,&quot;credit&quot;:&quot;&quot;,&quot;camera&quot;:&quot;&quot;,&quot;caption&quot;:&quot;&quot;,&quot;created_timestamp&quot;:&quot;0&quot;,&quot;copyright&quot;:&quot;&quot;,&quot;focal_length&quot;:&quot;0&quot;,&quot;iso&quot;:&quot;0&quot;,&quot;shutter_speed&quot;:&quot;0&quot;,&quot;title&quot;:&quot;&quot;,&quot;orientation&quot;:&quot;0&quot;}" data-image-title="usecases-eventdrivenapps" data-image-description="" data-image-caption="" data-medium-file="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/usecases-eventdrivenapps.png?fit=300%2C150&amp;ssl=1" data-large-file="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/usecases-eventdrivenapps.png?fit=656%2C329&amp;ssl=1" loading="lazy" width="1372" height="687" src="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/usecases-eventdrivenapps.png?fit=656%2C329&amp;ssl=1" alt="Architecture of an event-driven application." class="wp-image-10293" srcset="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/usecases-eventdrivenapps.png?w=1372&amp;ssl=1 1372w, https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/usecases-eventdrivenapps.png?resize=300%2C150&amp;ssl=1 300w, https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/usecases-eventdrivenapps.png?resize=1024%2C513&amp;ssl=1 1024w, https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/usecases-eventdrivenapps.png?resize=768%2C385&amp;ssl=1 768w, https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/usecases-eventdrivenapps.png?w=1312&amp;ssl=1 1312w" sizes="(max-width: 656px) 100vw, 656px" /><figcaption>Architecture of an event-driven application. Source: [2]</figcaption></figure>
+
+
+
+<h2> <br><strong>Data Analytics Applications</strong></h2>
+
+
+
+<p>A data analytics application extracts insights from raw data. While this can also be done with batch processing it is a good usecase for a streaming application. The advantage of using a stream processing engine is the capability of using real-time-data and continously producing results. The results can be persisted to an external storage and/or shown in a live report in real time. As a result of using stream processing, the latency of processing events gets lowered. Examples for data analytics applications can be quality monitoring of telecommunication networks or analysis of product updates. [2]</p>
+
+
+
+<p>The following image shows two architectures of data analytics applications using Apache Flink.</p>
+
+
+
+<figure class="wp-block-image size-large"><img data-attachment-id="10294" data-permalink="https://blog.mi.hdm-stuttgart.de/index.php/2020/03/09/distributed-stream-processing-frameworks-what-they-are-and-how-they-perform/usecases-dataanalyticsapps/" data-orig-file="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/usecases-dataanalyticsapps.png?fit=755%2C194&amp;ssl=1" data-orig-size="755,194" data-comments-opened="0" data-image-meta="{&quot;aperture&quot;:&quot;0&quot;,&quot;credit&quot;:&quot;&quot;,&quot;camera&quot;:&quot;&quot;,&quot;caption&quot;:&quot;&quot;,&quot;created_timestamp&quot;:&quot;0&quot;,&quot;copyright&quot;:&quot;&quot;,&quot;focal_length&quot;:&quot;0&quot;,&quot;iso&quot;:&quot;0&quot;,&quot;shutter_speed&quot;:&quot;0&quot;,&quot;title&quot;:&quot;&quot;,&quot;orientation&quot;:&quot;0&quot;}" data-image-title="usecases-dataanalyticsapps" data-image-description="" data-image-caption="" data-medium-file="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/usecases-dataanalyticsapps.png?fit=300%2C77&amp;ssl=1" data-large-file="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/usecases-dataanalyticsapps.png?fit=656%2C169&amp;ssl=1" loading="lazy" width="656" height="169" src="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/usecases-dataanalyticsapps.png?resize=656%2C169&#038;ssl=1" alt="" class="wp-image-10294" srcset="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/usecases-dataanalyticsapps.png?w=755&amp;ssl=1 755w, https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/usecases-dataanalyticsapps.png?resize=300%2C77&amp;ssl=1 300w" sizes="(max-width: 656px) 100vw, 656px" data-recalc-dims="1" /><figcaption>Batch and streaming analytics architectures in comparison. Source: [2]</figcaption></figure>
+
+
+
+<p>Now that we&#8217;ve seen an introduction to stream processing as well as some usecases. let&#8217;s look at what stream processing frameworks exist.</p>
+
+
+
+<h2><br><strong>An overview about available frameworks</strong></h2>
+
+
+
+<p>The history of stream processing began with Apache Hadoop&#8217;s batch processing engine and later shifted towards stream processing. By now, the following popular frameworks have implementations for stream processing:</p>
+
+
+
+<ul><li>
+
+	Apache
+	Spark
+	</li><li>
+
+	Apache
+	Storm
+	</li><li>
+
+	Apache
+	Flink
+	</li><li>
+
+	Apache
+	Samza
+	</li><li>
+
+	Apache
+	Kafka
+	</li><li>
+
+	Apache
+	Apex
+</li></ul>
+
+
+
+<p>
+In
+the meantime stream processing was also made available as a managed
+service, for example Amazon Kinesis.</p>
+
+
+
+<p>Let&#8217;s look a bit more into details for some of these frameworks. The blog post will briefly introduce some of the most popular streaming frameworks.</p>
+
+
+
+<h2> <br><strong>Apache Flink</strong></h2>
+
+
+
+<p>Apache
+Flink is
+an open-source
+distributed stream processing engine. It can do stateful computations
+over bounded and unbounded streams. Unbounded streams equal streaming
+data that arrives endlessly as it is generated. The order of arrival
+is important to reason about completeness and must be preserved.
+Bounded streams are comparable to <em>batch
+processing</em>.
+They have a defined start and end. The order of arrival is
+neglectable because the finite data can always be sorted.</p>
+
+
+
+<p>That way, Flink can process both input data types of streaming data and batch processing data. [9]</p>
+
+
+
+<figure class="wp-block-image size-large"><img data-attachment-id="10295" data-permalink="https://blog.mi.hdm-stuttgart.de/index.php/2020/03/09/distributed-stream-processing-frameworks-what-they-are-and-how-they-perform/boundedunbounded/" data-orig-file="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/BoundedUnbounded.png?fit=639%2C169&amp;ssl=1" data-orig-size="639,169" data-comments-opened="0" data-image-meta="{&quot;aperture&quot;:&quot;0&quot;,&quot;credit&quot;:&quot;&quot;,&quot;camera&quot;:&quot;&quot;,&quot;caption&quot;:&quot;&quot;,&quot;created_timestamp&quot;:&quot;0&quot;,&quot;copyright&quot;:&quot;&quot;,&quot;focal_length&quot;:&quot;0&quot;,&quot;iso&quot;:&quot;0&quot;,&quot;shutter_speed&quot;:&quot;0&quot;,&quot;title&quot;:&quot;&quot;,&quot;orientation&quot;:&quot;0&quot;}" data-image-title="BoundedUnbounded" data-image-description="" data-image-caption="" data-medium-file="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/BoundedUnbounded.png?fit=300%2C79&amp;ssl=1" data-large-file="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/BoundedUnbounded.png?fit=639%2C169&amp;ssl=1" loading="lazy" width="639" height="169" src="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/BoundedUnbounded.png?resize=639%2C169&#038;ssl=1" alt="Bounded and unbounded streams processable by Apache Flink." class="wp-image-10295" srcset="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/BoundedUnbounded.png?w=639&amp;ssl=1 639w, https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/BoundedUnbounded.png?resize=300%2C79&amp;ssl=1 300w" sizes="(max-width: 639px) 100vw, 639px" data-recalc-dims="1" /><figcaption>Bounded and unbounded streams processable by Apache Flink. Source: [9]</figcaption></figure>
+
+
+
+<p>In Flink, workload is parallelized to multiple execution tasks that are distributed and run concurrently. It integrates with clusters like Kubernetes natively and can even be setup as a standalone cluster.[9]</p>
+
+
+
+<h2><br><strong>Apache Storm</strong></h2>
+
+
+
+<p>Apache Storm introduces itself as an open-source realtime computation system. It can process streams of unbounded data. [10]</p>
+
+
+
+<p>Apache
+Storm has three abstraction types: spouts, bolts and topologies as
+can be seen in the architecture diagram below. Spouts are the sources
+of streaming data for the further data processing. 
+They
+typically read from a queueing broker like Kafka but can also
+generate its own stream. Bolts process an input stream and produce
+any number of output streams. A topology unites it all and represents
+a network of spouts and bolts with their connections.[11]</p>
+
+
+
+<figure class="wp-block-image size-large"><img data-attachment-id="10296" data-permalink="https://blog.mi.hdm-stuttgart.de/index.php/2020/03/09/distributed-stream-processing-frameworks-what-they-are-and-how-they-perform/storm_arch/" data-orig-file="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/storm_arch.png?fit=1052%2C512&amp;ssl=1" data-orig-size="1052,512" data-comments-opened="0" data-image-meta="{&quot;aperture&quot;:&quot;0&quot;,&quot;credit&quot;:&quot;&quot;,&quot;camera&quot;:&quot;&quot;,&quot;caption&quot;:&quot;&quot;,&quot;created_timestamp&quot;:&quot;0&quot;,&quot;copyright&quot;:&quot;&quot;,&quot;focal_length&quot;:&quot;0&quot;,&quot;iso&quot;:&quot;0&quot;,&quot;shutter_speed&quot;:&quot;0&quot;,&quot;title&quot;:&quot;&quot;,&quot;orientation&quot;:&quot;0&quot;}" data-image-title="storm_arch" data-image-description="" data-image-caption="" data-medium-file="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/storm_arch.png?fit=300%2C146&amp;ssl=1" data-large-file="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/storm_arch.png?fit=656%2C319&amp;ssl=1" loading="lazy" width="1052" height="512" src="https://i2.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/storm_arch.png?fit=656%2C319&amp;ssl=1" alt="Apache Storm architecture" class="wp-image-10296" srcset="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/storm_arch.png?w=1052&amp;ssl=1 1052w, https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/storm_arch.png?resize=300%2C146&amp;ssl=1 300w, https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/storm_arch.png?resize=1024%2C498&amp;ssl=1 1024w, https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/storm_arch.png?resize=768%2C374&amp;ssl=1 768w" sizes="(max-width: 656px) 100vw, 656px" /><figcaption>Apache Storm typical dataflow architecture. Source: [11]</figcaption></figure>
+
+
+
+<h2><br>Apache Spark</h2>
+
+
+
+<p>Apache Spark has a streaming component named Spark Streaming. It can consume streams of data by sources like Apache Kafka. It enables scalable, fault-tolerant processing of data in micro-batches. That means Spark divides the streaming data into small batch packages and then writes the results to an output stream of batches. You can then make use of the powerful other components of Spark like its machine learning library and apply it to the result data. [12]</p>
+
+
+
+<figure class="wp-block-image size-large"><img data-attachment-id="10297" data-permalink="https://blog.mi.hdm-stuttgart.de/index.php/2020/03/09/distributed-stream-processing-frameworks-what-they-are-and-how-they-perform/sparkarch/" data-orig-file="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/SparkArch.png?fit=647%2C134&amp;ssl=1" data-orig-size="647,134" data-comments-opened="0" data-image-meta="{&quot;aperture&quot;:&quot;0&quot;,&quot;credit&quot;:&quot;&quot;,&quot;camera&quot;:&quot;&quot;,&quot;caption&quot;:&quot;&quot;,&quot;created_timestamp&quot;:&quot;0&quot;,&quot;copyright&quot;:&quot;&quot;,&quot;focal_length&quot;:&quot;0&quot;,&quot;iso&quot;:&quot;0&quot;,&quot;shutter_speed&quot;:&quot;0&quot;,&quot;title&quot;:&quot;&quot;,&quot;orientation&quot;:&quot;0&quot;}" data-image-title="SparkArch" data-image-description="" data-image-caption="" data-medium-file="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/SparkArch.png?fit=300%2C62&amp;ssl=1" data-large-file="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/SparkArch.png?fit=647%2C134&amp;ssl=1" loading="lazy" width="647" height="134" src="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/SparkArch.png?resize=647%2C134&#038;ssl=1" alt="" class="wp-image-10297" srcset="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/SparkArch.png?w=647&amp;ssl=1 647w, https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/SparkArch.png?resize=300%2C62&amp;ssl=1 300w" sizes="(max-width: 647px) 100vw, 647px" data-recalc-dims="1" /><figcaption>Apache Spark architecture. Source: [12]</figcaption></figure>
+
+
+
+<p>Also tak a look into this <a href="https://blog.scottlogic.com/2018/07/06/comparing-streaming-frameworks-pt1.html">blog article</a> which provides a comparison on the coding perspective. It shows how a simple <em>hello-word-like</em> task is done in different stream processing frameworks</p>
+
+
+
+<p>So far, we&#8217;ve got an overview about several frameworks and usecases. Next up is an overview about which criteria matter when designing a stream processing engine.</p>
+
+
+
+<h2><br><strong>The important factors of a distributed stream processing engine</strong></h2>
+
+
+
+<p>For
+a system that has to handle and process a continous flow of incoming
+data any downtime is fatal. If the system is unavailable or has
+performance issues data might be lost completely. That is because
+unlike a batch processing system data is not getting stored before
+processing but is
+rather
+processed immediately and stored afterwards. Therefore there is a
+number of factors that have to be considered when analyzing a stream
+processing engine. [6][7]</p>
+
+
+
+<p>Thinking of stream processing in a distributed environment the following factors come into mind.</p>
+
+
+
+<ul><li> Delivery Guarantees: No matter what happens, the incoming dataset or record will be processed. Even in the event of a system, network or application failure, the engine continues to process data. There are different types of delivery guarantees, namely: <ul><li> At-most-once</li><li> At-least-once </li><li> Exactly-once<br>While exactly-once is the desired state, it is really hard to achieve  in a distributed system.  Tradeoffs for performance will have to be made to ensure delivery guarantees. </li></ul></li></ul>
+
+
+
+<ul><li> Peformance: Latency and throughput. Latency should be as low as possible and throughput as high as possible. </li><li> Management of state: Storing state information allows operations on multiple streams like joining, transformations or aggregation operations. However, additional computational power is needed to keep the state updated and stored. </li><li> Fault-tolerance: In case of a system or component failure the system should be able to recover. Ideally, it should start processing from the point it failed. This can be achieved by periodically saving checkpoints as we have seen in the Event-driven application example before. This also guarantees that all data will be processed and no records get lost. </li><li> Scalability: The system should be able to deal with varying workload, frequencies and inconsistent size of incoming data. </li><li> Windowing operations: Allows to extract a subset (e.g. by grouping events based on a time window) of an infinite data stream to view and process this subset separately. The window can be defined by event creation or processing time.</li><li> Maturity of the framework: How long the framework has been in use and how big the community is. [6][7] </li></ul>
+
+
+
+<p>As a last step let us take a detailed look at the capabilities of existing frameworks and get some insights about how they scale upon a huge workload.</p>
+
+
+
+<h2><br><strong>A benchmarking comparison</strong></h2>
+
+
+
+<p>The following chapter uses benchmarking data out of two different sources to provide a comparison of the performance of the most popular frameworks.</p>
+
+
+
+<ul><li>
+
+	The
+	first source is a benchmarking comparison of Adobe for their Adobe
+	Experience Platform. The Adobe Experience Platform handles more than
+	200k events per second. Adobe evaluated existing frameworks for
+	stream processing to support the growing needs for real-time
+	processing and growing amounts of data. They evaluated performance
+	and reliability of the frameworks Storm, Flink, Samza and Spark. [3]
+	</li><li>
+The second
+	source is a benchmarking published by TU Berlin. This benchmarking
+	measures the performance of windowed operations (the basic
+	operations of data analytics) of frameworks Apache Flink, Apache
+	Storm and Apache Spark. The TU Berlin team used setups with multiple
+	nodes to measure scaling and performance on different hardware
+	setups. [8]
+</li></ul>
+
+
+
+<p>The two benchmarkings measure mainly latency and throughput of stream processing frameworks. The Adobe benchmarking also compares qualitative criteria while the TU Berlin benchmarking factors in skewed data and fluctuating workloads. For more information on the benchmarks of these two teams please head to their articles as listed in the references of this blog post.</p>
+
+
+
+<p>The adobe benchmarking consists of multiple &#8216;load&#8217; tests with one million events for every framework and then a three-day reliability test. The following table are the performance measurement results of Adobe benchmarking with data from [3]. The results were as follows :</p>
+
+
+
+<figure class="wp-block-table is-style-stripes"><table class=""><thead><tr><th></th><th>Throughput</th><th> 99th process latency* </th><th> Reliability </th></tr></thead><tbody><tr><td>Storm</td><td>50-1500 events per second</td><td>&lt; 30 ms</td><td>No crashes/failures</td></tr><tr><td>Flink</td><td>600-1800 events per second</td><td>&lt; 10 ms</td><td>No crashes/failures</td></tr><tr><td>Spark</td><td>500-1700 events per second</td><td>6-7 seconds</td><td>Crashes on every run</td></tr><tr><td>Samza</td><td>185-815 events per second</td><td>54 ms</td><td>No crashes, error log raised</td></tr></tbody></table></figure>
+
+
+
+<p class="has-small-font-size">*A 99th percentile latency of x ms means that every 1 in 100 requests experiences x ms of delay.  </p>
+
+
+
+<p>The TU Berlin benchmarking consists of multiple experiments for windowed joins and windowed aggregations for streams. The tables shown below illustrate the performance measurements for throughput and latency. For further information please refer to <a href="http://www.redaktion.tu-berlin.de/fileadmin/fg131/Publikation/Papers/Stream_Benchmarks_ICDE18-CRC.pdf">this paper</a>. [8]</p>
+
+
+
+<figure class="wp-block-image size-large"><img data-attachment-id="10298" data-permalink="https://blog.mi.hdm-stuttgart.de/index.php/2020/03/09/distributed-stream-processing-frameworks-what-they-are-and-how-they-perform/berlin_bm1/" data-orig-file="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/berlin_bm1.png?fit=286%2C93&amp;ssl=1" data-orig-size="286,93" data-comments-opened="0" data-image-meta="{&quot;aperture&quot;:&quot;0&quot;,&quot;credit&quot;:&quot;&quot;,&quot;camera&quot;:&quot;&quot;,&quot;caption&quot;:&quot;&quot;,&quot;created_timestamp&quot;:&quot;0&quot;,&quot;copyright&quot;:&quot;&quot;,&quot;focal_length&quot;:&quot;0&quot;,&quot;iso&quot;:&quot;0&quot;,&quot;shutter_speed&quot;:&quot;0&quot;,&quot;title&quot;:&quot;&quot;,&quot;orientation&quot;:&quot;0&quot;}" data-image-title="berlin_bm1" data-image-description="" data-image-caption="" data-medium-file="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/berlin_bm1.png?fit=286%2C93&amp;ssl=1" data-large-file="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/berlin_bm1.png?fit=286%2C93&amp;ssl=1" loading="lazy" width="286" height="93" src="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/berlin_bm1.png?resize=286%2C93&#038;ssl=1" alt="" class="wp-image-10298" data-recalc-dims="1"/></figure>
+
+
+
+<figure class="wp-block-image size-large"><img data-attachment-id="10299" data-permalink="https://blog.mi.hdm-stuttgart.de/index.php/2020/03/09/distributed-stream-processing-frameworks-what-they-are-and-how-they-perform/berlin_bm2/" data-orig-file="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/berlin_bm2.png?fit=874%2C140&amp;ssl=1" data-orig-size="874,140" data-comments-opened="0" data-image-meta="{&quot;aperture&quot;:&quot;0&quot;,&quot;credit&quot;:&quot;&quot;,&quot;camera&quot;:&quot;&quot;,&quot;caption&quot;:&quot;&quot;,&quot;created_timestamp&quot;:&quot;0&quot;,&quot;copyright&quot;:&quot;&quot;,&quot;focal_length&quot;:&quot;0&quot;,&quot;iso&quot;:&quot;0&quot;,&quot;shutter_speed&quot;:&quot;0&quot;,&quot;title&quot;:&quot;&quot;,&quot;orientation&quot;:&quot;0&quot;}" data-image-title="berlin_bm2" data-image-description="" data-image-caption="" data-medium-file="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/berlin_bm2.png?fit=300%2C48&amp;ssl=1" data-large-file="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/berlin_bm2.png?fit=656%2C105&amp;ssl=1" loading="lazy" width="656" height="105" src="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/berlin_bm2.png?resize=656%2C105&#038;ssl=1" alt="" class="wp-image-10299" srcset="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/berlin_bm2.png?w=874&amp;ssl=1 874w, https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/berlin_bm2.png?resize=300%2C48&amp;ssl=1 300w, https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/berlin_bm2.png?resize=768%2C123&amp;ssl=1 768w" sizes="(max-width: 656px) 100vw, 656px" data-recalc-dims="1" /><figcaption>TU Berlin benchmarking data. Source: [8]</figcaption></figure>
+
+
+
+<h2><br><strong>Results of the benchmarkings</strong></h2>
+
+
+
+<p>The benchmarking conducted by Adobe came to the following conclusion: Apache Flink is the best framework for their large-scale event processing neccesities. Apache Flink performs best in terms of latency and throughtput and proved to have the best reliability and did not crash at all during the conducted tests. Flink had an excellent ability of handling backpressure compared to other tested frameworks. Furthermore, Flink has a good community which will be useful in development and maintenance of their application.[3]</p>
+
+
+
+<p>The following table shows their results for qualitative and quantitative benchmarking.</p>
+
+
+
+<figure class="wp-block-image size-large"><img data-attachment-id="10300" data-permalink="https://blog.mi.hdm-stuttgart.de/index.php/2020/03/09/distributed-stream-processing-frameworks-what-they-are-and-how-they-perform/adobe_bm/" data-orig-file="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/adobe_bm.png?fit=706%2C250&amp;ssl=1" data-orig-size="706,250" data-comments-opened="0" data-image-meta="{&quot;aperture&quot;:&quot;0&quot;,&quot;credit&quot;:&quot;&quot;,&quot;camera&quot;:&quot;&quot;,&quot;caption&quot;:&quot;&quot;,&quot;created_timestamp&quot;:&quot;0&quot;,&quot;copyright&quot;:&quot;&quot;,&quot;focal_length&quot;:&quot;0&quot;,&quot;iso&quot;:&quot;0&quot;,&quot;shutter_speed&quot;:&quot;0&quot;,&quot;title&quot;:&quot;&quot;,&quot;orientation&quot;:&quot;0&quot;}" data-image-title="adobe_bm" data-image-description="" data-image-caption="" data-medium-file="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/adobe_bm.png?fit=300%2C106&amp;ssl=1" data-large-file="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/adobe_bm.png?fit=656%2C232&amp;ssl=1" loading="lazy" width="656" height="232" src="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/adobe_bm.png?resize=656%2C232&#038;ssl=1" alt="" class="wp-image-10300" srcset="https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/adobe_bm.png?w=706&amp;ssl=1 706w, https://i0.wp.com/blog.mi.hdm-stuttgart.de/wp-content/uploads/2020/03/adobe_bm.png?resize=300%2C106&amp;ssl=1 300w" sizes="(max-width: 656px) 100vw, 656px" data-recalc-dims="1" /><figcaption>Adobe benchmarking results. Source: [3]</figcaption></figure>
+
+
+
+<p>The TU Berlin benchmarking shows that each tested framework has a different set of usecases that they excel in. Overall Apache Flink has the best throughput and latency for different setups while Apache Spark manages skewed data and bound latency better than its competitors. Both Spark and Flink are very robust to fluctuating data. [8]</p>
+
+
+
+<h2><br>Conclusion</h2>
+
+
+
+<p>In this article we have got an overview about how stream processing works. We have seen some example usecases where using a stream processing engine is beneficial. Stream processing is a great tool to handle unbound streams of data that have to be processed with minimal latency or at best in realtime. Many applications with IOT devices or sensor technology can benefit from this approach. However, not all types of applications fit with stream processing. We got a brief introduction to several popular stream processing  frameworks as well as some measurements on performance. Each framework  has its own usecase in either performance or additional libraries like  e.g. machine learning libraries that it provides. </p>
+
+
+
+<h2><br>References</h2>
+
+
+
+<p>[1]:  <a href="https://medium.com/stream-processing/what-is-stream-processing-1eadfca11b97">https://medium.com/stream-processing/what-is-stream-processing-1eadfca11b97</a><br>[2]:  <a href="https://flink.apache.org/usecases.html">https://flink.apache.org/usecases.html</a><br>[3]:  <a href="https://medium.com/adobetech/evaluating-streaming-frameworks-for-large-scale-event-streaming-7209938373c8">https://medium.com/adobetech/evaluating-streaming-frameworks-for-large-scale-event-streaming-7209938373c8</a><br>[4]:  <a href="https://ci.apache.org/projects/flink/flink-docs-release-1.10/dev/datastream_api.html">https://ci.apache.org/projects/flink/flink-docs-release-1.10/dev/datastream_api.html</a><br>[5]:  <a href="https://blog.scottlogic.com/2018/07/06/comparing-streaming-frameworks-pt1.html">https://blog.scottlogic.com/2018/07/06/comparing-streaming-frameworks-pt1.html</a><br>[6]:  <a href="https://medium.com/@chandanbaranwal/spark-streaming-vs-flink-vs-storm-vs-kafka-streams-vs-samza-choose-your-stream-processing-91ea3f04675b">https://medium.com/@chandanbaranwal/spark-streaming-vs-flink-vs-storm-vs-kafka-streams-vs-samza-choose-your-stream-processing-91ea3f04675b</a><br>[7]:  <a href="https://developer.ibm.com/code/2018/03/21/stream-processing-brief-overview/">https://developer.ibm.com/code/2018/03/21/stream-processing-brief-overview/</a><br>[8]:  <a href="http://www.redaktion.tu-berlin.de/fileadmin/fg131/Publikation/Papers/Stream_Benchmarks_ICDE18-CRC.pdf">http://www.redaktion.tu-berlin.de/fileadmin/fg131/Publikation/Papers/Stream_Benchmarks_ICDE18-CRC.pdf</a><br>[9]:  <a href="https://flink.apache.org/flink-architecture.html">https://flink.apache.org/flink-architecture.html</a><br>[10]:  <a href="https://storm.apache.org/index.html">https://storm.apache.org/index.html</a><br>[11]:  <a href="https://storm.apache.org/about/simple-api.html">https://storm.apache.org/about/simple-api.html</a><br>[12]:  <a href="https://spark.apache.org/docs/latest/streaming-programming-guide.html">https://spark.apache.org/docs/latest/streaming-programming-guide.html</a></p>
+
+<div id='jp-relatedposts' class='jp-relatedposts' >
+	<h3 class="jp-relatedposts-headline"><em>Related</em></h3>
+</div>			</div><!-- .entry-content -->
+
+	<footer class="entry-footer">
+				<span class="cat-links">
+			Posted in <a href="https://blog.mi.hdm-stuttgart.de/index.php/category/allgemein/" rel="category tag">Allgemein</a>, <a href="https://blog.mi.hdm-stuttgart.de/index.php/category/ultra-large-scale-systems/" rel="category tag">Ultra Large Scale Systems</a>		</span>
+						<span class="tags-links">
+			<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/distributed-stream-processing/" rel="tag">distributed stream processing</a><a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/distributed-systems/" rel="tag">distributed systems</a><a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/stream-processing/" rel="tag">stream processing</a>		</span>
+			</footer><!-- .entry-footer -->
+</article><!-- #post-## -->
+
+				<nav class="navigation post-navigation" role="navigation">
+		<h1 class="screen-reader-text">Post navigation</h1>
+		<div class="nav-links">
+			<div class="nav-previous"><a href="https://blog.mi.hdm-stuttgart.de/index.php/2020/03/06/isolation-and-consistency-in-databases/" rel="prev"><span class="meta-nav">&lt; Previous</span> Isolation and Consistency in Databases</a></div><div class="nav-next"><a href="https://blog.mi.hdm-stuttgart.de/index.php/2020/04/13/open-source-batch-and-stream-processing-realtime-analysis-of-big-data/" rel="next"><span class="meta-nav">Next &gt;</span> Open Source Batch and Stream Processing: Realtime Analysis of Big Data</a></div>		</div><!-- .nav-links -->
+	</nav><!-- .navigation -->
+	
+			
+		
+		</main><!-- #main -->
+	</div><!-- #primary -->
+
+	<div id="secondary" class="widget-area" role="complementary">
+		<aside id="search-2" class="widget widget_search"><form role="search" method="get" class="search-form" action="https://blog.mi.hdm-stuttgart.de/">
+				<label>
+					<span class="screen-reader-text">Search for:</span>
+					<input type="search" class="search-field" placeholder="Search &hellip;" value="" name="s" />
+				</label>
+				<input type="submit" class="search-submit" value="Search" />
+			</form></aside>
+		<aside id="recent-posts-2" class="widget widget_recent_entries">
+		<h1 class="widget-title">Recent Posts</h1>
+		<ul>
+											<li>
+					<a href="https://blog.mi.hdm-stuttgart.de/index.php/2022/04/01/improve-your-storage-i-o-performance-today/">Improve your storage I/O performance today</a>
+									</li>
+											<li>
+					<a href="https://blog.mi.hdm-stuttgart.de/index.php/2022/04/01/tla-and-pluscal-appetizer/">TLA+ and PlusCal Appetizer</a>
+									</li>
+											<li>
+					<a href="https://blog.mi.hdm-stuttgart.de/index.php/2022/03/31/an-overview-of-large-scale-deep-learning/">An overview of Large Scale Deep Learning</a>
+									</li>
+											<li>
+					<a href="https://blog.mi.hdm-stuttgart.de/index.php/2022/03/30/webassembly-das-neue-docker-und-noch-mehr/">WebAssembly: Das neue Docker und noch mehr?</a>
+									</li>
+											<li>
+					<a href="https://blog.mi.hdm-stuttgart.de/index.php/2022/03/27/slog-deterministische-datenbanksysteme-die-losung-fur-alle-probleme/">SLOG &#8211; Deterministische Datenbanksysteme die Lösung für alle* Probleme?</a>
+									</li>
+					</ul>
+
+		</aside><aside id="categories-2" class="widget widget_categories"><h1 class="widget-title">Categories</h1>
+			<ul>
+					<li class="cat-item cat-item-1"><a href="https://blog.mi.hdm-stuttgart.de/index.php/category/allgemein/">Allgemein</a>
+</li>
+	<li class="cat-item cat-item-120"><a href="https://blog.mi.hdm-stuttgart.de/index.php/category/dev4cloud/">Dev4Cloud</a>
+</li>
+	<li class="cat-item cat-item-396"><a href="https://blog.mi.hdm-stuttgart.de/index.php/category/games/">Games</a>
+</li>
+	<li class="cat-item cat-item-70"><a href="https://blog.mi.hdm-stuttgart.de/index.php/category/journal-club/">Journal Club</a>
+</li>
+	<li class="cat-item cat-item-22"><a href="https://blog.mi.hdm-stuttgart.de/index.php/category/projects/" title="Posts about some projects from students of Stuttgart Media University will address the progress, problems and howtos from their different project topics.">Projects</a>
+</li>
+	<li class="cat-item cat-item-262"><a href="https://blog.mi.hdm-stuttgart.de/index.php/category/rich-media-systems/">Rich Media Systems</a>
+</li>
+	<li class="cat-item cat-item-26"><a href="https://blog.mi.hdm-stuttgart.de/index.php/category/secure-systems/">Secure Systems</a>
+</li>
+	<li class="cat-item cat-item-21"><a href="https://blog.mi.hdm-stuttgart.de/index.php/category/systemarchitecture/">System architecture</a>
+</li>
+	<li class="cat-item cat-item-2"><a href="https://blog.mi.hdm-stuttgart.de/index.php/category/systemengineering/" title="In the lecture &quot;System Engineering and Management&quot; we try to take a closer look at current software systems and how to build and deploy software. With this blog, we try to share our experience with you, so maybe you can profit from our mistakes ;)">System engineering</a>
+</li>
+	<li class="cat-item cat-item-223"><a href="https://blog.mi.hdm-stuttgart.de/index.php/category/ultra-large-scale-systems/">Ultra Large Scale Systems</a>
+</li>
+			</ul>
+
+			</aside><aside id="tag_cloud-2" class="widget widget_tag_cloud"><h1 class="widget-title">A collection of buzzwords</h1><div class="tagcloud"><a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/ai/" class="tag-cloud-link tag-link-355 tag-link-position-1" style="font-size: 8pt;" aria-label="AI (4 items)">AI</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/amazon-alexa-skill/" class="tag-cloud-link tag-link-76 tag-link-position-2" style="font-size: 8pt;" aria-label="Amazon Alexa Skill (4 items)">Amazon Alexa Skill</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/amazon-web-services/" class="tag-cloud-link tag-link-77 tag-link-position-3" style="font-size: 11.733333333333pt;" aria-label="Amazon Web Services (7 items)">Amazon Web Services</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/architecture/" class="tag-cloud-link tag-link-49 tag-link-position-4" style="font-size: 11.733333333333pt;" aria-label="architecture (7 items)">architecture</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/artificial-intelligence/" class="tag-cloud-link tag-link-106 tag-link-position-5" style="font-size: 13.6pt;" aria-label="artificial intelligence (9 items)">artificial intelligence</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/automation/" class="tag-cloud-link tag-link-73 tag-link-position-6" style="font-size: 9.4933333333333pt;" aria-label="Automation (5 items)">Automation</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/aws/" class="tag-cloud-link tag-link-84 tag-link-position-7" style="font-size: 15.653333333333pt;" aria-label="AWS (12 items)">AWS</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/aws-lambda/" class="tag-cloud-link tag-link-83 tag-link-position-8" style="font-size: 12.666666666667pt;" aria-label="AWS Lambda (8 items)">AWS Lambda</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/bluemix/" class="tag-cloud-link tag-link-46 tag-link-position-9" style="font-size: 8pt;" aria-label="bluemix (4 items)">bluemix</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/ci-pipeline/" class="tag-cloud-link tag-link-144 tag-link-position-10" style="font-size: 10.8pt;" aria-label="Ci-Pipeline (6 items)">Ci-Pipeline</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/ci-cd/" class="tag-cloud-link tag-link-150 tag-link-position-11" style="font-size: 16.96pt;" aria-label="CI/CD (14 items)">CI/CD</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/cloud/" class="tag-cloud-link tag-link-7 tag-link-position-12" style="font-size: 21.253333333333pt;" aria-label="Cloud (25 items)">Cloud</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/cloud-computing/" class="tag-cloud-link tag-link-232 tag-link-position-13" style="font-size: 9.4933333333333pt;" aria-label="Cloud-Computing (5 items)">Cloud-Computing</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/containers/" class="tag-cloud-link tag-link-61 tag-link-position-14" style="font-size: 10.8pt;" aria-label="Containers (6 items)">Containers</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/ci/" class="tag-cloud-link tag-link-24 tag-link-position-15" style="font-size: 10.8pt;" aria-label="Continuous Integration (6 items)">Continuous Integration</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/deep-learning/" class="tag-cloud-link tag-link-119 tag-link-position-16" style="font-size: 10.8pt;" aria-label="deep learning (6 items)">deep learning</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/devops/" class="tag-cloud-link tag-link-9 tag-link-position-17" style="font-size: 11.733333333333pt;" aria-label="DevOps (7 items)">DevOps</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/distributed-systems/" class="tag-cloud-link tag-link-38 tag-link-position-18" style="font-size: 11.733333333333pt;" aria-label="distributed systems (7 items)">distributed systems</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/docker/" class="tag-cloud-link tag-link-3 tag-link-position-19" style="font-size: 22pt;" aria-label="Docker (27 items)">Docker</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/docker-compose/" class="tag-cloud-link tag-link-342 tag-link-position-20" style="font-size: 8pt;" aria-label="docker compose (4 items)">docker compose</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/git/" class="tag-cloud-link tag-link-97 tag-link-position-21" style="font-size: 10.8pt;" aria-label="Git (6 items)">Git</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/gitlab/" class="tag-cloud-link tag-link-98 tag-link-position-22" style="font-size: 14.346666666667pt;" aria-label="gitlab (10 items)">gitlab</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/gitlab-ci/" class="tag-cloud-link tag-link-145 tag-link-position-23" style="font-size: 13.6pt;" aria-label="Gitlab CI (9 items)">Gitlab CI</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/ibm/" class="tag-cloud-link tag-link-47 tag-link-position-24" style="font-size: 9.4933333333333pt;" aria-label="ibm (5 items)">ibm</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/ibm-bluemix/" class="tag-cloud-link tag-link-129 tag-link-position-25" style="font-size: 10.8pt;" aria-label="IBM Bluemix (6 items)">IBM Bluemix</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/internet-of-things/" class="tag-cloud-link tag-link-36 tag-link-position-26" style="font-size: 8pt;" aria-label="internet of things (4 items)">internet of things</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/jenkins/" class="tag-cloud-link tag-link-78 tag-link-position-27" style="font-size: 12.666666666667pt;" aria-label="Jenkins (8 items)">Jenkins</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/kubernetes/" class="tag-cloud-link tag-link-154 tag-link-position-28" style="font-size: 16.96pt;" aria-label="Kubernetes (14 items)">Kubernetes</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/linux/" class="tag-cloud-link tag-link-4 tag-link-position-29" style="font-size: 15.653333333333pt;" aria-label="Linux (12 items)">Linux</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/loadbalancing/" class="tag-cloud-link tag-link-11 tag-link-position-30" style="font-size: 9.4933333333333pt;" aria-label="loadbalancing (5 items)">loadbalancing</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/machine-learning/" class="tag-cloud-link tag-link-57 tag-link-position-31" style="font-size: 16.4pt;" aria-label="machine learning (13 items)">machine learning</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/microservices/" class="tag-cloud-link tag-link-91 tag-link-position-32" style="font-size: 15.093333333333pt;" aria-label="Microservices (11 items)">Microservices</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/monitoring/" class="tag-cloud-link tag-link-167 tag-link-position-33" style="font-size: 9.4933333333333pt;" aria-label="Monitoring (5 items)">Monitoring</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/nodejs/" class="tag-cloud-link tag-link-25 tag-link-position-34" style="font-size: 19.2pt;" aria-label="Node.js (19 items)">Node.js</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/privacy/" class="tag-cloud-link tag-link-164 tag-link-position-35" style="font-size: 8pt;" aria-label="privacy (4 items)">privacy</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/python/" class="tag-cloud-link tag-link-285 tag-link-position-36" style="font-size: 10.8pt;" aria-label="Python (6 items)">Python</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/raspberry-pi/" class="tag-cloud-link tag-link-14 tag-link-position-37" style="font-size: 8pt;" aria-label="Raspberry Pi (4 items)">Raspberry Pi</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/scaling/" class="tag-cloud-link tag-link-48 tag-link-position-38" style="font-size: 12.666666666667pt;" aria-label="scaling (8 items)">scaling</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/secure-systems/" class="tag-cloud-link tag-link-58 tag-link-position-39" style="font-size: 16.96pt;" aria-label="secure systems (14 items)">secure systems</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/security/" class="tag-cloud-link tag-link-27 tag-link-position-40" style="font-size: 22pt;" aria-label="security (27 items)">security</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/social-media/" class="tag-cloud-link tag-link-201 tag-link-position-41" style="font-size: 9.4933333333333pt;" aria-label="social media (5 items)">social media</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/tdd/" class="tag-cloud-link tag-link-23 tag-link-position-42" style="font-size: 11.733333333333pt;" aria-label="Test-Driven Development (7 items)">Test-Driven Development</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/uls/" class="tag-cloud-link tag-link-217 tag-link-position-43" style="font-size: 9.4933333333333pt;" aria-label="ULS (5 items)">ULS</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/vulnerabilities/" class="tag-cloud-link tag-link-125 tag-link-position-44" style="font-size: 8pt;" aria-label="Vulnerabilities (4 items)">Vulnerabilities</a>
+<a href="https://blog.mi.hdm-stuttgart.de/index.php/tag/web-performance/" class="tag-cloud-link tag-link-432 tag-link-position-45" style="font-size: 8pt;" aria-label="Web Performance (4 items)">Web Performance</a></div>
+</aside><aside id="archives-2" class="widget widget_archive"><h1 class="widget-title">Archives</h1>
+			<ul>
+					<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2022/04/'>April 2022</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2022/03/'>March 2022</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2022/02/'>February 2022</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2022/01/'>January 2022</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2021/10/'>October 2021</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2021/09/'>September 2021</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2021/08/'>August 2021</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2021/07/'>July 2021</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2021/06/'>June 2021</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2021/03/'>March 2021</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2021/02/'>February 2021</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2020/09/'>September 2020</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2020/08/'>August 2020</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2020/04/'>April 2020</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2020/03/'>March 2020</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2020/02/'>February 2020</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2019/11/'>November 2019</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2019/10/'>October 2019</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2019/09/'>September 2019</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2019/08/'>August 2019</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2019/07/'>July 2019</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2019/03/'>March 2019</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2019/02/'>February 2019</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2019/01/'>January 2019</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2018/09/'>September 2018</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2018/08/'>August 2018</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2018/07/'>July 2018</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2018/06/'>June 2018</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2018/03/'>March 2018</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2017/10/'>October 2017</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2017/09/'>September 2017</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2017/08/'>August 2017</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2017/07/'>July 2017</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2017/06/'>June 2017</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2017/03/'>March 2017</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2017/02/'>February 2017</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2017/01/'>January 2017</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2016/12/'>December 2016</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2016/11/'>November 2016</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2016/10/'>October 2016</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2016/09/'>September 2016</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2016/08/'>August 2016</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2016/07/'>July 2016</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2016/06/'>June 2016</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2016/05/'>May 2016</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2016/04/'>April 2016</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2016/03/'>March 2016</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2016/02/'>February 2016</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2016/01/'>January 2016</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2015/12/'>December 2015</a></li>
+	<li><a href='https://blog.mi.hdm-stuttgart.de/index.php/2015/11/'>November 2015</a></li>
+			</ul>
+
+			</aside><aside id="meta-2" class="widget widget_meta"><h1 class="widget-title">Meta</h1>
+		<ul>
+						<li><a href="https://blog.mi.hdm-stuttgart.de/wp-login.php">Log in</a></li>
+			<li><a href="https://blog.mi.hdm-stuttgart.de/index.php/feed/">Entries feed</a></li>
+			<li><a href="https://blog.mi.hdm-stuttgart.de/index.php/comments/feed/">Comments feed</a></li>
+
+			<li><a href="https://wordpress.org/">WordPress.org</a></li>
+		</ul>
+
+		</aside>	</div><!-- #secondary -->
+
+	</div><!-- #content -->
+
+	<footer id="colophon" class="site-footer" role="contentinfo">
+		<div class="site-info">
+			<a href="http://wordpress.org/">Proudly powered by WordPress</a>
+			<span class="sep"> ~ </span>
+			Theme: Penscratch by <a href="http://wordpress.com/themes/penscratch/" rel="designer">WordPress.com</a>.		</div><!-- .site-info -->
+			</footer><!-- #colophon -->
+</div><!-- #page -->
+
+		<div id="jp-carousel-loading-overlay">
+			<div id="jp-carousel-loading-wrapper">
+				<span id="jp-carousel-library-loading">&nbsp;</span>
+			</div>
+		</div>
+		<div class="jp-carousel-overlay" style="display: none;">
+
+		<div class="jp-carousel-container">
+			<!-- The Carousel Swiper -->
+			<div
+				class="jp-carousel-wrap swiper-container jp-carousel-swiper-container jp-carousel-transitions"
+				itemscope
+				itemtype="https://schema.org/ImageGallery">
+				<div class="jp-carousel swiper-wrapper"></div>
+				<div class="jp-swiper-button-prev swiper-button-prev">
+					<svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<mask id="maskPrev" mask-type="alpha" maskUnits="userSpaceOnUse" x="8" y="6" width="9" height="12">
+							<path d="M16.2072 16.59L11.6496 12L16.2072 7.41L14.8041 6L8.8335 12L14.8041 18L16.2072 16.59Z" fill="white"/>
+						</mask>
+						<g mask="url(#maskPrev)">
+							<rect x="0.579102" width="23.8823" height="24" fill="#FFFFFF"/>
+						</g>
+					</svg>
+				</div>
+				<div class="jp-swiper-button-next swiper-button-next">
+					<svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<mask id="maskNext" mask-type="alpha" maskUnits="userSpaceOnUse" x="8" y="6" width="8" height="12">
+							<path d="M8.59814 16.59L13.1557 12L8.59814 7.41L10.0012 6L15.9718 12L10.0012 18L8.59814 16.59Z" fill="white"/>
+						</mask>
+						<g mask="url(#maskNext)">
+							<rect x="0.34375" width="23.8822" height="24" fill="#FFFFFF"/>
+						</g>
+					</svg>
+				</div>
+			</div>
+			<!-- The main close buton -->
+			<div class="jp-carousel-close-hint">
+				<svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+					<mask id="maskClose" mask-type="alpha" maskUnits="userSpaceOnUse" x="5" y="5" width="15" height="14">
+						<path d="M19.3166 6.41L17.9135 5L12.3509 10.59L6.78834 5L5.38525 6.41L10.9478 12L5.38525 17.59L6.78834 19L12.3509 13.41L17.9135 19L19.3166 17.59L13.754 12L19.3166 6.41Z" fill="white"/>
+					</mask>
+					<g mask="url(#maskClose)">
+						<rect x="0.409668" width="23.8823" height="24" fill="#FFFFFF"/>
+					</g>
+				</svg>
+			</div>
+			<!-- Image info, comments and meta -->
+			<div class="jp-carousel-info">
+				<div class="jp-carousel-info-footer">
+					<div class="jp-carousel-pagination-container">
+						<div class="jp-swiper-pagination swiper-pagination"></div>
+						<div class="jp-carousel-pagination"></div>
+					</div>
+					<div class="jp-carousel-photo-title-container">
+						<h2 class="jp-carousel-photo-caption"></h2>
+					</div>
+					<div class="jp-carousel-photo-icons-container">
+						<a href="#" class="jp-carousel-icon-btn jp-carousel-icon-info" aria-label="Toggle photo metadata visibility">
+							<span class="jp-carousel-icon">
+								<svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+									<mask id="maskInfo" mask-type="alpha" maskUnits="userSpaceOnUse" x="2" y="2" width="21" height="20">
+										<path fill-rule="evenodd" clip-rule="evenodd" d="M12.7537 2C7.26076 2 2.80273 6.48 2.80273 12C2.80273 17.52 7.26076 22 12.7537 22C18.2466 22 22.7046 17.52 22.7046 12C22.7046 6.48 18.2466 2 12.7537 2ZM11.7586 7V9H13.7488V7H11.7586ZM11.7586 11V17H13.7488V11H11.7586ZM4.79292 12C4.79292 16.41 8.36531 20 12.7537 20C17.142 20 20.7144 16.41 20.7144 12C20.7144 7.59 17.142 4 12.7537 4C8.36531 4 4.79292 7.59 4.79292 12Z" fill="white"/>
+									</mask>
+									<g mask="url(#maskInfo)">
+										<rect x="0.8125" width="23.8823" height="24" fill="#FFFFFF"/>
+									</g>
+								</svg>
+							</span>
+						</a>
+												<a href="#" class="jp-carousel-icon-btn jp-carousel-icon-comments" aria-label="Toggle photo comments visibility">
+							<span class="jp-carousel-icon">
+								<svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+									<mask id="maskComments" mask-type="alpha" maskUnits="userSpaceOnUse" x="2" y="2" width="21" height="20">
+										<path fill-rule="evenodd" clip-rule="evenodd" d="M4.3271 2H20.2486C21.3432 2 22.2388 2.9 22.2388 4V16C22.2388 17.1 21.3432 18 20.2486 18H6.31729L2.33691 22V4C2.33691 2.9 3.2325 2 4.3271 2ZM6.31729 16H20.2486V4H4.3271V18L6.31729 16Z" fill="white"/>
+									</mask>
+									<g mask="url(#maskComments)">
+										<rect x="0.34668" width="23.8823" height="24" fill="#FFFFFF"/>
+									</g>
+								</svg>
+
+								<span class="jp-carousel-has-comments-indicator" aria-label="This image has comments."></span>
+							</span>
+						</a>
+											</div>
+				</div>
+				<div class="jp-carousel-info-extra">
+					<div class="jp-carousel-info-content-wrapper">
+						<div class="jp-carousel-photo-title-container">
+							<h2 class="jp-carousel-photo-title"></h2>
+						</div>
+						<div class="jp-carousel-comments-wrapper">
+															<div id="jp-carousel-comments-loading">
+									<span>Loading Comments...</span>
+								</div>
+								<div class="jp-carousel-comments"></div>
+								<div id="jp-carousel-comment-form-container">
+									<span id="jp-carousel-comment-form-spinner">&nbsp;</span>
+									<div id="jp-carousel-comment-post-results"></div>
+																														<div id="jp-carousel-comment-form-commenting-as">
+												<p id="jp-carousel-commenting-as">
+													You must be <a href="#" class="jp-carousel-comment-login">logged in</a> to post a comment.												</p>
+											</div>
+																											</div>
+													</div>
+						<div class="jp-carousel-image-meta">
+							<div class="jp-carousel-title-and-caption">
+								<div class="jp-carousel-photo-info">
+									<h3 class="jp-carousel-caption" itemprop="caption description"></h3>
+								</div>
+
+								<div class="jp-carousel-photo-description"></div>
+							</div>
+							<ul class="jp-carousel-image-exif" style="display: none;"></ul>
+							<a class="jp-carousel-image-download" target="_blank" style="display: none;">
+								<svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+									<mask id="mask0" mask-type="alpha" maskUnits="userSpaceOnUse" x="3" y="3" width="19" height="18">
+										<path fill-rule="evenodd" clip-rule="evenodd" d="M5.84615 5V19H19.7775V12H21.7677V19C21.7677 20.1 20.8721 21 19.7775 21H5.84615C4.74159 21 3.85596 20.1 3.85596 19V5C3.85596 3.9 4.74159 3 5.84615 3H12.8118V5H5.84615ZM14.802 5V3H21.7677V10H19.7775V6.41L9.99569 16.24L8.59261 14.83L18.3744 5H14.802Z" fill="white"/>
+									</mask>
+									<g mask="url(#mask0)">
+										<rect x="0.870605" width="23.8823" height="24" fill="#FFFFFF"/>
+									</g>
+								</svg>
+								<span class="jp-carousel-download-text"></span>
+							</a>
+							<div class="jp-carousel-image-map" style="display: none;"></div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		</div>
+		<script type='text/javascript' src='https://blog.mi.hdm-stuttgart.de/wp-content/plugins/jetpack/_inc/build/photon/photon.min.js?ver=20191001' id='jetpack-photon-js'></script>
+<script type='text/javascript' src='https://blog.mi.hdm-stuttgart.de/wp-content/themes/penscratch/js/navigation.js?ver=20120206' id='penscratch-navigation-js'></script>
+<script type='text/javascript' src='https://blog.mi.hdm-stuttgart.de/wp-content/themes/penscratch/js/skip-link-focus-fix.js?ver=20130115' id='penscratch-skip-link-focus-fix-js'></script>
+<script type='text/javascript' src='https://blog.mi.hdm-stuttgart.de/wp-content/plugins/mivhak/vendor/askupa-software/amarkal-framework/Assets/js/select2.min.js?ver=0.3.7' id='select2-js'></script>
+<script type='text/javascript' src='https://cdnjs.cloudflare.com/ajax/libs/ace/1.2.3/ace.js?ver=1.2.3' id='ace-editor-js'></script>
+<script type='text/javascript' id='mivhak-js-extra'>
+/* <![CDATA[ */
+var mivhak_settings = {"line_numbers":"","auto_assign":"","show_meta":"1","min_lines":"1","default_lang":"","font_size":null,"theme":"default.css","version":"1.3.6","lang_list":{"abap":"ABAP","abc":"ABC","actionscript":"ActionScript","ada":"Ada","apache_conf":"ApacheConf","applescript":"AppleScript","asciidoc":"AsciiDoc","assembly_x86":"Assembly x86","autohotkey":"AutoHotkey","batchfile":"Batch File","c9search":"c9search","c_cpp":"C\/C++","cirru":"cirru","clojure":"Clojure","cobol":"COBOL","coffee":"CoffeeScript","coldfusion":"ColdFusion","csharp":"C#","css":"CSS","curly":"Curly","d":"D","dart":"Dart","diff":"diff","django":"Django","dockerfile":"Dockerfile","dot":"DOT","eiffel":"Eiffel","ejs":"EJS","elixir":"Elixir","elm":"Elm","erlang":"Erlang","forth":"Forth","ftl":"FTL","gcode":"G-Code","gherkin":"Gherkin","gitignore":"gitignore","glsl":"GLSL","gobstones":"gobstones","golang":"Go","groovy":"Groovy","haml":"Haml","handlebars":"Handlebars","haskell":"Haskell","haxe":"Haxe","html":"HTML","html_elixir":"HTML Elixir","html_ruby":"HTML Ruby","ini":"INI","io":"io","jack":"JACK","jade":"Jade","java":"Java","javascript":"JavaScript","json":"JSON","jsoniq":"JSONiq","jsp":"JSP","jsx":"JSX","julia":"Julia","latex":"LaTex","lean":"Lean","less":"Less","liquid":"Liquid","lisp":"Lisp","livescript":"LiveScript","logiql":"LogiQL","lsl":"LSL","lua":"Lua","luapage":"Luapage","lucene":"Lucene","makefile":"Makefile","markdown":"Markdown","mask":"Mask","matlab":"MATLAB","maze":"Maze","mel":"MEL","mipsassembler":"MIPS Assembler","mushcode":"MUSHCode","mysql":"MySQL","nix":"nix","nsis":"NSIS","objectivec":"Objective-C","ocaml":"OCaml","pascal":"Pascal","perl":"Perl","pgsql":"pgSQL","php":"PHP","plain_text":"Plain Text","powershell":"PowerShell","praat":"Praat","prolog":"Prolog","properties":"Properties","protobuf":"Protocol Bufffers","python":"Python","r":"R","razor":"Razor","rdoc":"RDoc","rhtml":"rhtml","rst":"reStructuredText","ruby":"Ruby","rust":"Rust","sass":"Sass","scad":"SCAD","scala":"Scala","scheme":"Scheme","scss":"SCSS","sh":"sh","sjs":"SJS","smarty":"Smarty","snippets":"Snippets","soy_template":"Soy Template","space":"Space","sql":"SQL","sqlserver":"SQLServer","stylus":"Stylus","svg":"SVG","swift":"Swift","swig":"Swig","tcl":"Tcl","tex":"Tex","text":"Text","textile":"Textile","toml":"Toml","twig":"Twig","typescript":"TypeScript","vala":"Vala","vbscript":"VBScript","velocity":"Velocity","verilog":"Verilog","vhdl":"VHDL","wollok":"Wollok","xml":"XML","xquery":"XQuery","yaml":"YAML"},"i18n":["line","lines","Copy this code to clipboard","Open this code in a new window","Wrap lines","Show code","About"]};
+/* ]]> */
+</script>
+<script type='text/javascript' src='https://blog.mi.hdm-stuttgart.de/wp-content/plugins/mivhak/assets/js/mivhak.min.js?ver=1.3.6' id='mivhak-js'></script>
+<script type='text/javascript' id='jetpack-carousel-js-extra'>
+/* <![CDATA[ */
+var jetpackSwiperLibraryPath = {"url":"https:\/\/blog.mi.hdm-stuttgart.de\/wp-content\/plugins\/jetpack\/_inc\/build\/carousel\/swiper-bundle.min.js"};
+var jetpackCarouselStrings = {"widths":[370,700,1000,1200,1400,2000],"is_logged_in":"","lang":"en","ajaxurl":"https:\/\/blog.mi.hdm-stuttgart.de\/wp-admin\/admin-ajax.php","nonce":"d284e156f5","display_exif":"1","display_comments":"1","single_image_gallery":"1","single_image_gallery_media_file":"","background_color":"black","comment":"Comment","post_comment":"Post Comment","write_comment":"Write a Comment...","loading_comments":"Loading Comments...","download_original":"View full size <span class=\"photo-size\">{0}<span class=\"photo-size-times\">\u00d7<\/span>{1}<\/span>","no_comment_text":"Please be sure to submit some text with your comment.","no_comment_email":"Please provide an email address to comment.","no_comment_author":"Please provide your name to comment.","comment_post_error":"Sorry, but there was an error posting your comment. Please try again later.","comment_approved":"Your comment was approved.","comment_unapproved":"Your comment is in moderation.","camera":"Camera","aperture":"Aperture","shutter_speed":"Shutter Speed","focal_length":"Focal Length","copyright":"Copyright","comment_registration":"1","require_name_email":"1","login_url":"https:\/\/blog.mi.hdm-stuttgart.de\/wp-login.php?redirect_to=https%3A%2F%2Fblog.mi.hdm-stuttgart.de%2Findex.php%2F2020%2F03%2F09%2Fdistributed-stream-processing-frameworks-what-they-are-and-how-they-perform%2F","blog_id":"1","meta_data":["camera","aperture","shutter_speed","focal_length","copyright"]};
+/* ]]> */
+</script>
+<script type='text/javascript' src='https://blog.mi.hdm-stuttgart.de/wp-content/plugins/jetpack/_inc/build/carousel/jetpack-carousel.min.js?ver=10.9' id='jetpack-carousel-js'></script>
+        <script>if( typeof QTags !== 'undefined' ){QTags.addButton( 'pre', 'pre', '<pre>', '</pre>\n', 'p', '', 105 );}</script>
+    <script src='https://stats.wp.com/e-202221.js' defer></script>
+<script>
+	_stq = window._stq || [];
+	_stq.push([ 'view', {v:'ext',j:'1:10.9',blog:'103878600',post:'10289',tz:'2',srv:'blog.mi.hdm-stuttgart.de'} ]);
+	_stq.push([ 'clickTrackerInit', '103878600', '10289' ]);
+</script>
+
+		<!-- Cookie Notice plugin v2.2.3 by Hu-manity.co https://hu-manity.co/ -->
+		<div id="cookie-notice" role="dialog" class="cookie-notice-hidden cookie-revoke-hidden cn-position-bottom" aria-label="Cookie Notice" style="background-color: rgba(0,0,0,1);"><div class="cookie-notice-container" style="color: #fff;"><span id="cn-notice-text" class="cn-text-container">We use cookies to ensure that we give you the best experience on our website. If you continue to use this site we will assume that you are happy with it. </span><span id="cn-notice-buttons" class="cn-buttons-container"><a href="#" id="cn-accept-cookie" data-cookie-set="accept" class="cn-set-cookie cn-button" aria-label="Ok" style="background-color: #00a99d">Ok</a></span><span id="cn-close-notice" data-cookie-set="accept" class="cn-close-icon" title="No"></span></div>
+			
+		</div>
+		<!-- / Cookie Notice plugin -->
+</body>
+</html>

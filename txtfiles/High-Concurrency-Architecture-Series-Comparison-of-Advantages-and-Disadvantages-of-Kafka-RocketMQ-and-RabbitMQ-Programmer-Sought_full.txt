@@ -1,0 +1,485 @@
+
+
+
+
+
+
+
+
+
+
+High Concurrency Architecture Series: Comparison of Advantages and Disadvantages of Kafka, RocketMQ, and RabbitMQ - Programmer Sought
+
+
+
+
+
+
+
+
+
+
+
+ProgrammerSought
+
+
+Home
+Contact Us
+Privacy Policy
+
+
+☰ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+High Concurrency Architecture Series: Comparison of Advantages and Disadvantages of Kafka, RocketMQ, and RabbitMQ
+
+
+
+
+
+
+
+
+
+
+
+In the high concurrent business scenario, the typical Ali double 11-second killing service, the message queue middleware has an irreplaceable role in traffic peak clipping and decoupling.
+I introduced [the 12-point core principle summary of MQ message queue], [How to design an MQ message queue from 0 to 1], and [the difference between RPC remote call and message queue MQ].
+Today we will discuss together:
+What is the full amount of message queues? Advantages and disadvantages of Kafka, RocketMQ, RabbitMQ, and the selection of message queues.
+What are the most complete MQ message queues?
+So what are the more well-known news engines in the industry? As shown below
+
+This is almost a complete list of well-known news engines, including:
+
+ZeroMQ
+Twitter's Distributedlog
+ActiveMQ: Apache's old-fashioned messaging engine
+RabbitMQ, Kafka: The default implementation of AMQP.
+RocketMQ
+Artemis: Subproject under Apache ActiveMQ
+Apollo: Also known as Apache's ActiveMQ subproject, the next-generation messaging engine
+Commercial message engine IronMQ
+And OpenMQ that implements the JMS (Java Message Service) standard.
+
+Technical application of MQ message queue
+Decoupling
+Decoupling is the most essential problem that message queues have to solve.
+2. Final consistency
+Final consistency means that the states of the two systems are consistent, either successful or fail.
+Final consistency is not a must-have feature of message queues, but it does depend on message queues for eventual consistency.
+3. Broadcast
+One of the basic functions of message queues is to broadcast.
+With the message queue, we only need to care whether the message is delivered to the queue. As for who wants to subscribe, it is a downstream matter, which undoubtedly greatly reduces the workload of development and joint debugging.
+4. Wrong peak and flow control
+A typical usage scenario is the spike service used for traffic peaking scenarios.
+Due to the relationship between the pages, this article focuses on the comparison of message queues. For detailed application scenarios, please refer to: My previous article [What is traffic clipping? How to solve the peak clipping scenario of the spike business]
+Comparison of Kafka, RocketMQ, RabbitMQ
+1.ActiveMQ
+advantage
+
+Stand-alone throughput: 10,000
+
+
+The number of topics is the impact of throughput:
+Timeliness: ms level
+Availability: High, high availability based on master-slave architecture
+Message reliability: there is a lower probability of losing data
+Functional support: The functions in the MQ field are extremely complete
+
+Disadvantages:
+The official community now has less and less maintenance on ActiveMQ 5.x and is less used in large-scale throughput scenarios.
+2.Kafka
+Known as the killer of big data, when it comes to message transmission in the field of big data, Kafka cannot be avoided. This message middleware for big data has become famous with its million-level TPS throughput. The darling of the data field plays a pivotal role in the process of data collection, transmission and storage.
+Apache Kafka was originally implemented by LinkedIn as a distributed commit log based on a unique design and later became part of the Apache project.
+It has been adopted by major companies such as LinkedIn, Uber, Twitter, and Netflix.
+advantage
+
+Excellent performance, single-machine write TPS is about one million / sec, the biggest advantage is the high throughput.
+Timeliness: ms level
+Usability: Very high, kafka is distributed, multiple copies of one data, a few machines down, no data loss, no unavailability
+Consumers use the Pull method to obtain messages, and the messages are in order. Through control, all messages can be guaranteed to be consumed and consumed only once;
+Excellent third-party Kafka web management interface Kafka-Manager;
+Mature in the log field, used by many companies and multiple open source projects;
+Function support: The function is relatively simple, mainly supports simple MQ function, real-time calculation in big data field and log collection are used on a large scale.
+
+Disadvantages:
+
+Kafka has more than 64 queues/partitions, and Load will be significantly higher. The more queues, the higher the load, and the longer the response time of sending messages.
+With short polling, real-time depends on the polling interval;
+Consumption failure does not support retry;
+Support message order, but after a proxy is down, it will generate message out of order;
+Community updates are slower;
+
+3.RabbitMQ
+RabbitMQ was released in 2007 and is a reusable enterprise messaging system based on AMQP (Advanced Message Queuing Protocol). It is one of the most mainstream messaging middlewares.
+RabbitMQ advantages:
+
+Due to the characteristics of the erlang language, mq performance is good and high concurrency;
+Throughput to 10,000, MQ function is relatively complete
+
+
+Robust, stable, easy to use, cross-platform, multi-language support, complete documentation;
+The management interface provided by open source is very good, it is very easy to use.
+High community activity;
+
+RabbitMQ disadvantages:
+
+Erlang development, it is difficult to understand the source code, the basic functions depend on the rapid maintenance and repair of bugs in the open source community, which is not conducive to secondary development and maintenance.
+
+
+RabbitMQ does have a lower throughput because of the heavier implementation mechanism.
+Need to learn more complex interfaces and protocols, and the cost of learning and maintenance is high.
+
+4.RocketMQ
+RocketMQ comes from Ali's open source product, implemented in Java, referenced Kafka in design, and made some improvements.
+RocketMQ is widely used in the Alibaba Group for orders, transactions, recharge, stream computing, message push, log streaming, binglog distribution and more.
+RocketMQ advantages:
+
+Stand-alone throughput: 100,000
+Availability: Very high, distributed architecture
+Message reliability: After parameter optimization configuration, the message can be lost 0
+Function support: MQ function is relatively complete, distributed, and good scalability
+Support 1 billion level message stacking, no performance degradation due to accumulation
+The source code is java, we can read the source code ourselves, customize the MQ of our company, you can control
+
+RocketMQ disadvantages:
+
+There are not many supported client languages, currently java and c++, where c++ is not mature;
+Community activity
+There is no interface such as JMS in the mq core. Some systems need to be modified to modify a lot of code.
+
+Message queue selection suggestion
+1.Kafka
+The main feature of Kafka is the processing of message consumption based on the Pull mode, and the pursuit of high throughput. The initial purpose is to collect and transmit logs, and to collect data services for Internet services that generate large amounts of data.
+Large companies suggest that they can be used. If there is a log collection function, it is definitely the preferred kafka.
+2.RocketMQ
+Born to the financial Internet field, the scenes with high reliability requirements, especially the order deductions in e-commerce, and business peaking, when the large number of transactions flooded, the back-end may not be able to deal with it in time.
+RoketMQ may be more reliable in terms of stability. These business scenarios have been tested many times in Ali Double 11. If your business has the above concurrency scenarios, it is recommended to choose RocketMQ.
+3.RabbitMQ
+RabbitMQ: Combining the concurrency advantages of the erlang language itself, the performance is better, and the community activity is higher, but it is not conducive to secondary development and maintenance. However, the RabbitMQ community is very active and can solve the bugs encountered during development.
+If your data volume is not that big, the small company prefers the more complete RabbitMQ.
+If it is useful, please support it and send you a set of recent updates.[Architectural Design Specials 88 Collection]Originally created by the original BAT first-line manufacturer, it took 1 year to complete, and 2019 learning will be a step ahead.
+
+
+Copyright Complaint      
+Spam Report
+
+
+
+
+
+
+
+
+
+
+Intelligent Recommendation
+
+
+
+
+
+
+
+
+
+
+Comparison of Kafka, RabbitMQ, RocketMQ
+
+
+
+2019 Unicorn Enterprise Heavy Recruitment Standards for Python Engineers >>> 1. Basic comparison Kafka is LinkedIn's open source distributed publish-subscribe messaging system, which currentl...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Why use a message queue? Message Queue What are the advantages and disadvantages? Kafka, ActiveMQ, RabbitMQ, RocketMQ has what advantages and disadvantages? ...
+
+
+
+Why use a message queue? Message Queue What are the advantages and disadvantages? Kafka, ActiveMQ, RabbitMQ, RocketMQ what's the difference, and what scenarios fit? Why use Message Queue Use scene sum...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Kafka / RocketMQ architecture comparison
+
+
+
+First, Broker design contrast 1. Kafka image Topic A has a total of 2 partitions, and each partition has two copies (a Leader a FOLLOWER), which is distributed on Broker0 and Broker1; Broker0 / Broker...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Commonly used message middleware MQ (ActiveMq, Rabbitmq, Rocketmq, Kafka) advantages and disadvantages and differences
+
+
+
+Commonly used message middleware MQ (ActiveMq, Rabbitmq, Rocketmq, Kafka) advantages and disadvantages and differences Common news middleware introduction Currently using more messages include Rabbitm...
+
+
+
+
+
+
+
+
+
+
+
+The message team is the advantages and disadvantages of the two common message queues Rabbitmq, Rocketmq, Kafka
+
+
+
+Common message queue comparison product advantage insufficient RabbitMQ Lightweight, easy deployment; support flexible routing configuration; Good compatibility; convenient use in the management backg...
+
+
+
+
+
+
+
+
+
+
+
+More Recommendation
+
+
+
+
+
+
+
+
+
+
+ActiveMQ RabbitMQ RocketMQ KafKa Comparison
+
+
+
+ActiveMQAnd RabbitMq and Kafka have been used in previous projects. Of course, there is no specific comparison between the three. The following is a comparison of some online comparisons on these thre...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Comparison of RocketMQ, kafka, RabbitMQ (Figure)
+
+
+
+Currently mainstream MQ is mainly RocketMQ, kafka, RabbitMQ. RocketMQ has the main advantages compared to RabbitMQ and kafka: Support for transactional messages (messages and DB operations maintain ul...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Transfer Kafka, RabbitMQ, RocketMQ and other message middleware comparison-message sending performance and advantages
+
+
+
+Comparison of message middleware such as Kafka, RabbitMQ, RocketMQ-message sending performance and advantages introduction In distributed systems, we widely use message middleware to exchange data bet...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Why use message queues? What are the advantages and disadvantages of message queues? What are the differences between kafka, activemq, rabbitmq, and rocketmq and what scenarios are they suitable for?
+
+
+
+1、 Why use message queues? What are the advantages and disadvantages of message queues? What are the differences between kafka, activemq, rabbitmq, and rocketmq and what scenarios are they suitable fo...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Microservices Series (1): Advantages and Disadvantages of Microservice Architecture
+
+
+
+Microservices have attracted widespread attention in the moment, becoming a hot topic for articles, blogs, social media discussions, and conference speeches; they are also ranked very high on Gartner'...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Related Posts
+High Concurrency Architecture Series: Comparison of Advantages and Disadvantages of Kafka, RocketMQ, and RabbitMQ
+High Concurrency Architecture Series: Comparison of the advantages and disadvantages of Kafka, RocketMQ, and RabbitMQ
+High concurrent architecture series: Kafka, Rocketmq, Rabbitmq of Excellent Disadvantages
+RabbitMQ/RocketMQ/Kafka high-availability architecture comparison
+Interview questions: What are the advantages and disadvantages of Kafka, ActiveMQ, RabbitMQ, RocketMQ?
+Message queue Kafka, RocketMQ, RabbitMQ advantages and disadvantages, technical applications and choices
+RabbitMQ / RocketMQ / Kafka stand-alone architecture comparison
+Zhu Daneng’s job hunting trip-Why use message queue? What are the advantages and disadvantages of message queue? Comparison of advantages and disadvantages of Kafka/Activemq/Rabbitmq/Rocketmq?
+Comparison of message middleware such as Kafka, RabbitMQ, RocketMQ - message delivery performance and advantages
+Comparison of message middleware such as Kafka, RabbitMQ, RocketMQ-message sending performance and advantages
+
+
+
+
+
+
+Popular Posts
+Several ways of eS6 export
+Introduction to Spring's three basic components
+form an encrypted form the background foreground js java
+Spring framework learning three (type data injection)
+spring-datesource.xml configuration, spring integration mybatis
+Leetcode 592. Score Adjusting C ++
+LeetCode2 Add Two Numbers
+Introduction to database integrity [Chapter] mind mapping database system
+ResNet101V2 network structure
+[Minimum path coverage]hdoj 3335: Divisibility
+
+
+
+
+
+
+Recommended Posts
+Solve Selenium.common.Exceptions.webdriveRexception: Message: Unknown Error: Cannot Find Chrome Binary
+JS references text information in the outermost JS
+The realization of Window, WindowManager and floating frame video playback in Android
+Design Mode - Component mode
+Java foundation (20) (thread pool, waiting wake-up mechanism, Voliate keyword, single case design pattern "lazy mode" "Hungry Mode")
+Apache common interview
+leetcode209. The smallest length sub-array/double pointer, prefix sum, dichotomy
+[0CTF 2016]piapiapia
+Java string interview questions and answers
+Mina develops an example of the udp protocol
+
+
+
+
+
+Related Tags
+Message middlewarejavaMQkafkarocketmqrabbitmqMQ high availabilityRocketMQRabbitMQJava
+
+
+
+
+
+
+
+
+ Copyright  DMCA © 2018-2022 - All Rights Reserved - www.programmersought.com  User Notice 
+
+
+Top
+
+
+
+
+
+
+
+
+
+
+
+

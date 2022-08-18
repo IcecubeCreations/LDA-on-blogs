@@ -1,0 +1,647 @@
+
+
+
+
+
+
+
+
+
+
+Kafka and syslog-ng - Blog - syslog-ng Community - syslog-ng Community
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+ Products  
+
+View all products
+Free trials
+ Log Management Appliance 
+ Log Management Software 
+ Open Source Log Management 
+
+
+ Solutions  
+
+Optimizing SIEM
+ Universal log collection and routing 
+ Big data ingestion 
+Rapid search and troubleshooting
+ Meeting compliance requirements 
+ Secure data archive 
+
+
+ Resources 
+
+Customer Stories
+Documents
+Events
+Technical Documentation
+
+syslog-ng Premium Edition
+syslog-ng Store Box
+syslog-ng Open Source
+
+
+Videos
+
+
+Trials
+ Support 
+
+Packages
+By Product
+
+syslog-ng Premium Edition
+syslog-ng Store Box
+
+
+
+
+ Partners  
+
+Overview
+Partner Circle Log In
+Become a Partner
+Find a Partner
+
+
+ Community  
+
+Home
+Blog
+Open Source Edition Mailing List
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+syslog-ng Community
+
+
+
+Site
+
+
+
+
+
+
+
+Search
+
+
+
+
+
+
+
+
+
+
+User
+
+
+
+
+
+
+Site
+
+
+Search
+
+
+User
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+syslog-ng Community
+
+
+Blog
+
+
+Kafka and syslog-ng
+
+
+
+
+
+
+
+
+
+
+
+
+New
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Kafka and syslog-ng
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Actions
+
+
+
+
+
+
+
+
+
+Subscribe by email
+
+Posts RSS
+
+More
+
+
+Cancel
+
+
+
+
+
+
+
+
+
+
+Tags
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+					Peter Czanik
+				
+
+
+
+		25 Nov 2015
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Anytime I tweet about syslog-ng‘s Kafka destination, I gather some new followers. Most of the time they are more interested in another Kafka, who was born in Prague by the end of the 19th century and wrote excellent surreal short stories. Even if I admire Kafka’s works, I’ll write here, as usual, about syslog-ng and one of its most recent destinations: the Kafka destination.
+
+Kafka introduction
+First of all, let me introduce Kafka, a high-throughput distributed messaging system. It was originally developed by LinkedIn as a backbone of a website activity tracking infrastructure. Once open source, it was developed further under the umbrella of the Apache Foundation. In 2014 Confluent was founded to provide enterprise level support to Kafka users. Kafka is now used by major companies, including Netflix, Twitter and PayPal. There are now many more uses for Kafka: message queuing, log aggregation, stream processing or as a commit log.
+There are four important terms to know if you want to understand the basics of Kafka and where syslog-ng fits into the picture. For a more detailed introduction check the Kafka documentation.
+
+topics are the categories where Kafka feeds messages.
+producers publish messages to a Kafka topic
+consumers subscribe to topics to process the published messages
+Kafka itself is a cluster of one or more servers that are called brokers
+
+The syslog-ng application can act as a producer and publish messages to a Kafka topic. But it is not just a simple collection of syslog messages and publishing them to Kafka. The syslog-ng application can collect messages from several sources and process as well as filter them before forwarding them to Kafka. This can simplify the architecture, lessen the load on brokers due to filtering and ease the work of consumers as they receive pre-processed messages.
+
+Data collector
+Based on the name of syslog-ng most people consider it as an application for collecting syslog messages. And that is partially right: syslog-ng can collect syslog messages from a large number of platform-specific sources (like /dev/log, journal, sun-streams, and so on). But syslog-ng can also read files, run applications and collect their standard output, read messages from sockets and pipes or receive messages over the network. There is no need for a separate script or application to accomplish these tasks: syslog-ng can be used as a generic data collector that can greatly simplify the data pipeline.
+There is a considerable number of devices that emit a high number of syslog messages to the network but cannot store them: routers, firewalls, network appliances. The syslog-ng application can collect these messages, even at high message rates, no matter if it is transmitted using the legacy or RFC5424 syslog protocols, over TCP, UDP or TLS.
+This means that application logs can be enriched with syslog and networking device logs, and provide valuable context for operation teams and all of these provided by a single application: syslog-ng.
+
+Data processor
+There are several ways to process data in syslog-ng. First of all, data is parsed. By default it is one of the syslog parsers (either the legacy or the RFC5424) but it can either be replaced by others, or the message content can further be parsed. Columnar data can be parsed with the CSV parser, free form messages – like most syslog messages – with the PatternDB parser, and there are parsers for JSON data and key value pairs as well.
+Messages can be rewritten, for example by overwriting credit card numbers or user names due to compliance or privacy regulations.
+Data can also be enriched in multiple ways. The PatternDB parser can create additional name-value pairs based on message content. The GeoIP parser can add geographical location based on the IP address contained in the log message.
+It is also possible to completely reformat messages using templates based on the requirements of the needs of the consumer. Why send all fields from a web server log if only a third of them are used on the processing end?
+
+Data filtering
+Unless you really want to forward all collected data, you will use one or more filters in syslog-ng. There are several filter functions both for message content and message parameters, like application name or message priority. All of these can be freely combined using boolean operators, making very complex filters possible. The use of filters has two major uses:
+
+only relevant messages get through, the rest can be discarded
+messages can be routed to the right destinations
+
+Either of these can lessen the resource usage and therefore the load as well on both the brokers and consumers.
+Once data is collected, processed and filtered, it is time to forward it to a Kafka destination. This destination is a brand new feature in syslog-ng. While most of syslog-ng is written in C and is extremely resource-efficient even if all of the above features are in heavy use, the Kafka destination is written in Java. It is not so light on resource usage, but using Java has the advantage that the official Kafka client libraries can be utilized.
+The Kafka destination is available in both syslog-ng Open Source Edition (OSE) and in the commercially supported Premium Edition (PE). Getting started with it takes a bit more configuration work than with other non-Java based destinations, but it is worth the effort. For PE, everything is included in the documentation: Publishing messages to Apache Kafka.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+					schaeferkkf25
+
+				
+
+
+11 months ago
+
+
+
+
+For me, there is no need for a separate script or application to accomplish these tasks: syslog-ng can be used as a generic data collector that can greatly simplify the data pipeline.
+- Kim @ Masonry Contractor
+
+
+
+
+
+
+Cancel
+
+
+
+
+
+
+
+
+
+Up
+0
+Down
+
+
+
+
+
+More
+
+
+Cancel
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Related Content
+			
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Company 
+
+About Us
+Careers
+Contact Us
+News
+
+
+Resources 
+
+Blogs
+Customer Stories
+Documents
+Events
+Videos
+
+
+Support 
+
+Overview
+Open Source Edition Mailing List
+Technical Documentation
+
+
+Social Networks 
+
+Facebook
+Github
+Twitter
+Youtube
+
+
+Partners 
+
+Become a Partner
+Partner Finder
+Partner Login
+
+
+
+
+
+
+© 2019 One Identity LLC. ALL RIGHTS RESERVED.
+Legal
+Terms of Use
+Privacy
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,1125 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Kafka wasn't built for large messages, but files and payloads keep getting bigger. This article covers use cases, architectures, and trade-offs with Kafka.">
+  <meta name="keywords" content="kafka, processing, Machine learning, Big data, Data science">
+
+  <meta property="og:description" content="Kafka wasn't built for large messages, but files and payloads keep getting bigger. This article covers use cases, architectures, and trade-offs with Kafka.">
+  <meta property="og:site_name" content="dzone.com">
+  <meta property="og:title" content="Processing Large Messages With Apache Kafka - DZone Big Data">
+  <meta property="og:url" content="https://dzone.com/articles/processing-large-messages-with-apache-kafka">
+  <meta property="og:image" content="https://dz2cdn1.dzone.com/storage/article-thumb/13841200-thumb.jpg">
+  <meta property="og:type" content="article">
+
+  <meta name="twitter:site" content="@DZoneInc">
+  <meta name="twitter:image" content="https://dz2cdn1.dzone.com/storage/article-thumb/13841200-thumb.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:description" content="Kafka wasn't built for large messages, but files and payloads keep getting bigger. This article covers use cases, architectures, and trade-offs with Kafka.">
+  <meta name="twitter:title" content="Processing Large Messages With Apache Kafka - DZone Big Data">
+
+  <meta name="referrer" content="origin-when-cross-origin">
+  <meta name="google-site-verification" content="kndbhxcupfEqWmZclhCpB6vlgOs7QSmx2UHAGGnP2mA">
+  <meta name="df-verify" content="df0d76632b4543">
+
+  <link rel="icon" type="image/x-icon" href="https://dz2cdn2.dzone.com/themes/dz20/images/favicon.png">
+  <link rel="image_src" href="https://dz2cdn1.dzone.com/storage/article-thumb/13841200-thumb.jpg">
+  <link rel="canonical" href="https://dzone.com/articles/processing-large-messages-with-apache-kafka">
+
+  <title>Processing Large Messages With Apache Kafka - DZone Big Data</title>
+
+  <link rel="preload" href="https://fonts.dzone.com/themes/dz20/font/fontello.woff?11773374" as="font" type="font/woff" crossorigin="anonymous">
+
+  <link rel="stylesheet" media="all" href="https://dz2cdn2.dzone.com/themes/dz20/ftl/icons.css">
+  <link rel="stylesheet" media="all" href="https://dz2cdn2.dzone.com/themes/dz20/lib/static/bootstrap/bootstrap.min.css">
+  <link rel="stylesheet" media="all" href="https://dz2cdn2.dzone.com/themes/dz20/ftl/article/global.css">
+  <link rel="stylesheet" media="all" href="https://dz2cdn2.dzone.com/themes/dz20/ftl/header/styles.css">
+</head>
+<body>
+<div id="ftl-header">
+  <div class="container-fluid header">
+    <div class="row">
+      <div class="col-md-12" style="padding: 0;">
+        <div class="header-top">
+          <div class="header-container">
+            <div class="pull-left logo-container">
+              <div class="logo">
+                <a class="inner" href="/">
+                  <picture>
+                    <source srcset="https://dz2cdn2.dzone.com/themes/dz20/images/dz_logo_2021_cropped.webp" type="image/webp">
+                    <source srcset="https://dz2cdn2.dzone.com/themes/dz20/images/dz_logo_2021_cropped.png" type="image/png">
+                    <img src="https://dz2cdn2.dzone.com/themes/dz20/images/dz_logo_2021_cropped.png" width="160" height="52" alt="DZone">
+                  </picture>
+                </a>
+              </div>
+
+                <div class="active-portal"><a href="/big-data-analytics-tutorials-tools-news">Big Data Zone</a></div>
+            </div>
+
+            <div class="pull-right login-and-search">
+              <div id="authenticated-block" class="logged-in">
+                <div class="welcome-back">Thanks for visiting DZone today,</div>
+                <div id="user-header" class="user-info">
+                  <button class="user-avatar">
+                    <span id="header-username" class="username"></span>
+                    <img id="header-avatar" src="" alt="user avatar">
+                  </button>
+                  <div id="user-dropdown" class="browse-user-menu">
+                    <div class="user-content">
+                      <a id="header-user-plug" href="#" class="user-description"></a>
+                      <a id="header-user-edit" href="#" class="edit-profile">Edit Profile</a>
+                    </div>
+                    <ul class="user-actions">
+                      <li id="first-user-action"><a id="header-dropdown-manage-email" href="#">Manage Email Subscriptions</a></li>
+                      <li>
+                        <a href="/articles/how-to-submit-a-post-to-dzone?utm_source=DZone&utm_medium=user_dropdown&utm_campaign=how_to_post">
+                          How to Post to DZone
+                        </a>
+                      </li>
+                      <li>
+                        <a href="/articles/dzones-article-submission-guidelines">
+                          Article Submission Guidelines
+                        </a>
+                      </li>
+                    </ul>
+                    <div class="bottom">
+                      <a href="/users/logout.html" class="sign-out">Sign Out</a>
+                      <a id="dropdown-view-profile" href="#" class="view-profile">View Profile</a>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="post-content">
+                  <button id="post-button" class="post-content--button">
+                    <span class="post-class">Post</span>
+                    <i class="icon-plus"></i>
+                  </button>
+
+                  <div id="post-menu" class="posting-links">
+                    <div class="posting-links-menu">
+                      <ul>
+                        <li>
+                          <img src="/themes/dz20/images/dz-postarticle.svg">
+                          <a href="/content/article/post.html">Post an Article</a>
+                        </li>
+                        <li>
+                          <a id="drafts-link" href="#">Manage My Drafts</a>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div id="unauthenticated-block">
+                <div class="dz-intro">Over 2 million developers have joined DZone.</div>
+                <div class="mobile-invisible sign-in-join">
+                  <a href="/users/login.html">Log In</a>
+                  <span class="dz-intro-span">/</span>
+                  <a href="/static/registration.html">Join</a>
+                </div>
+                <a class="join-icon" href="/users/login.html"><i class="icon-user"></i></a>
+              </div>
+              <div class="headerSearch">
+                <a class="icon-search dropdown-toggle" href="/search"></a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="header-bottom">
+
+
+          <ul class="portals header-container scrollable-ul">
+            <li>
+              <a href="/refcardz" id="header-refcardz">
+                <em>Refcardz</em>
+              </a>
+            </li>
+            <li>
+              <a href="/trendreports" id="header-research">
+                <em>Trend Reports</em>
+              </a>
+            </li>
+            <li>
+              <a href="/webinars" id="header-webinars">
+                <em>Webinars</em>
+              </a>
+            </li>
+            <li class="last-portal-link">
+              <a href="#" id="header-portals">
+                <em>
+                  Zones
+                  <span id="zone-arrow" class="collapsible-toggle">
+                    <i class="icon-angle-down"></i>
+                    <i class="icon-angle-up"></i>
+                  </span>
+                </em>
+              </a>
+            </li>
+
+            <li class="separator" aria-hidden="true" style="color: #d9dcdd;">|</li>
+            <li id="portal-list" class="portal-topics">
+              <ul>
+                  <li>
+                    <a href="/agile-methodology-training-tools-news" id="header-2">Agile</a>
+                  </li>
+                  <li>
+                    <a href="/artificial-intelligence-tutorials-tools-news" id="header-4001">AI</a>
+                  </li>
+                  <li>
+                    <a href="/big-data-analytics-tutorials-tools-news" id="header-3">Big Data</a>
+                  </li>
+                  <li>
+                    <a href="/cloud-computing-tutorials-tools-news" id="header-4">Cloud</a>
+                  </li>
+                  <li>
+                    <a href="/database-sql-nosql-tutorials-tools-news" id="header-5">Database</a>
+                  </li>
+                  <li>
+                    <a href="/devops-tutorials-tools-news" id="header-6">DevOps</a>
+                  </li>
+                  <li>
+                    <a href="/enterprise-integration-training-tools-news" id="header-7">Integration</a>
+                  </li>
+                  <li>
+                    <a href="/iot-developer-tutorials-tools-news-reviews" id="header-8">IoT</a>
+                  </li>
+                  <li>
+                    <a href="/java-jdk-development-tutorials-tools-news" id="header-1">Java</a>
+                  </li>
+                  <li>
+                    <a href="/microservices-news-tutorials-tools" id="header-6001">Microservices</a>
+                  </li>
+                  <li>
+                    <a href="/open-source-news-tutorials-tools" id="header-7001">Open Source</a>
+                  </li>
+                  <li>
+                    <a href="/apm-tools-performance-monitoring-optimization" id="header-10">Performance</a>
+                  </li>
+                  <li>
+                    <a href="/application-web-network-security" id="header-2001">Security</a>
+                  </li>
+                  <li>
+                    <a href="/web-development-programming-tutorials-tools-news" id="header-11">Web Dev</a>
+                  </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script async src="https://dz2cdn2.dzone.com/themes/dz20/ftl/header/bundle.js"></script><link rel="stylesheet" media="all" href="https://dz2cdn2.dzone.com/themes/dz20/ftl/article/styles.css">
+
+
+
+
+<div id="ftl-article" >
+  <div class="container-fluid body">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="articles-wrap">
+              <div class="ad-container">
+                <div id="div-gpt-ad-1435246566686-0" class="ads-billboard-article" data-gpt-slot="top"></div>
+              </div>
+
+
+          <div class="article-stream widget-top-border">
+                <div class="content-right-images">
+                  <div id="div-gpt-ad-1435246566686-2" class="sidebar-ad" data-gpt-desktop="true" data-gpt-slot="sidebar1"></div>
+                </div>
+
+                <script type="application/ld+json">
+                  {
+                    "@context": "http://schema.org",
+                    "@type": "Article",
+                    "headline": "Processing Large Messages With Apache Kafka",
+                    "author": {
+                      "@type": "Person",
+                      "name": "Kai Wähner"
+                    },
+                    "audience": "software developers",
+                    "keywords": "kafka,big data,video processing,large file,open source,event streaming,stream processing,internet of things,machine learning,limitations",
+                    "timeRequired": "PT14M",
+                    "commentCount": 1,
+                    "wordCount": "3312",
+                    "accessMode": "textual, visual",
+                    "dateCreated": "2020-08-13T17:46:33Z",
+                    "datePublished": "2020-08-13T00:00:00Z",
+                    "dateModified": "2020-09-12T06:40:47Z",
+                    "articleSection": "big-data-analytics-tutorials-tools-news",
+                    "publisher": {
+                      "@type": "Organization",
+                      "name": "DZone",
+                      "url": "https://dzone.com",
+                      "logo": {
+                        "@type": "ImageObject",
+                        "url": "https://dzone.com/themes/dz20/images/dz_logo_2021_cropped.png"
+                      }
+                    },
+                    "articleBody": "Kafka was not built for large messages. Period. Nevertheless, more and more projects send and process 1Mb, 10Mb, and even much bigger files and other large payloads via Kafka. One reason is that Kafka was designed for large volume/throughput - which is required for large messages. This article covers the use cases, architectures, and trade-offs for handling large messages with Kafka. Use Cases for Large (Kafka) Message Payloads Various use cases for large message payloads exist: Image recognition, video analytics, audio analytics, and file processing are widespread examples. Image Recognition and Video Analytics Image recognition and video analytics (also known as computer vision) is probably the number one use case. Many examples require the analysis of videos in real-time, including: Security and surveillance (access control, intrusion detection, motion detection) Transport monitoring system (vehicle traffic detection, incidence detection, pedestrian monitoring) Healthcare (health status monitoring, telemedicine, surgical video analysis) Manufacturing (machine vision for quality assurance, augmented support and training) The usage of image and video processing via concepts such as Computer Vision (e.g., OpenCV) or Deep Learning / Neural Networks (e.g., TensorFlow) reduces time, cost, and human effort, plus this makes industries more secure, reliable, and consistent. Audio Analytics Audio analytics is an interesting use case, coming up more and more: In conjunction with video analytics: See the use cases above. Often video and audio need to be processed together. Consumer IoT (CIoT): Alerting, informing, advising people, e.g., using Audio Analytic. Industrial IoT (IIoT): Machine diagnostics and predictive maintenance using advanced sound analysis, e.g., using Neuron Soundware Natural Language Processing (NLP): Chatbots and other modern systems use text and speech translation, e.g., using the fully-managed services from the major cloud providers Big Data File Processing Last but not least, the processing of big files received in batch-mode will not go away any time soon. But big files can be incorporated into a modern event streaming workflow for decoupling/separation of concerns, connectivity to various sinks. And it allows data processing in real-time and batch simultaneously. Legacy systems will provide data sources like big CSV or proprietary files or snapshots/exports from databases that need to be integrated. Data processing includes streaming applications (such as Kafka Streams, ksqlDB, or Apache Flink) to continuously process, correlate, and analyze events from different data sources. Data sources such as Hadoop or Spark processed incoming data in batch mode (e.g., map/reduce, shuffling). Other data sources such as data warehouse (e.g., Snowflake) or text search (e.g., Elasticsearch) ingest data in near-real-time. What Kafka is NOT After exploring use cases for large message payloads, let's clarify what Kafka is not: Kafka is usually not the right technology to store and process large files (images, videos, proprietary files, etc.) as a whole. Products were built specifically for these use cases. For instance, a Content Delivery Network (CDN) such as Akamai, Limelight Networks, or Amazon CloudFront distribute video streams and other software downloads across the globe. Or \"big file editing and processing\" (like a video processing tool). Or video editing tools from Adobe, Autodesk, Camtasia, and many other vendors are used to structure and present all video information, including films and television shows, video advertisements, and video essays. Let's take a look at one example which combines Kafka and these other tools: Netflix processes over 6 Petabytes per day with Kafka. However, this is \"just\" for message orchestration, coordination, data integration, data preprocessing, ingestion into data lakes, building stateless and stateful business applications, and other use cases. But Kafka is not used to sharing and storing all the shows and movies you watch on your TV or tablet. A Content Delivery Network (CDN) like Akamai is used in conjunction with other tools and products to provide you the excellent video streaming experience you know. Okay, Kafka is not the right tool to store and process large files as a whole, like a CDN or video editing tool. Why, when, and how should you handle large message payloads with Kafka then? And what is a \"large message\" in Kafka terms? Features and Limitations of using Kafka for Large Messages Originally, Kafka was not built for processing large messages and files. This does not mean that you cannot do it! Kafka limits the max size of messages. The default value of the broker configuration' ' message.max.bytes' is 1MB. Why does Kafka limit the message size by default? Different sizing, configuration, and tuning required for large message handling compared to a mission-critical real-time cluster with low latency. Large messages increase the memory pressure on the broker JVM. Large messages are expensive to handle and could slow down the brokers. A reasonable message size limit can meet the requirements of most use cases. Good workarounds exist if you need to handle large messages. Most cloud offerings don't allow large messages. There are noticeable performance impacts from increasing the allowable message size. Hence, understand all alternatives discussed below before sending messages &gt;1Mb through your Kafka cluster. Depending on your SLAs for uptime and latency, a separate Kafka cluster should be considered for processing large messages. Having said this, I have seen customers processing messages far bigger than 10Mb with Kafka. It is valid to evaluate Kafka for processing large messages instead of using another tool for that (often in conjunction with Kafka). LinkedIn talked a long time ago about the pros and cons of two different approaches: Using 'Kafka only' vs. 'Kafka in conjunction with another data storage'. Especially outside the public cloud, most enterprises cannot simply use an S3 object store for big data. Therefore, the question comes up if one system (Kafka) is good enough, or if you should invest in two systems (Kafka and external storage). Let's take a look at the trade-offs for using Kafka for large messages. Kafka for Large Messages – Alternatives and Trade-Offs There is no single best solution. The decision on how to handle large messages with Kafka depends on your use cases, SLAs, and already existing infrastructure. The following three available alternatives exist to handle large messages with Kafka: Reference-based messaging in Kafka and external storage In-line large message support in Kafka without external storage In-line large message support and tiered storage in Kafka Here are the characteristics and pros/cons of each approach (this is an extension from a LinkedIn presentation in 2016): Also, don't underestimate the power of compression for large messages. Some big files like CSV or XML can reduce its size significantly just by setting the compression parameter to use GZIP, Snappy, or LZ4. Even a 1GB file could be sent via Kafka, but this is undoubtedly not what Kafka was designed for. In both the client and the broker, a 1GB chunk of memory will need to be allocated in JVM for every 1GB message. Hence, in most cases, for really large files, it is better to externalize them into an object store and use Kafka just for the metadata. You need to define what is 'a large message' by yourself and when to use which of the design patterns discussed in this blog post. That's why I am writing this up here... :-) The following sections explore these alternatives in more detail. Before we start, let's explain the general concept of Tiered Storage for Kafka mentioned in the above table. Many readers might not be aware of this yet. Tiered Storage for Kafka Kafka data is mostly consumed in a streaming fashion using tail reads. Tail reads leverage OS's page cache to serve the data instead of disk reads. Older data is typically read from the disk for backfill or failure recovery purposes and is infrequent. In the tiered storage approach, the Kafka cluster is configured with two tiers of storage - local and remote. Local tier is the same as the current Kafka that uses the local disks on the Kafka brokers to store the log segments. The new remote tier uses an external storage system such as AWS S3, GCS, or MinIO to store the completed log segments. Two separate retention periods are defined corresponding to each of the tiers. With remote tier enabled, the retention period for the local tier can be significantly reduced from days to few hours. The retention period for remote tier can be much longer, months, or even years. Tiered Storage for Kafka allows scaling storage independent of memory and CPUs in a Kafka cluster, enabling Kafka to be a long-term storage solution. This also reduces the amount of data stored locally on Kafka brokers and hence the amount of data that needs to be copied during recovery and rebalancing. The consumer API does not change at all. Kafka applications consume data as before. They don't even know if Tiered Storage is used under the hood. Confluent Tiered Storage Confluent Tiered Storage is available today in Confluent Platform and used under the hood in Confluent Cloud: From an infrastructure perspective, Confluent Tiered Storage required an external (object) storage like AWS S3, GCS, or MinIO. But from operations and development perspective, the complexity of end-to-end communication and separation of messages and files is provided out-of-the-box under the hood. KIP-405 - Add Tiered Storage to Kafka KIP-405 – Add Tiered Storage Support to Kafka is also in the works. Confluent is actively working on this with the open-source community. Uber is leading this initiative. Kafka + Tiered Storage is an exciting option (in some use cases) for handling large messages. It provides a single infrastructure to the operator, but also cost savings and better elasticity. We now understand the technical feasibility of handling large message payloads with Kafka. Let's now discuss the different use cases and architectures in more detail. Use Cases and Architectures using Kafka for Large Message Payloads The processing of the content of your large message payload depends on the technical use case. Do you want to Send an image to analyze or enhance it? Stream a video to a remote consumer application? Analyze audio noise in real-time? Process a structured (i.e., splittable) file line-by-line? Send an unstructured (i.e., non-splittable) file to a consumer tool to process it? I cover a few use cases for handling large messages: Manufacturing: Quality assurance in production lines deployed at the edge in the factory Retailing: Augmented reality for better customer experience and cross/up-selling Pharma and Life Sciences: Image processing and machine learning for drug discovery Public sector: Security and surveillance Media: Content delivery of large video files Banking: Attachments in a chat application for customer service The following sections explore these use cases with different architectural approaches to process large message payloads with Apache Kafka to discuss their pros and cons: Kafka-native payload processing Chunk and re-assemble Metadata in Kafka and linking to external storage Externalizing large payloads on-the-fly Kafka for Large Message Payloads – Image Processing Computer vision and image recognition are used in many industries, including automotive, manufacturing, healthcare, retailing, and innovative \"silicon valley use cases\". Image processing includes tools such as OpenCV but also technologies implementing deep learning algorithms such as Convolutional Neural Networks (CNN). Let's take a look at a few examples from different industries. Kafka-native Image Processing for Machine Vision in Manufacturing Machine Vision is the technology and methods used to provide imaging-based automatic inspection and analysis for such applications as automated inspection, process control, and robot guidance, usually in industry. A Kafka-native machine vision implementation sends images from cameras to Kafka. Preprocessing adds metadata and correlation it with data from other backend systems. The message is then consumed by one or more applications: Image processing and machine learning for drug discovery in Pharma and Life Sciences \"On average, it takes at least ten years for a new medicine to complete the journey from initial discovery to the marketplace,\" said PhRMA. Here is one example where event streaming at scale in real-time speeds up this process significantly. Recursion had several technical challenges. Their drug discovery process was manual and slow, bursty batch mode, not scalable: To solve these challenges, Recursion leveraged Kafka and its ecosystem to built a massively parallel system that combines experimental biology, artificial intelligence, automation, and real-time event streaming to accelerate drug discovery: Check out Recusion's Kafka Summit talk to learn more details. I see plenty of customers in various industries implementing scalable real-time machine learning infrastructures with the Kafka ecosystem. Related to the above use case, I explored more details in the blog post \"Apache Kafka and Event Streaming in Pharma and Life Sciences\". The following shows a potential ML infrastructure: Kafka-native Image Recognition for Augmented Reality in Retailing Augmented reality (AR) is an interactive experience of a real-world environment where the objects that reside in the real world are enhanced by computer-generated perceptual information. AR applications are usually built with engines such as Unity or Unreal. Use cases exist in various industries. Industry 4.0 is the most present one today. But other industries start building fascinating applications. Just think about Pokemon Go from Nintendo for your smartphone. The following shows an example of AR in the telco industry for providing an innovative retailing service. The customer makes a picture of his home, sends the picture to an OTT service of the Telco provider, and receives the enhanced picture (e.g, with a new couch to buy for your home): Kafka is used for orchestration, integration with backend services, and sending the original and enhanced image between the smartphone and the OTT Telco service. Machine Vision at the Edge in Industrial IoT (IIoT) with Confluent and Hivecell Kafka comes up at the edge more and more. Here is an example of machine vision at the edge with Kafka in Industrial IoT (IIoT) / Industry 4.0 (I4): A Hivecell node is equipped with Confluent MQTT Proxy: Integration with the cameras Kafka Broker and ZooKeeper: Event streaming platform Kafka Streams: Data processing, such as filtering, transformations, aggregations, etc. Nvidia's Triton Inference server: Image recognition using trained analytic models Kafka Connect and Confluent Replicator: Replication of the machine vision results in the cloud Video Streaming with Apache Kafka Streaming media is the process of delivering and obtaining media. Data is continuously received by and presented to one or more consumers while being delivered by a provider. Buffering the split up data packages of videos on the consumer side ensures a continuous flow. The implementation of video streaming with Kafka-native technologies is pretty straightforward: This architecture leverages the Composed Message Processor Enterprise Integration Pattern (EIP): The use case is even more straightforward, as we don't need a content-based router in our case. We just combine the Splitter and Aggregator EIPs. Split and Aggregate Video Streams for Security and Surveillance in the Public Sector The following shows a use case for video streaming with Kafka for security and surveillance: In this case, video streaming is part of a modernized SIEM (security information and event management). Audio streaming works in a very similar way. Hence, I will not cover it separately. A smart city is another example where video, image, and audio processing with Kafka come into play. Kafka for Large Message Payloads – Big Data Files (CSV, Video, Proprietary) Up above, we have seen examples for processing specific large messages: Images, video, audio. In many use cases, other kinds of files need to be processed. Large files include: Structured data, e.g., big CSV files Unstructured data, e.g., complete videos (not continuous video streaming) or other binary files such as an analytic model As I said before, Kafka is not the right technology to store big files. Specific tools were built for this, including object stores such as AWS S3 or MinIO. The Claim Check EIP is the perfect solution for this problem: Metadata in Kafka and Linking to External Storage for Content Delivery of Large Video Files in the Media Industry Many large video files are produced in the media industry. Specific storage and video editing tools are used. Kafka does not send these big files. But it controls the orchestration in a flexible, decoupled real-time architecture: Externalizing Large Payloads on-the-fly for Legacy Integration from Proprietary Systems in Financial Services Big files have to be processed in many industries. In financial services, I saw several use cases where large proprietary files have to be shared between different legacy applications. Similar to the Claim Check EIP used above, you can also leverage Kafka Connect and its Single Message Transformations (SMT) feature: Natural Language Processing (NLP) using Kafka and Machine Learning for Large Text Files Machine Learning and Kafka are a perfect fit. I covered this topic in many articles and talks in the past. Just google or start with this blog post to get an idea about this approach: \"Using Apache Kafka to Drive Cutting-Edge Machine Learning\". Natural Language Processing (NLP) using Kafka and machine learning for large text files is a great example. \"Continuous NLP Pipelines with Python, Java, and Apache Kafka\" shows how to implement the above design pattern using Kafka Streams, Kafka Connect, and an S3 Serializer / Deserializer. I like this example because it also solves the impedance mismatch between the data scientist (who loves Python) and the production engineer (who loves Java). \"Machine Learning with Python, Jupyter, KSQL, and TensorFlow\" explores this challenge in more detail. Large Messages in a Chat Application for Customer Service in Banking You just learned how to handle large files with Kafka by externalizing them into an object store and only sending the metadata via Kafka. In some use cases, this is too much effort or cost. Sending large files directly via Kafka is possible and sometimes easier to implement. The architecture is much simpler and more cost-effective. I already discussed the trade-offs above. But here is an excellent use case of sending large files natively with Kafka: Attachments in a chat application for customer service. An example of a financial firm using Kafka for a chat system is Goldman Sachs. They led the development of Symphony, an industry initiative to build a cloud-based platform for instant communication and content sharing that securely connects market participants. Symphony is based on an open-source business model that is cost-effective, extensible, and customizable to suit end-user needs. Many other FinServ companies invested into Symphony, including Bank of America, BNY Mellon, BlackRock, Citadel, Citi, Credit Suisse, Deutsche Bank, Goldman Sachs, HSBC, Jefferies, JPMorgan, Maverick, Morgan Stanley, Nomura, and Wells Fargo. Kafka is a perfect fit for chat applications. The broker storage and decoupling are perfect for multi-platform and multi-technology infrastructure. Offline capabilities and consuming old messages are built into Kafka, too. Here is an example from a chat platform in the gaming industry: Attachments like files, images, or any other binary content can be part of this implementation. Different architectures are possible. For instance, you could use dedicated Kafka Topics for handling large messages. Or you just put them into your' ' chat message' event. With Confluent Schema Registry, the schema could have an attribute 'attachment'. Or you externalize the attachment using the Claim Check EIP discussed above. Kafka-native Handling of Large Messages Has Its Use Cases! As you learned in this post, plenty of use cases exist for handling large messages files with Apache Kafka and its ecosystem. Kafka was built for large volume/throughput - which is required for large messages. 'Scaling Apache Kafka to 10+ GB Per Second in Confluent Cloud' is an impressive example. However, not all large messages should be processed with Kafka. Often you should use the right storage system and just leverage Kafka for the orchestration. Know the different design patterns and choose the right technology for each problem. A common scenario for Kafka-native processing of large messages is at the edge where other data storages are often not available or would increase the cost and complexity for provisioning the infrastructure. What are your experiences with handling large messages with the Kafka ecosystem? Did you or do you plan to use Apache Kafka and its ecosystem? What is your strategy? Let's connect on LinkedIn and discuss it!",
+                    "mainEntityOfPage": {
+                      "@type": "WebPage",
+                      "@id": "https://dzone.com/articles/processing-large-messages-with-apache-kafka"
+                    },
+                    "image": {
+                      "@type": "ImageObject",
+                      "url": "https://dzone.com//dz2cdn1.dzone.com/storage/article-thumb/13841200-thumb.jpg"
+                    }
+                  }
+                </script>
+
+                  <script type="application/ld+json">
+                    {
+                      "@context": "https://schema.org",
+                      "@type": "BreadcrumbList",
+                      "itemListElement": [{
+                        "@type": "ListItem",
+                        "position": 1,
+                        "name": "DZone",
+                        "item": "https://dzone.com"
+                      }, {
+                        "@type": "ListItem",
+                        "position": 2,
+                        "name": "Big Data Zone",
+                        "item": "https://dzone.com/big-data-analytics-tutorials-tools-news"
+                      }, {
+                        "@type": "ListItem",
+                        "position": 3,
+                        "name": "Processing Large Messages With Apache Kafka",
+                        "item": "https://dzone.com/articles/processing-large-messages-with-apache-kafka"
+                      }]
+                    }
+                  </script>
+
+            <article>
+              <div class="content">
+                <div class="header">
+                  <div class="col-xs-12 breadcrumb-padding">
+                    <a href="/">DZone</a>
+                    >
+                      <a href="/big-data-analytics-tutorials-tools-news">Big Data Zone</a>
+                      >
+                      <a href="#">Processing Large Messages With Apache Kafka</a>
+                  </div>
+
+
+                  <div class="header-title">
+                    <div class="title">
+                      <h1 class="article-title">Processing Large Messages With Apache Kafka</h1>
+                    </div>
+
+                    <div class="subhead">
+                      <h3>Kafka wasn't built for large messages, but files and payloads keep getting bigger. This article covers use cases, architectures, and trade-offs with Kafka.</h3>
+                    </div>
+
+                    <div class="publish-meta">
+                        <div class="article-author-meta">
+                          <img src="https://dz2cdn3.dzone.com/thumbnail?fid=2015339&w=80" class="avatar" alt="Kai Wähner user avatar" width="40">
+                          by
+
+                          <div class="author-info">
+                            <span class="author-name">
+                              <a href="/users/758579/megachucky.html" rel="nofollow">Kai Wähner</a>
+                            </span>
+                          </div>
+
+
+                            <div class="mvb-award">
+                              <i title="Most Valuable Blogger" class="icon-mvb-1"></i>
+                            </div>
+
+
+                            <span class="badge-container">
+                              <i title="DZone Core" class="icon-core-1"></i>CORE
+                            </span>
+                          &middot;
+                        </div>
+                      <span class="author-date">
+                        Aug. 13, 20
+                      </span>
+                      &middot;
+                        <a href="/big-data-analytics-tutorials-tools-news" id="portal-name">
+                          <span class="portal-name">Big Data Zone</span>
+                        </a>
+                      &middot;
+                      <span>Analysis</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="author-n-useraction">
+                  <div class="like action">
+                    <div id="activity-like-icon" class="dz-like icon-thumbs-up">
+                      <span class="action-label">
+                        <span id="activity-like-text">Like</span>
+                      </span>
+                      <a href="#">
+                        <span id="activity-like-counter">(3)</span>
+                      </a>
+                    </div>
+                  </div>
+
+                  <div class="action">
+
+                    <button class="comment">
+                      <i class="icon-comment"></i>
+                      Comment
+                      <span id="activity-comment-counter" class="comment-count"></span>
+                    </button>
+                  </div>
+
+                  <div class="save action">
+                    <div id="activity-save-icon" class="save icon-star-empty">
+                      <span id="activity-save-text" class="action-label">Save</span>
+                    </div>
+                  </div>
+
+                  <div class="tweet action">
+                    <a id="tweet-link" href="" class="title" target="_blank">
+                      <span><i class="icon-twitter"></i></span>
+                      <span class="action-label">Tweet</span>
+                    </a>
+                  </div>
+
+                  <div class="pull-right">
+                    <div id="activity-view-container" class="article-views action">
+                      <i class="icon-eye"></i> 27.33K
+                      <span class="action-label">Views</span>
+                    </div>
+                  </div>
+                </div>
+
+                    <div class="signin-prompt">
+                      <p>Join the DZone community and get the full member experience.</p>
+                      <a id="article-signin-prompt" href="/static/registration.html">Join For Free</a>
+                    </div>
+                    <div class="arrow-down"></div>
+
+                  <div id="top-bumper-container"></div>
+
+                <div>
+                  <div class="content-html"><p>Kafka was not built for large messages. Period. Nevertheless, more and more projects send and process 1Mb, 10Mb, and even much bigger files and other large payloads via Kafka. One reason is that Kafka was designed for large volume/throughput - which is required for large messages. This article covers the use cases, architectures, and trade-offs for handling large messages with Kafka.</p> 
+<h2>Use Cases for Large (Kafka) Message Payloads</h2> 
+<p>Various use cases for large message payloads exist: Image recognition, video analytics, audio analytics, and file processing are widespread examples.</p> 
+<h3>Image Recognition and Video Analytics</h3> 
+<p>Image recognition and video analytics (also known as computer vision) is probably the number one use case. Many <a href="https://datafloq.com/read/video-analytics-use-cases-you-should-know/6810">examples require the analysis of videos</a> in real-time, including:</p> 
+<ul> 
+ <li><strong>Security and surveillance</strong> (access control, intrusion detection, motion detection)</li> 
+ <li><strong>Transport monitoring system</strong> (vehicle traffic detection, incidence detection, pedestrian monitoring)</li> 
+ <li><strong>Healthcare</strong> (health status monitoring, telemedicine, surgical video analysis)</li> 
+ <li><strong>Manufacturing</strong> (machine vision for quality assurance, augmented support and training)</li> 
+</ul> 
+<p>The usage of image and video processing via concepts such as Computer Vision (e.g., OpenCV) or Deep Learning / Neural Networks (e.g., TensorFlow) reduces time, cost, and human effort, plus this makes industries more secure, reliable, and consistent.</p> 
+<h3>Audio Analytics</h3> 
+<p>Audio analytics is an interesting use case, coming up more and more:</p> 
+<ul> 
+ <li><strong>In conjunction with video analytics</strong>: See the use cases above. Often video and audio need to be processed together.</li> 
+ <li><strong>Consumer IoT (CIoT)</strong>: Alerting, informing, advising people, e.g., using <a href="https://www.audioanalytic.com/putting-sound-into-context/" rel="noopener noreferrer" target="_blank">Audio Analytic</a>.</li> 
+ <li><strong>Industrial IoT (IIoT)</strong>: Machine diagnostics and predictive maintenance using advanced sound analysis, e.g., using <a href="https://www.neuronsw.com/" rel="noopener noreferrer" target="_blank">Neuron Soundware</a></li> 
+ <li><strong>Natural Language Processing (NLP)</strong>: Chatbots and other modern systems use text and speech translation, e.g., using the fully-managed services from the major cloud providers</li> 
+</ul> 
+<h3>Big Data File Processing</h3> 
+<p>Last but not least, the processing of big files received in batch-mode will not go away any time soon. But big files can be incorporated into a modern event streaming workflow for decoupling/separation of concerns, connectivity to various sinks. And it allows data processing in real-time and batch simultaneously.</p> 
+<p>Legacy systems will provide data sources like big CSV or proprietary files or snapshots/exports from databases that need to be integrated. Data processing includes streaming applications (such as Kafka Streams, ksqlDB, or Apache Flink) to continuously process, correlate, and analyze events from different data source<strong>s</strong>. Data sources such as Hadoop or Spark processed incoming data in batch mode (e.g., map/reduce, shuffling). Other data sources such as data warehouse (e.g., Snowflake) or text search (e.g., Elasticsearch) ingest data in near-real-time.</p> 
+<h2>What Kafka is NOT</h2> 
+<p>After exploring use cases for large message payloads, let's clarify what Kafka is not:</p> 
+<p>Kafka is usually not the right technology to store and process large files (images, videos, proprietary files, etc.) as a whole. Products were built specifically for these use cases.</p> 
+<p>For instance, a Content Delivery Network (CDN) such as Akamai, Limelight Networks, or Amazon CloudFront distribute video streams and other software downloads across the globe. Or &quot;big file editing and processing&quot; (like a video processing tool). Or video editing tools from Adobe, Autodesk, Camtasia, and many other vendors are used to structure and present all video information, including films and television shows, video advertisements, and video essays.</p> 
+<p>Let's take a look at one example which combines Kafka and these other tools:</p> 
+<p><strong><a href="https://qconlondon.com/ln2018/system/files/presentation-slides/qcon_-_scaling_kafka.pdf" rel="noopener noreferrer" target="_blank">Netflix processes over 6 Petabytes per day with Kafka</a></strong>. However, this is &quot;just&quot; for message orchestration, coordination, data integration, data preprocessing, ingestion into data lakes, building stateless and stateful business applications, and other use cases. But Kafka is not used to sharing and storing all the shows and movies you watch on your TV or tablet. A Content Delivery Network (CDN) like Akamai is used in conjunction with other tools and products to provide you the excellent video streaming experience you know.</p> 
+<p>Okay, Kafka is not the right tool to store and process large files as a whole, like a CDN or video editing tool. Why, when, and how should you handle large message payloads with Kafka then? And what is a &quot;large message&quot; in Kafka terms?</p> 
+<h2>Features and Limitations of using Kafka for Large Messages</h2> 
+<p>Originally, Kafka was not built for processing large messages and files. This does not mean that you cannot do it!</p> 
+<p>Kafka limits the max size of messages. The default value of the broker configuration' ' message.max.bytes' is&nbsp;1MB.</p> 
+<p>Why does Kafka limit the message size by default?</p> 
+<ul> 
+ <li>Different sizing, configuration, and tuning required for large message handling compared to a mission-critical real-time cluster with low latency.</li> 
+ <li>Large messages increase the memory pressure on the broker JVM.</li> 
+ <li>Large messages are expensive to handle and could slow down the brokers.</li> 
+ <li>A reasonable message size limit can meet the requirements of most use cases.</li> 
+ <li>Good workarounds exist if you need to handle large messages.</li> 
+ <li>Most cloud offerings don't allow large messages.</li> 
+</ul> 
+<p>There are noticeable performance impacts from increasing the allowable message size. </p> 
+<p>Hence, understand all alternatives discussed below before sending messages &gt;1Mb through your Kafka cluster. Depending on your SLAs for uptime and latency, a separate Kafka cluster should be considered for processing large messages.</p> 
+<p>Having said this, I have seen customers processing messages far bigger than 10Mb with Kafka. It is valid to evaluate Kafka for processing large messages instead of using another tool for that (often in conjunction with Kafka).</p> 
+<p><a href="https://www.slideshare.net/JiangjieQin/handle-large-messages-in-apache-kafka-58692297">LinkedIn</a> talked a long time ago about the pros and cons of two different approaches: Using 'Kafka only' vs. 'Kafka in conjunction with another data storage'. Especially outside the public cloud, most enterprises cannot simply use an S3 object store for big data. Therefore, the question comes up if one system (Kafka) is good enough, or if you should invest in two systems (Kafka and external storage).</p> 
+<p>Let's take a look at the trade-offs for using Kafka for large messages.</p> 
+<h2>Kafka for Large Messages – Alternatives and Trade-Offs</h2> 
+<p>There is no single best solution. The decision on how to handle large messages with Kafka depends on your use cases, SLAs, and already existing infrastructure.</p> 
+<p>The following three available alternatives exist to handle large messages with Kafka:</p> 
+<ul> 
+ <li>Reference-based messaging in Kafka and external storage</li> 
+ <li>In-line large message support in Kafka without external storage</li> 
+ <li>In-line large message support and tiered storage in Kafka</li> 
+</ul> 
+<p>Here are the characteristics and pros/cons of each approach (this is an extension from a <a href="https://www.slideshare.net/JiangjieQin/handle-large-messages-in-apache-kafka-58692297" rel="noopener noreferrer" target="_blank">LinkedIn presentation in 2016</a>):</p> 
+<p><strong><img height="589" width="1024" class="fr-fic fr-dib" alt="Apache Kafka for large message payloads and files - Alternatives and Trade-offs" src="https://www.kai-waehner.de/wp-content/uploads/2020/07/Apache-Kafka-for-large-message-payloads-and-files-Alternatives-and-Trade-offs-1-1024x589.png" data-fr-image-pasted="true" /></strong></p> 
+<p>Also, don't underestimate the power of compression for large messages. Some big files like CSV or XML can reduce its size significantly just by setting the compression parameter to use GZIP, Snappy, or LZ4.</p> 
+<p>Even a 1GB file could be sent via Kafka, but this is undoubtedly not what Kafka was designed for. In both the client and the broker, a 1GB chunk of memory will need to be allocated in JVM for every 1GB message. Hence, in most cases, for really large files, it is better to externalize them into an object store and use Kafka just for the metadata.&nbsp;</p> 
+<p>You need to define what is 'a large message' by yourself and when to use which of the design patterns discussed in this blog post. That's why I am writing this up here... :-)</p> 
+<p>The following sections explore these alternatives in more detail. Before we start, let's explain the general concept of Tiered Storage for Kafka mentioned in the above table. Many readers might not be aware of this yet.</p> 
+<h2>Tiered Storage for Kafka</h2> 
+<p>Kafka data is mostly consumed in a streaming fashion using tail reads. Tail reads leverage OS's page cache to serve the data instead of disk reads. Older data is typically read from the disk for backfill or failure recovery purposes and is infrequent.</p> 
+<p>In the tiered storage approach, the Kafka cluster is configured with two tiers of storage - local and remote. Local tier is the same as the current Kafka that uses the local disks on the Kafka brokers to store the log segments. The new remote tier uses an external storage system such as AWS S3, GCS, or MinIO to store the completed log segments. Two separate retention periods are defined corresponding to each of the tiers.</p> 
+<p>With remote tier enabled, the retention period for the local tier can be significantly reduced from days to few hours. The retention period for remote tier can be much longer, months, or even years.</p> 
+<p>Tiered Storage for Kafka allows scaling storage independent of memory and CPUs in a Kafka cluster, enabling Kafka to be a long-term storage solution. This also reduces the amount of data stored locally on Kafka brokers and hence the amount of data that needs to be copied during recovery and rebalancing.</p> 
+<p>The consumer API does not change at all. Kafka applications consume data as before. They don't even know if Tiered Storage is used under the hood.</p> 
+<h3>Confluent Tiered Storage</h3> 
+<p><a href="https://www.confluent.io/blog/infinite-kafka-storage-in-confluent-platform/" rel="noopener noreferrer" target="_blank">Confluent Tiered Storage</a> is available today in Confluent Platform and used under the hood in Confluent Cloud:</p> 
+<p><img height="590" width="1024" class="fr-fic fr-dib" alt="Confluent Tiered Storage for Kafka" src="https://www.kai-waehner.de/wp-content/uploads/2020/07/Confluent-Tiered-Storage-for-Kafka-1024x590.png" data-fr-image-pasted="true" /></p> 
+<p>From an infrastructure perspective, Confluent Tiered Storage required an external (object) storage like AWS S3, GCS, or MinIO. But from operations and development perspective, the complexity of end-to-end communication and separation of messages and files is provided out-of-the-box under the hood.</p> 
+<h3>KIP-405 - Add Tiered Storage to Kafka</h3> 
+<p><a href="https://cwiki.apache.org/confluence/display/KAFKA/KIP-405%3A+Kafka+Tiered+Storage">KIP-405 – &nbsp;Add Tiered Storage Support to Kafka</a> is also in the works. Confluent is actively working on this with the open-source community. Uber is leading this initiative.</p> 
+<p>Kafka + Tiered Storage is an exciting option (in some use cases) for handling large messages. It provides a single infrastructure to the operator, but also cost savings and better elasticity.</p> 
+<p>We now understand the technical feasibility of handling large message payloads with Kafka. Let's now discuss the different use cases and architectures in more detail.</p> 
+<h2>Use Cases and Architectures using Kafka for Large Message Payloads</h2> 
+<p>The processing of the content of your large message payload depends on the technical use case. Do you want to</p> 
+<ul> 
+ <li>Send an image to analyze or enhance it?</li> 
+ <li>Stream a video to a remote consumer application?</li> 
+ <li>Analyze audio noise in real-time?</li> 
+ <li>Process a structured (i.e., splittable) file line-by-line?</li> 
+ <li>Send an unstructured (i.e., non-splittable) file to a consumer tool to process it?</li> 
+</ul> 
+<p>I cover a few use cases for handling large messages:</p> 
+<ul> 
+ <li>Manufacturing: Quality assurance in production lines deployed at the edge in the factory</li> 
+ <li>Retailing: Augmented reality for better customer experience and cross/up-selling</li> 
+ <li>Pharma and Life Sciences: Image processing and machine learning for drug discovery</li> 
+ <li>Public sector: Security and surveillance</li> 
+ <li>Media: Content delivery of large video files</li> 
+ <li>Banking: Attachments in a chat application for customer service</li> 
+</ul> 
+<p>The following sections explore these use cases with different architectural approaches to process large message payloads with Apache Kafka to discuss their pros and cons:</p> 
+<ol> 
+ <li>Kafka-native payload processing</li> 
+ <li>Chunk and re-assemble</li> 
+ <li>Metadata in Kafka and linking to external storage</li> 
+ <li>Externalizing large payloads on-the-fly</li> 
+</ol> 
+<h2>Kafka for Large Message Payloads – Image Processing</h2> 
+<p>Computer vision and image recognition are used in many industries, including automotive, manufacturing, healthcare, retailing, and innovative &quot;silicon valley use cases&quot;. Image processing includes tools such as OpenCV but also technologies implementing deep learning algorithms such as Convolutional Neural Networks (CNN).</p> 
+<p>Let's take a look at a few examples from different industries.</p> 
+<h3>Kafka-native Image Processing for Machine Vision in Manufacturing</h3> 
+<p>Machine Vision is the technology and methods used to provide imaging-based automatic inspection and analysis for such applications as automated inspection, process control, and robot guidance, usually in industry.</p> 
+<p>A Kafka-native machine vision implementation sends images from cameras to Kafka. Preprocessing adds metadata and correlation it with data from other backend systems. The message is then consumed by one or more applications:</p> 
+<p><img height="576" width="1024" class="fr-fic fr-dib" alt="Kafka-native Image Processing" src="https://www.kai-waehner.de/wp-content/uploads/2020/07/Kafka-native-Image-Processing-1024x576.png" data-fr-image-pasted="true" /></p> 
+<h3>Image processing and machine learning for drug discovery in Pharma and Life Sciences</h3> 
+<p>&quot;On average, it takes at least ten years for a new medicine to complete the journey from initial discovery to the marketplace,&quot; said <a href="http://phrma-docs.phrma.org/sites/default/files/pdf/rd_brochure_022307.pdf" rel="noopener noreferrer" target="_blank">PhRMA</a>.</p> 
+<p>Here is one example where event streaming at scale in real-time speeds up this process significantly.</p> 
+<p><a href="https://www.confluent.io/customers/recursion" rel="noopener noreferrer" target="_blank">Recursion</a> had several technical challenges. Their drug discovery process was manual and slow, bursty batch mode, not scalable:</p> 
+<p><img height="520" width="890" class="fr-fic fr-dib" alt="Drug Discovery in manual and slow, bursty batch mode, not scalable" src="https://www.kai-waehner.de/wp-content/uploads/2020/07/Drug-Discovery-in-manual-and-slow-bursty-batch-mode-not-scalable.png" data-fr-image-pasted="true" /></p> 
+<p>To solve these challenges, Recursion leveraged Kafka and its ecosystem to built a massively parallel system that combines experimental biology, artificial intelligence, automation, and real-time event streaming to accelerate drug discovery:</p> 
+<p><img height="494" width="868" class="fr-fic fr-dib" alt="Drug Discovery in automated, scalable, reliable real time Mode" src="https://www.kai-waehner.de/wp-content/uploads/2020/05/Drug-Discovery-in-automated-scalable-reliable-real-time-Mode.png" data-fr-image-pasted="true" /></p> 
+<p>Check out Recusion's<a href="https://www.confluent.io/kafka-summit-san-francisco-2019/discovering-drugs-with-kafka-streams" rel="noopener noreferrer" target="_blank">&nbsp;Kafka Summit talk</a> to learn more details.</p> 
+<p>I see plenty of customers in various industries implementing scalable real-time machine learning infrastructures with the Kafka ecosystem. Related to the above use case, I explored more details in the blog post &quot;<a href="https://www.kai-waehner.de/blog/2020/05/19/apache-kafka-event-streaming-pharmaceuticals-pharma-life-sciences-use-cases-architecture/" rel="noopener noreferrer" target="_blank">Apache Kafka and Event Streaming in Pharma and Life Sciences</a>&quot;. The following shows a potential ML infrastructure:</p> 
+<p><img height="575" width="1024" class="fr-fic fr-dib" alt="Streaming Analytics for Drug Discovery in Real Time at Scale with Apache Kafka" src="https://www.kai-waehner.de/wp-content/uploads/2020/07/Streaming-Analytics-for-Drug-Discovery-in-Real-Time-at-Scale-with-Apache-Kafka-1024x575.png" data-fr-image-pasted="true" /></p> 
+<h3>Kafka-native Image Recognition for Augmented Reality in Retailing</h3> 
+<p>Augmented reality (AR) is an interactive experience of a real-world environment where the objects that reside in the real world are enhanced by computer-generated perceptual information. AR applications are usually built with engines such as Unity or Unreal. Use cases exist in various industries. Industry 4.0 is the most present one today. But other industries start building fascinating applications. Just think about Pokemon Go from Nintendo for your smartphone.</p> 
+<p>The following shows an example of AR in the telco industry for providing an innovative retailing service. The customer makes a picture of his home, sends the picture to an <a href="https://www.kai-waehner.de/blog/2020/07/03/telco-ott-applications-with-apache-kafka-telecom-sector-oss-bss-hybrid-cloud/" rel="noopener noreferrer" target="_blank">OTT service of the Telco provider</a>, and receives the enhanced picture (e.g, with a new couch to buy for your home):</p> 
+<p><img height="581" width="1024" class="fr-fic fr-dib" alt="Augmented Reality with Apache Kafka and Deep Learning for Picture Enhancement" src="https://www.kai-waehner.de/wp-content/uploads/2020/07/Augmented-Reality-with-Apache-Kafka-and-Deep-Learning-for-Picture-Enhancement-1024x581.png" data-fr-image-pasted="true" /></p> 
+<p>Kafka is used for orchestration, integration with backend services, and sending the original and enhanced image between the smartphone and the OTT Telco service.</p> 
+<h3>Machine Vision at the Edge in Industrial IoT (IIoT) with Confluent and Hivecell</h3> 
+<p><a href="https://www.kai-waehner.de/blog/2020/01/01/apache-kafka-edge-computing-industrial-iot-retailing-logistics/" rel="noopener noreferrer" target="_blank">Kafka comes up at the edge more and more</a>. Here is an example of <a href="https://medium.com/hivecell/utilizing-nvidia-triton-for-video-processing-on-hivecell-3ed8d00a9f55" rel="noopener noreferrer" target="_blank">machine vision at the edge with Kafka in Industrial IoT (IIoT) / Industry 4.0 (I4)</a>:</p> 
+<p><img height="641" width="1024" class="fr-fic fr-dib" alt="Hivecell and Confluent Platform for Image Processing at the Edge" src="https://www.kai-waehner.de/wp-content/uploads/2020/07/Hivecell-and-Confluent-Platform-for-Image-Processing-at-the-Edge-1024x641.png" data-fr-image-pasted="true" /></p> 
+<p>A Hivecell node is equipped with</p> 
+<ul> 
+ <li>Confluent MQTT Proxy: Integration with the cameras</li> 
+ <li>Kafka Broker and ZooKeeper: Event streaming platform</li> 
+ <li>Kafka Streams: Data processing, such as filtering, transformations, aggregations, etc.</li> 
+ <li>Nvidia's Triton Inference server: Image recognition using trained analytic models</li> 
+ <li>Kafka Connect and Confluent Replicator: &nbsp;Replication of the machine vision results in the cloud</li> 
+</ul> 
+<h2>Video Streaming with Apache Kafka</h2> 
+<p>Streaming media is the process of delivering and obtaining media. Data is continuously received by and presented to one or more consumers while being delivered by a provider. Buffering the split up data packages of videos on the consumer side ensures a continuous flow.</p> 
+<p>The implementation of video streaming with Kafka-native technologies is pretty straightforward:</p> 
+<p><img height="579" width="1024" class="fr-fic fr-dib" alt="Video Streaming with Apache Kafka via Chunk + Re-Assemble Large Kafka Message Payloads" src="https://www.kai-waehner.de/wp-content/uploads/2020/07/Video-Streaming-with-Apache-Kafka-via-Chunk-Re-Assemble-Large-Kafka-Message-Payloads-1024x579.png" data-fr-image-pasted="true" /></p> 
+<p>This architecture leverages the <a href="https://www.enterpriseintegrationpatterns.com/patterns/messaging/DistributionAggregate.html">Composed Message Processor</a> Enterprise Integration Pattern (EIP):</p> 
+<p><img height="390" width="1024" class="fr-fic fr-dib" alt="Composed Message Processor Enterprise Integration Pattern" src="https://www.kai-waehner.de/wp-content/uploads/2020/07/Composed-Message-Processor-Enterprise-Integration-Pattern-1024x390.png" data-fr-image-pasted="true" /></p> 
+<p>The use case is even more straightforward, as we don't need a content-based router in our case. We just combine the Splitter and Aggregator EIPs.</p> 
+<h3>Split and Aggregate Video Streams for Security and Surveillance in the Public Sector</h3> 
+<p>The following shows a use case for video streaming with Kafka for security and surveillance:</p> 
+<p><img height="576" width="1024" class="fr-fic fr-dib" alt="Video Streaming with Apache Kafka for Security and Surveillance as part of Modernized SIEM" src="https://www.kai-waehner.de/wp-content/uploads/2020/07/Video-Streaming-with-Apache-Kafka-for-Security-and-Surveillance-as-part-of-Modernized-SIEM-1024x576.png" data-fr-image-pasted="true" /></p> 
+<p>In this case, video streaming is part of a modernized SIEM (security information and event management). Audio streaming works in a very similar way. Hence, I will not cover it separately.</p> 
+<p>A smart city is another example where video, image, and audio processing with Kafka come into play.</p> 
+<h2>Kafka for Large Message Payloads – Big Data Files (CSV, Video, Proprietary)</h2> 
+<p>Up above, we have seen examples for processing specific large messages: Images, video, audio. In many use cases,&nbsp;other kinds of files need to be processed. Large files include:</p> 
+<ul> 
+ <li>Structured data, e.g., big CSV files</li> 
+ <li>Unstructured data, e.g., complete videos (not continuous video streaming) or other binary files such as an analytic model</li> 
+</ul> 
+<p>As I said before, Kafka is not the right technology to store big files. Specific tools were built for this, including object stores such as AWS S3 or MinIO.</p> 
+<p>The <a href="https://www.enterpriseintegrationpatterns.com/patterns/messaging/StoreInLibrary.html" rel="noopener noreferrer" target="_blank">Claim Check EIP</a> is the perfect solution for this problem:</p> 
+<p>&nbsp;</p> 
+<p><img height="230" width="596" class="fr-fic fr-dib" alt="Claim Check Pattern EIP" src="https://www.kai-waehner.de/wp-content/uploads/2020/07/Claim-Check-Pattern-EIP.gif" data-fr-image-pasted="true" /></p> 
+<h3>Metadata in Kafka and Linking to External Storage for Content Delivery of Large Video Files in the Media Industry</h3> 
+<p>Many large video files are produced in the media industry. Specific storage and video editing tools are used. Kafka does not send these big files. But it controls the orchestration in a flexible, decoupled real-time architecture:</p> 
+<p><img height="578" width="1024" class="fr-fic fr-dib" alt="Metadata in Kafka + Link to Object Storage for Large Files" src="https://www.kai-waehner.de/wp-content/uploads/2020/07/Metadata-in-Kafka-Link-to-Object-Storage-for-Large-Files-1024x578.png" data-fr-image-pasted="true" /></p> 
+<h3>Externalizing Large Payloads on-the-fly for Legacy Integration from Proprietary Systems in Financial Services</h3> 
+<p>Big files have to be processed in many industries. In financial services, I saw several use cases where large proprietary files have to be shared between different legacy applications.</p> 
+<p>Similar to the Claim Check EIP used above, you can also leverage <a href="https://docs.confluent.io/current/connect/transforms/index.html" rel="noopener noreferrer" target="_blank">Kafka Connect and its Single Message Transformations (SMT)</a> feature:</p> 
+<p><img height="576" width="1024" class="fr-fic fr-dib" alt="Externalizing Large Payloads on the fly with Kafka Connect SMT" src="https://www.kai-waehner.de/wp-content/uploads/2020/07/Externalizing-Large-Payloads-on-the-fly-with-Kafka-Connect-SMT-1024x576.png" data-fr-image-pasted="true" /></p> 
+<h3>Natural Language Processing (NLP) using Kafka and Machine Learning for Large Text Files</h3> 
+<p>Machine Learning and Kafka are a perfect fit. I covered this topic in many articles and talks in the past. Just google or start with this blog post to get an idea about this approach: &quot;<a href="https://www.confluent.io/blog/using-apache-kafka-drive-cutting-edge-machine-learning" rel="noopener noreferrer" target="_blank">Using Apache Kafka to Drive Cutting-Edge Machine Learning</a>&quot;.</p> 
+<p>Natural Language Processing (NLP) using Kafka and machine learning for large text files is a great example.&nbsp;&quot;<a href="https://medium.com/bakdata/continuous-nlp-pipelines-with-python-java-and-apache-kafka-f6903e7e429d" rel="noopener noreferrer" target="_blank">Continuous NLP Pipelines with Python, Java, and Apache Kafka</a>&quot; shows how to implement the above design pattern using Kafka Streams, Kafka Connect, and an S3 Serializer / Deserializer.</p> 
+<p>I like this example because it also solves the impedance mismatch between the data scientist (who loves Python) and the production engineer (who loves Java). &quot;<a href="https://www.confluent.io/blog/machine-learning-with-python-jupyter-ksql-tensorflow/" rel="noopener noreferrer" target="_blank">Machine Learning with Python, Jupyter, KSQL, and TensorFlow</a>&quot; explores this challenge in more detail.</p> 
+<h3>Large Messages in a Chat Application for Customer Service in Banking</h3> 
+<p>You just learned how to handle large files with Kafka by externalizing them into an object store and only sending the metadata via Kafka. In some use cases, this is too much effort or cost. Sending large files directly via Kafka is possible and sometimes easier to implement. The architecture is much simpler and more cost-effective.</p> 
+<p>I already discussed the trade-offs above. But here is an excellent use case of sending large files natively with Kafka: Attachments in a chat application for customer service.&nbsp;&nbsp;</p> 
+<p>An example of a financial firm using <a href="https://opensource.com/article/17/9/apache-kafka" rel="noopener noreferrer" target="_blank">Kafka for a chat system is Goldman Sachs</a>. They led the development of <a href="https://symphony.com/" rel="noopener noreferrer" target="_blank">Symphony</a>, an industry initiative to build a cloud-based platform for instant communication and content sharing that securely connects market participants. Symphony is based on an open-source business model that is cost-effective, extensible, and customizable to suit end-user needs. Many other FinServ companies invested into Symphony, including Bank of America, BNY Mellon, BlackRock, Citadel, Citi, Credit Suisse, Deutsche Bank, Goldman Sachs, HSBC, Jefferies, JPMorgan, Maverick, Morgan Stanley, Nomura, and Wells Fargo.</p> 
+<p>Kafka is a perfect fit for chat applications. The broker storage and decoupling are perfect for multi-platform and multi-technology infrastructure. Offline capabilities and consuming old messages are built into Kafka, too. Here is an example from a chat platform in the <a href="https://www.kai-waehner.de/blog/2020/07/16/apache-kafka-gaming-games-industry-bookmaker-betting-gambling-video-streaming/" rel="noopener noreferrer" target="_blank">gaming industry</a>:</p> 
+<p><img height="577" width="1024" class="fr-fic fr-dib" alt="Real-time Chat function at scale within games and cross-platform usings Apache Kafka" src="https://www.kai-waehner.de/wp-content/uploads/2020/07/Real-time-Chat-function-at-scale-within-games-and-cross-platform-usings-Apache-Kafka-1024x577.png" data-fr-image-pasted="true" /></p> 
+<p>Attachments like files, images, or any other binary content can be part of this implementation. Different architectures are possible. For instance, you could use dedicated Kafka Topics for handling large messages. Or you just put them into your' ' chat message' event. With <a href="https://github.com/confluentinc/schema-registry" rel="noopener noreferrer" target="_blank">Confluent Schema Registry</a>, the schema could have an attribute 'attachment'. Or you externalize the attachment using the Claim Check EIP discussed above.</p> 
+<h2>Kafka-native Handling of Large Messages Has Its Use Cases!</h2> 
+<p>As you learned in this post, plenty of use cases exist for handling large messages files with Apache Kafka and its ecosystem. Kafka was built for large volume/throughput - which is required for large messages. '<a href="https://www.confluent.io/blog/scaling-kafka-to-10-gb-per-second-in-confluent-cloud/" rel="noopener noreferrer" target="_blank">Scaling Apache Kafka to 10+ GB Per Second in Confluent Cloud</a>' is an impressive example.</p> 
+<p>However, not all large messages should be processed with Kafka. Often you should use the right storage system and just leverage Kafka for the orchestration. Know the different design patterns and choose the right technology for each problem.</p> 
+<p>A&nbsp;common scenario for Kafka-native processing of large messages is at the edge where other data storages are often not available or would increase the cost and complexity for provisioning the infrastructure.</p> 
+<p>What are your experiences with handling large messages with the Kafka ecosystem? Did you or do you plan to use Apache Kafka and its ecosystem? What is your strategy? Let's <a href="https://www.linkedin.com/in/megachucky/" rel="noopener noreferrer">connect on LinkedIn</a> and discuss it!</p></div>
+                </div>
+
+                  <div id="bottom-bumper-container"></div>
+                  <div class="article-tag-pill-container">
+                      <span class="article-tag-pill">kafka</span>
+                      <span class="article-tag-pill">Processing</span>
+                      <span class="article-tag-pill">Machine learning</span>
+                      <span class="article-tag-pill">Big data</span>
+                      <span class="article-tag-pill">Data science</span>
+                  </div>
+
+                  <div class="attribution">
+                      <p>Published at DZone with permission of <span>Kai Wähner<span>, DZone MVB</span></span>.
+                        <span>
+                          <a href="https://www.kai-waehner.de/blog/2020/08/07/apache-kafka-handling-large-messages-and-files-for-image-video-audio-processing/" target="_blank">See the original article here.
+                            <i class="icon-link-ext-alt"></i>
+                          </a>
+                        </span>
+                      </p>
+                    <p>Opinions expressed by DZone contributors are their own.</p>
+                  </div>
+
+                    <div class="related">
+                      <h3>Popular on DZone</h3>
+                        <ul>
+                            <li class="relateddiv">
+                              <a href="/articles/top-soft-skills-to-identify-a-great-software-engineer?fromrel=true">Top Soft Skills to Identify a Great Software Engineer</a>
+                            </li>
+                            <li class="relateddiv">
+                              <a href="/articles/enough-already-with-event-streaming?fromrel=true">Enough Already With ‘Event Streaming’</a>
+                            </li>
+                            <li class="relateddiv">
+                              <a href="/articles/how-to-test-javascript-code-in-a-browser?fromrel=true">How to Test JavaScript Code in a Browser</a>
+                            </li>
+                            <li class="relateddiv">
+                              <a href="/articles/choosing-between-graphql-vs-rest?fromrel=true">Choosing Between GraphQL Vs REST</a>
+                            </li>
+                        </ul>
+                      </div>
+<div class="comments-overlay"></div>
+<div id="comment-box">
+  <div class="comment-box-wrapper">
+    <div id="comment-input-editor"></div>
+  </div>
+  <div class="info hidden"></div>
+  <div class="comments-content">
+    <div class="comment-header">
+      <hr />
+      <span class="icon-comment">
+        <span class="numOfComments"></span> Comments
+      </span>
+    </div>
+    <div class="comments"></div>
+  </div>
+</div>
+            </article>
+          </div>
+
+            <div id="above-pr-ad" class="bottom-ad-container">
+              <div id="div-gpt-ad-1435246566686-11" data-gpt-slot="bottom"></div>
+            </div>
+            <div class="layout-card widget-top-border partner-resources-block" style="width:100%; margin-bottom: 1em;">
+              <div class="main-container">
+                <div class="featured-header">
+                  <h2>
+                      Big Data<span> Partner Resources</span>
+                  </h2>
+                </div>
+                <div class="partner-resources-container">
+                  <div id="div-gpt-ad-1435246566686-5" class="resource-block" data-gpt-slot="partner" data-gpt-position="pr1"></div>
+                  <div id="div-gpt-ad-1435246566686-6" class="resource-block" data-gpt-slot="partner" data-gpt-position="pr2"></div>
+                  <div id="div-gpt-ad-1435246566686-7" class="resource-block" data-gpt-slot="partner" data-gpt-position="pr3"></div>
+                </div>
+              </div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <div id="bsa-parent" class="bottom-sticky-ad-container hide">
+      <div class="container">
+        <div class="col-md-9">
+          <div class="fixed-bottom-div">
+            <div class="inline-block">
+              <div id="div-gpt-ad-1635294790718-12" data-gpt-desktop="true" class="bottom-sticky-ad"></div>
+            </div>
+            <div class="inline-block">
+              <span id="close" class="bottom-sticky-ad-close-button" onclick="removeBottomStickyAd()">
+                X
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  <div class="modal fade bd-example-modal-lg" id="modal-message" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header"></div>
+        <div class="modal-body"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script async>const articleTitle = 'Processing Large Messages With Apache Kafka'
+const articleUrl = 'https://dzone.com/articles/processing-large-messages-with-apache-kafka'
+
+const retweetLink = document.querySelector('#tweet-link')
+
+function retweet(event) {
+    event.preventDefault()
+    event.stopPropagation()
+
+    const twitter = 'https://twitter.com/intent/tweet'
+    const params = '?text=' + encodeURIComponent(articleTitle) + '&url=' + articleUrl + '&ref=dzone.com&via=DZoneInc'
+    const win = window.open(twitter + params, '_blank')
+    win.focus()
+}
+
+retweetLink.addEventListener('click', retweet);
+
+function showStatusMessage(options) {
+  var modal = document.getElementById("modal-message");
+
+  if(modal) {
+    modal.classList.add(options.type);
+    var modalBody = modal.querySelector(".modal-content .modal-body");
+    var modalHeader = modal.querySelector(".modal-content .modal-header");
+
+    modalHeader.innerText = options.header ? options.header : "";
+    modalBody.innerText = options.body ? options.body : "" ;
+
+    $(modal).modal("show");
+
+    $(modal).on('hidden.bs.modal', function () {
+      modal.classList.remove(options.type);
+    });
+  }
+}
+
+function showConfirmMessage(options) {
+  var modal = document.getElementById("modal-message");
+
+  if(modal) {
+    modal.classList.add(options.type);
+    var modalBody = modal.querySelector(".modal-content .modal-body");
+    var modalHeader = modal.querySelector(".modal-content .modal-header");
+
+    modalHeader.innerText = options.header ? options.header : "";
+    modalBody.innerText = options.body ? options.body : "" ;
+
+    if (options.textarea) {
+      const textareaDiv = document.createElement('div')
+      const textareaLabel = document.createElement('label')
+      textareaLabel.setAttribute('for', 'modal-textarea')
+      textareaLabel.innerText = options.textarea.label
+
+      const textarea = document.createElement('textarea')
+      textarea.id = 'modal-textarea'
+      textarea.placeholder = (options.textarea.placeholder || '')
+      textarea.setAttribute('rows', (options.textarea.rows || 3))
+      textarea.classList.add('form-control', 'not-resizable')
+
+      if (options.textarea.maxlength) {
+        textarea.maxLength = options.textarea.maxlength
+      }
+
+      textareaDiv.appendChild(textareaLabel)
+      textareaDiv.appendChild(textarea)
+      modalBody.appendChild(textareaDiv)
+    }
+
+    var btnContainer = document.createElement("div");
+    btnContainer.classList.add("btn-container");
+
+    var noBtn = document.createElement("button");
+    noBtn.innerText = options.noBtnText ? options.noBtnText : "No";
+    noBtn.classList.add("no-btn");
+
+    var yesBtn = document.createElement("button");
+    yesBtn.innerText = options.yesBtnText ? options.yesBtnText : "Yes";
+    yesBtn.classList.add("yes-btn");
+
+    btnContainer.appendChild(noBtn);
+    btnContainer.appendChild(yesBtn);
+
+    modalBody.appendChild(btnContainer);
+
+    $(modal).modal("show");
+
+    $(noBtn).one("click", function() {
+      $(modal).modal("hide");
+
+      if(options.noCallback) {
+        $(modal).one('hidden.bs.modal', function () {
+          options.noCallback();
+        });
+      }
+    });
+
+    $(yesBtn).one("click", function() {
+      $(modal).modal("hide");
+
+      if(options.yesCallback) {
+        $(modal).one('hidden.bs.modal', function () {
+          options.yesCallback();
+        });
+      }
+    });
+
+    $(modal).on('hidden.bs.modal', function () {
+      modal.classList.remove(options.type);
+    });
+  }
+}
+</script><link rel="stylesheet" media="all" href="https://dz2cdn2.dzone.com/themes/dz20/ftl/footer/styles.css">
+
+<div id="ftl-footer">
+  <div class="container-fluid footerOuter">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="container">
+          <div class="row footer">
+            <div class="col-md-12 footerWidget">
+              <div class="row footerContainer footer">
+                <div class="left col-xs-12 col-sm-7">
+                  <div class="col-xs-12 social-media-icons footer-mobile">
+                    <ul class="icons-only">
+                      <li class="rss-icon" id="rss-footer-1">
+                        <a href="/pages/feeds" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-rss-1"></i>
+                        </a>
+                      </li>
+                      <li class="twitter-icon">
+                        <a href="https://twitter.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-twitter"></i>
+                        </a>
+                      </li>
+                      <li class="facebook-icon">
+                        <a href="https://www.facebook.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-facebook-1"></i>
+                        </a>
+                      </li>
+                      <li class="linkedin-icon">
+                        <a href="https://www.linkedin.com/company/dzone/" target="_blank"
+                           rel="noreferrer noopener">
+                          <i class="icon-linkedin-1"></i>
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div class="top-section col-xs-12">
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">ABOUT US</p>
+                      <ul class="link-group">
+                        <li><a href="/pages/about" rel="noreferrer noopener">About DZone</a></li>
+                        <li><a href="mailto:support@dzone.com" rel="noreferrer noopener">Send feedback</a></li>
+                        <li><a href="https://careers.dzone.com/" target="_blank" rel="noreferrer noopener">Careers</a></li>
+                          <li><a href="/sitemap" rel="noreferrer noopener">Sitemap</a></li>
+                      </ul>
+                    </div>
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">ADVERTISE</p>
+                      <ul class="link-group">
+                        <li><a href="https://advertise.dzone.com" target="_blank" rel="noreferrer noopener">Advertise with DZone</a></li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div class="bottom-section col-xs-12">
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">CONTRIBUTE ON DZONE</p>
+                      <ul class="bottom-top-list link-group">
+                        <li><a href="/articles/dzones-article-submission-guidelines">Article Submission Guidelines</a></li>
+                        <li><a href="/pages/mvb" rel="noreferrer noopener">MVB Program</a></li>
+                        <li><a href="/pages/contribute" rel="noreferrer noopener">Become a Contributor</a></li>
+                        <li><a href="/writers-zone" rel="noreferrer noopener">Visit the Writers' Zone</a></li>
+                      </ul>
+
+                      <p class="section-header">LEGAL</p>
+                      <ul class="link-group">
+                        <li><a href="/pages/tos" rel="noreferrer noopener">Terms of Service</a></li>
+                        <li><a href="/pages/privacy" rel="noreferrer noopener">Privacy Policy</a></li>
+                      </ul>
+                    </div>
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">CONTACT US</p>
+                      <ul class="link-group">
+                        <li>600 Park Offices Drive</li>
+                        <li>Suite 300</li>
+                        <li>Durham, NC 27709</li>
+                        <li><a href="mailto:support@dzone.com" rel="noreferrer noopener">support@dzone.com</a></li>
+                        <li><a href="tel:+19196780300" rel="noreferrer noopener">+1 (919) 678-0300</a></li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="right col-xs-12 col-sm-5">
+
+                  <p class="connect-text">Let's be friends:</p>
+                  <div class="col-xs-12 social-media-icons footer-wide">
+                    <ul class="icons-only">
+                      <li class="rss-icon" id="rss-footer-1">
+                        <a href="/pages/feeds" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-rss-1"></i>
+                        </a>
+                      </li>
+                      <li class="twitter-icon">
+                        <a href="https://twitter.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-twitter"></i>
+                        </a>
+                      </li>
+                      <li class="facebook-icon">
+                        <a href="https://www.facebook.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-facebook-1"></i>
+                        </a>
+                      </li>
+                      <li class="linkedin-icon">
+                        <a href="https://www.linkedin.com/company/dzone/" target="_blank"
+                           rel="noreferrer noopener">
+                          <i class="icon-linkedin-1"></i>
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div class="col-xs-12 powered-by">
+                    <p>DZone.com is powered by&nbsp;</p>
+                    <a href="https://devada.com/answerhub/" rel="noreferrer noopener">
+                      <img src=""
+                           data-src="https://dz2cdn2.dzone.com/themes/dz20/images/answerhub_logo_white_footer.png"
+                           width="150"
+                           height="56"
+                           class="lazyload"
+                           alt="AnswerHub logo">
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  <script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"></script>
+
+  <script async>
+      (function(w, d, s, l, i) {
+          w[l] = w[l] || [];
+          w[l].push({'gtm.start': new Date().getTime(), event: 'gtm.js'});
+          var f = d.getElementsByTagName(s)[0], j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : '';
+          j.async = true;
+          j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+          f.parentNode.insertBefore(j,f);
+      })(window, document, 'script', 'dataLayer', 'GTM-K25QL22');
+  </script>
+
+  <script>
+      window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+      ga('create', 'UA-410289-1', 'auto');
+      ga('require', 'linkid', 'linkid.js');
+      ga('require', 'GTM-TSD9TZP');
+      ga('set', 'siteSpeedSampleRate', 25);
+  </script>
+  <script async src="https://www.google-analytics.com/analytics.js"></script>
+  <script async>const analytics = {
+    'dimension1': 'big-data',
+    'dimension2': 'article/analysis',
+    'dimension3': '2020-08-13',
+    'dimension4': '0',
+    'dimension5': '',
+    'dimension7': 'kafka, processing, Machine learning, Big data, Data science',
+    'dimension8': 'megachucky',
+    'dimension9': 'undefined',
+    'dimension10': 'Confluent'
+}
+
+if (window.ga) {
+    Object.keys(analytics).forEach(function(key) {
+        window.ga('set', key, analytics[key])
+    })
+
+    window.ga('send', 'pageview')
+}</script>
+
+  <script>
+      !function (e, o, n, i) {
+          if (!e) {
+              e = e || {}, window.permutive = e, e.q = [];
+              var t = function () {
+                  return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, function (e) {
+                      return (e ^ (window.crypto || window.msCrypto).getRandomValues(new Uint8Array(1))[0] & 15 >> e / 4).toString(16)
+                  })
+              };
+              e.config = i || {}, e.config.apiKey = o, e.config.workspaceId = n, e.config.environment = e.config.environment || "production", (window.crypto || window.msCrypto) && (e.config.viewId = t());
+              for (var g = ["addon", "identify", "track", "trigger", "query", "segment", "segments", "ready", "on", "once", "user", "consent"], r = 0; r < g.length; r++) {
+                  var w = g[r];
+                  e[w] = function (o) {
+                      return function () {
+                          var n = Array.prototype.slice.call(arguments, 0);
+                          e.q.push({
+                              functionName: o,
+                              arguments: n
+                          })
+                      }
+                  }(w)
+              }
+          }
+      }(window.permutive, "bca90777-e088-4f2a-96c2-13ad18deeccc", "18ad0c5b-460c-4d19-a729-dc537805538f", {});
+      window.googletag = window.googletag || {}, window.googletag.cmd = window.googletag.cmd || [], window.googletag.cmd.push(function () {
+          if (0 === window.googletag.pubads().getTargeting("permutive").length) {
+              var e = window.localStorage.getItem("_pdfps");
+              window.googletag.pubads().setTargeting("permutive", e ? JSON.parse(e) : []);
+              var o = window.localStorage.getItem("permutive-id");
+              o && (window.googletag.pubads().setTargeting("puid", o), window.googletag.pubads().setTargeting("ptime", Date.now().toString())), window.permutive.config.viewId && window.googletag.pubads().setTargeting("prmtvvid", window.permutive.config.viewId), window.permutive.config.workspaceId && window.googletag.pubads().setTargeting("prmtvwid", window.permutive.config.workspaceId)
+          }
+      });
+
+
+      permutive.addon('web', {
+          'page': {
+              'category': 'Big Data',
+              'node': {
+                  'authorCompany': 'Confluent',
+                  'authors': [758579, ],
+                  'publishDate': new Date(1597276800000),
+                  'sponsorAuthor': false,
+                  'tags': ['kafka', 'processing', 'Machine learning', 'Big data', 'Data science', ],
+                  'title': 'Processing Large Messages With Apache Kafka',
+                  'type': 'article',
+              },
+              'section': 'article',
+          }
+      });
+  </script>
+  <script async src="https://18ad0c5b-460c-4d19-a729-dc537805538f.edge.permutive.app/18ad0c5b-460c-4d19-a729-dc537805538f-web.js"></script>
+
+  <script>
+      const csrf = '8970881175294491485'
+      const articleId = 3023750
+      const likes = 3
+      const assetDomain = 'https://dz2cdn2.dzone.com'
+      const codemirrorVars = {
+          modeURI: 'https://dz2cdn2.dzone.com/themes/dz20/lib/codemirror/mode/',
+          requiredScripts: [
+              'https://dz2cdn2.dzone.com/themes/dz20/lib/codemirror/lib/codemirror.js',
+              'https://dz2cdn2.dzone.com/themes/dz20/lib/codemirror/mode/meta.js'
+          ]
+      }
+
+      const gptTags = {
+          'zone': 'big_data',
+          'topicTag': 'kafka,processing,Machine learning,Big data,Data science',
+          'company': '',
+          'siteSection': 'Zones',
+          'articleCategory': 'analysis',
+          'nodeID': '3023750',
+          'authorID': '758579',
+          'publishYear': '2020',
+          'publishMonth': '08',
+          'jobRole': '',
+          'companySize': ''
+      }
+
+      const minCommentChar = 10;
+      const peer39Enabled = true;
+  </script>
+
+  <script src="https://dz2cdn2.dzone.com/themes/dz20/lib/static/jquery/jquery.min.js"></script>
+  <script async src="https://dz2cdn2.dzone.com/themes/dz20/lib/static/bootstrap/bootstrap.min.js"></script>
+  <script async src="https://dz2cdn2.dzone.com/themes/dz20/ftl/article/ads.js"></script>
+
+
+
+  <script>
+      function loadScript(src) {
+          return new Promise(function (resolve, reject) {
+              const s = document.createElement('script')
+              s.src = src
+              s.onload = resolve
+              s.onerror = reject
+              document.head.appendChild(s)
+          })
+      }
+
+      function loadStyle(href) {
+          const link = document.createElement('link')
+          link.rel = 'stylesheet'
+          link.href = href
+          document.head.appendChild(link)
+      }
+
+      function loadScriptsSync(deferred) {
+          var p = Promise.resolve()
+          for (var i = 0; i < deferred.length; i++) {
+              let script = deferred[i]
+              p = p.then(function() {
+                  return loadScript(script)
+              })
+          }
+          return p
+      }
+
+      function loadStyles() {
+          const deferred = [
+              'https://dz2cdn2.dzone.com/themes/dz20/lib/codemirror/lib/codemirror.css',
+              'https://dz2cdn2.dzone.com/themes/dz20/ftl/comments/styles.css',
+              'https://dz2cdn2.dzone.com/themes/dz20/lib/froala3/css/froala_editor.pkgd.min.css',
+              'https://dz2cdn2.dzone.com/themes/dz20/lib/froala3/css/themes/gray.min.css',
+              'https://dz2cdn2.dzone.com/themes/dz20/ftl/article/mini-profile.css'
+          ]
+
+          for (var i = 0; i < deferred.length; i++) {
+              loadStyle(deferred[i])
+          }
+      }
+
+      window.addEventListener('load', function(event) {
+          loadStyles()
+          loadScriptsSync([
+              'https://dz2cdn2.dzone.com/themes/dz20/ftl/header/auth-status.js',
+              'https://dz2cdn2.dzone.com/themes/dz20/lib/lazysizes.min.js',
+              'https://dz2cdn2.dzone.com/themes/dz20/ftl/article/codeblocks.js',
+              'https://dz2cdn2.dzone.com/themes/dz20/ftl/article/activity-bar.js',
+              'https://dz2cdn2.dzone.com/themes/dz20/lib/froala3/js/froala_editor.pkgd.min.js',
+              'https://dz2cdn2.dzone.com/themes/dz20/ftl/froala/content.js',
+              'https://dz2cdn2.dzone.com/themes/dz20/ftl/comments/content.js',
+              'https://dz2cdn2.dzone.com/themes/dz20/ftl/article/content.js'
+          ])
+      })
+  </script>
+</body>
+</html>

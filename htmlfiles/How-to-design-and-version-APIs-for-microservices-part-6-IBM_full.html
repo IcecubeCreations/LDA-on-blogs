@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="en-us" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+<script>digitalData = {
+    "page": {
+        "category": [],
+        "pageInfo": {
+            "language": "en-US",
+            "country": "US",
+            "publisher": "IBM Corporation",
+            "version": "v18",
+            "ibm": {
+                "contentDelivery": "Drupal 9",
+                "contentProducer": "1673421 - Article",
+                "owner": "Carrie Crabtree/Ottawa/IBM",
+                "siteID": "DRUPAL",
+                "contactModuleConfiguration": {
+                    "contactInformationBundleKey": {
+                        "focusArea": "WCP - Cloud Public",
+                        "languageCode": "en",
+                        "regionCode": "US"
+                    },
+                    "contactModuleTranslationKey": {
+                        "languageCode": "en",
+                        "regionCode": "US"
+                    }
+                },
+                "config": {
+                    "masthead": {
+                        "type": "alternate"
+                    },
+                    "footer": {
+                        "type": "alternate"
+                    }
+                }
+            },
+            "publishDate": "2019-09-10",
+            "effectiveDate": "2019-05-06",
+            "expiryDate": "2023-09-10"
+        }
+    }
+}</script>
+<meta name="geo.country" content="ZZ" />
+<link rel="canonical" href="https://www.ibm.com/cloud/blog/rapidly-developing-applications-part-6-exposing-and-versioning-apis" />
+<meta name="robots" content="index, follow" />
+<meta name="referrer" content="no-referrer-when-downgrade" />
+<meta name="rights" content="© Copyright IBM Corporation 2022" />
+<meta name="description" content="In this 6-part series on microservices application development, we provide a context for defining a cloud-based pilot project or minimum viable product that best fits current needs of your team and organization. Along with a guided tour of IBM Cloud, you will be prepared for a longer-term cloud adoption decision. Here in part 6, we review best practices for creating and maintaining APIs within an application and between a cloud-deployed application and components that live on premises. This is a guide to the overall series: An overview of microservices (part 1), after providing context for business pressures requiring faster app development and delivery, steps through the process a team went through in transforming a specific monolithic application. Architecting with microservices (part 2) lays out the common capabilities of an architecture for rapidly developing applications based on a microservice. Implementing a microservices application (part 3) provides a method for implementing your own microservices project. Using microservices development patterns (part 4) presents common development patterns available for implementing microservices applications. Using microservices operations patterns for resiliency (part 5)…" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://www.ibm.com/cloud/blog/rapidly-developing-applications-part-6-exposing-and-versioning-apis" />
+<meta property="og:title" content="How to design and version APIs for microservices (part 6)" />
+<meta property="og:image" content="https://1.cms.s81c.com/sites/default/files/styles/ibm_cloud_wide_background/public/2019-02-19/Cloud-Leadspace_5.jpg?itok=94sWMYVK" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="600" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:image" content="https://1.cms.s81c.com/sites/default/files/styles/ibm_cloud_wide_background/public/2019-02-19/Cloud-Leadspace_5.jpg?itok=94sWMYVK" />
+<script>cpp = {"path":"\/cloud\/ajax\/product\/{product}"}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script type="application/ld+json">{
+    "@context": "https://schema.org",
+    "@graph": [
+        {
+            "@type": "WebPage",
+            "breadcrumb": {
+                "@type": "BreadcrumbList",
+                "itemListElement": [
+                    {
+                        "@type": "ListItem",
+                        "position": 1,
+                        "name": "Cloud",
+                        "item": "https://www.ibm.com/cloud"
+                    },
+                    {
+                        "@type": "ListItem",
+                        "position": 2,
+                        "name": "Blog",
+                        "item": "https://www.ibm.com/cloud/blog"
+                    },
+                    {
+                        "@type": "ListItem",
+                        "position": 3,
+                        "name": "How to design and version APIs for microservices (part 6)",
+                        "item": "https://www.ibm.com/cloud/blog/rapidly-developing-applications-part-6-exposing-and-versioning-apis"
+                    }
+                ]
+            }
+        }
+    ]
+}</script>
+<script type="application/ld+json">{
+    "@context": "https://schema.org",
+    "@graph": [
+        {
+            "@type": "Article",
+            "headline": "How to design and version APIs for microservices (part 6)",
+            "image": {
+                "@type": "ImageObject",
+                "url": "//1.cms.s81c.com/sites/default/files/styles/ibm_cloud_wide_background/public/2019-02-19/Cloud-Leadspace_5.jpg?itok=94sWMYVK"
+            },
+            "datePublished": "2017-08-08T09:27:00",
+            "dateModified": "2019-09-10T13:23:49-0500"
+        }
+    ]
+}</script>
+<link rel="alternate" hreflang="en-us" href="https://www.ibm.com/cloud/blog/rapidly-developing-applications-part-6-exposing-and-versioning-apis" />
+<link rel="revision" href="https://www.ibm.com/cloud/blog/rapidly-developing-applications-part-6-exposing-and-versioning-apis" />
+
+    <title>How to design and version APIs for microservices (part 6)  | IBM</title>
+    <link rel='dns-prefetch' href='//1.www.s81c.com' />
+<link rel='preconnect' href='//1.www.s81c.com' />
+    <link href="//1.www.s81c.com/common/v18/drupal/css/www.css" rel="preload" as="style"  />
+    <link rel="stylesheet" href="//1.www.s81c.com/common/v18/drupal/css/www.css" media="all" />
+<link href="//1.www.s81c.com/common/v18/drupal/css/grid-fluid.css" rel="preload" as="style"  />
+<link rel="stylesheet" href="//1.www.s81c.com/common/v18/drupal/css/grid-fluid.css" media="all" />
+<link href="//1.www.s81c.com/common/v18/drupal/css/tables.css" rel="preload" as="style"  />
+<link rel="stylesheet" href="//1.www.s81c.com/common/v18/drupal/css/tables.css" media="all" />
+<link rel="preload" href="//1.www.s81c.com/common/fonts/plex/v1/ibmplexsans-regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="//1.www.s81c.com/common/fonts/plex/v1/ibmplexsans-regularitalic.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="//1.www.s81c.com/common/fonts/plex/v1/ibmplexsans-semibold.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="//1.www.s81c.com/common/fonts/icons-ibm-v12.woff" as="font" type="font/woff" crossorigin>
+<link rel="preload" href="//1.www.s81c.com/common/fonts/plex/v1/ibmplexsans-light.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" media="all" href="//1.cms.s81c.com/sites/default/files/css/css_Cjjdj6h8oMtzR9nJ6OXSUJCFLJzGY-8W7HoIXiZmiho.css" />
+<link rel="stylesheet" media="all" href="//1.cms.s81c.com/sites/default/files/css/css_DHfAVEXe5KqipXy_3U5i2vSw9IUtzOVOZjs9BZD-dNA.css" />
+<link rel="stylesheet" media="all" href="//1.www.s81c.com/common/v19a/css/www.css" />
+<link rel="stylesheet" media="all" href="//1.cms.s81c.com/sites/default/files/css/css_YYZW6p3nsdC2LQP-GLiw1UOaRFvgzVj1J-d7gMMXkrs.css" />
+
+    <script type="application/json" data-drupal-selector="drupal-settings-json">{"path":{"baseUrl":"\/","scriptPath":null,"pathPrefix":"","currentPath":"node\/1673421","currentPathIsAdmin":false,"isFront":false,"currentLanguage":"en-us"},"pluralDelimiter":"\u0003","suppressDeprecationErrors":true,"ajaxPageState":{"libraries":"entity_embed\/caption,hc_fractal\/dds-cloud-masthead,hc_fractal\/dds-masthead-add-on,hc_fractal\/dds-masthead-locales,hc_fractal\/main_css,hc_fractal\/main_js,ibm_ckeditor\/ibm_ckeditor_table_style,ibm_cloud\/cloud_mega_menu,ibm_cloud\/ibm_cloud,ibm_cloud\/ibm_cloud_nav_l1,ibm_cloud\/slick_slider,ibm_cloud\/v18-config,ibm_cloud\/www_v19a,ibm_duo\/ibm_duo,ibm_tmgmt_concurrency\/ibm_tmgmt_concurrency_messaging,ibm_tmgmt_concurrency\/ibm_tmgmt_concurrency_publisher,ibm_tmgmt_concurrency\/ibm_tmgmt_concurrency_publisher_finish,metadata\/focus_area,northstar\/font,northstar\/grid-fluid,northstar\/hub,northstar\/shame,northstar\/stats,northstar\/tables,system\/base,tactic_codes\/tactic_codes,views\/views.module","theme":"ibm_cloud","theme_token":"GEanvp1mmC9bgxfmTig_hi4ZTnDSn_RHPdHP6GwXJAw"},"ajaxTrustedUrl":[],"ibm_tmgmt_concurrency_publisher":{"nid":"1673421","language":"en-us","submit_button":"#edit-submit","form":"#content-moderation-entity-moderation-form","route":"entity.node.canonical"},"ibm_cloud":{"is_default_language":true,"is_cloud":true,"config":{"masthead":{"type":"default"},"footer":{"type":"default"}},"more":"More"},"navManagement":{"globalMastheadPlatformUrl":"\/cloud"},"user":{"uid":0,"permissionsHash":"38c521f2e73acba97a244c38ca669a8077be690dd45b09557a61cf00896ec935"}}</script>
+<script src="//1.cms.s81c.com/sites/default/files/js/js_sick4A63jIkjC8sBIoo7UAX_DLO6-SyAZhE15WaYPOc.js"></script>
+<script src="//1.www.s81c.com/common/carbon-for-ibm-dotcom/tag/v1/latest/cloud-masthead.min.js" type="module" defer></script>
+<script src="//1.www.s81c.com/common/stats/ibm-common.js"></script>
+<script src="//1.www.s81c.com/common/v18/drupal/js/www.js" defer></script>
+<script src="//1.www.s81c.com/common/carbon/plex/load-non-latin-plex.js" defer></script>
+<script src="//1.cms.s81c.com/themes/custom/ibm_cloud/js/v18-config.js?v=1.0.2" defer></script>
+<script src="//1.cms.s81c.com/themes/custom/ibm_cloud/js/mega_menu_nav.v4.js?v=4.3.2" defer></script>
+<script src="//1.www.s81c.com/common/v19a/js/www.js" defer></script>
+<script src="//1.cms.s81c.com/modules/contrib/hc_fractal/dist/js/navs/dds-masthead-locales.js?v=1.0.0" defer></script>
+<script src="//1.cms.s81c.com/modules/contrib/hc_fractal/dist/js/navs/dds-masthead-scroll.js?v=1.0.2" defer></script>
+
+    <noscript>
+      <link rel="stylesheet" type="text/css" href="//1.cms.s81c.com/modules/contrib/hc_fractal/dist/css/no-js.css" />
+    </noscript>
+  </head>
+  <body id="ibm-com"  uuid="4a9f58d1-0647-4bc7-80f1-1cca4d2324fc" class="path-node page-node-type-article ibm-type">
+    
+      <div class="dialog-off-canvas-main-canvas" data-off-canvas-main-canvas>
+    
+<div id="ibm-top" class="ibm-article-page">
+    <div class="region region-masthead">
+    
+<a href="#block-ibm-cloud-content" class="ibm-cloud-skip-to-content ibm-btn-pri ibm-btn-no-icon-link ibm-btn-systems-blue-6">Skip to content</a>
+
+
+
+
+
+<dds-cloud-masthead-container
+  platform="Cloud"
+  auth-method="cookie"
+  has-contact="true"
+  data-endpoint="/common/carbon-for-ibm-dotcom/translations/cloud-masthead"
+></dds-cloud-masthead-container>
+
+
+
+  </div>
+
+  <div id="ibm-content-wrapper">
+      <header  aria-label="Navigation Header">
+    <div class="ibm-sitenav-menu-container ibm-sitenav-menu-container__cloud-blog">
+  <div class="ibm-grid-container">
+            
+    <div class="ibm-sitenav-menu-name">
+      <a href="/cloud/blog">Blog</a>
+    </div>
+    
+
+    <div class="ibm-sitenav-menu-list">
+
+                    
+    
+          <ul class="ibm-cloud-sitenav-menu-list ibm-cloud-sitenav-main" role="menubar" aria-label="IBM Cloud main menu">
+                    <li class="ibm-cloud-sitenav-level-0">
+                  <a href="/cloud/blog/cloud-explained" role="menuitem">Cloud explained</a>
+              </li>
+                <li class="ibm-cloud-sitenav-level-0">
+                  <a href="/cloud/blog/cloud-in-business" role="menuitem">Cloud in business</a>
+              </li>
+                <li class="ibm-cloud-sitenav-level-0">
+                  <a href="/cloud/blog/cloud-tutorials" role="menuitem">Cloud tutorials</a>
+              </li>
+                <li class="ibm-cloud-sitenav-level-0">
+                  <a href="/cloud/blog/announcements" role="menuitem">Announcements</a>
+              </li>
+                <li class="ibm-cloud-sitenav-level-0">
+                  <a href="/cloud/blog/technologies" role="menuitem">Technologies</a>
+              </li>
+        </ul>
+  
+
+
+      
+    </div>
+  </div>
+</div>
+<div class="views-element-container" id="block-ibm-cloud-views-block-lead-space-content-block-1">
+  
+    
+      <div><div class="js-view-dom-id-f047d8951ca55afebd0dcdb82f72cd0e77e0f8d2f976a67b46f28b94d20054fc">
+  
+  
+  
+
+  
+  
+  
+
+      <div></div>
+
+    
+
+  
+  
+
+  
+  
+</div>
+</div>
+
+  </div>
+<div class="views-element-container" id="block-ibm-cloud-views-block-navigational-tabs-page-build-nav-tabs">
+  
+    
+      <div><div class="js-view-dom-id-e35f897d81d0c021ef2edec2877099f5617e666a73abe4b46a96da9b68924ada">
+  
+  
+  
+
+  
+  
+  
+
+      <div class="views-row"></div>
+
+    
+
+  
+  
+
+  
+  
+</div>
+</div>
+
+  </div>
+    
+
+  </header>
+
+
+
+    <main role="main" aria-label="How to design and version APIs for microservices (part 6)">
+      <div id="ibm-pcon">
+        <div id="ibm-content">
+          <div id="ibm-content-body-alt">
+            <div class="ibm-padding-top-0">
+                <div class="region region-help">
+    <div data-drupal-messages-fallback class="hidden"></div>
+
+  </div>
+
+                <div class="region region-content">
+    <div id="block-ibm-cloud-content">
+  
+    
+      
+
+<article class="cloud-article" id="article-1673421">
+
+  <div class="ibm-cloud-blog-hero">
+    <div class="ibm-grid-container ibm-cloud-u--seamless">
+      <div class="ibm-grid-col-sm-4-4 ibm-grid-col-md-8-8 ibm-grid-col-lg-16-16 ibm-grid-col-seamless ibm-cloud-blog-hero__bg" style="background-image:url('//1.cms.s81c.com/sites/default/files/2019-02-19/Cloud-Leadspace_5.jpg')"></div>
+
+      <div class="ibm-grid-col-md-4-0 ibm-grid-col-md-8-0 ibm-grid-col-lg-16-2"></div>
+
+      <div class="ibm-grid-col-sm-4-4 ibm-grid-col-md-8-5 ibm-grid-col-lg-16-6 ibm-grid-col-xlg-16-7 ibm-cloud-blog-hero__content">
+        <div class="ibm-cloud-blog-hero__headline">
+          <h1 class="ibm-type-i ibm-type-semibold ibm-textcolor-white-core ibm-mb-2">
+                <span > How to design and version APIs for microservices (part 6)</span>
+
+          </h1>
+
+                      <div class="ibm-mb-8 ibm-cloud-blog-hero__topics">
+                              <a class="ibm-type-a ibm-mb-1" href="/cloud/blog/compute">Compute</a>
+                              <a class="ibm-type-a ibm-mb-1" href="/cloud/blog/devops">DevOps</a>
+                          </div>
+                  </div>
+
+        <div class="ibm-cloud-blog-hero__date">
+          <p class="ibm-type-b ibm-textcolor-white-core ibm-mb-0">            <time datetime="2017-08-08T09:27:00Z">8 August  2017</time>
+
+      
+                          <span class="ibm_read_time"> 5 min read</span>
+                      </p>
+          <div class="ibm-col-12-1 ibm-cloud-blog-hero__byline"><p class="ibm-type-b ibm-textcolor-white-core ibm-mb-0">By: </p></div>
+          <div class="ibm-col-12-11 ibm-cloud-blog-hero__byline">
+            <p class="ibm-type-b ibm-textcolor-white-core ibm-mb-0">
+                                                <span>Kyle Brown, IBM Fellow, CTO Cloud Architecture, IBM Cloud Labs<br></span>
+                                           </p>
+           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ibm-grid-container ibm-cloud-blog-content ibm-cloud-u--seamless">
+    <div class="ibm-grid-col-sm-4-4 ibm-grid-col-lg-16-2"><div id="block-ibm-cloud-ibmsocialshareblock-article">
+  
+    
+      <p class="ibm-icononly ibm-cloud-social-share">
+    <a href="https://twitter.com/intent/tweet?original_referer=https://www.ibm.com/cloud/blog/rapidly-developing-applications-part-6-exposing-and-versioning-apis&amp;text=How to design and version APIs for microservices (part 6)&amp;hashtags=&amp;url=https://www.ibm.com/cloud/blog/rapidly-developing-applications-part-6-exposing-and-versioning-apis" target="_blank" title="Share this page on Twitter" class="ibm-twitter-encircled-link ibm-mb-3">Share this page on Twitter</a>
+    <a class="ibm-facebook-encircled-link ibm-mb-3" href="http://www.facebook.com/sharer.php?u=https://www.ibm.com/cloud/blog/rapidly-developing-applications-part-6-exposing-and-versioning-apis&amp;t=How to design and version APIs for microservices (part 6)" target="_blank" title="Share this page on Facebook">Share this page on Facebook</a>
+    <a class="ibm-linkedin-encircled-link ibm-mb-3" href="http://www.linkedin.com/shareArticle?mini=true&amp;url=https://www.ibm.com/cloud/blog/rapidly-developing-applications-part-6-exposing-and-versioning-apis&amp;title=How to design and version APIs for microservices (part 6)&amp;source=IBM" target="_blank" title="Share this page on LinkedIn">Share this page on LinkedIn</a>
+    <a class="ibm-email-encircled-link ibm-mb-3" href="mailto:?subject=IBM:  How to design and version APIs for microservices (part 6)&amp;body=%0D%0AYou might enjoy reading this article from IBM:  How to design and version APIs for microservices (part 6)%0D%0A%0D%0Ahttps://www.ibm.com/cloud/blog/rapidly-developing-applications-part-6-exposing-and-versioning-apis" title="E-mail this page">E-mail this page</a>
+</p>
+
+  </div>
+</div>
+    <div class="ibm-grid-col-sm-4-4 ibm-grid-col-md-8-6 ibm-grid-col-lg-16-8">
+              <div class="ibm-cloud-blog-body ibm-mb-6">
+                      <h2 class="ibm-type-f ibm-pb-0 ibm-mb-3">    <span>How to design and version APIs for microservices (part 6)</span>
+
+</h2>
+                    <p class="ibm-fontsize-body">In this 6-part series on microservices application development, we provide a context for defining a cloud-based pilot project or minimum viable product that best fits current needs of your team and organization. Along with a guided tour of <a href="https://www.ibm.com/cloud-computing/bluemix/cloud-adoption?cm_mmc=OSocial_Blog-_-Cloud_Cloud+Platform-_-WW_WW-_-RapidAppDevBlog&amp;cm_mmca2=10005900&amp;">IBM Cloud</a>, you will be prepared for a longer-term cloud adoption decision.</p>
+
+<p class="ibm-fontsize-body">Here in part 6, we review best practices for creating and maintaining APIs within an application and between a cloud-deployed application and components that live on premises.</p>
+
+<p class="ibm-fontsize-body">This is a guide to the overall series:</p>
+
+<ul><li>
+	<p class="ibm-fontsize-body"><a href="https://www.ibm.com/blogs/bluemix/2017/07/know-developing-applications-microservices/?cm_mmc=OSocial_Blog-_-Cloud_Cloud+Platform-_-WW_WW-_-Blog-Rapidly+developing+applications+part+1+blog&amp;cm_mmca1=000023UL&amp;cm_mmca2=10005900&amp;"><strong>An overview of microservices</strong></a><strong> </strong>(part 1), after providing context for business pressures requiring faster app development and delivery, steps through the process a team went through in transforming a specific monolithic application.</p>
+	</li>
+	<li>
+	<p class="ibm-fontsize-body"><a href="https://www.ibm.com/blogs/bluemix/2017/07/architecting-applications-microservices-general-principles/?cm_mmc=OSocial_Blog-_-Cloud_Cloud+Platform-_-WW_WW-_-Blog-+Rapidly+developing+applications+part+2&amp;cm_mmca1=000023UL&amp;cm_mmca2=10005900&amp;"><strong>Architecting with microservices</strong></a> (part 2) lays out the common capabilities of an architecture for rapidly developing applications based on a microservice.</p>
+	</li>
+	<li>
+	<p class="ibm-fontsize-body"><a href="https://www.ibm.com/blogs/bluemix/2017/07/implementing-microservices-projects"><strong>Implementing a microservices application</strong></a> (part 3) provides a method for implementing your own microservices project.</p>
+	</li>
+	<li>
+	<p class="ibm-fontsize-body"><a href="https://www.ibm.com/blogs/bluemix/2017/07/using-microservice-application-patterns"><strong>Using microservices development patterns</strong></a><strong> </strong>(part 4)<strong> </strong>presents<strong> </strong>common development patterns available for implementing microservices applications.</p>
+	</li>
+	<li>
+	<p class="ibm-fontsize-body"><a href="https://www.ibm.com/blogs/bluemix/2017/07/architecting-applications-microservices-resiliency/?cm_mmc=OSocial_Blog-_-Cloud_Cloud+Platform-_-WW_WW-_-rapidly+developing+applications+5&amp;cm_mmca1=000023UL&amp;cm_mmca2=10005900&amp;"><strong>Using microservices operations patterns for resiliency</strong></a> (part 5) presents common operations patterns for achieving resiliency in your microservices applications.</p>
+	</li>
+	<li>
+	<p class="ibm-fontsize-body"><strong>Designing and versioning APIs</strong> (this part) offers best practices for managing the interfaces of microservices in your application.</p>
+	</li>
+</ul><h3 class="ibm-h3"><strong>Creating an API for a microservice</strong></h3>
+
+<p class="ibm-fontsize-body">These are basic principles for designing the API exposed by a microservice, the first of which is enforcing strong contracts. A microservice provides a versioned, well-defined contract to its clients, other microservices, and each service must not break it until it’s determined no other microservice relies on it.</p>
+
+<p class="ibm-fontsize-body">The second is to avoid chatty interfaces requiring you to perform multiple calls to accomplish a task. Communication inefficiencies within a distributed system inevitably impair service performance and availability as a microservices app scales.</p>
+
+<p class="ibm-fontsize-body">Third is to make a message serialization choice based on performance Who are the users of the format? How much data is being transferred in each request? Can the data be compressed? Though JSON is currently the popular format for microservices APIs, capable of being parsed directly into an object graph, it’s not a compact format. As an API designer, evaluate formats and choose one based on performance requirements.</p>
+
+<p class="ibm-fontsize-body">Lastly, use desired resiliency as the guide for choosing blocking vs. non-blocking APIs. Non-blocking APIs scale better, but are more complicated to design and use. Blocking APIs allow for retrying when the resource becomes available. This is one of the most important aspects of API design because it affects how resilient the API must be within the application workflow as it scales.</p>
+
+<h3 class="ibm-h3"><strong>Using API design patterns</strong></h3>
+
+<p class="ibm-fontsize-body">The <strong>API Gateway Pattern </strong>is used to abstract the communication between client applications and internal microservices. This allows for the composition of microservices into client-ready services.</p>
+
+<div data-embed-button="media" data-entity-embed-display="view_mode:media.embedded" data-entity-type="media" data-entity-uuid="43b7d78c-453e-434a-87e4-8f18099ac30f" class="embedded-entity">
+
+<figure class="ibm-cloud-image ibm-cloud-image--embedded"><img src="//1.cms.s81c.com/sites/default/files/2019-02-19/1_apigatewaypattern.png" alt="API Gateway Pattern" /></figure></div>
+<h3 class="ibm-h3">Microservices Discovery Pattern</h3>
+
+<p class="ibm-fontsize-body">The Microservices Discovery Pattern removes coupling between microservices and client apps. By dynamically registering microservices in an enterprise topology, we allow client apps and other services to dynamically discover microservices and adapt to changes. This pattern also avoids the centralized registry pattern of traditional SOA monoliths.</p>
+
+<div data-embed-button="media" data-entity-embed-display="view_mode:media.embedded" data-entity-type="media" data-entity-uuid="ed4e0f8b-1a51-4a1b-96ea-860322a6fa47" class="embedded-entity">
+
+<figure class="ibm-cloud-image ibm-cloud-image--embedded"><img src="//1.cms.s81c.com/sites/default/files/2019-02-19/2_apidiscoverypattern.png" alt="Microservices Discovery Pattern" /></figure></div>
+<h3 class="ibm-h3">Microservices Description Pattern</h3>
+
+<p class="ibm-fontsize-body">The Microservices Description Pattern expresses features of microservices in a descriptive format that can be understood by client applications. It also offers a means of managing microservices metadata.</p>
+
+<div data-embed-button="media" data-entity-embed-display="view_mode:media.embedded" data-entity-type="media" data-entity-uuid="0fecc9f5-6e39-436b-b3fa-c69da481ef95" class="embedded-entity">
+
+<figure class="ibm-cloud-image ibm-cloud-image--embedded"><img src="//1.cms.s81c.com/sites/default/files/2019-02-19/3_apidescriptionpattern.png" alt="Microservices Description Pattern" /></figure></div>
+<h3 class="ibm-h3"><strong>Versioning an API of a Microservice</strong></h3>
+
+<p class="ibm-fontsize-body">There are two options for versioning the exposed API of a microservice. If you need to provide additional information on a GET or POST operation, then the change is unlikely to be backwards-compatible. In that case, you need to look at ways of handling this problem. The two most common ways of handling this are:</p>
+
+<ol><li>
+	<p class="ibm-fontsize-body">Versioning in the URI</p>
+	</li>
+	<li>
+	<p class="ibm-fontsize-body">Versioning in the header</p>
+	</li>
+</ol><p class="ibm-fontsize-body">The REST community is split nearly 50/50 on which is the best approach for this, so we present both.</p>
+
+<p class="ibm-fontsize-body">URI versioning is when you change the URI of the resource itself to contain version information. A simple example of this from our bank account example might look like:  /accounts/v2.1/{id}</p>
+
+<p class="ibm-fontsize-body">This approach gives you the ability to version an entire resource hierarchy or branch. It’s also more semantically meaningful to developers—they can see at a glance which version of a service they are referring to. Modeling the version in this way as a resource enables automated navigation or discovery of resources. For this reason, we recommend it for most purposes.</p>
+
+<p class="ibm-fontsize-body">A disadvantage of this approach is that when you include version information in the URI, you change the resource name and location. This introduces a complex proliferation of URI aliases that make it difficult to identify which version of your API is the currently supported version. What’s more, you can no longer use URIs to compare identity in this approach — the same identical object may be returned by both the version 2.0 and 2.1 URI’s.</p>
+
+<p class="ibm-fontsize-body">Additionally, this may break existing hypermedia links that do not include version information.</p>
+
+<p class="ibm-fontsize-body">You can get fancier with this approach, but this makes it troublesome as the examples show:</p>
+
+<p class="ibm-fontsize-body"><strong>versioning at multiple hierarchy nodes – complicated</strong></p>
+
+<p class="ibm-fontsize-body"><em>/maps/version/2/roadways/version/2</em></p>
+
+<p class="ibm-fontsize-body"><strong>query parameter – not recommended</strong></p>
+
+<p class="ibm-fontsize-body"><em>/maps?version=2</em></p>
+
+<p class="ibm-fontsize-body">URI service versioning is the best practice for updating the public API of a service, but it doesn’t address any breaking changes to the backend data stores that may need to take place. There are two options for dealing with this, and neither option is great:</p>
+
+<p class="ibm-fontsize-body"><strong>Option 1</strong>: Copy your old data into a new “V2” database and keep the two entirely separate. This means that either you live with data drift or you put a data synchronization solution in place.</p>
+
+<p class="ibm-fontsize-body"><strong>Option 2</strong>: Update your schema in place and add code to v1 (!) to handle the new schema.</p>
+
+<p class="ibm-fontsize-body">The following image shows these two options:</p>
+
+<div data-embed-button="media" data-entity-embed-display="view_mode:media.embedded" data-entity-type="media" data-entity-uuid="a1b3bee6-cc89-4888-a368-68289075b0ef" class="embedded-entity">
+
+<figure class="ibm-cloud-image ibm-cloud-image--embedded"><img src="//1.cms.s81c.com/sites/default/files/2019-02-19/4_uriversioning.png" alt="The following image shows these two options:" /></figure></div>
+<h3 class="ibm-h3">Header versioning</h3>
+
+<p class="ibm-fontsize-body">Header versioning is another approach to include version information in a special header of each request or response. An example of this header might be: X-Version:2.1</p>
+
+<p class="ibm-fontsize-body">An advantage of this approach is that the resource name and location remains unchanged throughout your hierarchy, so you won’t have a proliferation of URI aliases. This approach makes it easier for transparent intermediaries to parse the headers for routing in scenarios where you have an ESB in place between service requestors and service providers. Likewise, by keeping the URI the same across versions, the API remains completely semantically meaningful to developers.</p>
+
+<p class="ibm-fontsize-body">A drawback to this type of versioning is that information can’t be readily encoded into hypermedia links. What’s more, this approach doesn’t discriminate among multiple representations. Additionally, it only works with custom clients that know how to encode the special header, thus introducing coupling into your design.</p>
+
+<p class="ibm-fontsize-body"><strong>What to do next:</strong></p>
+
+<p class="ibm-fontsize-body">Whether your business is starting fresh or in the midst of cloud native development, there are numerous tools, resources, and services to mold to your exact needs.</p>
+
+<p class="ibm-fontsize-body"><strong>Additional resources:</strong></p>
+
+<ul><li>
+	<p class="ibm-fontsize-body">For details on working with APIs, visit <a href="https://www.ibm.com/devops/method/content/tracks/api_track_overview">implementing a well-designed API strategy</a>.</p>
+	</li>
+	<li>
+	<p class="ibm-fontsize-body">For modernizing and refactoring a monolithic application, view this <a href="https://www.ibm.com/devops/method/content/architecture/microservices/2_1">detailed architectural progression</a>.</p>
+	</li>
+	<li>
+	<p class="ibm-fontsize-body">For developing a cloud native (‘greenfield’) application, view an <a href="https://www.ibm.com/devops/method/content/architecture/microservices/1_0?cm_mmc=OSocial_Blog-_-Cloud_Cloud+Platform-_-WW_WW-_-Bluemix+Garage+Method+site&amp;cm_mmca1=000023UL&amp;cm_mmca2=10005900&amp;">interactive architecture diagram</a> of a microservices online store application and access a <a href="https://www.ibm.com/devops/method/tutorials/kubernetes?cm_mmc=OSocial_Blog-_-Cloud_Cloud+Platform-_-WW_WW-_-Bluemix+Garage+Method+site&amp;cm_mmca1=000023UL&amp;cm_mmca2=10005900&amp;">tutorial</a> on deploying the same app in a Kubernetes cluster.</p>
+	</li>
+</ul>
+        </div>
+      
+              <div class="ibm-cloud-blog-contributor-block ibm-pt-4 ibm-mb-9">
+                      <a href="/cloud/blog/kyle-brown" class="ibm-cloud-blog-contributor-block--link ibm-mo ibm-mb-1">
+                              <div class="ibm-mo__image">
+                  <img src="//1.cms.s81c.com/sites/default/files/styles/cloud_person/public/2018-11-13/Kyle-selfie.png?itok=EOGCw6Yg" alt="Kyle Brown" class="ibm-circle" width="80" height="80"/>
+                </div>
+                            <div class="ibm-mo__body ibm-pt-2">
+                                  <h3 class="ibm-cloud-blog-contributor-block--name ibm-type-d ibm-textcolor-gray-100 ibm-mb-0 ibm-pb-0">Kyle Brown</h3>
+                                                  <p class="ibm-textcolor-gray-90 ibm-cloud-blog-contributor--job-title">IBM Fellow, CTO Cloud Architecture, IBM Cloud Labs</p>
+                              </div>
+            </a>
+                  </div>
+      
+    </div>
+    <div class="ibm-grid-col-sm-4-4 ibm-grid-col-lg-16-3 ibm-grid-offset-lg-16-2">
+      <div class="ibm-grid-container">
+        <div class="ibm-grid-col-md-8-4 ibm-grid-col-lg-16-16 ibm-mb-9">
+          <div id="block-ibmcloudblogfollow" class="ibm-cloud-learn-hub-cta ibm-grid-container ibm-cloud-u--overline ibm-mb-7">
+  <div class="ibm-grid-col-sm-4-4 ibm-pt-2">
+    
+          <h2 class="ibm-type-d ibm-mb-2">Follow IBM Cloud</h2>
+        
+          <div class="content ibm-grid-container">
+        <p class="ibm-type-c ibm-textcolor-gray-80 ibm-mb-2 ibm-grid-col-sm-4-3 ibm-grid-col-md-8-4 ibm-grid-col-lg-16-12">Be the first to hear about news, product updates, and innovation from IBM Cloud.</p>
+<a href="https://www.ibm.com/subscribe/" class="ibm-grid-col-md-8-5">Email subscribe</a><a href="/cloud/blog/rss" class="ibm-grid-col-md-8-3">RSS</a>
+      </div>
+      </div>
+</div>
+
+        </div>
+        <div class="ibm-grid-col-md-8-4 ibm-grid-col-lg-16-16 ibm-mb-9">
+          <div class="ibm-cloud-blog-technologies ibm-grid-container"><div class="ibm-grid-col-sm-4-4 ibm-pb-0 ibm-cloud-u--overline"><h3 class="ibm-type-d ibm-mb-2 ibm-pt-2">IBM Cloud Technologies</h3><div>
+  
+  
+  
+
+  
+  
+  
+
+  
+<div class="item-list cloud-blog-related-articles-list">
+  
+  <ul class="ibm-plain-list">
+
+          <li><a class="ibm-type-c ibm-type-c--tight" href="/cloud/blog/analytics">    <span>Analytics</span>
+
+</a>
+</li>
+          <li><a class="ibm-type-c ibm-type-c--tight" href="/cloud/blog/artificial-intelligence">    <span>Artificial intelligence</span>
+
+</a>
+</li>
+          <li><a class="ibm-type-c ibm-type-c--tight" href="/cloud/blog/automation">    <span>Automation</span>
+
+</a>
+</li>
+          <li><a class="ibm-type-c ibm-type-c--tight" href="/cloud/blog/blockchain">    <span>Blockchain</span>
+
+</a>
+</li>
+          <li><a class="ibm-type-c ibm-type-c--tight" href="/cloud/blog/cloud">    <span>Cloud</span>
+
+</a>
+</li>
+          <li><a class="ibm-type-c ibm-type-c--tight" href="/cloud/blog/compute">    <span>Compute</span>
+
+</a>
+</li>
+          <li><a class="ibm-type-c ibm-type-c--tight" href="/cloud/blog/data-science">    <span>Data science</span>
+
+</a>
+</li>
+          <li><a class="ibm-type-c ibm-type-c--tight" href="/cloud/blog/database">    <span>Database</span>
+
+</a>
+</li>
+          <li><a class="ibm-type-c ibm-type-c--tight" href="/cloud/blog/devops">    <span>DevOps</span>
+
+</a>
+</li>
+          <li><a class="ibm-type-c ibm-type-c--tight" href="/cloud/blog/disaster-recovery">    <span>Disaster recovery</span>
+
+</a>
+</li>
+          <li><a class="ibm-type-c ibm-type-c--tight" href="/cloud/blog/hosting">    <span>Hosting</span>
+
+</a>
+</li>
+          <li><a class="ibm-type-c ibm-type-c--tight" href="/cloud/blog/hybrid-cloud">    <span>Hybrid cloud</span>
+
+</a>
+</li>
+          <li><a class="ibm-type-c ibm-type-c--tight" href="/cloud/blog/integration">    <span>Integration</span>
+
+</a>
+</li>
+          <li><a class="ibm-type-c ibm-type-c--tight" href="/cloud/blog/internet-of-things">    <span>Internet of things</span>
+
+</a>
+</li>
+          <li><a class="ibm-type-c ibm-type-c--tight" href="/cloud/blog/management">    <span>Management</span>
+
+</a>
+</li>
+          <li><a class="ibm-type-c ibm-type-c--tight" href="/cloud/blog/migration">    <span>Migration</span>
+
+</a>
+</li>
+          <li><a class="ibm-type-c ibm-type-c--tight" href="/cloud/blog/mobile">    <span>Mobile</span>
+
+</a>
+</li>
+          <li><a class="ibm-type-c ibm-type-c--tight" href="/cloud/blog/networking">    <span>Networking</span>
+
+</a>
+</li>
+          <li><a class="ibm-type-c ibm-type-c--tight" href="/cloud/blog/open-source">    <span>Open source</span>
+
+</a>
+</li>
+          <li><a class="ibm-type-c ibm-type-c--tight" href="/cloud/blog/security">    <span>Security</span>
+
+</a>
+</li>
+          <li><a class="ibm-type-c ibm-type-c--tight" href="/cloud/blog/storage">    <span>Storage</span>
+
+</a>
+</li>
+    
+  </ul>
+
+</div>
+    <div class="'ibm-grid-col-sm-4-4 ibm-grid-col-lg-16-1'"></div>
+
+  
+  
+
+  
+  
+
+  
+  
+</div>
+</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+      <div class="views-element-container">
+
+
+
+<div class="views views__cloud-blog-related-content js-view-dom-id-72746a5727677efa2bb7298504c0d8e597558c3ed482c69e318f90fabdaf90f2 ibm-background-cool-gray-10 ibm-pt-4 ibm-pb-4">
+  <div class="ibm-grid-container ibm-cloud-u--seamless">
+    
+    
+    
+
+    
+    <div class="ibm-grid-col-sm-4-4 ibm-grid-col-md-8-4 ibm-grid-col-lg-16-4">
+      <h2 class="ibm-type-d ibm-type-semibold ibm-mb-2 ibm-width-160">Related Articles</h2>
+    </div>
+
+   <div class="ibm-grid-col-sm-4-4 ibm-grid-col-md-8-8 ibm-grid-col-lg-16-12">
+    
+    
+
+          <div class="ibm-cloud-grid-blog-related">
+            <div class="ibm-cloud-grid-blog-related__item">
+<a href="/cloud/blog/change3-builds-and-scales-its-world-changing-suite-of-marketing-technologies-on-ibm-cloud" class="ibm-card ibm-blocklink ibm-card--noborder ibm-cloud-blog-card ibm-background-white-core ibm-mb-0 ibm-cloud-card--hover-border">
+      <figure class="ibm-card__image ibm-cloud-blog-card__image">
+
+              <img src="//1.cms.s81c.com/sites/default/files/styles/cloud_blog_listing_card/public/2022-05-16/unma-desai-NvwIZHJjs2A-unsplash.jpg?itok=WCghvKSz" alt="Architecture" class="ibm-resize"/>
+      
+              <figcaption>
+          <p class="ibm-cloud-blog-card__category ibm-type-a ibm-mb-0">
+            Cloud
+          </p>
+        </figcaption>
+          </figure>
+  
+  <div class="ibm-card__content ibm-cloud-blog-card__content ibm-pb-6">
+    <div class="ibm-grid-col-sm-4-4 ibm-grid-col-md-8-8 ibm-grid-col-lg-16-14 ibm-grid-col-seamless">
+              <h3 class="ibm-type-e ibm-mb-0 ibm-cloud-blog-card__heading">
+          Change3 Builds and Scales its World-Changing Suite of Marketing Technologies on IBM Cloud
+        </h3>
+      
+               <p class="ibm-type-a ibm-textcolor-gray-50 ibm-mb-0">
+          <span>By:</span>
+                           <span>Susan Martens</span>
+                     </p>
+      
+      <p class="ibm-cloud-blog-card__publish-date ibm-type-a ibm-textcolor-gray-50 ibm-type-a ibm-mt-4 ibm-mb-0">
+        17 May  2022
+      </p>
+    </div>
+  </div>
+
+  <div class="ibm-card__bottom ibm-pt-0 ibm-cloud-blog-card__bottom">
+    <p class="ibm-pb-0 ibm-fright">
+      <svg viewBox="0 0 32 32" height="25" width="25" class="ibm-icon-v19-arrow-right-blue">
+  <defs>
+    <style>
+      .cls-1 {
+        fill:none;
+      }
+      [dir="rtl"] .ibm-icon-v19-arrow-right-blue {
+        transform: scalex(-1);
+      }
+    </style>
+  </defs>
+  <title>icons</title>
+  <g id="Icon">
+    <polygon class="v19-arrow-svg-blue" points="17 6 15.59 7.41 23.17 15 2 15 2 17 23.17 17 15.59 24.59 17 26 27 16 17 6"></polygon>
+  </g>
+  <g id="Transparent_Rectangle" data-name="Transparent Rectangle">
+    <rect class="cls-1" width="32" height="32"></rect>
+  </g>
+</svg>
+    </p>
+  </div>
+
+</a>
+</div>
+    <div class="ibm-cloud-grid-blog-related__item">
+<a href="/cloud/blog/announcements/rise-with-sap-premium-supplier-option-now-includes-ibm-power" class="ibm-card ibm-blocklink ibm-card--noborder ibm-cloud-blog-card ibm-background-white-core ibm-mb-0 ibm-cloud-card--hover-border">
+      <figure class="ibm-card__image ibm-cloud-blog-card__image">
+
+              <img src="//1.cms.s81c.com/sites/default/files/styles/cloud_blog_listing_card/public/2022-05-09/milad-fakurian-UYgrVfIhBec-unsplash.jpg?itok=KKAkA7om" alt="3d render" class="ibm-resize"/>
+      
+              <figcaption>
+          <p class="ibm-cloud-blog-card__category ibm-type-a ibm-mb-0">
+            Cloud
+          </p>
+        </figcaption>
+          </figure>
+  
+  <div class="ibm-card__content ibm-cloud-blog-card__content ibm-pb-6">
+    <div class="ibm-grid-col-sm-4-4 ibm-grid-col-md-8-8 ibm-grid-col-lg-16-14 ibm-grid-col-seamless">
+              <h3 class="ibm-type-e ibm-mb-0 ibm-cloud-blog-card__heading">
+          RISE with SAP, Premium Supplier Option Now Includes IBM Power
+        </h3>
+      
+               <p class="ibm-type-a ibm-textcolor-gray-50 ibm-mb-0">
+          <span>By:</span>
+                           <span>Satya Sharma and A B Vijay Kumar</span>
+                     </p>
+      
+      <p class="ibm-cloud-blog-card__publish-date ibm-type-a ibm-textcolor-gray-50 ibm-type-a ibm-mt-4 ibm-mb-0">
+        11 May  2022
+      </p>
+    </div>
+  </div>
+
+  <div class="ibm-card__bottom ibm-pt-0 ibm-cloud-blog-card__bottom">
+    <p class="ibm-pb-0 ibm-fright">
+      <svg viewBox="0 0 32 32" height="25" width="25" class="ibm-icon-v19-arrow-right-blue">
+  <defs>
+    <style>
+      .cls-1 {
+        fill:none;
+      }
+      [dir="rtl"] .ibm-icon-v19-arrow-right-blue {
+        transform: scalex(-1);
+      }
+    </style>
+  </defs>
+  <title>icons</title>
+  <g id="Icon">
+    <polygon class="v19-arrow-svg-blue" points="17 6 15.59 7.41 23.17 15 2 15 2 17 23.17 17 15.59 24.59 17 26 27 16 17 6"></polygon>
+  </g>
+  <g id="Transparent_Rectangle" data-name="Transparent Rectangle">
+    <rect class="cls-1" width="32" height="32"></rect>
+  </g>
+</svg>
+    </p>
+  </div>
+
+</a>
+</div>
+    <div class="ibm-cloud-grid-blog-related__item">
+<a href="/cloud/blog/announcements/new-icct-certification-ibm-cloud-devsecops-specialty" class="ibm-card ibm-blocklink ibm-card--noborder ibm-cloud-blog-card ibm-background-white-core ibm-mb-0 ibm-cloud-card--hover-border">
+      <figure class="ibm-card__image ibm-cloud-blog-card__image">
+
+              <img src="//1.cms.s81c.com/sites/default/files/styles/cloud_blog_listing_card/public/2022-05-03/levon-vardanyan-lnMpo_rhjxs-unsplash.jpg?itok=Vtn6fz-J" alt="Hallway" class="ibm-resize"/>
+      
+              <figcaption>
+          <p class="ibm-cloud-blog-card__category ibm-type-a ibm-mb-0">
+            Cloud
+          </p>
+        </figcaption>
+          </figure>
+  
+  <div class="ibm-card__content ibm-cloud-blog-card__content ibm-pb-6">
+    <div class="ibm-grid-col-sm-4-4 ibm-grid-col-md-8-8 ibm-grid-col-lg-16-14 ibm-grid-col-seamless">
+              <h3 class="ibm-type-e ibm-mb-0 ibm-cloud-blog-card__heading">
+          New ICCT Certification: IBM Cloud DevSecOps Specialty
+        </h3>
+      
+               <p class="ibm-type-a ibm-textcolor-gray-50 ibm-mb-0">
+          <span>By:</span>
+                           <span>Natalie Brooks Powell</span>
+                     </p>
+      
+      <p class="ibm-cloud-blog-card__publish-date ibm-type-a ibm-textcolor-gray-50 ibm-type-a ibm-mt-4 ibm-mb-0">
+        4 May  2022
+      </p>
+    </div>
+  </div>
+
+  <div class="ibm-card__bottom ibm-pt-0 ibm-cloud-blog-card__bottom">
+    <p class="ibm-pb-0 ibm-fright">
+      <svg viewBox="0 0 32 32" height="25" width="25" class="ibm-icon-v19-arrow-right-blue">
+  <defs>
+    <style>
+      .cls-1 {
+        fill:none;
+      }
+      [dir="rtl"] .ibm-icon-v19-arrow-right-blue {
+        transform: scalex(-1);
+      }
+    </style>
+  </defs>
+  <title>icons</title>
+  <g id="Icon">
+    <polygon class="v19-arrow-svg-blue" points="17 6 15.59 7.41 23.17 15 2 15 2 17 23.17 17 15.59 24.59 17 26 27 16 17 6"></polygon>
+  </g>
+  <g id="Transparent_Rectangle" data-name="Transparent Rectangle">
+    <rect class="cls-1" width="32" height="32"></rect>
+  </g>
+</svg>
+    </p>
+  </div>
+
+</a>
+</div>
+
+      </div>
+    
+    
+    
+
+    
+    
+
+    
+    
+    </div>
+  </div>
+</div>
+</div>
+
+  
+  </article>
+
+  </div>
+
+  </div>
+
+                <div class="region region-content-bottom">
+    <div id="block-keepupwithibmcloud">
+  
+    
+      
+
+
+<div class="ibm-band ibm-background-gray-100 ibm-cloud-blog-subscription">
+      <div class="ibm-grid-container ibm-cloud-u--seamless">
+      <div class="ibm-grid-col-sm-4-3 ibm-grid-col-md-8-3 ibm-grid-col-lg-16-4">
+                  <p class="ibm-type-c ibm-textcolor-white-core ibm-mb-0 ibm-pb-0">
+            Be the first to hear about news, product updates, and innovation from IBM Cloud
+          </p>
+              </div>
+
+      <div class="ibm-grid-col-sm-4-0 ibm-grid-col-md-8-1 ibm-grid-col-lg-16-8"></div>
+
+      <div class="ibm-grid-col-sm-4-3 ibm-grid-col-md-8-4 ibm-grid-col-lg-16-4">
+                  <div id="ibm-pcon">
+            <p class="ibm-ind-link ibm-mb-0 ibm-pb-0 ibm-background-gray-100">
+              <a href="https://www.ibm.com/subscribe/" class="ibm-btn-pri ibm-forward-link">Get updates to your inbox.</a>
+            </p>
+          </div>
+              </div>
+    </div>
+  </div>
+
+  </div>
+
+  </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+    <footer role="contentinfo" aria-label="IBM">
+      <div class="region region-footer">
+    
+
+<div id="ibm-footer-module">
+    <section role="region" aria-label="Resources">
+
+            <div class="ibm-columns">
+                  <div class="ibm-footermenu-list ibm-col-4-1" aria-label="Products &amp; Solutions">
+            <h3 class="ibm-bold">Products &amp; Solutions</h3>
+            <ul class="ibm-plain-list">
+                              <li><a href="https://www.ibm.com/products?lnk=fps">Top products &amp; platforms</a></li>
+                              <li><a href="https://www.ibm.com/industries?lnk=fps">Industries</a></li>
+                              <li><a href="https://www.ibm.com/cloud/ai?lnk=fps">Artificial intelligence</a></li>
+                              <li><a href="https://www.ibm.com/blockchain?lnk=fps">Blockchain</a></li>
+                              <li><a href="https://www.ibm.com/business-operations?lnk=fps">Business operations</a></li>
+                              <li><a href="https://www.ibm.com/cloud?lnk=fps">Cloud computing</a></li>
+                              <li><a href="https://www.ibm.com/analytics?lnk=fps">Data &amp; Analytics</a></li>
+                              <li><a href="https://www.ibm.com/cloud/hybrid?lnk=fps">Hybrid cloud</a></li>
+                              <li><a href="https://www.ibm.com/it-infrastructure?lnk=fps">IT infrastructure</a></li>
+                              <li><a href="https://www.ibm.com/security?lnk=fps">Security</a></li>
+                              <li><a href="https://www.ibm.com/supply-chain?lnk=fps">Supply chain</a></li>
+                          </ul>
+          </div>
+                  <div class="ibm-footermenu-list ibm-col-4-1" aria-label="Learn about">
+            <h3 class="ibm-bold">Learn about</h3>
+            <ul class="ibm-plain-list">
+                              <li><a href="https://www.ibm.com/cloud/learn/hybrid-cloud?lnk=fle">What is Hybrid Cloud?</a></li>
+                              <li><a href="https://www.ibm.com/cloud/learn/what-is-artificial-intelligence?lnk=fle">What is Artificial intelligence?</a></li>
+                              <li><a href="https://www.ibm.com/cloud/learn/cloud-computing?lnk=fle">What is Cloud Computing?</a></li>
+                              <li><a href="https://www.ibm.com/cloud/learn/kubernetes?lnk=fle">What is Kubernetes?</a></li>
+                              <li><a href="https://www.ibm.com/cloud/learn/containers?lnk=fle">What are Containers?</a></li>
+                              <li><a href="https://www.ibm.com/cloud/learn/devops-a-complete-guide?lnk=fle">What is DevOps?</a></li>
+                              <li><a href="https://www.ibm.com/cloud/learn/machine-learning?lnk=fle">What is Machine Learning?</a></li>
+                          </ul>
+          </div>
+                  <div class="ibm-footermenu-list ibm-col-4-1" aria-label="Popular links">
+            <h3 class="ibm-bold">Popular links</h3>
+            <ul class="ibm-plain-list">
+                              <li><a href="https://www.ibm.com/consulting/?lnk=fco">IBM Consulting</a></li>
+                              <li><a href="https://community.ibm.com/community/user/home?lnk=fpo">Communities</a></li>
+                              <li><a href="https://developer.ibm.com/?lnk=fpo">Developer education</a></li>
+                              <li><a href="https://www.ibm.com/support/fixcentral/?lnk=fpo">Support - Download fixes, updates &amp; drivers</a></li>
+                              <li><a href="https://research.ibm.com/?lnk=fpo">IBM Research</a></li>
+                              <li><a href="https://www.ibm.com/partnerworld/public?lnk=fpo">Partner with us - PartnerWorld</a></li>
+                              <li><a href="https://www.ibm.com/training/search?q=course&amp;lnk=fpo">Training - Courses</a></li>
+                              <li><a href="https://www.ibm.com/events/?lnk=fpo">Upcoming events &amp; webinars</a></li>
+                          </ul>
+          </div>
+                  <div class="ibm-footermenu-list ibm-col-4-1" aria-label="About IBM">
+            <h3 class="ibm-bold">About IBM</h3>
+            <ul class="ibm-plain-list">
+                              <li><a href="https://www.ibm.com/annualreport/?lnk=fab">Annual report</a></li>
+                              <li><a href="https://www.ibm.com/employment/?lnk=fab">Career opportunities</a></li>
+                              <li><a href="https://www.ibm.org/?lnk=fab">Corporate social responsibility</a></li>
+                              <li><a href="https://www.ibm.com/impact/be-equal/?lnk=fab">Diversity &amp; inclusion</a></li>
+                              <li><a href="https://www.ibm.com/reports/analyst/?lnk=fab">Industry analyst reports</a></li>
+                              <li><a href="https://www.ibm.com/investor/?lnk=fab">Investor relations</a></li>
+                              <li><a href="https://newsroom.ibm.com/?lnk=fab">News &amp; announcements</a></li>
+                              <li><a href="https://www.ibm.com/thought-leadership/?lnk=fab">Thought leadership</a></li>
+                              <li><a href="https://www.ibm.com/trust?lnk=fab">Security, privacy &amp; trust</a></li>
+                              <li><a href="https://www.ibm.com/about?lnk=fab">About IBM</a></li>
+                          </ul>
+          </div>
+              </div>
+      
+        
+    </section>
+
+</div>
+
+
+<div id="ibm-footer">
+
+    <div class="ibm-columns">
+      <div class="ibm-col-1-1">
+                  <div class="ibm-footer-corporate-links">
+            <ul>
+                              <li>
+                  <a href="https://www.ibm.com/contact/us/en/?lnk=flg-cont-usen">Contact IBM</a>
+                </li>
+                              <li>
+                  <a href="https://www.ibm.com/privacy?lnk=flg-priv-usen">Privacy</a>
+                </li>
+                              <li>
+                  <a href="https://www.ibm.com/legal?lnk=flg-tous-usen">Terms of use</a>
+                </li>
+                              <li>
+                  <a href="https://www.ibm.com/able/?lnk=flg-acce-usen">Accessibility</a>
+                </li>
+                            <li id="ibm-truste-cp">
+                <a href="#" onclick="truste.eu.clickListener();return false;">Cookie preferences</a>
+              </li>
+            </ul>
+          </div>
+        
+                </div>
+    </div>
+
+</div>
+
+  </div>
+
+  </footer>
+  
+</div>
+
+
+  </div>
+
+    
+    <script src="//1.cms.s81c.com/sites/default/files/js/js_4A2JbYe81-wPbWNY05J0KdJf4r2TlmMD93-fqWi47Mo.js"></script>
+<script src="//1.cms.s81c.com/themes/custom/ibm_cloud/js/cloud-nav-l1.js?v=1.0.3" defer></script>
+<script src="//1.cms.s81c.com/sites/default/files/js/js_pOIkPEdlM-dsnjUxaCTlNot1-iHDo8c6oUnJ8liSMhg.js"></script>
+<script src="//www.ibm.com/common/digitaladvisor/cm-app/latest/cm-app.min.js" defer></script>
+<script src="//1.cms.s81c.com/modules/contrib/hc_fractal/dist/js/interactions.js?v=1.1.11" defer></script>
+<script src="//1.cms.s81c.com/modules/contrib/hc_fractal/dist/js/background-image-lazy-load.js?v=1.1.11" defer></script>
+<script src="//1.cms.s81c.com/modules/contrib/hc_fractal/dist/js/v18-widgets.js?v=1.1.11" defer></script>
+<script src="//1.www.s81c.com/common/v18/drupal/js/tables.js" defer></script>
+<script src="//1.www.s81c.com/common/js/tactic.js" defer></script>
+<script src="//1.www.s81c.com/common/js/tacticbindlinks.js" defer></script>
+<script src="//1.cms.s81c.com/sites/default/files/js/js_W_bHvUagE3lFYZ970giSXaOtloIBMvGEE_Phl54d5lY.js"></script>
+<script src="//1.cms.s81c.com/themes/custom/ibm_cloud/js/slick-slider.js?v=1.0.1" defer></script>
+
+      <script type="text/javascript"  src="/YzHVom/SS/8k/NmJX/4JMkxmbxe_hVs/uahuwQV2/NVNVOTdpKgY/SRNtO/BQaWgM"></script><link rel="stylesheet" type="text/css"  href="/_sec/cp_challenge/sec-3-6.css">
+            <script  src="/_sec/cp_challenge/sec-cpt-3-6.js" async defer></script>
+            <div id="sec-overlay" style="display:none;">
+            <div id="sec-container">
+            </div>
+          </div></body>
+</html>

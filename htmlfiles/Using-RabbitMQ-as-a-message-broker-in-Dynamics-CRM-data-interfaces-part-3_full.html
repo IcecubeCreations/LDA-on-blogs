@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <title>Using RabbitMQ as a message broker in Dynamics CRM data interfaces – part 3</title>
+    <meta name="description" content="" />
+
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="shortcut icon" href="/favicon.ico">
+
+    <link rel="stylesheet" type="text/css" href="/assets/css/screen.css?v=34deaddd5e" />
+    <link rel="stylesheet" type="text/css" href="/assets/css/prettyPhoto.css?v=34deaddd5e" />
+    <link rel="stylesheet" type="text/css" href="/assets/css/prettify.css?v=34deaddd5e" />
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+    <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Merriweather:300,700,700italic,300italic|Open+Sans:700,400" />
+
+    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
+    <link rel="canonical" href="https://alexanderdevelopment.net/post/2015/01/20/using-rabbitmq-as-a-message-broker-in-dynamics-crm-data-interfaces-part-3/" />
+    <meta name="referrer" content="no-referrer-when-downgrade" />
+    <link rel="amphtml" href="https://alexanderdevelopment.net/post/2015/01/20/using-rabbitmq-as-a-message-broker-in-dynamics-crm-data-interfaces-part-3/amp/" />
+    
+    <meta property="og:site_name" content="Alexander Development" />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="Using RabbitMQ as a message broker in Dynamics CRM data interfaces – part 3" />
+    <meta property="og:description" content="This is the third post of a five-part series on creating loosely coupled data interfaces for Dynamics CRM using RabbitMQ. Last time I showed how to install and configure a RabbitMQ server to support passing messages to and from Dynamics CRM. Today I will show how to build a Dynamics" />
+    <meta property="og:url" content="https://alexanderdevelopment.net/post/2015/01/20/using-rabbitmq-as-a-message-broker-in-dynamics-crm-data-interfaces-part-3/" />
+    <meta property="og:image" content="https://alexanderdevelopment.net/content/images/2015/10/inbound-outbound-broker-3.png" />
+    <meta property="article:published_time" content="2015-01-20T18:00:00.000Z" />
+    <meta property="article:modified_time" content="2015-11-28T22:14:39.000Z" />
+    <meta property="article:tag" content="Microsoft Dynamics CRM" />
+    <meta property="article:tag" content="JSON" />
+    <meta property="article:tag" content="C#" />
+    <meta property="article:tag" content="Node.js" />
+    <meta property="article:tag" content="RabbitMQ" />
+    <meta property="article:tag" content="CRM 2015" />
+    <meta property="article:tag" content="integration" />
+    
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Using RabbitMQ as a message broker in Dynamics CRM data interfaces – part 3" />
+    <meta name="twitter:description" content="This is the third post of a five-part series on creating loosely coupled data interfaces for Dynamics CRM using RabbitMQ. Last time I showed how to install and configure a RabbitMQ server to support passing messages to and from Dynamics CRM. Today I will show how to build a Dynamics" />
+    <meta name="twitter:url" content="https://alexanderdevelopment.net/post/2015/01/20/using-rabbitmq-as-a-message-broker-in-dynamics-crm-data-interfaces-part-3/" />
+    <meta name="twitter:image" content="https://alexanderdevelopment.net/content/images/2015/10/inbound-outbound-broker-3.png" />
+    <meta name="twitter:label1" content="Written by" />
+    <meta name="twitter:data1" content="Lucas Alexander" />
+    <meta name="twitter:label2" content="Filed under" />
+    <meta name="twitter:data2" content="Microsoft Dynamics CRM, JSON, C#, Node.js, RabbitMQ, CRM 2015, integration" />
+    <meta name="twitter:creator" content="@lucas_is" />
+    <meta property="og:image:width" content="765" />
+    <meta property="og:image:height" content="316" />
+    
+    <script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "publisher": {
+        "@type": "Organization",
+        "name": "Alexander Development",
+        "logo": {
+            "@type": "ImageObject",
+            "url": "https://alexanderdevelopment.net/favicon.ico",
+            "width": 60,
+            "height": 60
+        }
+    },
+    "author": {
+        "@type": "Person",
+        "name": "Lucas Alexander",
+        "url": "https://alexanderdevelopment.net/author/lucas/",
+        "sameAs": [
+            "https://twitter.com/lucas_is"
+        ]
+    },
+    "headline": "Using RabbitMQ as a message broker in Dynamics CRM data interfaces – part 3",
+    "url": "https://alexanderdevelopment.net/post/2015/01/20/using-rabbitmq-as-a-message-broker-in-dynamics-crm-data-interfaces-part-3/",
+    "datePublished": "2015-01-20T18:00:00.000Z",
+    "dateModified": "2015-11-28T22:14:39.000Z",
+    "image": {
+        "@type": "ImageObject",
+        "url": "https://alexanderdevelopment.net/content/images/2015/10/inbound-outbound-broker-3.png",
+        "width": 765,
+        "height": 316
+    },
+    "keywords": "Microsoft Dynamics CRM, JSON, C#, Node.js, RabbitMQ, CRM 2015, integration",
+    "description": "This is the third post of a five-part series on creating loosely coupled data interfaces for Dynamics CRM using RabbitMQ. Last time I showed how to install and configure a RabbitMQ server to support passing messages to and from Dynamics CRM. Today I will show how to build a Dynamics",
+    "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": "https://alexanderdevelopment.net/"
+    }
+}
+    </script>
+
+    <script type="text/javascript" src="/public/ghost-sdk.min.js?v=34deaddd5e"></script>
+<script type="text/javascript">
+ghost.init({
+	clientId: "ghost-frontend",
+	clientSecret: "f2aab771dbac"
+});
+</script>
+    <meta name="generator" content="Ghost 1.20" />
+    <link rel="alternate" type="application/rss+xml" title="Alexander Development" href="https://alexanderdevelopment.net/rss/" />
+    <meta name="google-site-verification" content="OAtyxnG2Ee8NczicodhwcFVl99Hiy1hT-xyctZW4OTI" />
+</head>
+<body class="post-template tag-microsoft-dynamics-crm tag-json tag-c-sharp tag-node-js tag-rabbitmq tag-crm-2015 tag-integration">
+
+    
+
+
+<header class="main-header post-head " style="background-image: url(/content/images/2015/10/inbound-outbound-broker-3.png)">
+    <nav class="main-nav overlay clearfix">
+        <a class="back-button icon-arrow-left" href="https://alexanderdevelopment.net">Home</a>
+        <a class="subscribe-button icon-feed" href="https://alexanderdevelopment.net/rss/">Subscribe</a>
+    </nav>
+</header>
+
+<main class="content" role="main">
+
+    <article class="post tag-microsoft-dynamics-crm tag-json tag-c-sharp tag-node-js tag-rabbitmq tag-crm-2015 tag-integration">
+
+        <header class="post-header">
+            <h1 class="post-title">Using RabbitMQ as a message broker in Dynamics CRM data interfaces – part 3</h1>
+            <section class="post-meta">
+                January 20, 2015  in <a href="/tag/microsoft-dynamics-crm/">Microsoft Dynamics CRM</a>, <a href="/tag/json/">JSON</a>, <a href="/tag/c-sharp/">C#</a>, <a href="/tag/node-js/">Node.js</a>, <a href="/tag/rabbitmq/">RabbitMQ</a>, <a href="/tag/crm-2015/">CRM 2015</a>, <a href="/tag/integration/">integration</a>
+            </section>
+        </header>
+
+        <section class="post-content">
+            <div class="kg-card-markdown"><p>This is the third post of a five-part series on creating loosely coupled data interfaces for Dynamics CRM using RabbitMQ.<br>
+<a href="/post/2015/01/14/using-rabbitmq-as-a-message-broker-in-dynamics-crm-data-interfaces-part-2">Last time</a> I showed how to install and configure a RabbitMQ server to support passing messages to and from Dynamics CRM. Today I will show how to build a Dynamics CRM plug-in that publishes notification messages to a RabbitMQ exchange using the <A target="_blank" href="https://www.rabbitmq.com/dotnet.html" rel="nofollow">official RabbitMQ .Net client library</A>. The code for this plug-in is available on <A target="_blank" href="https://github.com/lucasalexander/Crm-Sample-Code/tree/master/CrmMessageQueuing" rel="nofollow">GitHub</A> in the MessageQueuePlugin project under the LucasCrmMessageQueueTools solution.</p>
+<p>Before going any further, let’s get some bad news out of the way. Plug-ins that execute in the Dynamics CRM sandbox cannot use RabbitMQ .Net client library to publish messages to a RabbitMQ server, so you can’t use today’s plug-in approach from a CRM Online organization. In my next post, I will be showing an alternate mechanism for publishing messages that you can use from a sandboxed plug-in, but today I want to focus on the most direct integration method. Now that we’re clear on the limitations of this approach, let’s get started!</p>
+<h4 id="theapproach">The approach</h4>
+<p>Last month I wrote a series of blog posts about how to create a near real-time streaming API using plug-ins and Node.js. For this plug-in I’m going to basically copy the logic I used for the plug-in in that series.</p>
+<p><a href="/post/2014/12/09/creating-a-near-real-time-streaming-interface-for-dynamics-crm-with-node-js-part-3/">This post</a> outlines the approach in detail, but if you don’t want to read the entire thing, the basic idea was to create a plug-in that is registered for an operation (create, update, delete, etc.) with a FetchXML query in its unsecure configuration. When the plug-in step is triggered, its associated FetchXML query is executed, and then the resulting fields are serialized into a JSON object, which is then sent to the Node.js application via an HTTP POST request. Today’s plug-in operates in the exact same way, except instead of sending the JSON object to a Node.js endpoint, the JSON object will be published as a message to a RabbitMQ exchange.</p>
+<h4 id="configuringtheplugin">Configuring the plug-in</h4>
+<p>To make the plug-in easily useable in any organization without needing to be recompiled, all the RabbitMQ connection parameters are stored in the unsecure configuration along with the FetchXML query for the data to retrieve. Here’s the configuration XML fragment to enable case notifications:</p>
+<PRE><code>&lt;config&gt;
+&lt;endpoint&gt;lucas-ajax.cloudapp.net&lt;/endpoint&gt;
+&lt;exchange&gt;CRM&lt;/exchange&gt;
+&lt;routingkey&gt;Case&lt;/routingkey&gt;
+&lt;user&gt;rabbituser&lt;/user&gt;
+&lt;password&gt;PASSWORDHERE&lt;/password&gt;
+&lt;query&gt;&lt;![CDATA[
+&lt;fetch mapping='logical'&gt;
+&lt;entity name='incident'&gt;
+&nbsp;&lt;attribute name='ownerid'/&gt;
+&nbsp;&lt;attribute name='modifiedby'/&gt;
+&nbsp;&lt;attribute name='createdby'/&gt;
+&nbsp;&lt;attribute name='title'/&gt;
+&nbsp;&lt;attribute name='incidentid'/&gt;
+&nbsp;&lt;attribute name='ticketnumber'/&gt;
+&nbsp;&lt;attribute name='createdon'/&gt;
+&nbsp;&lt;attribute name='modifiedon'/&gt;
+&nbsp;&lt;filter type='and'&gt;
+&nbsp; &lt;condition attribute='incidentid' operator='eq' value='{0}' /&gt;
+&nbsp;&lt;/filter&gt;
+&lt;/entity&gt;
+&lt;/fetch&gt;
+]]&gt;
+&lt;/query&gt;
+&lt;/config&gt;</code></PRE>
+<h4 id="generatingthenotificationmessage">Generating the notification message</h4>
+<p>Just like in my Node.js plug-in, the FetchXML is extracted from the configuration XML, and the query is executed against Dynamics CRM. The results are then serialized to JSON using <A target="_blank" href="http://james.newtonking.com/json" rel="nofollow">Json.NET</A>.</p>
+<h4 id="publishingthemessage">Publishing the message</h4>
+<p>The endpoint, exchange name, RabbitMQ user, RabbitMQ password and routing key values from the configuration XML are then used to establish a connection to RabbitMQ and publish the notification message to the exchange like so:</p>
+<PRE><code>try
+{
+&nbsp;&nbsp;&nbsp;&nbsp; //connect to rabbitmq
+&nbsp;&nbsp;&nbsp;&nbsp; var factory = new ConnectionFactory();
+&nbsp;&nbsp;&nbsp;&nbsp; factory.UserName = \_brokerUser;
+&nbsp;&nbsp;&nbsp;&nbsp; factory.Password = \_brokerPassword;
+&nbsp;&nbsp;&nbsp;&nbsp; factory.VirtualHost = "/";
+&nbsp;&nbsp;&nbsp;&nbsp; factory.Protocol = Protocols.DefaultProtocol;
+&nbsp;&nbsp;&nbsp;&nbsp; factory.HostName = \_brokerEndpoint;
+&nbsp;&nbsp;&nbsp;&nbsp; factory.Port = AmqpTcpEndpoint.UseDefaultPort;
+&nbsp;&nbsp;&nbsp;&nbsp; IConnection conn = factory.CreateConnection();
+&nbsp;&nbsp;&nbsp;&nbsp; using (var connection = factory.CreateConnection())
+&nbsp;&nbsp;&nbsp;&nbsp; {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; using (var channel = connection.CreateModel())
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //tell rabbitmq to send confirmation when messages are successfully published
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; channel.ConfirmSelect();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; channel.WaitForConfirmsOrDie();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //prepare message to write to queue
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; var body = Encoding.UTF8.GetBytes(jsonMsg);
+&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; var properties = channel.CreateBasicProperties();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; properties.SetPersistent(true);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //publish the message to the exchange with the supplied routing key
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; channel.BasicPublish(_exchange, _routingKey, properties, body);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }
+&nbsp;&nbsp;&nbsp;&nbsp; }
+}
+catch (Exception e)
+{
+&nbsp;&nbsp;&nbsp;&nbsp; tracingService.Trace("Exception: {0}", e.ToString());
+&nbsp;&nbsp;&nbsp;&nbsp; throw;
+}</code></PRE>
+<p>If any errors are encountered, the message is captured via the tracing service, and then an exception is thrown.</p>
+<p>Because this plug-in uses both the RabbitMQ .Net and Json.NET client libraries, they have to be merged with the plug-in assembly before registering it in Dynamics CRM. I’ve included a batch script called ilmerge.bat in the project directory on <A target="_blank" href="https://github.com/lucasalexander/Crm-Sample-Code/tree/master/CrmMessageQueuing" rel="nofollow">GitHub</A>.</p>
+<h4 id="wrappingup">Wrapping up</h4>
+<p>After you register the plugin and register a step to publish a notification message to RabbitMQ, you can verify everything is working as expected either by looking at the Queues tab in the RabbitMQ management web UI or running the CliConsumer sample application I showed in<br>
+<a href="/post/2015/01/14/using-rabbitmq-as-a-message-broker-in-dynamics-crm-data-interfaces-part-2">part 2</a>.</p>
+<p><em>A version of this post was originally published on the HP Enterprise Services Application Services blog.</em></p>
+</div>
+        </section>
+
+        <footer class="post-footer">
+
+
+            <figure class="author-image">
+                <a class="img" href="/author/lucas/" style="background-image: url(/content/images/2018/01/diesel.jpg)"><span class="hidden">Lucas Alexander's Picture</span></a>
+            </figure>
+
+            <section class="author">
+                <h4><a href="/author/lucas/">Lucas Alexander</a></h4>
+
+                    <p>Husband, father, Auburn man, dog owner, coder, coffee drinker.</p>
+                <div class="author-meta">
+                    <span class="author-location icon-location">Auburn, Ala., USA</span>
+                    
+                </div>
+            </section>
+
+
+            <section class="share">
+                <h4>Share this post</h4>
+                <a class="icon-twitter" href="https://twitter.com/share?text=Using%20RabbitMQ%20as%20a%20message%20broker%20in%20Dynamics%20CRM%20data%20interfaces%20%E2%80%93%20part%203&amp;url=https://alexanderdevelopment.net/post/2015/01/20/using-rabbitmq-as-a-message-broker-in-dynamics-crm-data-interfaces-part-3/"
+                    onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+                    <span class="hidden">Twitter</span>
+                </a>
+                <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=https://alexanderdevelopment.net/post/2015/01/20/using-rabbitmq-as-a-message-broker-in-dynamics-crm-data-interfaces-part-3/"
+                    onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+                    <span class="hidden">Facebook</span>
+                </a>
+                <a class="icon-google-plus" href="https://plus.google.com/share?url=https://alexanderdevelopment.net/post/2015/01/20/using-rabbitmq-as-a-message-broker-in-dynamics-crm-data-interfaces-part-3/"
+                   onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+                    <span class="hidden">Google+</span>
+                </a>
+            </section>
+
+        </footer>
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+    var disqus_shortname = 'alexanderdevelopment'; // required: replace example with your forum shortname
+     var disqus_identifier = '2117'; // make sure to use the post.id as an identifier, otherwise disqus will use the pages url per default, which might be problematic...
+  
+
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+    </article>
+
+</main>
+
+
+    <footer class="site-footer">
+            <div class="nav-footer">
+              <a href="/about">ABOUT</a>&nbsp;&nbsp;&nbsp;<a href="/links">LINKS</a>
+            </div>
+            <div class="social-footer">
+              <ul class="list-inline">
+    <li><a href="https://github.com/lucasalexander" target="_blank" class="btn-social btn-outline" data-toggle="tooltip" data-placement="top" title="Github"><i class="fa fa-fw fa-github"></i></a>
+    </li>
+    <li><a href="https://twitter.com/lucas_is" target="_blank" class="btn-social btn-outline" title="Twitter"><i class="fa fa-fw fa-twitter"></i></a>
+    </li>
+    <li><a href="http://www.linkedin.com/in/lucasalexander/" target="_blank" class="btn-social btn-outline" title="LinkedIn"><i class="fa fa-fw fa-linkedin"></i></a>
+    </li>
+    <li><a href="mailto:lucas@alexanderdevelopment.net" target="_blank" class="btn-social btn-outline" title="Email"><i class="fa fa-fw fa-envelope"></i></a>
+    </li>  
+</ul>
+            </div>
+    
+        <section class="copyright"><a href="https://alexanderdevelopment.net">Lucas Alexander</a> &copy; 2022</section>
+    </footer>
+
+    <!-- You can safely delete this line if your theme does not require jQuery -->
+<script type="text/javascript" src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+
+    <script type="text/javascript" src="/assets/js/jquery.fitvids.js?v=34deaddd5e"></script>
+    <script type="text/javascript" src="/assets/js/index.js?v=34deaddd5e"></script>
+    <script type="text/javascript" src="/assets/js/prettify/prettify.js?v=34deaddd5e"></script>
+    <script type="text/javascript" src="/assets/js/prettify/lpa_run_prettify.js?v=34deaddd5e"></script>
+    <script type="text/javascript" src="/assets/js/jquery.prettyPhoto.js?v=34deaddd5e"></script>
+    <script type="text/javascript" src="/assets/js/PrettyPhotoStarter.js?v=34deaddd5e"></script>
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-37582116-1', 'auto');
+      ga('send', 'pageview');
+
+    </script>
+</body>
+</html>

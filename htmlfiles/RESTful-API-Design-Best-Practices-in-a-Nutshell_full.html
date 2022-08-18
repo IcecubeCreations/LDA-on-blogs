@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en-US" prefix="og: http://ogp.me/ns#">
+<head>
+    <meta charset="UTF-8">
+  
+  
+  <link rel="stylesheet" href="/main.css">
+  <link rel="shortcut icon" href="/favicon.ico">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="profile" href="https://gmpg.org/xfn/11">
+  <meta property="og:locale" content="en-US" />
+  <meta name="robots" content="noodp"/>
+  <meta property="og:site_name" content="Philipp Hauer&#39;s Blog" />
+  <meta name="author" content="Philipp Hauer" />
+  <meta name="generator" content="Hugo 0.86.1" />
+  
+  <script>
+    var gaProperty = 'UA-10596131-2';
+    var disableStr = 'ga-disable-' + gaProperty;
+    if (document.cookie.indexOf(disableStr + '=true') > -1) {
+      window[disableStr] = true;
+    }
+    function gaOptout() {
+      document.cookie = disableStr + '=true; expires=Thu, 31 Dec 2099 23:59:59 UTC; path=/';
+      window[disableStr] = true;
+    }
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    ga('create', gaProperty, 'auto');
+    ga('set', 'anonymizeIp', true);
+    ga('send', 'pageview');
+</script>
+
+  <title>RESTful API Design. Best Practices in a Nutshell.</title>
+  <meta property="og:title" content="RESTful API Design. Best Practices in a Nutshell." />
+  <meta name="twitter:title" content="RESTful API Design. Best Practices in a Nutshell." />
+  <link rel="canonical" href="https://phauer.com/2015/restful-api-design-best-practices/"/>
+  <meta property="og:url" content="https://phauer.com/2015/restful-api-design-best-practices/" />
+  <meta property="og:type" content="article" />
+  <meta name="description" content="Best Practices for Designing HTTP and RESTful APIs. Introduction to URL structure, HTTP methods, relationships, pagination and versioning."/>
+  <meta property="og:description" content="Best Practices for Designing HTTP and RESTful APIs. Introduction to URL structure, HTTP methods, relationships, pagination and versioning." />
+  <meta name="twitter:description" content="Best Practices for Designing HTTP and RESTful APIs. Introduction to URL structure, HTTP methods, relationships, pagination and versioning." />
+  <meta property="article:section" content="Web Development" />
+  
+  <meta property="article:tag" content="API Design" />
+  <meta property="article:tag" content="REST" />
+  <meta property="article:tag" content="Best Practices" />
+  
+  <meta property="article:author" content="Philipp Hauer" />
+  <meta property="article:published_time" content="2015-03-04" />
+  <meta property="article:modified_time" content="2020-06-08" />
+  <meta property="og:updated_time" content="2020-06-08" />
+  <meta property="og:image" content="https://phauer.com/blog/2015/0304-restful-api-design-best-practices/featured-image-large.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://phauer.com/blog/2015/0304-restful-api-design-best-practices/featured-image-large.png" />
+  
+  <meta name="twitter:site" content="@philipp_hauer" />
+  <meta name="twitter:creator" content="@philipp_hauer" />
+</head>
+
+<body class="content">
+<svg xmlns="http://www.w3.org/2000/svg" display="none">
+    <defs>
+        <symbol id="anchor" class="anchor" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M0 0h24v24H0z" fill="none"></path>
+            <path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"></path>
+        </symbol>
+    </defs>
+</svg>
+
+<div class="container">
+    <nav class="navbar eb-navbar" role="navigation" aria-label="main navigation">
+  <div class="navbar-brand">
+    <a role="button" class="navbar-burger burger" aria-label="menu" aria-expanded="false" data-target="navbarBasicExample">
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+    </a>
+  </div>
+
+  <div id="navbarBasicExample" class="navbar-menu">
+    <div class="navbar-start">
+      <a class="navbar-item" href="/">Blog</a>
+      <a class="navbar-item" href="/training/">Training</a>
+      <a class="navbar-item" href="/consulting/">Consulting</a>
+      <a class="navbar-item" href="/page/talks/">Talks</a>
+      <a class="navbar-item" href="/page/newsletter/">Newsletter</a>
+    </div>
+    <div class="navbar-end">
+      <a class="navbar-item" href="https://twitter.com/philipp_hauer" rel="nofollow"><i class="fa fa-lg fa-twitter-square"></i></a>&nbsp;&nbsp;
+      <a class="navbar-item" href="/index.xml" rel="nofollow"><i class="fa fa-lg fa-rss-square"></i></a>&nbsp;&nbsp;
+      <a class="navbar-item" href="https://www.linkedin.com/in/philipp-hauer-677738135" rel="nofollow"><i class="fa fa-lg fa-linkedin-square"></i></a>&nbsp;&nbsp;
+      <a class="navbar-item" href="https://www.xing.com/profile/Philipp_Hauer3" rel="nofollow"><i class="fa fa-lg fa-xing-square"></i></a>&nbsp;&nbsp;
+      <div class="navbar-item eb-search">
+        <form class="" role="search" method="get" action="https://www.google.com/search">
+          <div class="field">
+            <div class="control has-icons-left">
+              <input type="search" class="input" value="" name="q" title="Search for:">
+              <span class="icon is-small is-left">
+                <i class="fa fa-search"></i>
+              </span>
+            </div>
+            <input type="hidden" name="sitesearch" value="phauer.com"/>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<header class="eb-header">
+  <div class="eb-title-column">
+    <div class="eb-title">
+      <a href="https://phauer.com" title="Philipp Hauer&#39;s Blog" rel="home">
+        Philipp Hauer&#39;s Blog
+      </a>
+      <p class="eb-subtitle">Java Ecosystem, Kotlin, Engineering Management, Sociology of Software Development</p>
+    </div>
+  </div>
+</header>
+
+
+
+  <aside class="eb-carbonads">
+    <script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CKYILKJJ&placement=blogphilipphauerde" id="_carbonads_js"></script>
+  </aside>
+
+
+
+
+
+    <main class="eb-content">
+        <article class="eb-entry-single">
+            <header>
+                <h1>RESTful API Design. Best Practices in a Nutshell.</h1>
+                <p>Posted on <span data-blogtrack-date>Mar 4, 2015</span>. Updated on Jun 8, 2020</p>
+            </header>
+            <section>
+              <nav id="TableOfContents">
+  <ul>
+    <li><a href="#update-2018">Update 2018</a></li>
+    <li><a href="#use-two-urls-per-resource">Use Two URLs per Resource</a></li>
+    <li><a href="#use-consistently-plural-nouns">Use Consistently Plural Nouns</a></li>
+    <li><a href="#use-nouns-instead-of-verbs-for-resources">Use Nouns instead of Verbs for Resources</a></li>
+    <li><a href="#http-methods">HTTP Methods</a>
+      <ul>
+        <li><a href="#use-http-methods-to-operate-on-your-resources">Use HTTP Methods to Operate on your Resources</a></li>
+        <li><a href="#understand-the-semantics-of-the-http-methods">Understand the Semantics of the HTTP Methods</a></li>
+        <li><a href="#post-on-the-resource-collection-url-to-create-a-new-resource">POST on the Resource Collection URL to Create a New Resource</a></li>
+        <li><a href="#put-on-the-single-resource-url-for-updating-a-resource">PUT on the Single Resource URL for Updating a Resource</a></li>
+        <li><a href="#use-patch-for-partial-updates-of-a-resource">Use PATCH for Partial Updates of a Resource</a></li>
+      </ul>
+    </li>
+    <li><a href="#wrap-the-actual-data-in-a-data-field">Wrap the Actual Data in a <code>data</code> Field</a></li>
+    <li><a href="#use-the-query-string--for-optional-and-complex-parameters">Use the Query String (?) for Optional and Complex Parameters</a></li>
+    <li><a href="#use-http-status-codes">Use HTTP Status Codes</a></li>
+    <li><a href="#provide-useful-error-messages">Provide Useful Error Messages</a></li>
+    <li><a href="#provide-links-for-navigating-through-your-api-hateoas">Provide Links for Navigating through your API (HATEOAS)</a></li>
+    <li><a href="#design-relationships-appropriately">Design Relationships Appropriately</a>
+      <ul>
+        <li><a href="#links">Links</a></li>
+        <li><a href="#sideloading">Sideloading</a></li>
+        <li><a href="#embedding">Embedding</a></li>
+      </ul>
+    </li>
+    <li><a href="#use-camelcase-for-attribute-names">Use CamelCase for Attribute Names</a></li>
+    <li><a href="#use-verbs-for-operations">Use Verbs for Operations</a></li>
+    <li><a href="#provide-pagination">Provide Pagination</a>
+      <ul>
+        <li><a href="#offset-based-pagination">Offset-based Pagination</a></li>
+        <li><a href="#keyset-based-pagination-aka-continuation-token-cursor">Keyset-based Pagination (aka Continuation Token, Cursor)</a></li>
+      </ul>
+    </li>
+    <li><a href="#check-out-jsonapi">Check out JSON:API</a></li>
+    <li><a href="#ensure-evolvability-of-the-api">Ensure Evolvability of the API</a>
+      <ul>
+        <li><a href="#avoid-breaking-changes">Avoid Breaking Changes</a></li>
+        <li><a href="#keep-business-logic-on-the-server-side">Keep Business Logic on the Server-Side</a></li>
+      </ul>
+    </li>
+    <li><a href="#consider-api-versioning">Consider API Versioning</a>
+      <ul>
+        <li><a href="#versioning-via-urls">Versioning via URLs</a></li>
+        <li><a href="#versioning-via-accept-http-header-content-negotiation">Versioning via <code>Accept</code> HTTP Header (Content Negotiation)</a></li>
+        <li><a href="#personal-thoughts-about-versioning">Personal Thoughts about Versioning</a></li>
+      </ul>
+    </li>
+    <li><a href="#further-readings">Further Readings</a></li>
+  </ul>
+</nav>
+
+
+              <p>Designing HTTP and RESTful APIs can be tricky as there is no official and enforced standard. Basically, there are many ways of implementing an API but some of them have proven in practice and are widley adopted. This post covers best practices for building HTTP and RESTful APIs. We&rsquo;ll talk about URL structure, HTTP methods, creating and updating resources, designing relationships, payload formats, pagination, versioning and many more.</p>
+
+              
+              <p>
+                <img src="https://phauer.com/blog/2015/0304-restful-api-design-best-practices/featured-image-large.png" alt="RESTful API Design. Best Practices in a Nutshell." class="featuredImageLarge">
+              </p>
+              
+
+              
+              
+<h1 id="update-2018">Update 2018</h1>
+<p>I completely reworked this post. I revisited and extended existing sections and added many new ones: New overviews over HTTP methods and status codes, PATCH, clearify semantics of PUT and POST, <code>data</code> field, designing relationships, REST vs RPC-style APIs, evolvability, versioning approaches, keyset-based pagination, JSON:API, JSON:API-inspired payload formats.</p>
+<h1 id="use-two-urls-per-resource">Use Two URLs per Resource</h1>
+<p>One URL for the collection and one for a single resource:</p>
+<pre><code class="language-nohighlight" data-lang="nohighlight"># URL that represents a collection of resources
+/employees          
+# URL that represents a single resource
+/employees/56       
+</code></pre><h1 id="use-consistently-plural-nouns">Use Consistently Plural Nouns</h1>
+<p>Prefer</p>
+<pre><code class="language-nohighlight" data-lang="nohighlight">/employees
+/employees/21
+</code></pre><p>over</p>
+<pre><code class="language-nohighlight" data-lang="nohighlight">/employee
+/employee/21
+</code></pre><p>Indeed, it&rsquo;s a matter of taste, but the plural form is more common. Moreover, it&rsquo;s more intuitive, especially when using GET on the collection URL (<code>GET /employee</code> returning multiple employees). But most important: avoid mixing plural and singular nouns, which is confusing and error-prone.</p>
+<h1 id="use-nouns-instead-of-verbs-for-resources">Use Nouns instead of Verbs for Resources</h1>
+<p>This will keep you API simple and the number of URLs low. Don&rsquo;t do this:</p>
+<pre><code class="language-nohighlight" data-lang="nohighlight">/getAllEmployees
+/getAllExternalEmployees
+/createEmployee
+/updateEmployee
+</code></pre><p>Instead, express the required action with the available HTTP methods on a small set of URLs. See next section.</p>
+<h1 id="http-methods">HTTP Methods</h1>
+<h2 id="use-http-methods-to-operate-on-your-resources">Use HTTP Methods to Operate on your Resources</h2>
+<pre><code class="language-nohighlight" data-lang="nohighlight">GET /employees
+GET /employees?state=external
+POST /employees
+PUT /employees/56
+</code></pre><p>Use URLs to specify <em>the resources</em> you want to work with. Use the HTTP methods to specify <em>what</em> to do with this resource. With the five HTTP methods GET, POST, PUT, PATCH and DELETE you can provide CRUD functionality (Create, Read, Update, Delete) and beyond.</p>
+<ul>
+<li><strong>Read</strong>: Use GET for reading resources.</li>
+<li><strong>Create</strong>: Use POST or PUT for creating new resources.</li>
+<li><strong>Update</strong>: Use PUT and PATCH for updating existing resources.</li>
+<li><strong>Delete</strong>: Use DELETE for deleting existing resources.</li>
+</ul>
+<h2 id="understand-the-semantics-of-the-http-methods">Understand the Semantics of the HTTP Methods</h2>
+<p>Definition of <a href="https://en.wikipedia.org/wiki/Idempotence">Idempotence</a>: A HTTP methods is <em>idempotent</em> when we can safely execute the request over and over again and all requests lead to the same state.</p>
+<ul>
+<li><strong>GET</strong>
+<ul>
+<li>Idempotent</li>
+<li>Read-only. GET <em>never</em> changes the state of the resource on the server-side. It must not have side-effects.</li>
+<li>Hence, the response can be cached safely.</li>
+<li>Examples:
+<ul>
+<li><code>GET /employees</code> - Lists all employees</li>
+<li><code>GET /employees/1</code> - Shows the details of the employee 1</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>PUT</strong>
+<ul>
+<li>Idempotent!</li>
+<li>Can be used for both creating and updating</li>
+<li>Commonly used for updating (full updates).
+<ul>
+<li>Example: <code>PUT /employees/1</code> - updates employee 1 (uncommon: creates employee 1)</li>
+</ul>
+</li>
+<li>To use PUT for creating, the client needs to know the whole URL (including the ID) upfront. That&rsquo;s uncommon as the server usually generates the ID. So PUT for creating is typically used when there is only one element and the URL is unambiguous.
+<ul>
+<li>Example: <code>PUT /employees/1/avatar</code> - creates or updates the avatar of employee 1. There is only one avatar for each employee.</li>
+</ul>
+</li>
+<li>Always include the whole payload in the request. It&rsquo;s all or nothing. PUT is not meant to be used for partial updates (see PATCH).</li>
+</ul>
+</li>
+<li><strong>POST</strong>
+<ul>
+<li>Not idempotent!</li>
+<li>Used for creating</li>
+<li>Example: <code>POST /employees</code> creates a new employee. The new URL is delivered back to the client in the <code>Location</code> Header (e.g. <code>Location: /employees/12</code>). Multiple POST requests on <code>/employees</code> lead to many new different employees (that&rsquo;s why POST is not idempotent).</li>
+</ul>
+</li>
+<li><strong>PATCH</strong>
+<ul>
+<li>Idempotent</li>
+<li>Used for partial updates.</li>
+<li>Example: <code>PATCH /employees/1</code> - updates employee 1 with the fields contained in the payload. The other fields of employee 1 are not changed.</li>
+</ul>
+</li>
+<li><strong>DELETE</strong>
+<ul>
+<li>Idempotent</li>
+<li>Used for deletion.</li>
+<li>Example: <code>DELETE /employees/1</code></li>
+</ul>
+</li>
+</ul>
+<h2 id="post-on-the-resource-collection-url-to-create-a-new-resource">POST on the Resource Collection URL to Create a New Resource</h2>
+<p>How could a client-server interaction for creating a new resource look like?</p>
+<figure><a href="/blog/2015/0304-restful-api-design-best-practices/POST-for-Creation-eo.svg"><img src="/blog/2015/0304-restful-api-design-best-practices/POST-for-Creation-eo.svg"
+         alt="Use POST for creating a new resource"/></a><figcaption>
+            <p>Use POST for creating a new resource</p>
+        </figcaption>
+</figure>
+
+<ol>
+<li>The client sends a POST request to the resource collection URL <code>/employees</code>. The HTTP body contains the attributes of the new resource &ldquo;Paul&rdquo;.</li>
+<li>The RESTful web service generates an ID for the new employee, creates the employee in its internal model and sends a response to the client. This response contains the status code 201 (Created) and a <code>Location</code> HTTP header that indicates the URL under which the created resource is accessible.</li>
+</ol>
+<h2 id="put-on-the-single-resource-url-for-updating-a-resource">PUT on the Single Resource URL for Updating a Resource</h2>
+<figure><a href="/blog/2015/0304-restful-api-design-best-practices/PUT-for-Updating-eo.svg"><img src="/blog/2015/0304-restful-api-design-best-practices/PUT-for-Updating-eo.svg"
+         alt="Use PUT for updating an existing resource."/></a><figcaption>
+            <p>Use PUT for updating an existing resource.</p>
+        </figcaption>
+</figure>
+
+<ol>
+<li>The client sends a PUT request to the single resource URL <code>/employee/21</code>. The HTTP body of the PUT request contains all fields of the employee and every field will be updated on the server-side.</li>
+<li>The REST service updates the <code>name</code> and <code>status</code> of the employee with the ID 21 and confirms the changes with the HTTP status code 200.</li>
+</ol>
+<h2 id="use-patch-for-partial-updates-of-a-resource">Use PATCH for Partial Updates of a Resource</h2>
+<p>PUT is <em>NOT</em> supposed for partial updates. PUT should only be used for complete replacements of a resource. Sending all fields every time (although you only want to update a single field) can lead to accidentally overwrites in case of parallel updates. Moreover, the implementation of validation is hard as you have to support both use cases: creating (some fields must not be <code>null</code>) and updating (<code>null</code> values to mark fields that should not be updated) at the same time. So don&rsquo;t use PUT and send only the fields that should be updated. Missing fields in PUT request should be treated as <code>null</code> values and empty the database fields or trigger validation errors.</p>
+<p>Instead, use PATCH for partial updates. Send only the fields that should be updated. This way, the request payload is pretty straight-forward, parallel updates of different fields don&rsquo;t override unrelated fields, validation becomes easier, the semantic of <code>null</code> values is unambiguous (for both PUT and PATCH) and you save bandwidth.</p>
+<p>For instance, the following PATCH request updates only the <code>status</code> field but not the <code>name</code>.</p>
+<figure><a href="/blog/2015/0304-restful-api-design-best-practices/PATCH-for-Partial-Updates-eo.svg"><img src="/blog/2015/0304-restful-api-design-best-practices/PATCH-for-Partial-Updates-eo.svg"
+         alt="Use PATCH and send only the fields you like to update."/></a><figcaption>
+            <p>Use PATCH and send only the fields you like to update.</p>
+        </figcaption>
+</figure>
+
+<p>Implementation sidenote: Besides the described &ldquo;just send what you like to update&rdquo; approach (which is also recommended by <a href="http://jsonapi.org/format/#crud-updating">JSON:API</a>), there is <a href="http://jsonpatch.com/">JSON-PATCH</a>. It&rsquo;s a payload format for PATCH requests and describes a sequence of changes that should be performed on the resource. However, it&rsquo;s tricky to implement and overkill for many use cases. For more details, check out the post &ldquo;<a href="https://phil.tech/api/2016/05/03/put-vs-patch-vs-json-patch/">PUT vs PATCH vs JSON-PATCH</a>&rdquo;.</p>
+<h1 id="wrap-the-actual-data-in-a-data-field">Wrap the Actual Data in a <code>data</code> Field</h1>
+<p><code>GET /employees</code> returns a list of objects in the <code>data</code> field:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="p">{</span>
+  <span class="nt">&#34;data&#34;</span><span class="p">:</span> <span class="p">[</span>
+    <span class="p">{</span> <span class="nt">&#34;id&#34;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="nt">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;Larry&#34;</span> <span class="p">}</span>
+    <span class="p">,</span> <span class="p">{</span> <span class="nt">&#34;id&#34;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="nt">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;Peter&#34;</span> <span class="p">}</span>
+  <span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div><p><code>GET /employees/1</code> returns a single object in the <code>data</code> field:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="p">{</span>
+  <span class="nt">&#34;data&#34;</span><span class="p">:</span> <span class="p">{</span> 
+    <span class="nt">&#34;id&#34;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> 
+    <span class="nt">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;Larry&#34;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div><p>The payload of PUT, POST and PATCH requests should also contain the <code>data</code> field with the actual object.</p>
+<p>Advantages:</p>
+<ul>
+<li>There is space left to add metadata (e.g. for pagination, links, deprecation warnings, error messages)</li>
+<li>Consistency</li>
+<li>Compatible with the <a href="http://jsonapi.org/">JSON:API Standard</a></li>
+</ul>
+<h1 id="use-the-query-string--for-optional-and-complex-parameters">Use the Query String (?) for Optional and Complex Parameters</h1>
+<p>Don&rsquo;t do this:</p>
+<pre><code class="language-nohighlight" data-lang="nohighlight">GET /employees
+GET /externalEmployees
+GET /internalEmployees
+GET /internalAndSeniorEmployees
+</code></pre><p>Keep your URLs simple and the URL set small. Choose one base URL for your resource and stick to it. Move complexity or optional parameters to the query string.</p>
+<pre><code class="language-nohighlight" data-lang="nohighlight">GET /employees?state=internal&amp;title=senior
+GET /employees?id=1,2
+</code></pre><p>The JSON:API way of filtering is:</p>
+<pre><code class="language-nohighlight" data-lang="nohighlight">GET /employees?filter[state]=internal&amp;filter[title]=senior
+GET /employees?filter[id]=1,2
+</code></pre><h1 id="use-http-status-codes">Use HTTP Status Codes</h1>
+<p>The RESTful Web Service should respond to a client&rsquo;s request with a suitable HTTP status response code.</p>
+<ul>
+<li><code>2xx</code> – success – everything worked fine.</li>
+<li><code>4xx</code> – client error – if the client did something wrong (e.g. the client sends an invalid request or he is not authorized)</li>
+<li><code>5xx</code> – server error – failures on the server-side (errors while trying to process the request like database failures, dependend services are not available, programming errors or states that should not occur)</li>
+</ul>
+<p>Consider the <a href="http://en.wikipedia.org/wiki/List_of_HTTP_status_codes">available HTTP status codes</a>. However, be aware, that using all of them could be confusing for the users of your API. Keep the set of used HTTP status codes small. It&rsquo;s common to use the following codes:</p>
+<ul>
+<li><strong>2xx: Success</strong>
+<ul>
+<li>200 OK</li>
+<li>201 Created</li>
+</ul>
+</li>
+<li><strong>3xx: Redirect</strong>
+<ul>
+<li>301 Moved Permanently</li>
+<li>304 Not Modified</li>
+</ul>
+</li>
+<li><strong>4xx: Client Error</strong>
+<ul>
+<li>400 Bad Request</li>
+<li>401 Unauthorized</li>
+<li>403 Forbidden</li>
+<li>404 Not Found</li>
+<li>410 Gone</li>
+</ul>
+</li>
+<li><strong>5xx: Server Error</strong>
+<ul>
+<li>500 Internal Server Error</li>
+</ul>
+</li>
+</ul>
+<p><strong>Don&rsquo;t overuse 404</strong>. Try to be more precise. If the resource is available, but the user is not allowed to view it, return a 403 Forbidden. If the resource existed once but now has been deleted or deactivated, use 410 Gone.</p>
+<h1 id="provide-useful-error-messages">Provide Useful Error Messages</h1>
+<p>Additionally to an appropriate status code, you should provide a useful and verbose description of the error in the body of your HTTP response. Here&rsquo;s an example.</p>
+<p>Request:</p>
+<pre><code class="language-nohighlight" data-lang="nohighlight">GET /employees?state=super
+</code></pre><p>Response:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="err">//</span> <span class="mi">400</span> <span class="err">Bad</span> <span class="err">Request</span>
+<span class="p">{</span>
+  <span class="nt">&#34;errors&#34;</span><span class="p">:</span> <span class="p">[</span>
+    <span class="p">{</span>
+      <span class="nt">&#34;status&#34;</span><span class="p">:</span> <span class="mi">400</span><span class="p">,</span>
+      <span class="nt">&#34;detail&#34;</span><span class="p">:</span> <span class="s2">&#34;Invalid state. Valid values are &#39;internal&#39; or &#39;external&#39;&#34;</span><span class="p">,</span>
+      <span class="nt">&#34;code&#34;</span><span class="p">:</span> <span class="mi">352</span><span class="p">,</span>
+      <span class="nt">&#34;links&#34;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&#34;about&#34;</span><span class="p">:</span> <span class="s2">&#34;http://www.domain.com/rest/errorcode/352&#34;</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div><p>The proposed error payload structure is inspired by the <a href="http://jsonapi.org/format/#errors">JSON:API standard</a>.</p>
+<h1 id="provide-links-for-navigating-through-your-api-hateoas">Provide Links for Navigating through your API (HATEOAS)</h1>
+<p>Ideally, you don&rsquo;t let your clients construct URLs for using your REST API. Let&rsquo;s consider an example.</p>
+<p>A client wants to access the salary statements of an employee. Therefore, he has to know that he can access the salary statements by appending the query parameter <code>salaryStatements</code> to the employee URL (e.g. <code>/employees/21/salaryStatements</code>). This string concatenation is error-prone, fragile and hard to maintain. If you change the way to access the salary statement in your REST API (e.g. using now &ldquo;salary-statements&rdquo; or &ldquo;paySlips&rdquo;) all clients will break.</p>
+<p>It&rsquo;s better to provide links in your response which the client can follow. For instance, a response to <code>GET /employees</code> may look like this:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="p">{</span>
+  <span class="nt">&#34;data&#34;</span><span class="p">:</span> <span class="p">[</span>
+    <span class="p">{</span>
+      <span class="nt">&#34;id&#34;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span>
+      <span class="nt">&#34;name&#34;</span><span class="p">:</span><span class="s2">&#34;Paul&#34;</span><span class="p">,</span>
+      <span class="nt">&#34;links&#34;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span>
+          <span class="nt">&#34;salary&#34;</span><span class="p">:</span> <span class="s2">&#34;http://www.domain.com/employees/1/salaryStatements&#34;</span>
+        <span class="p">}</span>
+      <span class="p">]</span>
+    <span class="p">}</span>
+  <span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div><p>If the client exclusively relies on the links to get the salary statement, he won&rsquo;t break if you change your API, since the client will always get a valid URL (as long as you update the link in case of URL changes). Another benefit is that your API becomes more self-descriptive and the clients don&rsquo;t have to look up the documentation that often.</p>
+<h1 id="design-relationships-appropriately">Design Relationships Appropriately</h1>
+<p>Let&rsquo;s assume that each <code>employee</code> has a <code>manager</code> and several <code>teamMembers</code>. There are basically three common options to design relationships within an API: Links, Sideloading and Embedding.</p>
+<p>They are all valid and the right choice depends on the use case. Basically, you should design the relationships <strong>depending on the client&rsquo;s access schema and the tolerable request amount and payload size</strong>.</p>
+<h2 id="links">Links</h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="p">{</span>
+  <span class="nt">&#34;data&#34;</span><span class="p">:</span> <span class="p">[</span>
+    <span class="p">{</span> 
+      <span class="nt">&#34;id&#34;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> 
+      <span class="nt">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;Larry&#34;</span><span class="p">,</span>
+      <span class="nt">&#34;relationships&#34;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&#34;manager&#34;</span><span class="p">:</span> <span class="s2">&#34;http://www.domain.com/employees/1/manager&#34;</span><span class="p">,</span>
+        <span class="nt">&#34;teamMembers&#34;</span><span class="p">:</span> <span class="p">[</span> 
+          <span class="s2">&#34;http://www.domain.com/employees/12&#34;</span><span class="p">,</span>
+          <span class="s2">&#34;http://www.domain.com/employees/13&#34;</span>
+        <span class="p">]</span>
+        <span class="err">//or</span> <span class="s2">&#34;teamMembers&#34;</span><span class="p">:</span> <span class="s2">&#34;http://www.domain.com/employees/1/teamMembers&#34;</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div><ul>
+<li>Small payload size. It&rsquo;s good, if the client doesn&rsquo;t need the <code>manager</code> and the <code>teamManager</code> every time.</li>
+<li>Many Requests. It&rsquo;s bad, if nearly every client needs this data. Many additional requests may be required; in the worse case <em>for every</em> employee. And this is multiplied by every relationship (<code>manager</code>, <code>teamMembers</code> and so on) an employee has.</li>
+<li>The client has to stitch the data together in order to get the big picture.</li>
+</ul>
+<h2 id="sideloading">Sideloading</h2>
+<p>We can refer to the relationship with a foreign key and put the referred entities also in the payload but under the dedicated field <code>included</code>. This approach also called &ldquo;Compound Documents&rdquo;.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="p">{</span>
+  <span class="nt">&#34;data&#34;</span><span class="p">:</span> <span class="p">[</span>
+    <span class="p">{</span> 
+      <span class="nt">&#34;id&#34;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> 
+      <span class="nt">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;Larry&#34;</span><span class="p">,</span>
+      <span class="nt">&#34;relationships&#34;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&#34;manager&#34;</span><span class="p">:</span>  <span class="mi">5</span> <span class="p">,</span> 
+        <span class="nt">&#34;teamMembers&#34;</span><span class="p">:</span> <span class="p">[</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">13</span> <span class="p">]</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">],</span>
+  <span class="nt">&#34;included&#34;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&#34;manager&#34;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">&#34;id&#34;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span> 
+      <span class="nt">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;Kevin&#34;</span>
+    <span class="p">},</span>
+    <span class="nt">&#34;teamMembers&#34;</span><span class="p">:</span> <span class="p">[</span>
+      <span class="p">{</span> <span class="nt">&#34;id&#34;</span><span class="p">:</span> <span class="mi">12</span><span class="p">,</span> <span class="nt">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;Albert&#34;</span> <span class="p">}</span>
+      <span class="p">,</span> <span class="p">{</span> <span class="nt">&#34;id&#34;</span><span class="p">:</span> <span class="mi">13</span><span class="p">,</span> <span class="nt">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;Tom&#34;</span> <span class="p">}</span>
+    <span class="p">]</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div><p>The client may also control the sideloaded entities by a query parameter like <code>GET /employees?include=manager,teamMembers</code>.</p>
+<ul>
+<li>We get along with a single request.</li>
+<li>Tailored payload size. No duplication (e.g. you only deliver a manager once even if he is referenced by many employees)</li>
+<li>The client still has to stitch the data together in order to resolve the relationships, which can be very cumbersome.</li>
+</ul>
+<h2 id="embedding">Embedding</h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="p">{</span>
+  <span class="nt">&#34;data&#34;</span><span class="p">:</span> <span class="p">[</span>
+    <span class="p">{</span> 
+      <span class="nt">&#34;id&#34;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> 
+      <span class="nt">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;Larry&#34;</span><span class="p">,</span>
+      <span class="nt">&#34;manager&#34;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&#34;id&#34;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span> 
+        <span class="nt">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;Kevin&#34;</span>
+      <span class="p">},</span>
+      <span class="nt">&#34;teamMembers&#34;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span> <span class="nt">&#34;id&#34;</span><span class="p">:</span> <span class="mi">12</span><span class="p">,</span> <span class="nt">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;Albert&#34;</span> <span class="p">}</span>
+        <span class="p">,</span> <span class="p">{</span> <span class="nt">&#34;id&#34;</span><span class="p">:</span> <span class="mi">13</span><span class="p">,</span> <span class="nt">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;Tom&#34;</span> <span class="p">}</span>
+      <span class="p">]</span>
+    <span class="p">}</span>
+  <span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div><ul>
+<li>Most convenient for the client. Is can directly follow the relationships to get the actual data.</li>
+<li>Relationships may be loaded in vain if the client doesn&rsquo;t need it.</li>
+<li>Increased payload size and duplications. Referenced entities may be embedded multiple times.</li>
+</ul>
+<h1 id="use-camelcase-for-attribute-names">Use CamelCase for Attribute Names</h1>
+<p>Use CamelCase for your attributes identifiers.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="p">{</span> <span class="nt">&#34;yearOfBirth&#34;</span><span class="p">:</span> <span class="mi">1982</span> <span class="p">}</span>
+</code></pre></div><p>Don&rsquo;t use underscores (<code>year_of_birth</code>) or capitalize (<code>YearOfBirth</code>). Often your RESTful web service will be consumed by a client written in JavaScript. Typically the client will convert the JSON response to a JavaScript object (by calling <code>var person = JSON.parse(response)</code> ) and call its attributes. Therefore, it&rsquo;s a good idea to stick to the JavaScript convention which makes the JavaScript code more readable and intuitive.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-javascript" data-lang="javascript"><span class="c1">// Don&#39;t
+</span><span class="c1"></span><span class="nx">person</span><span class="p">.</span><span class="nx">year_of_birth</span> <span class="c1">// violates JavaScript convention
+</span><span class="c1"></span><span class="nx">person</span><span class="p">.</span><span class="nx">YearOfBirth</span> <span class="c1">// suggests constructor method
+</span><span class="c1"></span>
+<span class="c1">// Do
+</span><span class="c1"></span><span class="nx">person</span><span class="p">.</span><span class="nx">yearOfBirth</span>
+</code></pre></div><h1 id="use-verbs-for-operations">Use Verbs for Operations</h1>
+<p>Sometimes a response to an API call doesn&rsquo;t involve resources (like calculate, translate or convert). Example:</p>
+<pre><code class="language-nohighlight" data-lang="nohighlight">//Reading
+GET /translate?from=de_DE&amp;to=en_US&amp;text=Hallo
+GET /calculate?para2=23&amp;para2=432
+
+//Trigger an operation that changes the server-side state
+POST /restartServer
+//no body
+
+POST /banUserFromChannel
+{ &quot;user&quot;: &quot;123&quot;, &quot;channel&quot;: &quot;serious-chat-channel&quot; }
+</code></pre><p>In this case, no resources are involved. Instead, the server executes an operation and returns the result to the client. Hence, you should use verbs instead of nouns in your URL to distinguish clearly the operations (RPC-style API) from the REST endpoints (resources for modelling the domain).</p>
+<p>Creating those RPC-style APIs instead of REST APIs is appropriate for operations. Usually, it&rsquo;s simpler and more intuitive than trying to be RESTful for operations (like <code>PATCH /server</code> with <code>{&quot;restart&quot;: true}</code>). As a rule of thumb, REST is nice for interacting with domain models and RPC is suitable for operations. For more details, check out &ldquo;<a href="https://www.smashingmagazine.com/2016/09/understanding-rest-and-rpc-for-http-apis/">Understanding RPC Vs REST For HTTP APIs</a>&rdquo;.</p>
+<h1 id="provide-pagination">Provide Pagination</h1>
+<p>It is almost never a good idea to return all resources of your database at once. Consequently, you should provide a pagination mechanism. Two popular approaches are:</p>
+<ul>
+<li>Offset-based Pagination</li>
+<li>Keyset-based Pagination aka Continuation Token aka Cursor (recommended)</li>
+</ul>
+<h2 id="offset-based-pagination">Offset-based Pagination</h2>
+<p>A really simple approach is to use the parameters <code>offset</code> and <code>limit</code>, which are well-known from databases.</p>
+<pre><code class="language-nohighlight" data-lang="nohighlight">/employees?offset=30&amp;limit=15 # returns the employees 30 to 45
+</code></pre><p>If the client omits the parameter you should use defaults (like <code>offset=0</code> and <code>limit=100</code>). Never return all resources. If the retrieval is more expensive you should decrease the limit.</p>
+<pre><code class="language-nohighlight" data-lang="nohighlight">/employees                    # returns the employees 0 to 100
+</code></pre><p>You can provide links for getting the next or previous page. Just construct URLs with the appropriate offset and limit.</p>
+<pre><code class="language-nohighlight" data-lang="nohighlight">GET /employees?offset=20&amp;limit=10
+</code></pre><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="p">{</span>
+  <span class="nt">&#34;pagination&#34;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&#34;offset&#34;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+    <span class="nt">&#34;limit&#34;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+    <span class="nt">&#34;total&#34;</span><span class="p">:</span> <span class="mi">3465</span><span class="p">,</span>
+  <span class="p">},</span>
+  <span class="nt">&#34;data&#34;</span><span class="p">:</span> <span class="p">[</span>
+    <span class="err">//...</span>
+  <span class="p">],</span>
+  <span class="nt">&#34;links&#34;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&#34;next&#34;</span><span class="p">:</span> <span class="s2">&#34;http://www.domain.com/employees?offset=30&amp;limit=10&#34;</span><span class="p">,</span>
+    <span class="nt">&#34;prev&#34;</span><span class="p">:</span> <span class="s2">&#34;http://www.domain.com/employees?offset=10&amp;limit=10&#34;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div><h2 id="keyset-based-pagination-aka-continuation-token-cursor">Keyset-based Pagination (aka Continuation Token, Cursor)</h2>
+<p>The presented offset-based pagination is easy to implement but comes with <a href="/2017/web-api-pagination-continuation-token/#offset-pagination">severe drawbacks</a>. They are slow (SQL&rsquo;s <code>OFFSET</code> clause becomes very slow for large numbers) and unsafe (it&rsquo;s easy to miss elements when changes are happening during pagination).</p>
+<p>That&rsquo;s why it&rsquo;s better to use an indexed column. Let&rsquo;s assume that our employees have an indexed column <code>data_created</code> and the collection resource <code>/employees?pageSize=100</code> returns the oldest 100 employees sorted by this column. Now, the client only has to take the <code>dateCreated</code> timestamp of the last employee and uses the query parameter <code>createdSince</code> to continue at this point.</p>
+<pre><code class="language-nohighlight" data-lang="nohighlight">GET /employees?pageSize=100                
+# The client receives the oldest 100 employees sorted by `data_created`
+# The last employee of the page has the `dataCreated` field  with 1504224000000 (= Sep 1, 2017 12:00:00 AM)
+
+GET /employees?pageSize=100&amp;createdSince=1504224000000
+# The client receives the next 100 employees since 1504224000000. 
+# The last employee of the page was created on 1506816000000. And so on.
+</code></pre><p>This solves already many of the disadvantages of offset-based pagination, but it&rsquo;s still <a href="/2017/web-api-pagination-continuation-token/#keyset-pagination">not perfect</a> and not very convenient for the client.</p>
+<ul>
+<li>It&rsquo;s better to create a so-called <a href="/2018/web-api-pagination-timestamp-id-continuation-token/">continuation token</a> by adding additional information (like the id) to the date in order to improve the reliability and efficiency.</li>
+<li>Moreover, you should provide a dedicated field in the payload for that token so the client doesn&rsquo;t have to figure it out by looking at the elements. You can even go further and provide a <code>next</code> link.</li>
+</ul>
+<p>So <code>GET /employees?pageSize=100</code> returns:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="p">{</span>
+  <span class="nt">&#34;pagination&#34;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&#34;continuationToken&#34;</span><span class="p">:</span> <span class="s2">&#34;1504224000000_10&#34;</span><span class="p">,</span>
+  <span class="p">},</span>
+  <span class="nt">&#34;data&#34;</span><span class="p">:</span> <span class="p">[</span>
+    <span class="err">//</span> <span class="err">...</span>
+    <span class="err">//</span> <span class="err">last</span> <span class="err">element:</span>
+    <span class="p">{</span> <span class="nt">&#34;id&#34;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="nt">&#34;dateCreated&#34;</span><span class="p">:</span> <span class="mi">1504224000000</span> <span class="p">}</span>
+  <span class="p">],</span>
+  <span class="nt">&#34;links&#34;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&#34;next&#34;</span><span class="p">:</span> <span class="s2">&#34;http://www.domain.com/employees?pageSize=100&amp;continue=1504224000000_10&#34;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div><p>The <code>next</code> link makes the API really RESTful as the client can page through the collection simply by following these links (HATEOAS). No need to construct URLs manually. Moreover, you can simply change the URL structure without breaking clients (evolvability).</p>
+<p>For more details, check out the dedicated posts about Web API pagination:</p>
+<ul>
+<li><a href="/2017/web-api-pagination-continuation-token/">Web API Pagination with the &lsquo;Timestamp_Offset_Checksum&rsquo; Continuation Token</a> - The proposed approach is not recommended any more, but the post introduces nicely into the whole topic (including offset-based pagination).</li>
+<li><a href="/2018/web-api-pagination-timestamp-id-continuation-token/">Web API Pagination with the &lsquo;Timestamp_ID&rsquo; Continuation Token</a> - I recommend to use this approach. It also contains an overview of existing keyset-based pagination approaches.</li>
+</ul>
+<h1 id="check-out-jsonapi">Check out JSON:API</h1>
+<p>You should at least take a look at <a href="http://jsonapi.org/">JSON:API</a>. It&rsquo;s a standard format for the JSON payload and the resources of an HTTP service (MIME type: <code>application/vnd.api+json</code>). I personally don&rsquo;t follow all recommendations since some of them feel a little bit over-formalized and overkill for me. To my mind, the achieved flexibility is often not required, but it complicates the implementation without providing a benefit. But it&rsquo;s a matter of taste and following standards is basically a good idea. I use it as an inspiration and pick those elements that make sense for me. Feel free to make up your own mind about JSON:API.</p>
+<h1 id="ensure-evolvability-of-the-api">Ensure Evolvability of the API</h1>
+<h2 id="avoid-breaking-changes">Avoid Breaking Changes</h2>
+<p>Ideally, REST APIs (as every API) should be stable. Basically, breaking changes (like changing the whole payload format or the URL scheme) should not happen. But how can we still evolve our API without breaking the clients?</p>
+<ul>
+<li>Make backward-compatible changes. Adding fields is no problem (as long as the clients are <a href="https://martinfowler.com/bliki/TolerantReader.html">tolerant</a>).</li>
+<li>Duplication and Deprecation. In order to change an existing field (rename or change structure), you can add the new one next to the old field and deprecated the old one in the documentation. After a while, you can remove the old field.</li>
+<li>Utilize Hypermedia and HATEOAS. As long as the API client uses the links in the response to navigate through the API (and doesn&rsquo;t craft the URLs manually), you can safely change the URLs without breaking the clients.</li>
+<li>Create new resources with new names. If new business requirements lead to a completely new domain model and workflows, you can create new resources. That&rsquo;s often quite intuitive as the domain model has a new name anyway (derived from the business name). Example: A rental service now also rents bikes and segways. So the old concept <code>car</code> with the resource <code>/cars</code> doesn&rsquo;t cut it anymore. A new domain model <code>vehicle</code> with a new resource <code>/vehicles</code> is introduced. It&rsquo;s provided along with the old <code>/cars</code> resource.</li>
+</ul>
+<h2 id="keep-business-logic-on-the-server-side">Keep Business Logic on the Server-Side</h2>
+<p>Don&rsquo;t let your service become a dump data access layer which provides CRUD functionality by directly exposing your database model (low-level API). This creates high coupling.</p>
+<ul>
+<li>The business logic is shifted to the client and is often replicated between the client and the server (just think about validation). We have to keep both in sync.</li>
+<li>Often, the client is coupled to the server&rsquo;s database model.</li>
+</ul>
+<p>We should avoid creating dump data access APIs because they lead to high coupling between the server and the clients because the business workflows are getting distributed between the client and the server. That, in turn, makes it likely that new business requirements require a change in both the client and the server and to break the API. So the API/system is not that evolvable.</p>
+<p>So we should build high-level/workflow-based APIs instead of low-level APIs. An example: Don&rsquo;t provide a simple CRUD service for the order entities in the database. Don&rsquo;t require the clients to know that to cancel an order, the client has to PUT an order to the generic <code>/order/1</code> resource with a certain cancelation payload (reflecting the database model) in it. This leads to high coupling (business logic and domain knowledge on the client-side; exposed database model). Instead, provide a dedicated resource <code>/order/1/cancelation</code> and add a link to it in the payload of the order resource. The client can navigate to the cancelation URL and send a tailored cancelation payload. The business logic for mapping this payload to the database model is done in the server. Moreover, the server can easily change the URL without breaking the client, because the client simply follows links. Besides, the decision logic, if an order can be canceled or not is now in the server: If a cancelation a possible the server adds the link to the cancelation resource in the order payload. So the client only has to check if the cancelation links are present (for example to know if he should draw the cancelation button). So we moved domain knowledge away from the client back to the server. Changes to the cancelation conditions can be easily applied by only touching the server, which in turn make the system evolvable. No API change is required.</p>
+<p>If you like to read more about this topic, I recommend the talk <a href="https://www.youtube.com/watch?time_continue=1&amp;v=mQkf85S9UoQ">REST beyond the obvious – API design for ever evolving systems</a> by Oliver Gierke.</p>
+<h1 id="consider-api-versioning">Consider API Versioning</h1>
+<p>Nevertheless, you might end up in situations where the above approaches don&rsquo;t work and you really have to provide different versions of your API. Versioning allows you to release incompatible and breaking changes of your API under a new version without breaking the clients. They can continue consuming the old version. The clients can migrate to the new version at their own speed.</p>
+<p>This topic is hotly disputed in the community. You should take into account that you may end up building and maintaining (!) different versions of an API for a long time, which is <a href="https://www.ebpml.org/blog2/index.php/2013/11/25/understanding-the-costs-of-versioning">expensive</a>.</p>
+<p>If you are building internal APIs you most likely know all of your clients. So performing breaking changes can be an option again. But it will require more communication and a coordinated deployment.</p>
+<p>Nevertheless, here are the two most popular approaches for versioning:</p>
+<ul>
+<li>Versioning via URLs: <code>/v1/</code></li>
+<li>Versioning via the <code>Accept</code> HTTP Header: <code>Accept: application/vnd.myapi.v1+json</code> (Content Negotiation)</li>
+</ul>
+<h2 id="versioning-via-urls">Versioning via URLs</h2>
+<p>Just put the version number of your API in the URL of every resource.</p>
+<pre><code class="language-nohighlight" data-lang="nohighlight">/v1/employees
+</code></pre><p>Pros:</p>
+<ul>
+<li>Extremely simple for API developers.</li>
+<li>Extremely simple for API clients.</li>
+<li>URLs can be copied and pasted.</li>
+</ul>
+<p>Cons:</p>
+<ul>
+<li>Not RESTful.</li>
+<li>Breaking URLs. Clients have to maintain and update the URLs.</li>
+</ul>
+<p>Strictly speaking, this approach is not RESTful because URLs should never change. This prevents easy evolvability. Putting the version in the URL will break the API some day and your clients have to fix the URLs. The question is, how much effort would it take the clients to update the URLs? If the answer is &ldquo;only a little&rdquo; then URL versioning might be fine.</p>
+<p>Due to its simplicity, URL versioning is <a href="http://www.lexicalscope.com/blog/2012/03/12/how-are-rest-apis-versioned/">very popular and widely used</a> by companies like Facebook, Twitter, Google/YouTube, Bing, Dropbox, Tumblr, and Disqus.</p>
+<h2 id="versioning-via-accept-http-header-content-negotiation">Versioning via <code>Accept</code> HTTP Header (Content Negotiation)</h2>
+<p>The more RESTful way for versioning is to utilize content negotiation via the <code>Accept</code> HTTP request header.</p>
+<pre><code class="language-nohighlight" data-lang="nohighlight">GET /employees
+Accept: application/vnd.myapi.v2+json
+</code></pre><p>In this case, the client requests the version 2 of the <code>/employees</code> resource. So we treat the different API versions as different representations of the <code>/employees</code> resource, which is pretty RESTful. You can make the <code>v2</code> optional and default to the latest version when the client only requests with <code>Accept: application/vnd.myapi+json</code>. But be fair and give him a warning that his app may break in the future if he doesn&rsquo;t pin the version.</p>
+<p>Pros:</p>
+<ul>
+<li>URLs keep the same</li>
+<li>Considered as RESTFul</li>
+<li>HATEOAS-friendly</li>
+</ul>
+<p>Cons:</p>
+<ul>
+<li>Slightly more difficult to use. Clients have to pay attention to the headers.</li>
+<li>URLs can&rsquo;t be copied and pasted anymore.</li>
+</ul>
+<h2 id="personal-thoughts-about-versioning">Personal Thoughts about Versioning</h2>
+<p>When creating a new API, try it without URL versioning. Especially internal APIs might never need a real version 2 for the existing resources at all. You might get along with the approaches describted in the section <a href="#avoid-breaking-changes">&ldquo;Avoid Breaking Changes&rdquo;</a> . <strong>If</strong> you finally really need a new version for an existing resource, you can still go for content negotiation and utilize the <code>Accept</code> header. But in general it&rsquo;s better to build an API that makes breaking changes less likely in the first place (e.g. by building a high-level/process flow API and keep business logic in the server).</p>
+<p>There are endless discussions about the <em>right</em> way to version an API and what is RESTful and what not. People are getting really upset. I prefer to be pragmatic. For me, it&rsquo;s totally fine if you don&rsquo;t care about the REST theory when it comes to versioning (and use URL versioning) as long it works for you, your clients and you are aware of the upcoming maintenance costs. &ldquo;Protip&rdquo;: Speak about &ldquo;Web API&rdquo; or &ldquo;HTTP API&rdquo; instead of &ldquo;REST API&rdquo; to be honest about the conformity with REST and to calm the REST zealots. ;-)</p>
+<h1 id="further-readings">Further Readings</h1>
+<ul>
+<li>I highly recommend the book <a target="_blank" href="https://www.amazon.com/gp/product/0692232699/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=0692232699&linkCode=as2&tag=blogphilippha-20&linkId=c82eb36431e08a88a3cc24d47b4f7006">Build APIs You Won't Hate</a><img src="https://ir-na.amazon-adsystem.com/e/ir?t=blogphilippha-20&l=am2&o=1&a=0692232699" width="1" height="1" border="0" alt="" style="border:none !important; margin:0px !important;display:inline;" />
+ by Phil Sturgeon</li>
+<li>I wrote a post about <a href="/2016/testing-restful-services-java-best-practices/">Best Practices for Testing RESTful Services in Java</a>.</li>
+<li><a href="http://jsonapi.org/">JSON:API Standard</a></li>
+<li><a href="https://phil.tech/api/2017/12/18/rest-confusion-explained/">A Response to REST is the new SOAP (REST confusion explained)</a> by Phil Sturgeon</li>
+<li><a href="https://www.smashingmagazine.com/2016/09/understanding-rest-and-rpc-for-http-apis/">Understanding RPC Vs REST For HTTP APIs</a> by Phil Sturgeon</li>
+</ul>
+
+            </section>
+            <footer class="eb-entry-meta">
+                <div class="follow-me">
+  <p class="h3-like">
+    You can follow me on <a href="https://twitter.com/philipp_hauer">Twitter,</a>
+    subscribe my  <a href="/page/newsletter/">newsletter</a>
+    or request my <a href="/consulting/"> consulting</a>
+    or <a href="/training/">training.</a>
+  </p>
+</div>
+
+                <div class="related-posts">
+  <p class="h3-like">Related Posts</p>
+  
+  
+  <ul>
+    
+    <li>
+      <a href="/2018/web-api-pagination-timestamp-id-continuation-token/">
+        <img src="/blog/2018/0131-web-api-pagination-timestamp-id-continuation-token/featured-image-small.png" alt="Web API Pagination with the &#39;Timestamp_ID&#39; Continuation Token"/>
+        <p>Web API Pagination with the &#39;Timestamp_ID&#39; Continuation Token</p>
+      </a>
+    </li>
+    
+    <li>
+      <a href="/2017/web-api-pagination-continuation-token/">
+        <img src="/blog/2017/1213-web-api-pagination-continuation-token/featured-image-small.png" alt="Web API Pagination with the &#39;Timestamp_Offset_Checksum&#39; Continuation Token"/>
+        <p>Web API Pagination with the &#39;Timestamp_Offset_Checksum&#39; Continuation Token</p>
+      </a>
+    </li>
+    
+    <li>
+      <a href="/2016/testing-restful-services-java-best-practices/">
+        <img src="/blog/2016/0329-testing-restful-services-java-best-practices/featured-image-small.png" alt="Testing RESTful Services in Java: Best Practices"/>
+        <p>Testing RESTful Services in Java: Best Practices</p>
+      </a>
+    </li>
+    
+    <li>
+      <a href="/2015/enriching-restful-services-swagger/">
+        <img src="/blog/2015/0728-enriching-restful-services-swagger/swagger-logo-300x239.png" alt="Enriching RESTful Services with Swagger"/>
+        <p>Enriching RESTful Services with Swagger</p>
+      </a>
+    </li>
+    
+  </ul>
+  
+</div>
+
+                <div class="categories-tags">
+                This entry was posted in
+                    
+                    <a href="/categories/web-development/" rel="category tag">Web Development</a>,
+                    
+
+                    and tagged with
+                    
+                        <a href="/tags/api-design/" rel="tag">API Design</a>,
+                    
+                        <a href="/tags/rest/" rel="tag">REST</a>,
+                    
+                        <a href="/tags/best-practices/" rel="tag">Best Practices</a>,
+                    
+                </div>
+            </footer>
+        </article>
+    </main>
+
+    <aside class="eb-comments-area">
+        <p class="h3-like">Comments</p>
+        <aside id="comment-sidecar"></aside>
+<script type="text/javascript">
+    (function() {
+        
+        const scriptNode = document.createElement('script');
+        scriptNode.type = 'text/javascript';
+        scriptNode.async = true;
+        scriptNode.src = 'https://comment-sidecar.com/comment-sidecar-js-delivery.php';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(scriptNode);
+    })();
+</script>
+    </aside>
+
+    <aside id="eb-about">
+    <img alt="Philipp Hauer" src="/img/1810-KotlinConf-cut-w120-q98.jpg" class="avatar avatar-100 photo">
+    <p class="eb-about-name">Philipp Hauer</p>
+    <p>I am Philipp Hauer and I work as a Head of Engineering for the <a href="https://spreadgroup.com/" rel="nofollow">Spread Group</a> (Spreadshirt) in Leipzig, Germany. I strive for building happy, motivated, and productive teams and I&rsquo;m enthusiastic about Kotlin, clean code, distributed systems, testing and the sociology of software development. I&rsquo;m tweeting under <a href="https://twitter.com/philipp_hauer">@philipp_hauer</a>, giving <a href="/page/talks/">talks</a> and offering <a href="/consulting/">consulting</a> and <a href="/training/">workshops</a>.</p>
+    <p>
+        <a href="mailto:xxblxxogxx@pxxhilippxxhauer.dxxe" onmouseover="this.href=this.href.replace(/x/g,'');">
+            <i class="fa fa-lg fa-envelope-o"></i></a>&nbsp;&nbsp;
+        <a href="https://twitter.com/philipp_hauer" rel="nofollow"><i class="fa fa-lg fa-twitter-square"></i></a>&nbsp;&nbsp;
+        <a href="https://github.com/phauer" rel="nofollow"><i class="fa fa-lg fa-github-square"></i></a>&nbsp;&nbsp;
+        <a href="https://www.linkedin.com/in/philipp-hauer-677738135" rel="nofollow"><i class="fa fa-lg fa-linkedin-square"></i></a>&nbsp;&nbsp;
+        <a href="https://www.xing.com/profile/Philipp_Hauer3" rel="nofollow"><i class="fa fa-lg fa-xing-square"></i></a>&nbsp;&nbsp;
+    </p>
+</aside>
+
+
+<nav class="eb-navigation">
+  <p class="eb-screen-reader-text">Post Navigation</p>
+  <a href="/2015/evaluating-vaadin-strengths-weaknesses/">
+    <i class="fa fa-lg fa-angle-left"></i>&nbsp; Evaluating Vaadin: Strengths and Weaknesses
+  </a>
+  <a href="/2015/checked-exceptions-are-evil/">
+    Checked Exceptions are Evil &nbsp;<i class="fa fa-lg fa-angle-right"></i>
+  </a>
+</nav>
+
+<aside class="columns">
+  <aside class="column is-one-third eb-latest-area">
+    <p class="eb-latest-title">Recent Posts</p>
+    <ul>
+      
+        <li><a href="/2022/performance-reviews-skill-matrix-developers/" class="eb-post-link">Better Performance Reviews for Developers with a Skill Matrix</a>
+</li>
+      
+        <li></li>
+      
+        <li><a href="/2021/leveling-up-management-skill-tree/" class="eb-post-link">Leveling Up in the Management Skill Tree</a>
+</li>
+      
+        <li><a href="/2021/talk-code-reviews-jug-saxony-meetup/" class="eb-post-link">Recording and Slides of My Talk &#39;How to Mess Up Code Reviews&#39; at a Virtual JUG Saxony Meetup</a>
+</li>
+      
+        <li><a href="/2021/tech-talk/" class="eb-post-link">Establishing Development Standards with Tech Talks and a Team Guide</a>
+</li>
+      
+    </ul>
+  </aside>
+
+  <aside class="column is-one-third eb-latest-area">
+    <p class="eb-latest-title">Categories</p>
+    <ul>
+      <li><a href="/categories/build-and-development-infrastructure/">Build and Development Infrastructure</a> (15)</li>
+      <li><a href="/categories/web-development/">Web Development</a> (15)</li>
+      <li><a href="/categories/software-craftsmanship/">Software Craftsmanship</a> (14)</li>
+      <li><a href="/categories/leadership/">Leadership</a> (11)</li>
+      <li><a href="/categories/publications-and-talks/">Publications and Talks</a> (10)</li>
+      <li><a href="/categories/database/">Database</a> (9)</li>
+      <li><a href="/categories/software-architecture/">Software Architecture</a> (9)</li>
+      <li><a href="/categories/tools-and-environment/">Tools and Environment</a> (2)</li>
+      
+    </ul>
+  </aside>
+
+  <aside class="column is-one-third eb-latest-area">
+    <p class="eb-latest-title">Top Tags</p>
+    <ul>
+      <li><a href="/tags/docker/">Docker</a> (11)</li>
+      <li><a href="/tags/kotlin/">Kotlin</a> (11)</li>
+      <li><a href="/tags/best-practices/">Best Practices</a> (8)</li>
+      <li><a href="/tags/rest/">REST</a> (8)</li>
+      <li><a href="/tags/build/">Build</a> (7)</li>
+      <li><a href="/tags/clean-code/">Clean Code</a> (7)</li>
+      <li><a href="/tags/maven/">Maven</a> (7)</li>
+      <li><a href="/tags/vaadin/">Vaadin</a> (7)</li>
+      <li><a href="/tags/feedback/">Feedback</a> (6)</li>
+      <li><a href="/tags/mongodb/">MongoDB</a> (6)</li>
+      <li><a href="/tags/testing/">Testing</a> (6)</li>
+      <li><a href="/tags/microservices/">Microservices</a> (5)</li>
+      
+    </ul>
+  </aside>
+</aside>
+
+<footer class="eb-footer">
+  <div class="eb-imprint">
+    <p>
+      Copyright © 2022 by Philipp Hauer | 
+      <a href="/page/icon-contribution/" rel="nofollow">Icon Contribution</a> |
+
+      <a href="/page/imprint/" rel="nofollow">Imprint</a> |
+
+      <a href="/page/privacy-policy/" rel="nofollow">Privacy Policy</a> |
+
+    </p>
+  </div>
+</footer>
+
+<div id="amzn-assoc-ad-6b2c2bf6-2208-4bc8-94a8-69cd7edde774"></div><script async src="//z-na.amazon-adsystem.com/widgets/onejs?MarketPlace=US&adInstanceId=6b2c2bf6-2208-4bc8-94a8-69cd7edde774"></script>
+
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.0.3/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.0.3/cookieconsent.min.js" async></script>
+
+
+
+<script src="/js/edinburgh.js"></script>
+
+</div>
+
+</body>
+</html>

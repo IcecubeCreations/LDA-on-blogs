@@ -1,0 +1,1004 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="This article goes over the important points of coupling and cohesion in testing microservices applications, from the software architectural level down.">
+  <meta name="keywords" content="microservice, unit test, cohesion, CI/CD, Application framework, web service, Spring Framework, Spring Cloud, agile">
+
+  <meta property="og:description" content="This article goes over the important points of coupling and cohesion in testing microservices applications, from the software architectural level down.">
+  <meta property="og:site_name" content="dzone.com">
+  <meta property="og:title" content="Microservice Testing: Coupling and Cohesion (All the Way Down) - DZone Microservices">
+  <meta property="og:url" content="https://dzone.com/articles/microservice-testing-coupling-and-cohesion-all-the">
+  <meta property="og:image" content="https://dz2cdn1.dzone.com/storage/article-thumb/8585840-thumb.jpg">
+  <meta property="og:type" content="article">
+
+  <meta name="twitter:site" content="@DZoneInc">
+  <meta name="twitter:image" content="https://dz2cdn1.dzone.com/storage/article-thumb/8585840-thumb.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:description" content="This article goes over the important points of coupling and cohesion in testing microservices applications, from the software architectural level down.">
+  <meta name="twitter:title" content="Microservice Testing: Coupling and Cohesion (All the Way Down) - DZone Microservices">
+
+  <meta name="referrer" content="origin-when-cross-origin">
+  <meta name="google-site-verification" content="kndbhxcupfEqWmZclhCpB6vlgOs7QSmx2UHAGGnP2mA">
+  <meta name="df-verify" content="df0d76632b4543">
+
+  <link rel="icon" type="image/x-icon" href="https://dz2cdn2.dzone.com/themes/dz20/images/favicon.png">
+  <link rel="image_src" href="https://dz2cdn1.dzone.com/storage/article-thumb/8585840-thumb.jpg">
+  <link rel="canonical" href="https://dzone.com/articles/microservice-testing-coupling-and-cohesion-all-the">
+
+  <title>Microservice Testing: Coupling and Cohesion (All the Way Down) - DZone Microservices</title>
+
+  <link rel="preload" href="https://fonts.dzone.com/themes/dz20/font/fontello.woff?11773374" as="font" type="font/woff" crossorigin="anonymous">
+
+  <link rel="stylesheet" media="all" href="https://dz2cdn2.dzone.com/themes/dz20/ftl/icons.css">
+  <link rel="stylesheet" media="all" href="https://dz2cdn2.dzone.com/themes/dz20/lib/static/bootstrap/bootstrap.min.css">
+  <link rel="stylesheet" media="all" href="https://dz2cdn2.dzone.com/themes/dz20/ftl/article/global.css">
+  <link rel="stylesheet" media="all" href="https://dz2cdn2.dzone.com/themes/dz20/ftl/header/styles.css">
+</head>
+<body>
+<div id="ftl-header">
+  <div class="container-fluid header">
+    <div class="row">
+      <div class="col-md-12" style="padding: 0;">
+        <div class="header-top">
+          <div class="header-container">
+            <div class="pull-left logo-container">
+              <div class="logo">
+                <a class="inner" href="/">
+                  <picture>
+                    <source srcset="https://dz2cdn2.dzone.com/themes/dz20/images/dz_logo_2021_cropped.webp" type="image/webp">
+                    <source srcset="https://dz2cdn2.dzone.com/themes/dz20/images/dz_logo_2021_cropped.png" type="image/png">
+                    <img src="https://dz2cdn2.dzone.com/themes/dz20/images/dz_logo_2021_cropped.png" width="160" height="52" alt="DZone">
+                  </picture>
+                </a>
+              </div>
+
+                <div class="active-portal"><a href="/microservices-news-tutorials-tools">Microservices Zone</a></div>
+            </div>
+
+            <div class="pull-right login-and-search">
+              <div id="authenticated-block" class="logged-in">
+                <div class="welcome-back">Thanks for visiting DZone today,</div>
+                <div id="user-header" class="user-info">
+                  <button class="user-avatar">
+                    <span id="header-username" class="username"></span>
+                    <img id="header-avatar" src="" alt="user avatar">
+                  </button>
+                  <div id="user-dropdown" class="browse-user-menu">
+                    <div class="user-content">
+                      <a id="header-user-plug" href="#" class="user-description"></a>
+                      <a id="header-user-edit" href="#" class="edit-profile">Edit Profile</a>
+                    </div>
+                    <ul class="user-actions">
+                      <li id="first-user-action"><a id="header-dropdown-manage-email" href="#">Manage Email Subscriptions</a></li>
+                      <li>
+                        <a href="/articles/how-to-submit-a-post-to-dzone?utm_source=DZone&utm_medium=user_dropdown&utm_campaign=how_to_post">
+                          How to Post to DZone
+                        </a>
+                      </li>
+                      <li>
+                        <a href="/articles/dzones-article-submission-guidelines">
+                          Article Submission Guidelines
+                        </a>
+                      </li>
+                    </ul>
+                    <div class="bottom">
+                      <a href="/users/logout.html" class="sign-out">Sign Out</a>
+                      <a id="dropdown-view-profile" href="#" class="view-profile">View Profile</a>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="post-content">
+                  <button id="post-button" class="post-content--button">
+                    <span class="post-class">Post</span>
+                    <i class="icon-plus"></i>
+                  </button>
+
+                  <div id="post-menu" class="posting-links">
+                    <div class="posting-links-menu">
+                      <ul>
+                        <li>
+                          <img src="/themes/dz20/images/dz-postarticle.svg">
+                          <a href="/content/article/post.html">Post an Article</a>
+                        </li>
+                        <li>
+                          <a id="drafts-link" href="#">Manage My Drafts</a>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div id="unauthenticated-block">
+                <div class="dz-intro">Over 2 million developers have joined DZone.</div>
+                <div class="mobile-invisible sign-in-join">
+                  <a href="/users/login.html">Log In</a>
+                  <span class="dz-intro-span">/</span>
+                  <a href="/static/registration.html">Join</a>
+                </div>
+                <a class="join-icon" href="/users/login.html"><i class="icon-user"></i></a>
+              </div>
+              <div class="headerSearch">
+                <a class="icon-search dropdown-toggle" href="/search"></a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="header-bottom">
+
+
+          <ul class="portals header-container scrollable-ul">
+            <li>
+              <a href="/refcardz" id="header-refcardz">
+                <em>Refcardz</em>
+              </a>
+            </li>
+            <li>
+              <a href="/trendreports" id="header-research">
+                <em>Trend Reports</em>
+              </a>
+            </li>
+            <li>
+              <a href="/webinars" id="header-webinars">
+                <em>Webinars</em>
+              </a>
+            </li>
+            <li class="last-portal-link">
+              <a href="#" id="header-portals">
+                <em>
+                  Zones
+                  <span id="zone-arrow" class="collapsible-toggle">
+                    <i class="icon-angle-down"></i>
+                    <i class="icon-angle-up"></i>
+                  </span>
+                </em>
+              </a>
+            </li>
+
+            <li class="separator" aria-hidden="true" style="color: #d9dcdd;">|</li>
+            <li id="portal-list" class="portal-topics">
+              <ul>
+                  <li>
+                    <a href="/agile-methodology-training-tools-news" id="header-2">Agile</a>
+                  </li>
+                  <li>
+                    <a href="/artificial-intelligence-tutorials-tools-news" id="header-4001">AI</a>
+                  </li>
+                  <li>
+                    <a href="/big-data-analytics-tutorials-tools-news" id="header-3">Big Data</a>
+                  </li>
+                  <li>
+                    <a href="/cloud-computing-tutorials-tools-news" id="header-4">Cloud</a>
+                  </li>
+                  <li>
+                    <a href="/database-sql-nosql-tutorials-tools-news" id="header-5">Database</a>
+                  </li>
+                  <li>
+                    <a href="/devops-tutorials-tools-news" id="header-6">DevOps</a>
+                  </li>
+                  <li>
+                    <a href="/enterprise-integration-training-tools-news" id="header-7">Integration</a>
+                  </li>
+                  <li>
+                    <a href="/iot-developer-tutorials-tools-news-reviews" id="header-8">IoT</a>
+                  </li>
+                  <li>
+                    <a href="/java-jdk-development-tutorials-tools-news" id="header-1">Java</a>
+                  </li>
+                  <li>
+                    <a href="/microservices-news-tutorials-tools" id="header-6001">Microservices</a>
+                  </li>
+                  <li>
+                    <a href="/open-source-news-tutorials-tools" id="header-7001">Open Source</a>
+                  </li>
+                  <li>
+                    <a href="/apm-tools-performance-monitoring-optimization" id="header-10">Performance</a>
+                  </li>
+                  <li>
+                    <a href="/application-web-network-security" id="header-2001">Security</a>
+                  </li>
+                  <li>
+                    <a href="/web-development-programming-tutorials-tools-news" id="header-11">Web Dev</a>
+                  </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script async src="https://dz2cdn2.dzone.com/themes/dz20/ftl/header/bundle.js"></script><link rel="stylesheet" media="all" href="https://dz2cdn2.dzone.com/themes/dz20/ftl/article/styles.css">
+
+
+
+
+<div id="ftl-article" >
+  <div class="container-fluid body">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="articles-wrap">
+              <div class="ad-container">
+                <div id="div-gpt-ad-1435246566686-0" class="ads-billboard-article" data-gpt-slot="top"></div>
+              </div>
+
+
+          <div class="article-stream widget-top-border">
+                <div class="content-right-images">
+                  <div id="div-gpt-ad-1435246566686-2" class="sidebar-ad" data-gpt-desktop="true" data-gpt-slot="sidebar1"></div>
+                </div>
+
+                <script type="application/ld+json">
+                  {
+                    "@context": "http://schema.org",
+                    "@type": "Article",
+                    "headline": "Microservice Testing: Coupling and Cohesion (All the Way Down)",
+                    "author": {
+                      "@type": "Person",
+                      "name": "Daniel Bryant"
+                    },
+                    "audience": "software developers",
+                    "keywords": "microservices,software architecture,software testing,coupling,cohesion",
+                    "timeRequired": "PT8M",
+                    "commentCount": 0,
+                    "wordCount": "1929",
+                    "accessMode": "textual, visual",
+                    "dateCreated": "2018-03-25T05:01:02Z",
+                    "datePublished": "2018-03-25T00:00:00Z",
+                    "dateModified": "2018-03-26T13:51:56Z",
+                    "articleSection": "microservices-news-tutorials-tools",
+                    "publisher": {
+                      "@type": "Organization",
+                      "name": "DZone",
+                      "url": "https://dzone.com",
+                      "logo": {
+                        "@type": "ImageObject",
+                        "url": "https://dzone.com/themes/dz20/images/dz_logo_2021_cropped.png"
+                      }
+                    },
+                    "articleBody": "The last couple of weeks have involved my training co-conspirator Andrew Morgan and I teaching several workshops on microservice testing, most notably at O'Reilly SACON NY and QCon London. This is always great fun - we enjoy sharing our knowledge, we typically learn a bunch, and we also get a glimpse into many of the attendees approaches to testing. The \"best practices\" in testing microservice projects is still very much an evolving space - my current go-to material includes Toby Clemson's excellent 2014 work, alongside Cindy Sridharan's more modern take on \" Testing Microservices, the sane way\", and my own attempts too - but I'm starting to see some current challenges and potential antipatterns emerge. This is generally a good thing, as the formation of antipatterns around the edges of the practice can sometimes indicate the overall maturation of an approach. Here are my (still crystallizing) high-level thoughts on the subject of testing microservice-based applications. tl;dr: Think about coupling and cohesion when designing microservices (yeah, yeah, I know, but I mean seriously think about this, and even do some upfront design!) Watch for various types of \"monolith\" creeping into the design and operation of the system - there is more than one monolith! Avoid over-reliance on \"monolithic\" end-to-end testing Use contracts- via IDLs like gRPC and Avro, or CDC tooling like Pact and Spring Cloud Contract - to define and test inter-service integrations Isolate intra-service tests with appropriate use of mocking, stubbing and virtualization/simulation Avoid platform/infra over-coupling when testing - if your infrastructure test setup looks too complicated for a local test, then it probably is Categorise and define the purpose of each test category - unit, integration, component, e2e etc - and ensure cohesion (and a single reason to change) within not only the groups, but also the implementation Architectural Coupling and Cohesion I'm sure you've heard it all before - maybe in college, maybe from a book, or perhaps at a local meetup - but everyone \"knows\" that in the general case you should strive to build systems that are loosely-coupled and highly-cohesive. I'm not going to talk too much about this, as other people like Martin Fowler, Robert Martin and Simon Brown (and many others) have been talking about this for years. However, a quick reminder of the core concepts won't hurt: Coupling: the degree to which components have knowledge of other components. Think well-defined interfaces, inversion of control etc Cohesion: the degree to which the elements within a component belong together. Think single responsibility principle and single reason to change I talked at O'Reilly SACON NY about how these properties play into every stage of the continuous delivery cycle: So, for the rest of this post I'm going to take as a given that we all agree these properties are beneficial for creating a good, evolutionary architecture for the software systems we build - after all, this ability to rapidly and safely evolve our applications was core to the acceptance of the microservice architectural style as the current \"best practice\" style of building many (but not all) modern software systems. Where I think it gets interesting is this \"turtles all the way down\" mindset of loose-coupling and high-cohesion can be applied to our goals, practices, and tooling - particular in regards to testing. Testing Coupling and Cohesion It's super-easy to create a distributed monolith when designing a system using the microservice pattern - I know, I've done it once - but it's also easy to allow the monolith to sneak in elsewhere. My friend Matthew Skelton has presented a series of excellent talks on the types of \"software monoliths\" that can creep into a project: Application monolith Joined at the DB Monolithic build (rebuild everything) Monolithic releases (coupled) Monolithic thinking (standardization) I'm going to \"stand on the shoulders of giants\" and suggest that a sixth type of monolith may be the \"testing monolith\" (which is somewhat similar to the monolithic build and release types Matthew defines). To be honest, it's not just Matthew's shoulders I'm standing on, as fellow Londoner and CD guru Steve Smith has already suggested that he believes \"End-to-end Testing [is] Considered Harmful\". In essence, what Steve suggests is that (monolithically) spinning everything up in order to verify the system has a bunch of issues, not least to say the \"decomposition fallacy\" and the \"cheap investment fallacy\". I believe that the challenges with testing microservice-based applications can be even more insidious than this though. Highly-Coupled Microservice Testing The ultimate goal of many (all?) microservice-based applications is the independent deployability of each service. When done correctly this enables increased pace of deployment, and correspondently an increase in speed of the evolution of the system. However, many of us have to start somewhere, and so we often begin with gated microservice deployment - designing and building our microservices in isolation (ideally with cross-functional teams) and verifying all of our services together in a staging environment before releasing to production. This isn't a particularly bad pattern, but it doesn't provide much in the way of the independent pace of evolution: Many teams successfully implement this pattern, and then try to move towards independent deployment. The only snag is that at least some of the services are dependent on one another - perhaps through an RPC API call or a message payload contract. If teams forget this then they often successfully verify everything locally during testing, but the services (and the application) can fall over in production. I joked about this (and the role I've played in relation to this as a \"microservices architect\") at SACON: In my (anecdotal) experience, developers and architects have limited experience in techniques that can promote the loose-coupling (and isolation) of tests across domain boundaries, and my hypothesis is that this is primarily because it wasn't much of an issue with a monolith - or if it was, it was relatively easy to catch and fix, as all of the domains were bundled into one artifact for test and deploy. The original \"legacy\" approaches to distributed computing, such as CORBA and classical SOA, got around this challenge by embracing Interface Definition Languages (IDLs) - somewhat ironically called \"OMG\" IDL - and web service contracts - WSDLs. On an unrelated topic, I'm somewhat of a history geek, and a well-accepted saying within this community is that \"history doesn't repeat, but it often rhymes\". So, it is with limited innovation on my part when I say that the existing solutions of IDLs and contracts are exactly the approaches I recommend when testing microservices. Using IDLs like gRPC for inter-service RPC and Avro for message payload definitions (perhaps for Kafka) help greatly for verification of interfaces across service boundaries. For more loosely-coupled approaches to communication, like HTTP and AMQP message payloads, I recommend testing technologies such as Consumer-Driven Contract tools Pact and Spring Cloud Contract: One final warning in this space is to be aware of coupling yourself to a testing framework or infrastructure configuration. Most of our job as software developers, testers and architects is about making tradeoffs, but often half of the battle is spotting that you are making a tradeoff in the first place - I have seen many engineers create (with best intentions) hideously complicated and highly-coupled bespoke testing frameworks. This starts from the language platform itself - in my JVM-biased world I have seen people seriously abuse the awesome Spring Boot application framework by layering on more and more bespoke framework elements and scaffolding in the name of easy testing - and extends into the infra/ops world - for example, requiring the local installation of Docker, Kubernetes, Ansible, Cassandra, MySQL, the Internet (you get the point) just to be able to initialize the tests. I have seen many engineers create (with best intentions) hideously complicated and highly-coupled bespoke testing frameworks. I'm slightly biased in this space (having previously worked as the CTO at SpectoLabs), but I often reach for service virtualization or API simulation tooling to minimize test coupling. Tools like Hoverfly, Mountebank or WireMock allow me to \"virtualize\" dependent services via running automated tests - perhaps driven by Serenity BDD or Gatling - against the real services (spun up in a production-like environment) and recording the responses. I can then replay these responses in a variety of test categories without needing to spin up the complete service and supporting infrastructure. Equally valid tooling in this space includes mocking and stubbing, but watch for the blurring or poor development of your mental model of the dependency being doubled - it's all too easy to encode your bias and misunderstanding into a test double, and this will come back to haunt when the system being tested hits the reality of a production environment. Low Cohesion Microservice Testing Cohesion is all about things belonging together, and with testing, this starts with the obvious - group unit tests together, group integration tests together etc. - but quickly extends to much more when you think about the \"single reason to change\" aspects. This may sound obvious, but if you are refactoring the internals of a single microservice, then this probably shouldn't impact the few end-to-end, happy path, business-facing tests that you and your team have created. If you are swapping out data stores within a service then the service's API contract tests probably shouldn't need to be changed. If you are changing scenario data for an integration test then you probably shouldn't need to ensure that the unit tests still work correctly. You get my drift, but I frequently bump into these challenges. This may sound obvious, but if you are refactoring the internals of a single microservice, then this probably shouldn't impact the few end-to-end, happy path, business-facing tests that you and your team have created. My current hypothesis in this space is that if engineers spent a little more time upfront in specifying clearly what needed to be tested, and what the goals of each testing category was, then we would be in better shape. Lisa Crispin and Janet Gregory have done excellent work in this space with their books, \"Agile Testing\" and \"More Agile Testing\". Too often, I believe we start with best intentions with testing microservices, but quickly migrate to the approach of \"all the tests test all the things\". This often manifests itself either as the \"ice cream cone\" testing antipattern, or the heavy top and bottom test \"pyramid\" where there are lots of unit tests and lots of end-to-end tests, but not much in the way of integration or component tests. We could get away with this in a monolith, but not so much with a supposedly loosely-coupled architecture that we espouse with microservices. The full slide deck on my recent SACON talk goes into these concepts in a bit more \"Continuous Delivery Patterns for Contemporary Architecture.\" Parting Thoughts I'll close this article by stating that these observations and thoughts are largely based on my own anecdotal experiences, but I am fortunate through my consulting, conference attending and teaching activities to see a wide(ish) cross-section of the industry. Just as the microservice architectural pattern is evolving, so too are the operational and testing patterns, and it's up to all of us to share our learnings and continually chip away at creating \"best practice\". Later in the year, I'm planning to write a series of posts on the challenges and good practices of microservice testing, but I had better finish my book first, \" Continuous Delivery in Java!\" I hope this article has been helpful, and I would love to know your experiences and challenges of testing microservices!",
+                    "mainEntityOfPage": {
+                      "@type": "WebPage",
+                      "@id": "https://dzone.com/articles/microservice-testing-coupling-and-cohesion-all-the"
+                    },
+                    "image": {
+                      "@type": "ImageObject",
+                      "url": "https://dzone.com//dz2cdn1.dzone.com/storage/article-thumb/8585840-thumb.jpg"
+                    }
+                  }
+                </script>
+
+                  <script type="application/ld+json">
+                    {
+                      "@context": "https://schema.org",
+                      "@type": "BreadcrumbList",
+                      "itemListElement": [{
+                        "@type": "ListItem",
+                        "position": 1,
+                        "name": "DZone",
+                        "item": "https://dzone.com"
+                      }, {
+                        "@type": "ListItem",
+                        "position": 2,
+                        "name": "Microservices Zone",
+                        "item": "https://dzone.com/microservices-news-tutorials-tools"
+                      }, {
+                        "@type": "ListItem",
+                        "position": 3,
+                        "name": "Microservice Testing: Coupling and Cohesion (All the Way Down)",
+                        "item": "https://dzone.com/articles/microservice-testing-coupling-and-cohesion-all-the"
+                      }]
+                    }
+                  </script>
+
+            <article>
+              <div class="content">
+                <div class="header">
+                  <div class="col-xs-12 breadcrumb-padding">
+                    <a href="/">DZone</a>
+                    >
+                      <a href="/microservices-news-tutorials-tools">Microservices Zone</a>
+                      >
+                      <a href="#">Microservice Testing: Coupling and Cohesion (All the Way Down)</a>
+                  </div>
+
+
+                  <div class="header-title">
+                    <div class="title">
+                      <h1 class="article-title">Microservice Testing: Coupling and Cohesion (All the Way Down)</h1>
+                    </div>
+
+                    <div class="subhead">
+                      <h3>This article will walk you through the important points of coupling and cohesion in microservices testing, from the architectural level down.</h3>
+                    </div>
+
+                    <div class="publish-meta">
+                        <div class="article-author-meta">
+                          <img src="https://dz2cdn2.dzone.com/thumbnail?fid=13360294&w=80" class="avatar" alt="Daniel Bryant user avatar" width="40">
+                          by
+
+                          <div class="author-info">
+                            <span class="author-name">
+                              <a href="/users/1161205/daniel-bryant-uk.html" rel="nofollow">Daniel Bryant</a>
+                            </span>
+                          </div>
+
+
+                            <div class="mvb-award">
+                              <i title="Most Valuable Blogger" class="icon-mvb-1"></i>
+                            </div>
+
+
+                          &middot;
+                        </div>
+                      <span class="author-date">
+                        Mar. 25, 18
+                      </span>
+                      &middot;
+                        <a href="/microservices-news-tutorials-tools" id="portal-name">
+                          <span class="portal-name">Microservices Zone</span>
+                        </a>
+                      &middot;
+                      <span>Opinion</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="author-n-useraction">
+                  <div class="like action">
+                    <div id="activity-like-icon" class="dz-like icon-thumbs-up">
+                      <span class="action-label">
+                        <span id="activity-like-text">Like</span>
+                      </span>
+                      <a href="#">
+                        <span id="activity-like-counter">(9)</span>
+                      </a>
+                    </div>
+                  </div>
+
+                  <div class="action">
+
+                    <button class="comment">
+                      <i class="icon-comment"></i>
+                      Comment
+                      <span id="activity-comment-counter" class="comment-count"></span>
+                    </button>
+                  </div>
+
+                  <div class="save action">
+                    <div id="activity-save-icon" class="save icon-star-empty">
+                      <span id="activity-save-text" class="action-label">Save</span>
+                    </div>
+                  </div>
+
+                  <div class="tweet action">
+                    <a id="tweet-link" href="" class="title" target="_blank">
+                      <span><i class="icon-twitter"></i></span>
+                      <span class="action-label">Tweet</span>
+                    </a>
+                  </div>
+
+                  <div class="pull-right">
+                    <div id="activity-view-container" class="article-views action">
+                      <i class="icon-eye"></i> 10.57K
+                      <span class="action-label">Views</span>
+                    </div>
+                  </div>
+                </div>
+
+                    <div class="signin-prompt">
+                      <p>Join the DZone community and get the full member experience.</p>
+                      <a id="article-signin-prompt" href="/static/registration.html">Join For Free</a>
+                    </div>
+                    <div class="arrow-down"></div>
+
+                  <div id="top-bumper-container"></div>
+
+                <div>
+                  <div class="content-html"><p pid="2">The last couple of weeks have involved my training co-conspirator <a href="https://twitter.com/mogronalol/" target="_blank">Andrew Morgan</a> and I teaching several workshops on microservice testing, most notably at <a href="https://conferences.oreilly.com/software-architecture/sa-ny/public/schedule/detail/64322" target="_blank">O'Reilly SACON NY</a> and <a href="https://qconlondon.com/london2018/workshop/testing-microservices-contracts-simulation-and-observability" target="_blank">QCon London</a>. This is always great fun - we enjoy sharing our knowledge, we typically learn a bunch, and we also get a glimpse into many of the attendees approaches to testing.</p>
+<p pid="3">The "best practices" in testing microservice projects is still very much an evolving space - my current go-to material includes <a href="https://martinfowler.com/articles/microservice-testing/" target="_blank">Toby Clemson's excellent 2014 work</a>, alongside <a href="https://twitter.com/copyconstruct" target="_blank">Cindy Sridharan's</a> more modern take on " <a href="https://medium.com/@copyconstruct/testing-microservices-the-sane-way-9bb31d158c16" target="_blank">Testing Microservices, the sane way</a>", and <a href="https://specto.io/blog/2016/8/16/recipe-for-designing-building-testing-microservices/" target="_blank">my own attempts</a> too - but I'm starting to see some current challenges and potential antipatterns emerge. This is generally a good thing, as the formation of <a href="https://skillsmatter.com/skillscasts/5722-the-seven-deadly-sins-of-microservices" target="_blank">antipatterns</a> around the edges of the practice can sometimes indicate the overall maturation of an approach. Here are my (still crystallizing) high-level thoughts on the subject of testing microservice-based applications.</p>
+<p pid="24"><strong>tl;dr:</strong></p>
+<ul>
+ <li>Think about coupling and cohesion when designing microservices (yeah, yeah, I know, but I mean seriously think about this, and even do some <a href="http://www.codingthearchitecture.com/2017/10/11/evolutionary_design_still_requires_up_front_thinking.html" target="_blank">upfront design</a>!)</li>
+ <li>Watch for various types of "monolith" creeping into the design and operation of the system - there is more than one monolith!</li>
+ <li>Avoid over-reliance on "monolithic" end-to-end testing</li>
+ <li>Use contracts- via IDLs like gRPC and Avro, or CDC tooling like Pact and Spring Cloud Contract - to define and test inter-service integrations</li>
+ <li>Isolate intra-service tests with appropriate use of mocking, stubbing and virtualization/simulation</li>
+ <li>Avoid platform/infra over-coupling when testing - if your infrastructure test setup looks too complicated for a local test, then it probably is</li>
+ <li>Categorise and define the purpose of each test category - unit, integration, component, e2e etc - and ensure cohesion (and a single reason to change) within not only the groups, but also the implementation</li>
+</ul>
+<h3>Architectural Coupling and Cohesion</h3>
+<p pid="4">I'm sure you've heard it all before - maybe in college, maybe from a book, or perhaps at a local meetup - but everyone "knows" that in the general case you should strive to build systems that are loosely-coupled and highly-cohesive. I'm not going to talk too much about this, as other people like <a href="https://martinfowler.com/bliki/" target="_blank">Martin Fowler</a>, <a href="https://blog.cleancoder.com/" target="_blank">Robert Martin</a> and <a href="http://www.codingthearchitecture.com/" target="_blank">Simon Brown</a> (and many others) have been talking about this for years. However, a quick reminder of the core concepts won't hurt:</p>
+<ul>
+ <li><a href="https://en.wikipedia.org/wiki/Coupling_%28computer_programming%29" target="_blank">Coupling</a>: the degree to which components have knowledge of other components. Think well-defined interfaces, inversion of control etc</li>
+ <li><a href="https://en.wikipedia.org/wiki/Cohesion_%28computer_science%29" target="_blank">Cohesion</a>: the degree to which the elements within a component belong together. Think single responsibility principle and single reason to change</li>
+</ul>
+<p pid="5">I talked at <a href="https://www.slideshare.net/dbryant_uk/oreilly-sacon-ny-2018-continuous-delivery-patterns-for-contemporary-architecture" target="_blank">O'Reilly SACON NY</a> about how these properties play into every stage of the continuous delivery cycle:</p>
+<p pid="26"><img class="fr-fin fr-dib" alt="Image title" src="https://dz2cdn1.dzone.com/storage/temp/8605885-screen-shot-2018-03-26-at-94811-am.png" width="678"></p>
+<p pid="6">So, for the rest of this post I'm going to take as a given that we all agree these properties are beneficial for creating a good, <a href="https://www.thoughtworks.com/books/building-evolutionary-architectures" target="_blank">evolutionary architecture</a> for the software systems we build - after all, this ability to rapidly and safely evolve our applications was core to the acceptance of the microservice architectural style as the current "best practice" style of building many (<a href="http://basho.com/posts/technical/microservices-please-dont/" target="_blank">but not all</a>) modern software systems.</p>
+<p pid="7">Where I think it gets interesting is this "turtles all the way down" mindset of loose-coupling and high-cohesion can be applied to our goals, practices, and tooling - particular in regards to testing.</p>
+<h3>Testing Coupling and Cohesion</h3>
+<p pid="8">It's super-easy to create a <a href="http://www.codingthearchitecture.com/2014/07/06/distributed_big_balls_of_mud.html" target="_blank">distributed monolith</a> when designing a system using the microservice pattern - I know, I've done it once - but it's also easy to allow the monolith to sneak in elsewhere. My friend <a href="https://twitter.com/matthewpskelton" target="_blank">Matthew Skelton</a> has presented a series of excellent talks on the types of "<a href="https://www.slideshare.net/SkeltonThatcher/teams-and-monoliths-matthew-skelton-london-devops-june-2017/34" target="_blank">software monoliths</a>" that can creep into a project:</p>
+<ul>
+ <li>Application monolith</li>
+ <li>Joined at the DB</li>
+ <li>Monolithic build (rebuild everything)</li>
+ <li>Monolithic releases (coupled)</li>
+ <li>Monolithic thinking (standardization)</li>
+</ul>
+<p pid="9">I'm going to "stand on the shoulders of giants" and suggest that a sixth type of monolith may be the "testing monolith" (which is somewhat similar to the monolithic build and release types Matthew defines). To be honest, it's not just Matthew's shoulders I'm standing on, as fellow Londoner and CD guru <a href="https://twitter.com/SteveSmithCD" target="_blank">Steve Smith</a> has already suggested that he believes "<a href="https://www.continuousdeliveryconsulting.com/blog/end-to-end-testing-considered-harmful/" target="_blank">End-to-end Testing [is] Considered Harmful</a>". In essence, what Steve suggests is that (monolithically) spinning everything up in order to verify the system has a bunch of issues, not least to say the "decomposition fallacy" and the "cheap investment fallacy". I believe that the challenges with testing microservice-based applications can be even more insidious than this though.</p>
+<h4>Highly-Coupled Microservice Testing</h4>
+<p pid="10">The ultimate goal of many (all?) microservice-based applications is the independent deployability of each service. When done correctly this enables increased pace of deployment, and correspondently an increase in speed of the evolution of the system. However, many of us have to start somewhere, and so we often begin with gated microservice deployment - designing and building our microservices in isolation (ideally with cross-functional teams) and verifying all of our services together in a staging environment before releasing to production. This isn't a particularly bad pattern, but it doesn't provide much in the way of the independent pace of evolution:</p>
+<p pid="28"><img class="fr-fin fr-dib" alt="Image title" src="https://dz2cdn1.dzone.com/storage/temp/8605891-screen-shot-2018-03-26-at-94828-am.png" width="749"></p>
+<p pid="11">Many teams successfully implement this pattern, and then try to move towards independent deployment. The only snag is that at least some of the services are dependent on one another - perhaps through an RPC API call or a message payload contract. If teams forget this then they often successfully verify everything locally during testing, but the services (and the application) can fall over in production. I joked about this (and the role I've played in relation to this as a "microservices architect") at SACON:</p>
+<p pid="30"><img class="fr-fin fr-dib" alt="Image title" src="https://dz2cdn1.dzone.com/storage/temp/8605896-screen-shot-2018-03-26-at-94834-am.png" width="774"></p>
+<p pid="12">In my (anecdotal) experience, developers and architects have limited experience in techniques that can promote the loose-coupling (and isolation) of tests across domain boundaries, and my hypothesis is that this is primarily because it wasn't much of an issue with a monolith - or if it was, it was relatively easy to catch and fix, as all of the domains were bundled into one artifact for test and deploy. The original "legacy" approaches to distributed computing, such as CORBA and classical SOA, got around this challenge by embracing Interface Definition Languages (IDLs) - somewhat ironically called <a href="http://www.omg.org/corba/omg_idl.htm" target="_blank">"OMG" IDL</a> - and web service contracts - <a href="https://www.w3.org/TR/2007/REC-wsdl20-20070626/" target="_blank">WSDLs</a>.</p>
+<p pid="13">On an unrelated topic, I'm somewhat of a history geek, and a well-accepted saying within this community is that "history doesn't repeat, but it often rhymes". So, it is with limited innovation on my part when I say that the existing solutions of IDLs and contracts are exactly the approaches I recommend when testing microservices. Using IDLs like <a href="https://grpc.io/docs/guides/concepts.html" target="_blank">gRPC</a> for inter-service RPC and <a href="https://avro.apache.org/docs/1.8.2/idl.html" target="_blank">Avro</a> for message payload definitions (perhaps for <a href="https://github.com/gwenshap/kafka-examples/tree/master/AvroProducerExample" target="_blank">Kafka</a>) help greatly for verification of interfaces across service boundaries.</p>
+<p pid="32"><img class="fr-fin fr-dib" alt="Image title" src="https://dz2cdn1.dzone.com/storage/temp/8605898-screen-shot-2018-03-26-at-94841-am.png" width="772"></p>
+<p pid="14">For more loosely-coupled approaches to communication, like <a href="https://github.com/spring-cloud-samples/spring-cloud-contract-samples" target="_blank">HTTP</a> and <a href="https://dius.com.au/2017/09/22/contract-testing-serverless-and-asynchronous-applications/" target="_blank">AMQP</a> message payloads, I recommend testing technologies such as <a href="https://martinfowler.com/articles/consumerDrivenContracts.html" target="_blank">Consumer-Driven Contract</a> tools <a href="https://docs.pact.io/" target="_blank">Pact</a> and <a href="https://cloud.spring.io/spring-cloud-contract/" target="_blank">Spring Cloud Contract</a>:</p>
+<p pid="34"><img class="fr-fin fr-dib" alt="Image title" src="https://dz2cdn1.dzone.com/storage/temp/8605902-screen-shot-2018-03-26-at-95014-am.png" width="754"></p>
+<p pid="15">One final warning in this space is to be aware of coupling yourself to a testing framework or infrastructure configuration. Most of our job as software developers, testers and architects is about making tradeoffs, but often half of the battle is <strong>spotting that you are making a tradeoff in the first place</strong> - I have seen many engineers create (with best intentions) hideously complicated and highly-coupled bespoke testing frameworks. This starts from the language platform itself - in my JVM-biased world I have seen people seriously abuse the awesome Spring Boot application framework by layering on more and more bespoke framework elements and scaffolding in the name of easy testing - and extends into the infra/ops world - for example, requiring the local installation of Docker, Kubernetes, Ansible, Cassandra, MySQL, the Internet (you get the point) just to be able to initialize the tests.</p>
+<p pid="15">I have seen many engineers create (with best intentions) hideously complicated and highly-coupled bespoke testing frameworks. I'm slightly biased in this space (having previously worked as the CTO at <a href="https://specto.io/" style="background-color: rgb(255, 255, 255);">SpectoLabs</a>), but I often reach for service virtualization or API simulation tooling to minimize test coupling. Tools like <a href="https://hoverfly.io/" style="background-color: rgb(255, 255, 255);">Hoverfly</a>, <a href="http://www.mbtest.org/" style="background-color: rgb(255, 255, 255);">Mountebank</a> or <a href="http://wiremock.org/" style="background-color: rgb(255, 255, 255);">WireMock</a> allow me to "virtualize" dependent services via running automated tests - perhaps driven by <a href="http://www.thucydides.info/" style="background-color: rgb(255, 255, 255);">Serenity BDD</a> or <a href="https://gatling.io/" style="background-color: rgb(255, 255, 255);">Gatling</a> - against the real services (spun up in a production-like environment) and recording the responses. I can then replay these responses in a variety of test categories without needing to spin up the complete service and supporting infrastructure.</p>
+<p pid="36"><img class="fr-fin fr-dib" alt="Image title" src="https://dz2cdn1.dzone.com/storage/temp/8605905-screen-shot-2018-03-26-at-95108-am.png" width="628"></p>
+<p pid="17">Equally valid tooling in this space includes <a href="https://martinfowler.com/articles/mocksArentStubs.html" target="_blank">mocking and stubbing</a>, but watch for the blurring or poor development of your mental model of the dependency being doubled - it's all too easy to encode your bias and misunderstanding into a test double, and this will come back to haunt when the system being tested hits the reality of a production environment.</p>
+<h4>Low Cohesion Microservice Testing</h4>
+<p pid="18">Cohesion is all about things belonging together, and with testing, this starts with the obvious - group unit tests together, group integration tests together etc. - but quickly extends to much more when you think about the "single reason to change" aspects. This may sound obvious, but if you are refactoring the internals of a single microservice, then this probably shouldn't impact the few end-to-end, happy path, business-facing tests that you and your team have created. If you are swapping out data stores within a service then the service's API contract tests probably shouldn't need to be changed. If you are changing scenario data for an integration test then you probably shouldn't need to ensure that the unit tests still work correctly. You get my drift, but I frequently bump into these challenges.</p>
+<p pid="18">This may sound obvious, but if you are refactoring the internals of a single microservice, then this probably shouldn't impact the few end-to-end, happy path, business-facing tests that you and your team have created.</p>
+<p pid="19">My current hypothesis in this space is that if engineers spent a little more time upfront in specifying clearly what needed to be tested, and what the goals of each testing category was, then we would be in better shape. Lisa Crispin and Janet Gregory have done excellent work in this space with their books, "<a href="http://amzn.to/2tHAkk2" target="_blank">Agile Testing</a>" and "<a href="http://amzn.to/2p9A7Aj" target="_blank">More Agile Testing</a>". Too often, I believe we start with best intentions with testing microservices, but quickly migrate to the approach of "all the tests test all the things". This often manifests itself either as the "<a href="https://medium.com/@fistsOfReason/testing-is-good-pyramids-are-bad-ice-cream-cones-are-the-worst-ad94b9b2f05f" target="_blank">ice cream cone</a>" testing antipattern, or the heavy top and bottom test "pyramid" where there are lots of unit tests and lots of end-to-end tests, but not much in the way of integration or component tests. We could get away with this in a monolith, but not so much with a supposedly loosely-coupled architecture that we espouse with microservices.</p>
+<p pid="38"><img class="fr-fin fr-dib" alt="Image title" src="https://dz2cdn1.dzone.com/storage/temp/8605906-screen-shot-2018-03-26-at-95130-am.png" width="780"></p>
+<p pid="20">The full slide deck on my recent SACON talk goes into these concepts in a bit more "<a href="https://www.slideshare.net/dbryant_uk/oreilly-sacon-ny-2018-continuous-delivery-patterns-for-contemporary-architecture" target="_blank">Continuous Delivery Patterns for Contemporary Architecture</a>."</p>
+<h3>Parting Thoughts</h3>
+<p pid="21">I'll close this article by stating that these observations and thoughts are largely based on my own anecdotal experiences, but I am fortunate through my consulting, conference attending and teaching activities to see a wide(ish) cross-section of the industry. Just as the microservice architectural pattern is evolving, so too are the operational and testing patterns, and it's up to all of us to share our learnings and continually chip away at creating "best practice".</p>
+<p pid="22">Later in the year, I'm planning to write a series of posts on the challenges and good practices of microservice testing, but I had better finish my book first, " <a href="https://www.safaribooksonline.com/library/view/continuous-delivery-in/9781491986011/" target="_blank">Continuous Delivery in Java</a>!"</p>
+<p pid="23">I hope this article has been helpful, and I would love to know your experiences and challenges of testing microservices!</p></div>
+                </div>
+
+                  <div id="bottom-bumper-container"></div>
+                  <div class="article-tag-pill-container">
+                      <span class="article-tag-pill">microservice</span>
+                      <span class="article-tag-pill">unit test</span>
+                      <span class="article-tag-pill">Cohesion (computer science)</span>
+                      <span class="article-tag-pill">CI/CD</span>
+                      <span class="article-tag-pill">Application framework</span>
+                      <span class="article-tag-pill">Web Service</span>
+                      <span class="article-tag-pill">Spring Framework</span>
+                      <span class="article-tag-pill">Spring Cloud</span>
+                      <span class="article-tag-pill">agile</span>
+                  </div>
+
+                  <div class="attribution">
+                      <p>Published at DZone with permission of <span>Daniel Bryant<span>, DZone MVB</span></span>.
+                        <span>
+                          <a href="https://medium.com/@danielbryantuk/microservice-testing-coupling-and-cohesion-all-the-way-down-b84dacf8cff0" target="_blank">See the original article here.
+                            <i class="icon-link-ext-alt"></i>
+                          </a>
+                        </span>
+                      </p>
+                    <p>Opinions expressed by DZone contributors are their own.</p>
+                  </div>
+
+                    <div class="related">
+                      <h3>Popular on DZone</h3>
+                        <ul>
+                            <li class="relateddiv">
+                              <a href="/articles/how-to-test-javascript-code-in-a-browser?fromrel=true">How to Test JavaScript Code in a Browser</a>
+                            </li>
+                            <li class="relateddiv">
+                              <a href="/articles/traits-of-an-effective-software-asset-manager?fromrel=true">7 Traits of an Effective Software Asset Manager</a>
+                            </li>
+                            <li class="relateddiv">
+                              <a href="/articles/choosing-between-graphql-vs-rest?fromrel=true">Choosing Between GraphQL Vs REST</a>
+                            </li>
+                            <li class="relateddiv">
+                              <a href="/articles/create-a-self-service-customer-support-chatbot-wit?fromrel=true">Create a Self-Service Customer Support Chatbot Without Code</a>
+                            </li>
+                        </ul>
+                      </div>
+<div class="comments-overlay"></div>
+<div id="comment-box">
+  <div class="comment-box-wrapper">
+    <div id="comment-input-editor"></div>
+  </div>
+  <div class="info hidden"></div>
+  <div class="comments-content">
+    <div class="comment-header">
+      <hr />
+      <span class="icon-comment">
+        <span class="numOfComments"></span> Comments
+      </span>
+    </div>
+    <div class="comments"></div>
+  </div>
+</div>
+            </article>
+          </div>
+
+            <div id="above-pr-ad" class="bottom-ad-container">
+              <div id="div-gpt-ad-1435246566686-11" data-gpt-slot="bottom"></div>
+            </div>
+            <div class="layout-card widget-top-border partner-resources-block" style="width:100%; margin-bottom: 1em;">
+              <div class="main-container">
+                <div class="featured-header">
+                  <h2>
+                      Microservices<span> Partner Resources</span>
+                  </h2>
+                </div>
+                <div class="partner-resources-container">
+                  <div id="div-gpt-ad-1435246566686-5" class="resource-block" data-gpt-slot="partner" data-gpt-position="pr1"></div>
+                  <div id="div-gpt-ad-1435246566686-6" class="resource-block" data-gpt-slot="partner" data-gpt-position="pr2"></div>
+                  <div id="div-gpt-ad-1435246566686-7" class="resource-block" data-gpt-slot="partner" data-gpt-position="pr3"></div>
+                </div>
+              </div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <div id="bsa-parent" class="bottom-sticky-ad-container hide">
+      <div class="container">
+        <div class="col-md-9">
+          <div class="fixed-bottom-div">
+            <div class="inline-block">
+              <div id="div-gpt-ad-1635294790718-12" data-gpt-desktop="true" class="bottom-sticky-ad"></div>
+            </div>
+            <div class="inline-block">
+              <span id="close" class="bottom-sticky-ad-close-button" onclick="removeBottomStickyAd()">
+                X
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  <div class="modal fade bd-example-modal-lg" id="modal-message" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header"></div>
+        <div class="modal-body"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script async>const articleTitle = 'Microservice Testing: Coupling and Cohesion (All the Way Down)'
+const articleUrl = 'https://dzone.com/articles/microservice-testing-coupling-and-cohesion-all-the'
+
+const retweetLink = document.querySelector('#tweet-link')
+
+function retweet(event) {
+    event.preventDefault()
+    event.stopPropagation()
+
+    const twitter = 'https://twitter.com/intent/tweet'
+    const params = '?text=' + encodeURIComponent(articleTitle) + '&url=' + articleUrl + '&ref=dzone.com&via=DZoneInc'
+    const win = window.open(twitter + params, '_blank')
+    win.focus()
+}
+
+retweetLink.addEventListener('click', retweet);
+
+function showStatusMessage(options) {
+  var modal = document.getElementById("modal-message");
+
+  if(modal) {
+    modal.classList.add(options.type);
+    var modalBody = modal.querySelector(".modal-content .modal-body");
+    var modalHeader = modal.querySelector(".modal-content .modal-header");
+
+    modalHeader.innerText = options.header ? options.header : "";
+    modalBody.innerText = options.body ? options.body : "" ;
+
+    $(modal).modal("show");
+
+    $(modal).on('hidden.bs.modal', function () {
+      modal.classList.remove(options.type);
+    });
+  }
+}
+
+function showConfirmMessage(options) {
+  var modal = document.getElementById("modal-message");
+
+  if(modal) {
+    modal.classList.add(options.type);
+    var modalBody = modal.querySelector(".modal-content .modal-body");
+    var modalHeader = modal.querySelector(".modal-content .modal-header");
+
+    modalHeader.innerText = options.header ? options.header : "";
+    modalBody.innerText = options.body ? options.body : "" ;
+
+    if (options.textarea) {
+      const textareaDiv = document.createElement('div')
+      const textareaLabel = document.createElement('label')
+      textareaLabel.setAttribute('for', 'modal-textarea')
+      textareaLabel.innerText = options.textarea.label
+
+      const textarea = document.createElement('textarea')
+      textarea.id = 'modal-textarea'
+      textarea.placeholder = (options.textarea.placeholder || '')
+      textarea.setAttribute('rows', (options.textarea.rows || 3))
+      textarea.classList.add('form-control', 'not-resizable')
+
+      if (options.textarea.maxlength) {
+        textarea.maxLength = options.textarea.maxlength
+      }
+
+      textareaDiv.appendChild(textareaLabel)
+      textareaDiv.appendChild(textarea)
+      modalBody.appendChild(textareaDiv)
+    }
+
+    var btnContainer = document.createElement("div");
+    btnContainer.classList.add("btn-container");
+
+    var noBtn = document.createElement("button");
+    noBtn.innerText = options.noBtnText ? options.noBtnText : "No";
+    noBtn.classList.add("no-btn");
+
+    var yesBtn = document.createElement("button");
+    yesBtn.innerText = options.yesBtnText ? options.yesBtnText : "Yes";
+    yesBtn.classList.add("yes-btn");
+
+    btnContainer.appendChild(noBtn);
+    btnContainer.appendChild(yesBtn);
+
+    modalBody.appendChild(btnContainer);
+
+    $(modal).modal("show");
+
+    $(noBtn).one("click", function() {
+      $(modal).modal("hide");
+
+      if(options.noCallback) {
+        $(modal).one('hidden.bs.modal', function () {
+          options.noCallback();
+        });
+      }
+    });
+
+    $(yesBtn).one("click", function() {
+      $(modal).modal("hide");
+
+      if(options.yesCallback) {
+        $(modal).one('hidden.bs.modal', function () {
+          options.yesCallback();
+        });
+      }
+    });
+
+    $(modal).on('hidden.bs.modal', function () {
+      modal.classList.remove(options.type);
+    });
+  }
+}
+</script><link rel="stylesheet" media="all" href="https://dz2cdn2.dzone.com/themes/dz20/ftl/footer/styles.css">
+
+<div id="ftl-footer">
+  <div class="container-fluid footerOuter">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="container">
+          <div class="row footer">
+            <div class="col-md-12 footerWidget">
+              <div class="row footerContainer footer">
+                <div class="left col-xs-12 col-sm-7">
+                  <div class="col-xs-12 social-media-icons footer-mobile">
+                    <ul class="icons-only">
+                      <li class="rss-icon" id="rss-footer-1">
+                        <a href="/pages/feeds" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-rss-1"></i>
+                        </a>
+                      </li>
+                      <li class="twitter-icon">
+                        <a href="https://twitter.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-twitter"></i>
+                        </a>
+                      </li>
+                      <li class="facebook-icon">
+                        <a href="https://www.facebook.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-facebook-1"></i>
+                        </a>
+                      </li>
+                      <li class="linkedin-icon">
+                        <a href="https://www.linkedin.com/company/dzone/" target="_blank"
+                           rel="noreferrer noopener">
+                          <i class="icon-linkedin-1"></i>
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div class="top-section col-xs-12">
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">ABOUT US</p>
+                      <ul class="link-group">
+                        <li><a href="/pages/about" rel="noreferrer noopener">About DZone</a></li>
+                        <li><a href="mailto:support@dzone.com" rel="noreferrer noopener">Send feedback</a></li>
+                        <li><a href="https://careers.dzone.com/" target="_blank" rel="noreferrer noopener">Careers</a></li>
+                          <li><a href="/sitemap" rel="noreferrer noopener">Sitemap</a></li>
+                      </ul>
+                    </div>
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">ADVERTISE</p>
+                      <ul class="link-group">
+                        <li><a href="https://advertise.dzone.com" target="_blank" rel="noreferrer noopener">Advertise with DZone</a></li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div class="bottom-section col-xs-12">
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">CONTRIBUTE ON DZONE</p>
+                      <ul class="bottom-top-list link-group">
+                        <li><a href="/articles/dzones-article-submission-guidelines">Article Submission Guidelines</a></li>
+                        <li><a href="/pages/mvb" rel="noreferrer noopener">MVB Program</a></li>
+                        <li><a href="/pages/contribute" rel="noreferrer noopener">Become a Contributor</a></li>
+                        <li><a href="/writers-zone" rel="noreferrer noopener">Visit the Writers' Zone</a></li>
+                      </ul>
+
+                      <p class="section-header">LEGAL</p>
+                      <ul class="link-group">
+                        <li><a href="/pages/tos" rel="noreferrer noopener">Terms of Service</a></li>
+                        <li><a href="/pages/privacy" rel="noreferrer noopener">Privacy Policy</a></li>
+                      </ul>
+                    </div>
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">CONTACT US</p>
+                      <ul class="link-group">
+                        <li>600 Park Offices Drive</li>
+                        <li>Suite 300</li>
+                        <li>Durham, NC 27709</li>
+                        <li><a href="mailto:support@dzone.com" rel="noreferrer noopener">support@dzone.com</a></li>
+                        <li><a href="tel:+19196780300" rel="noreferrer noopener">+1 (919) 678-0300</a></li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="right col-xs-12 col-sm-5">
+
+                  <p class="connect-text">Let's be friends:</p>
+                  <div class="col-xs-12 social-media-icons footer-wide">
+                    <ul class="icons-only">
+                      <li class="rss-icon" id="rss-footer-1">
+                        <a href="/pages/feeds" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-rss-1"></i>
+                        </a>
+                      </li>
+                      <li class="twitter-icon">
+                        <a href="https://twitter.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-twitter"></i>
+                        </a>
+                      </li>
+                      <li class="facebook-icon">
+                        <a href="https://www.facebook.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-facebook-1"></i>
+                        </a>
+                      </li>
+                      <li class="linkedin-icon">
+                        <a href="https://www.linkedin.com/company/dzone/" target="_blank"
+                           rel="noreferrer noopener">
+                          <i class="icon-linkedin-1"></i>
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div class="col-xs-12 powered-by">
+                    <p>DZone.com is powered by&nbsp;</p>
+                    <a href="https://devada.com/answerhub/" rel="noreferrer noopener">
+                      <img src=""
+                           data-src="https://dz2cdn2.dzone.com/themes/dz20/images/answerhub_logo_white_footer.png"
+                           width="150"
+                           height="56"
+                           class="lazyload"
+                           alt="AnswerHub logo">
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  <script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"></script>
+
+  <script async>
+      (function(w, d, s, l, i) {
+          w[l] = w[l] || [];
+          w[l].push({'gtm.start': new Date().getTime(), event: 'gtm.js'});
+          var f = d.getElementsByTagName(s)[0], j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : '';
+          j.async = true;
+          j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+          f.parentNode.insertBefore(j,f);
+      })(window, document, 'script', 'dataLayer', 'GTM-K25QL22');
+  </script>
+
+  <script>
+      window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+      ga('create', 'UA-410289-1', 'auto');
+      ga('require', 'linkid', 'linkid.js');
+      ga('require', 'GTM-TSD9TZP');
+      ga('set', 'siteSpeedSampleRate', 25);
+  </script>
+  <script async src="https://www.google-analytics.com/analytics.js"></script>
+  <script async>const analytics = {
+    'dimension1': 'microservices',
+    'dimension2': 'article/opinion',
+    'dimension3': '2018-03-25',
+    'dimension4': '0',
+    'dimension5': '',
+    'dimension7': 'microservice, unit test, cohesion, CI/CD, Application framework, web service, Spring Framework, Spring Cloud, agile',
+    'dimension8': 'daniel-bryant-uk',
+    'dimension9': 'undefined',
+    'dimension10': 'Datawire'
+}
+
+if (window.ga) {
+    Object.keys(analytics).forEach(function(key) {
+        window.ga('set', key, analytics[key])
+    })
+
+    window.ga('send', 'pageview')
+}</script>
+
+  <script>
+      !function (e, o, n, i) {
+          if (!e) {
+              e = e || {}, window.permutive = e, e.q = [];
+              var t = function () {
+                  return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, function (e) {
+                      return (e ^ (window.crypto || window.msCrypto).getRandomValues(new Uint8Array(1))[0] & 15 >> e / 4).toString(16)
+                  })
+              };
+              e.config = i || {}, e.config.apiKey = o, e.config.workspaceId = n, e.config.environment = e.config.environment || "production", (window.crypto || window.msCrypto) && (e.config.viewId = t());
+              for (var g = ["addon", "identify", "track", "trigger", "query", "segment", "segments", "ready", "on", "once", "user", "consent"], r = 0; r < g.length; r++) {
+                  var w = g[r];
+                  e[w] = function (o) {
+                      return function () {
+                          var n = Array.prototype.slice.call(arguments, 0);
+                          e.q.push({
+                              functionName: o,
+                              arguments: n
+                          })
+                      }
+                  }(w)
+              }
+          }
+      }(window.permutive, "bca90777-e088-4f2a-96c2-13ad18deeccc", "18ad0c5b-460c-4d19-a729-dc537805538f", {});
+      window.googletag = window.googletag || {}, window.googletag.cmd = window.googletag.cmd || [], window.googletag.cmd.push(function () {
+          if (0 === window.googletag.pubads().getTargeting("permutive").length) {
+              var e = window.localStorage.getItem("_pdfps");
+              window.googletag.pubads().setTargeting("permutive", e ? JSON.parse(e) : []);
+              var o = window.localStorage.getItem("permutive-id");
+              o && (window.googletag.pubads().setTargeting("puid", o), window.googletag.pubads().setTargeting("ptime", Date.now().toString())), window.permutive.config.viewId && window.googletag.pubads().setTargeting("prmtvvid", window.permutive.config.viewId), window.permutive.config.workspaceId && window.googletag.pubads().setTargeting("prmtvwid", window.permutive.config.workspaceId)
+          }
+      });
+
+
+      permutive.addon('web', {
+          'page': {
+              'category': 'Microservices',
+              'node': {
+                  'authorCompany': 'Datawire',
+                  'authors': [1161205, ],
+                  'publishDate': new Date(1521936000000),
+                  'sponsorAuthor': false,
+                  'tags': ['microservice', 'unit test', 'cohesion', 'CI/CD', 'Application framework', 'web service', 'Spring Framework', 'Spring Cloud', 'agile', ],
+                  'title': 'Microservice Testing: Coupling and Cohesion (All the Way Down)',
+                  'type': 'article',
+              },
+              'section': 'article',
+          }
+      });
+  </script>
+  <script async src="https://18ad0c5b-460c-4d19-a729-dc537805538f.edge.permutive.app/18ad0c5b-460c-4d19-a729-dc537805538f-web.js"></script>
+
+  <script>
+      const csrf = '-6292765488349620610'
+      const articleId = 2132893
+      const likes = 9
+      const assetDomain = 'https://dz2cdn2.dzone.com'
+      const codemirrorVars = {
+          modeURI: 'https://dz2cdn2.dzone.com/themes/dz20/lib/codemirror/mode/',
+          requiredScripts: [
+              'https://dz2cdn2.dzone.com/themes/dz20/lib/codemirror/lib/codemirror.js',
+              'https://dz2cdn2.dzone.com/themes/dz20/lib/codemirror/mode/meta.js'
+          ]
+      }
+
+      const gptTags = {
+          'zone': 'microservices',
+          'topicTag': 'microservice,unit test,cohesion,CI/CD,Application framework,web service,Spring Framework,Spring Cloud,agile',
+          'company': '',
+          'siteSection': 'Zones',
+          'articleCategory': 'opinion',
+          'nodeID': '2132893',
+          'authorID': '1161205',
+          'publishYear': '2018',
+          'publishMonth': '03',
+          'jobRole': '',
+          'companySize': ''
+      }
+
+      const minCommentChar = 10;
+      const peer39Enabled = true;
+  </script>
+
+  <script src="https://dz2cdn2.dzone.com/themes/dz20/lib/static/jquery/jquery.min.js"></script>
+  <script async src="https://dz2cdn2.dzone.com/themes/dz20/lib/static/bootstrap/bootstrap.min.js"></script>
+  <script async src="https://dz2cdn2.dzone.com/themes/dz20/ftl/article/ads.js"></script>
+
+
+
+  <script>
+      function loadScript(src) {
+          return new Promise(function (resolve, reject) {
+              const s = document.createElement('script')
+              s.src = src
+              s.onload = resolve
+              s.onerror = reject
+              document.head.appendChild(s)
+          })
+      }
+
+      function loadStyle(href) {
+          const link = document.createElement('link')
+          link.rel = 'stylesheet'
+          link.href = href
+          document.head.appendChild(link)
+      }
+
+      function loadScriptsSync(deferred) {
+          var p = Promise.resolve()
+          for (var i = 0; i < deferred.length; i++) {
+              let script = deferred[i]
+              p = p.then(function() {
+                  return loadScript(script)
+              })
+          }
+          return p
+      }
+
+      function loadStyles() {
+          const deferred = [
+              'https://dz2cdn2.dzone.com/themes/dz20/lib/codemirror/lib/codemirror.css',
+              'https://dz2cdn2.dzone.com/themes/dz20/ftl/comments/styles.css',
+              'https://dz2cdn2.dzone.com/themes/dz20/lib/froala3/css/froala_editor.pkgd.min.css',
+              'https://dz2cdn2.dzone.com/themes/dz20/lib/froala3/css/themes/gray.min.css',
+              'https://dz2cdn2.dzone.com/themes/dz20/ftl/article/mini-profile.css'
+          ]
+
+          for (var i = 0; i < deferred.length; i++) {
+              loadStyle(deferred[i])
+          }
+      }
+
+      window.addEventListener('load', function(event) {
+          loadStyles()
+          loadScriptsSync([
+              'https://dz2cdn2.dzone.com/themes/dz20/ftl/header/auth-status.js',
+              'https://dz2cdn2.dzone.com/themes/dz20/lib/lazysizes.min.js',
+              'https://dz2cdn2.dzone.com/themes/dz20/ftl/article/codeblocks.js',
+              'https://dz2cdn2.dzone.com/themes/dz20/ftl/article/activity-bar.js',
+              'https://dz2cdn2.dzone.com/themes/dz20/lib/froala3/js/froala_editor.pkgd.min.js',
+              'https://dz2cdn2.dzone.com/themes/dz20/ftl/froala/content.js',
+              'https://dz2cdn2.dzone.com/themes/dz20/ftl/comments/content.js',
+              'https://dz2cdn2.dzone.com/themes/dz20/ftl/article/content.js'
+          ])
+      })
+  </script>
+</body>
+</html>

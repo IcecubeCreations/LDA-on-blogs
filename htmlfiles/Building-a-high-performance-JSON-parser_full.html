@@ -1,0 +1,2474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 2.0.10">
+<meta name="author" content="Dave Cheney">
+<title>Building a high performance JSON parser</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
+<style>
+/* Asciidoctor default stylesheet | MIT License | https://asciidoctor.org */
+/* Uncomment @import statement to use as custom stylesheet */
+/*@import "https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700";*/
+article,aside,details,figcaption,figure,footer,header,hgroup,main,nav,section{display:block}
+audio,video{display:inline-block}
+audio:not([controls]){display:none;height:0}
+html{font-family:sans-serif;-ms-text-size-adjust:100%;-webkit-text-size-adjust:100%}
+a{background:none}
+a:focus{outline:thin dotted}
+a:active,a:hover{outline:0}
+h1{font-size:2em;margin:.67em 0}
+abbr[title]{border-bottom:1px dotted}
+b,strong{font-weight:bold}
+dfn{font-style:italic}
+hr{-moz-box-sizing:content-box;box-sizing:content-box;height:0}
+mark{background:#ff0;color:#000}
+code,kbd,pre,samp{font-family:monospace;font-size:1em}
+pre{white-space:pre-wrap}
+q{quotes:"\201C" "\201D" "\2018" "\2019"}
+small{font-size:80%}
+sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}
+sup{top:-.5em}
+sub{bottom:-.25em}
+img{border:0}
+svg:not(:root){overflow:hidden}
+figure{margin:0}
+fieldset{border:1px solid silver;margin:0 2px;padding:.35em .625em .75em}
+legend{border:0;padding:0}
+button,input,select,textarea{font-family:inherit;font-size:100%;margin:0}
+button,input{line-height:normal}
+button,select{text-transform:none}
+button,html input[type="button"],input[type="reset"],input[type="submit"]{-webkit-appearance:button;cursor:pointer}
+button[disabled],html input[disabled]{cursor:default}
+input[type="checkbox"],input[type="radio"]{box-sizing:border-box;padding:0}
+button::-moz-focus-inner,input::-moz-focus-inner{border:0;padding:0}
+textarea{overflow:auto;vertical-align:top}
+table{border-collapse:collapse;border-spacing:0}
+*,*::before,*::after{-moz-box-sizing:border-box;-webkit-box-sizing:border-box;box-sizing:border-box}
+html,body{font-size:100%}
+body{background:#fff;color:rgba(0,0,0,.8);padding:0;margin:0;font-family:"Noto Serif","DejaVu Serif",serif;font-weight:400;font-style:normal;line-height:1;position:relative;cursor:auto;tab-size:4;-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased}
+a:hover{cursor:pointer}
+img,object,embed{max-width:100%;height:auto}
+object,embed{height:100%}
+img{-ms-interpolation-mode:bicubic}
+.left{float:left!important}
+.right{float:right!important}
+.text-left{text-align:left!important}
+.text-right{text-align:right!important}
+.text-center{text-align:center!important}
+.text-justify{text-align:justify!important}
+.hide{display:none}
+img,object,svg{display:inline-block;vertical-align:middle}
+textarea{height:auto;min-height:50px}
+select{width:100%}
+.center{margin-left:auto;margin-right:auto}
+.stretch{width:100%}
+.subheader,.admonitionblock td.content>.title,.audioblock>.title,.exampleblock>.title,.imageblock>.title,.listingblock>.title,.literalblock>.title,.stemblock>.title,.openblock>.title,.paragraph>.title,.quoteblock>.title,table.tableblock>.title,.verseblock>.title,.videoblock>.title,.dlist>.title,.olist>.title,.ulist>.title,.qlist>.title,.hdlist>.title{line-height:1.45;color:#7a2518;font-weight:400;margin-top:0;margin-bottom:.25em}
+div,dl,dt,dd,ul,ol,li,h1,h2,h3,#toctitle,.sidebarblock>.content>.title,h4,h5,h6,pre,form,p,blockquote,th,td{margin:0;padding:0;direction:ltr}
+a{color:#2156a5;text-decoration:underline;line-height:inherit}
+a:hover,a:focus{color:#1d4b8f}
+a img{border:0}
+p{font-family:inherit;font-weight:400;font-size:1em;line-height:1.6;margin-bottom:1.25em;text-rendering:optimizeLegibility}
+p aside{font-size:.875em;line-height:1.35;font-style:italic}
+h1,h2,h3,#toctitle,.sidebarblock>.content>.title,h4,h5,h6{font-family:"Open Sans","DejaVu Sans",sans-serif;font-weight:300;font-style:normal;color:#ba3925;text-rendering:optimizeLegibility;margin-top:1em;margin-bottom:.5em;line-height:1.0125em}
+h1 small,h2 small,h3 small,#toctitle small,.sidebarblock>.content>.title small,h4 small,h5 small,h6 small{font-size:60%;color:#e99b8f;line-height:0}
+h1{font-size:2.125em}
+h2{font-size:1.6875em}
+h3,#toctitle,.sidebarblock>.content>.title{font-size:1.375em}
+h4,h5{font-size:1.125em}
+h6{font-size:1em}
+hr{border:solid #dddddf;border-width:1px 0 0;clear:both;margin:1.25em 0 1.1875em;height:0}
+em,i{font-style:italic;line-height:inherit}
+strong,b{font-weight:bold;line-height:inherit}
+small{font-size:60%;line-height:inherit}
+code{font-family:"Droid Sans Mono","DejaVu Sans Mono",monospace;font-weight:400;color:rgba(0,0,0,.9)}
+ul,ol,dl{font-size:1em;line-height:1.6;margin-bottom:1.25em;list-style-position:outside;font-family:inherit}
+ul,ol{margin-left:1.5em}
+ul li ul,ul li ol{margin-left:1.25em;margin-bottom:0;font-size:1em}
+ul.square li ul,ul.circle li ul,ul.disc li ul{list-style:inherit}
+ul.square{list-style-type:square}
+ul.circle{list-style-type:circle}
+ul.disc{list-style-type:disc}
+ol li ul,ol li ol{margin-left:1.25em;margin-bottom:0}
+dl dt{margin-bottom:.3125em;font-weight:bold}
+dl dd{margin-bottom:1.25em}
+abbr,acronym{text-transform:uppercase;font-size:90%;color:rgba(0,0,0,.8);border-bottom:1px dotted #ddd;cursor:help}
+abbr{text-transform:none}
+blockquote{margin:0 0 1.25em;padding:.5625em 1.25em 0 1.1875em;border-left:1px solid #ddd}
+blockquote cite{display:block;font-size:.9375em;color:rgba(0,0,0,.6)}
+blockquote cite::before{content:"\2014 \0020"}
+blockquote cite a,blockquote cite a:visited{color:rgba(0,0,0,.6)}
+blockquote,blockquote p{line-height:1.6;color:rgba(0,0,0,.85)}
+@media screen and (min-width:768px){h1,h2,h3,#toctitle,.sidebarblock>.content>.title,h4,h5,h6{line-height:1.2}
+h1{font-size:2.75em}
+h2{font-size:2.3125em}
+h3,#toctitle,.sidebarblock>.content>.title{font-size:1.6875em}
+h4{font-size:1.4375em}}
+table{background:#fff;margin-bottom:1.25em;border:solid 1px #dedede}
+table thead,table tfoot{background:#f7f8f7}
+table thead tr th,table thead tr td,table tfoot tr th,table tfoot tr td{padding:.5em .625em .625em;font-size:inherit;color:rgba(0,0,0,.8);text-align:left}
+table tr th,table tr td{padding:.5625em .625em;font-size:inherit;color:rgba(0,0,0,.8)}
+table tr.even,table tr.alt{background:#f8f8f7}
+table thead tr th,table tfoot tr th,table tbody tr td,table tr td,table tfoot tr td{display:table-cell;line-height:1.6}
+h1,h2,h3,#toctitle,.sidebarblock>.content>.title,h4,h5,h6{line-height:1.2;word-spacing:-.05em}
+h1 strong,h2 strong,h3 strong,#toctitle strong,.sidebarblock>.content>.title strong,h4 strong,h5 strong,h6 strong{font-weight:400}
+.clearfix::before,.clearfix::after,.float-group::before,.float-group::after{content:" ";display:table}
+.clearfix::after,.float-group::after{clear:both}
+:not(pre):not([class^=L])>code{font-size:.9375em;font-style:normal!important;letter-spacing:0;padding:.1em .5ex;word-spacing:-.15em;background:#f7f7f8;-webkit-border-radius:4px;border-radius:4px;line-height:1.45;text-rendering:optimizeSpeed;word-wrap:break-word}
+:not(pre)>code.nobreak{word-wrap:normal}
+:not(pre)>code.nowrap{white-space:nowrap}
+pre{color:rgba(0,0,0,.9);font-family:"Droid Sans Mono","DejaVu Sans Mono",monospace;line-height:1.45;text-rendering:optimizeSpeed}
+pre code,pre pre{color:inherit;font-size:inherit;line-height:inherit}
+pre>code{display:block}
+pre.nowrap,pre.nowrap pre{white-space:pre;word-wrap:normal}
+em em{font-style:normal}
+strong strong{font-weight:400}
+.keyseq{color:rgba(51,51,51,.8)}
+kbd{font-family:"Droid Sans Mono","DejaVu Sans Mono",monospace;display:inline-block;color:rgba(0,0,0,.8);font-size:.65em;line-height:1.45;background:#f7f7f7;border:1px solid #ccc;-webkit-border-radius:3px;border-radius:3px;-webkit-box-shadow:0 1px 0 rgba(0,0,0,.2),0 0 0 .1em white inset;box-shadow:0 1px 0 rgba(0,0,0,.2),0 0 0 .1em #fff inset;margin:0 .15em;padding:.2em .5em;vertical-align:middle;position:relative;top:-.1em;white-space:nowrap}
+.keyseq kbd:first-child{margin-left:0}
+.keyseq kbd:last-child{margin-right:0}
+.menuseq,.menuref{color:#000}
+.menuseq b:not(.caret),.menuref{font-weight:inherit}
+.menuseq{word-spacing:-.02em}
+.menuseq b.caret{font-size:1.25em;line-height:.8}
+.menuseq i.caret{font-weight:bold;text-align:center;width:.45em}
+b.button::before,b.button::after{position:relative;top:-1px;font-weight:400}
+b.button::before{content:"[";padding:0 3px 0 2px}
+b.button::after{content:"]";padding:0 2px 0 3px}
+p a>code:hover{color:rgba(0,0,0,.9)}
+#header,#content,#footnotes,#footer{width:100%;margin-left:auto;margin-right:auto;margin-top:0;margin-bottom:0;max-width:62.5em;*zoom:1;position:relative;padding-left:.9375em;padding-right:.9375em}
+#header::before,#header::after,#content::before,#content::after,#footnotes::before,#footnotes::after,#footer::before,#footer::after{content:" ";display:table}
+#header::after,#content::after,#footnotes::after,#footer::after{clear:both}
+#content{margin-top:1.25em}
+#content::before{content:none}
+#header>h1:first-child{color:rgba(0,0,0,.85);margin-top:2.25rem;margin-bottom:0}
+#header>h1:first-child+#toc{margin-top:8px;border-top:1px solid #dddddf}
+#header>h1:only-child,body.toc2 #header>h1:nth-last-child(2){border-bottom:1px solid #dddddf;padding-bottom:8px}
+#header .details{border-bottom:1px solid #dddddf;line-height:1.45;padding-top:.25em;padding-bottom:.25em;padding-left:.25em;color:rgba(0,0,0,.6);display:-ms-flexbox;display:-webkit-flex;display:flex;-ms-flex-flow:row wrap;-webkit-flex-flow:row wrap;flex-flow:row wrap}
+#header .details span:first-child{margin-left:-.125em}
+#header .details span.email a{color:rgba(0,0,0,.85)}
+#header .details br{display:none}
+#header .details br+span::before{content:"\00a0\2013\00a0"}
+#header .details br+span.author::before{content:"\00a0\22c5\00a0";color:rgba(0,0,0,.85)}
+#header .details br+span#revremark::before{content:"\00a0|\00a0"}
+#header #revnumber{text-transform:capitalize}
+#header #revnumber::after{content:"\00a0"}
+#content>h1:first-child:not([class]){color:rgba(0,0,0,.85);border-bottom:1px solid #dddddf;padding-bottom:8px;margin-top:0;padding-top:1rem;margin-bottom:1.25rem}
+#toc{border-bottom:1px solid #e7e7e9;padding-bottom:.5em}
+#toc>ul{margin-left:.125em}
+#toc ul.sectlevel0>li>a{font-style:italic}
+#toc ul.sectlevel0 ul.sectlevel1{margin:.5em 0}
+#toc ul{font-family:"Open Sans","DejaVu Sans",sans-serif;list-style-type:none}
+#toc li{line-height:1.3334;margin-top:.3334em}
+#toc a{text-decoration:none}
+#toc a:active{text-decoration:underline}
+#toctitle{color:#7a2518;font-size:1.2em}
+@media screen and (min-width:768px){#toctitle{font-size:1.375em}
+body.toc2{padding-left:15em;padding-right:0}
+#toc.toc2{margin-top:0!important;background:#f8f8f7;position:fixed;width:15em;left:0;top:0;border-right:1px solid #e7e7e9;border-top-width:0!important;border-bottom-width:0!important;z-index:1000;padding:1.25em 1em;height:100%;overflow:auto}
+#toc.toc2 #toctitle{margin-top:0;margin-bottom:.8rem;font-size:1.2em}
+#toc.toc2>ul{font-size:.9em;margin-bottom:0}
+#toc.toc2 ul ul{margin-left:0;padding-left:1em}
+#toc.toc2 ul.sectlevel0 ul.sectlevel1{padding-left:0;margin-top:.5em;margin-bottom:.5em}
+body.toc2.toc-right{padding-left:0;padding-right:15em}
+body.toc2.toc-right #toc.toc2{border-right-width:0;border-left:1px solid #e7e7e9;left:auto;right:0}}
+@media screen and (min-width:1280px){body.toc2{padding-left:20em;padding-right:0}
+#toc.toc2{width:20em}
+#toc.toc2 #toctitle{font-size:1.375em}
+#toc.toc2>ul{font-size:.95em}
+#toc.toc2 ul ul{padding-left:1.25em}
+body.toc2.toc-right{padding-left:0;padding-right:20em}}
+#content #toc{border-style:solid;border-width:1px;border-color:#e0e0dc;margin-bottom:1.25em;padding:1.25em;background:#f8f8f7;-webkit-border-radius:4px;border-radius:4px}
+#content #toc>:first-child{margin-top:0}
+#content #toc>:last-child{margin-bottom:0}
+#footer{max-width:100%;background:rgba(0,0,0,.8);padding:1.25em}
+#footer-text{color:rgba(255,255,255,.8);line-height:1.44}
+#content{margin-bottom:.625em}
+.sect1{padding-bottom:.625em}
+@media screen and (min-width:768px){#content{margin-bottom:1.25em}
+.sect1{padding-bottom:1.25em}}
+.sect1:last-child{padding-bottom:0}
+.sect1+.sect1{border-top:1px solid #e7e7e9}
+#content h1>a.anchor,h2>a.anchor,h3>a.anchor,#toctitle>a.anchor,.sidebarblock>.content>.title>a.anchor,h4>a.anchor,h5>a.anchor,h6>a.anchor{position:absolute;z-index:1001;width:1.5ex;margin-left:-1.5ex;display:block;text-decoration:none!important;visibility:hidden;text-align:center;font-weight:400}
+#content h1>a.anchor::before,h2>a.anchor::before,h3>a.anchor::before,#toctitle>a.anchor::before,.sidebarblock>.content>.title>a.anchor::before,h4>a.anchor::before,h5>a.anchor::before,h6>a.anchor::before{content:"\00A7";font-size:.85em;display:block;padding-top:.1em}
+#content h1:hover>a.anchor,#content h1>a.anchor:hover,h2:hover>a.anchor,h2>a.anchor:hover,h3:hover>a.anchor,#toctitle:hover>a.anchor,.sidebarblock>.content>.title:hover>a.anchor,h3>a.anchor:hover,#toctitle>a.anchor:hover,.sidebarblock>.content>.title>a.anchor:hover,h4:hover>a.anchor,h4>a.anchor:hover,h5:hover>a.anchor,h5>a.anchor:hover,h6:hover>a.anchor,h6>a.anchor:hover{visibility:visible}
+#content h1>a.link,h2>a.link,h3>a.link,#toctitle>a.link,.sidebarblock>.content>.title>a.link,h4>a.link,h5>a.link,h6>a.link{color:#ba3925;text-decoration:none}
+#content h1>a.link:hover,h2>a.link:hover,h3>a.link:hover,#toctitle>a.link:hover,.sidebarblock>.content>.title>a.link:hover,h4>a.link:hover,h5>a.link:hover,h6>a.link:hover{color:#a53221}
+details,.audioblock,.imageblock,.literalblock,.listingblock,.stemblock,.videoblock{margin-bottom:1.25em}
+details>summary:first-of-type{cursor:pointer;display:list-item;outline:none;margin-bottom:.75em}
+.admonitionblock td.content>.title,.audioblock>.title,.exampleblock>.title,.imageblock>.title,.listingblock>.title,.literalblock>.title,.stemblock>.title,.openblock>.title,.paragraph>.title,.quoteblock>.title,table.tableblock>.title,.verseblock>.title,.videoblock>.title,.dlist>.title,.olist>.title,.ulist>.title,.qlist>.title,.hdlist>.title{text-rendering:optimizeLegibility;text-align:left;font-family:"Noto Serif","DejaVu Serif",serif;font-size:1rem;font-style:italic}
+table.tableblock.fit-content>caption.title{white-space:nowrap;width:0}
+.paragraph.lead>p,#preamble>.sectionbody>[class="paragraph"]:first-of-type p{font-size:1.21875em;line-height:1.6;color:rgba(0,0,0,.85)}
+table.tableblock #preamble>.sectionbody>[class="paragraph"]:first-of-type p{font-size:inherit}
+.admonitionblock>table{border-collapse:separate;border:0;background:none;width:100%}
+.admonitionblock>table td.icon{text-align:center;width:80px}
+.admonitionblock>table td.icon img{max-width:none}
+.admonitionblock>table td.icon .title{font-weight:bold;font-family:"Open Sans","DejaVu Sans",sans-serif;text-transform:uppercase}
+.admonitionblock>table td.content{padding-left:1.125em;padding-right:1.25em;border-left:1px solid #dddddf;color:rgba(0,0,0,.6)}
+.admonitionblock>table td.content>:last-child>:last-child{margin-bottom:0}
+.exampleblock>.content{border-style:solid;border-width:1px;border-color:#e6e6e6;margin-bottom:1.25em;padding:1.25em;background:#fff;-webkit-border-radius:4px;border-radius:4px}
+.exampleblock>.content>:first-child{margin-top:0}
+.exampleblock>.content>:last-child{margin-bottom:0}
+.sidebarblock{border-style:solid;border-width:1px;border-color:#dbdbd6;margin-bottom:1.25em;padding:1.25em;background:#f3f3f2;-webkit-border-radius:4px;border-radius:4px}
+.sidebarblock>:first-child{margin-top:0}
+.sidebarblock>:last-child{margin-bottom:0}
+.sidebarblock>.content>.title{color:#7a2518;margin-top:0;text-align:center}
+.exampleblock>.content>:last-child>:last-child,.exampleblock>.content .olist>ol>li:last-child>:last-child,.exampleblock>.content .ulist>ul>li:last-child>:last-child,.exampleblock>.content .qlist>ol>li:last-child>:last-child,.sidebarblock>.content>:last-child>:last-child,.sidebarblock>.content .olist>ol>li:last-child>:last-child,.sidebarblock>.content .ulist>ul>li:last-child>:last-child,.sidebarblock>.content .qlist>ol>li:last-child>:last-child{margin-bottom:0}
+.literalblock pre,.listingblock>.content>pre{-webkit-border-radius:4px;border-radius:4px;word-wrap:break-word;overflow-x:auto;padding:1em;font-size:.8125em}
+@media screen and (min-width:768px){.literalblock pre,.listingblock>.content>pre{font-size:.90625em}}
+@media screen and (min-width:1280px){.literalblock pre,.listingblock>.content>pre{font-size:1em}}
+.literalblock pre,.listingblock>.content>pre:not(.highlight),.listingblock>.content>pre[class="highlight"],.listingblock>.content>pre[class^="highlight "]{background:#f7f7f8}
+.literalblock.output pre{color:#f7f7f8;background:rgba(0,0,0,.9)}
+.listingblock>.content{position:relative}
+.listingblock code[data-lang]::before{display:none;content:attr(data-lang);position:absolute;font-size:.75em;top:.425rem;right:.5rem;line-height:1;text-transform:uppercase;color:inherit;opacity:.5}
+.listingblock:hover code[data-lang]::before{display:block}
+.listingblock.terminal pre .command::before{content:attr(data-prompt);padding-right:.5em;color:inherit;opacity:.5}
+.listingblock.terminal pre .command:not([data-prompt])::before{content:"$"}
+.listingblock pre.highlightjs{padding:0}
+.listingblock pre.highlightjs>code{padding:1em;-webkit-border-radius:4px;border-radius:4px}
+.listingblock pre.prettyprint{border-width:0}
+.prettyprint{background:#f7f7f8}
+pre.prettyprint .linenums{line-height:1.45;margin-left:2em}
+pre.prettyprint li{background:none;list-style-type:inherit;padding-left:0}
+pre.prettyprint li code[data-lang]::before{opacity:1}
+pre.prettyprint li:not(:first-child) code[data-lang]::before{display:none}
+table.linenotable{border-collapse:separate;border:0;margin-bottom:0;background:none}
+table.linenotable td[class]{color:inherit;vertical-align:top;padding:0;line-height:inherit;white-space:normal}
+table.linenotable td.code{padding-left:.75em}
+table.linenotable td.linenos{border-right:1px solid currentColor;opacity:.35;padding-right:.5em}
+pre.pygments .lineno{border-right:1px solid currentColor;opacity:.35;display:inline-block;margin-right:.75em}
+pre.pygments .lineno::before{content:"";margin-right:-.125em}
+.quoteblock{margin:0 1em 1.25em 1.5em;display:table}
+.quoteblock:not(.excerpt)>.title{margin-left:-1.5em;margin-bottom:.75em}
+.quoteblock blockquote,.quoteblock p{color:rgba(0,0,0,.85);font-size:1.15rem;line-height:1.75;word-spacing:.1em;letter-spacing:0;font-style:italic;text-align:justify}
+.quoteblock blockquote{margin:0;padding:0;border:0}
+.quoteblock blockquote::before{content:"\201c";float:left;font-size:2.75em;font-weight:bold;line-height:.6em;margin-left:-.6em;color:#7a2518;text-shadow:0 1px 2px rgba(0,0,0,.1)}
+.quoteblock blockquote>.paragraph:last-child p{margin-bottom:0}
+.quoteblock .attribution{margin-top:.75em;margin-right:.5ex;text-align:right}
+.verseblock{margin:0 1em 1.25em}
+.verseblock pre{font-family:"Open Sans","DejaVu Sans",sans;font-size:1.15rem;color:rgba(0,0,0,.85);font-weight:300;text-rendering:optimizeLegibility}
+.verseblock pre strong{font-weight:400}
+.verseblock .attribution{margin-top:1.25rem;margin-left:.5ex}
+.quoteblock .attribution,.verseblock .attribution{font-size:.9375em;line-height:1.45;font-style:italic}
+.quoteblock .attribution br,.verseblock .attribution br{display:none}
+.quoteblock .attribution cite,.verseblock .attribution cite{display:block;letter-spacing:-.025em;color:rgba(0,0,0,.6)}
+.quoteblock.abstract blockquote::before,.quoteblock.excerpt blockquote::before,.quoteblock .quoteblock blockquote::before{display:none}
+.quoteblock.abstract blockquote,.quoteblock.abstract p,.quoteblock.excerpt blockquote,.quoteblock.excerpt p,.quoteblock .quoteblock blockquote,.quoteblock .quoteblock p{line-height:1.6;word-spacing:0}
+.quoteblock.abstract{margin:0 1em 1.25em;display:block}
+.quoteblock.abstract>.title{margin:0 0 .375em;font-size:1.15em;text-align:center}
+.quoteblock.excerpt>blockquote,.quoteblock .quoteblock{padding:0 0 .25em 1em;border-left:.25em solid #dddddf}
+.quoteblock.excerpt,.quoteblock .quoteblock{margin-left:0}
+.quoteblock.excerpt blockquote,.quoteblock.excerpt p,.quoteblock .quoteblock blockquote,.quoteblock .quoteblock p{color:inherit;font-size:1.0625rem}
+.quoteblock.excerpt .attribution,.quoteblock .quoteblock .attribution{color:inherit;text-align:left;margin-right:0}
+table.tableblock{max-width:100%;border-collapse:separate}
+p.tableblock:last-child{margin-bottom:0}
+td.tableblock>.content>:last-child{margin-bottom:-1.25em}
+td.tableblock>.content>:last-child.sidebarblock{margin-bottom:0}
+table.tableblock,th.tableblock,td.tableblock{border:0 solid #dedede}
+table.grid-all>thead>tr>.tableblock,table.grid-all>tbody>tr>.tableblock{border-width:0 1px 1px 0}
+table.grid-all>tfoot>tr>.tableblock{border-width:1px 1px 0 0}
+table.grid-cols>*>tr>.tableblock{border-width:0 1px 0 0}
+table.grid-rows>thead>tr>.tableblock,table.grid-rows>tbody>tr>.tableblock{border-width:0 0 1px}
+table.grid-rows>tfoot>tr>.tableblock{border-width:1px 0 0}
+table.grid-all>*>tr>.tableblock:last-child,table.grid-cols>*>tr>.tableblock:last-child{border-right-width:0}
+table.grid-all>tbody>tr:last-child>.tableblock,table.grid-all>thead:last-child>tr>.tableblock,table.grid-rows>tbody>tr:last-child>.tableblock,table.grid-rows>thead:last-child>tr>.tableblock{border-bottom-width:0}
+table.frame-all{border-width:1px}
+table.frame-sides{border-width:0 1px}
+table.frame-topbot,table.frame-ends{border-width:1px 0}
+table.stripes-all tr,table.stripes-odd tr:nth-of-type(odd),table.stripes-even tr:nth-of-type(even),table.stripes-hover tr:hover{background:#f8f8f7}
+th.halign-left,td.halign-left{text-align:left}
+th.halign-right,td.halign-right{text-align:right}
+th.halign-center,td.halign-center{text-align:center}
+th.valign-top,td.valign-top{vertical-align:top}
+th.valign-bottom,td.valign-bottom{vertical-align:bottom}
+th.valign-middle,td.valign-middle{vertical-align:middle}
+table thead th,table tfoot th{font-weight:bold}
+tbody tr th{display:table-cell;line-height:1.6;background:#f7f8f7}
+tbody tr th,tbody tr th p,tfoot tr th,tfoot tr th p{color:rgba(0,0,0,.8);font-weight:bold}
+p.tableblock>code:only-child{background:none;padding:0}
+p.tableblock{font-size:1em}
+ol{margin-left:1.75em}
+ul li ol{margin-left:1.5em}
+dl dd{margin-left:1.125em}
+dl dd:last-child,dl dd:last-child>:last-child{margin-bottom:0}
+ol>li p,ul>li p,ul dd,ol dd,.olist .olist,.ulist .ulist,.ulist .olist,.olist .ulist{margin-bottom:.625em}
+ul.checklist,ul.none,ol.none,ul.no-bullet,ol.no-bullet,ol.unnumbered,ul.unstyled,ol.unstyled{list-style-type:none}
+ul.no-bullet,ol.no-bullet,ol.unnumbered{margin-left:.625em}
+ul.unstyled,ol.unstyled{margin-left:0}
+ul.checklist{margin-left:.625em}
+ul.checklist li>p:first-child>.fa-square-o:first-child,ul.checklist li>p:first-child>.fa-check-square-o:first-child{width:1.25em;font-size:.8em;position:relative;bottom:.125em}
+ul.checklist li>p:first-child>input[type="checkbox"]:first-child{margin-right:.25em}
+ul.inline{display:-ms-flexbox;display:-webkit-box;display:flex;-ms-flex-flow:row wrap;-webkit-flex-flow:row wrap;flex-flow:row wrap;list-style:none;margin:0 0 .625em -1.25em}
+ul.inline>li{margin-left:1.25em}
+.unstyled dl dt{font-weight:400;font-style:normal}
+ol.arabic{list-style-type:decimal}
+ol.decimal{list-style-type:decimal-leading-zero}
+ol.loweralpha{list-style-type:lower-alpha}
+ol.upperalpha{list-style-type:upper-alpha}
+ol.lowerroman{list-style-type:lower-roman}
+ol.upperroman{list-style-type:upper-roman}
+ol.lowergreek{list-style-type:lower-greek}
+.hdlist>table,.colist>table{border:0;background:none}
+.hdlist>table>tbody>tr,.colist>table>tbody>tr{background:none}
+td.hdlist1,td.hdlist2{vertical-align:top;padding:0 .625em}
+td.hdlist1{font-weight:bold;padding-bottom:1.25em}
+.literalblock+.colist,.listingblock+.colist{margin-top:-.5em}
+.colist td:not([class]):first-child{padding:.4em .75em 0;line-height:1;vertical-align:top}
+.colist td:not([class]):first-child img{max-width:none}
+.colist td:not([class]):last-child{padding:.25em 0}
+.thumb,.th{line-height:0;display:inline-block;border:solid 4px #fff;-webkit-box-shadow:0 0 0 1px #ddd;box-shadow:0 0 0 1px #ddd}
+.imageblock.left{margin:.25em .625em 1.25em 0}
+.imageblock.right{margin:.25em 0 1.25em .625em}
+.imageblock>.title{margin-bottom:0}
+.imageblock.thumb,.imageblock.th{border-width:6px}
+.imageblock.thumb>.title,.imageblock.th>.title{padding:0 .125em}
+.image.left,.image.right{margin-top:.25em;margin-bottom:.25em;display:inline-block;line-height:0}
+.image.left{margin-right:.625em}
+.image.right{margin-left:.625em}
+a.image{text-decoration:none;display:inline-block}
+a.image object{pointer-events:none}
+sup.footnote,sup.footnoteref{font-size:.875em;position:static;vertical-align:super}
+sup.footnote a,sup.footnoteref a{text-decoration:none}
+sup.footnote a:active,sup.footnoteref a:active{text-decoration:underline}
+#footnotes{padding-top:.75em;padding-bottom:.75em;margin-bottom:.625em}
+#footnotes hr{width:20%;min-width:6.25em;margin:-.25em 0 .75em;border-width:1px 0 0}
+#footnotes .footnote{padding:0 .375em 0 .225em;line-height:1.3334;font-size:.875em;margin-left:1.2em;margin-bottom:.2em}
+#footnotes .footnote a:first-of-type{font-weight:bold;text-decoration:none;margin-left:-1.05em}
+#footnotes .footnote:last-of-type{margin-bottom:0}
+#content #footnotes{margin-top:-.625em;margin-bottom:0;padding:.75em 0}
+.gist .file-data>table{border:0;background:#fff;width:100%;margin-bottom:0}
+.gist .file-data>table td.line-data{width:99%}
+div.unbreakable{page-break-inside:avoid}
+.big{font-size:larger}
+.small{font-size:smaller}
+.underline{text-decoration:underline}
+.overline{text-decoration:overline}
+.line-through{text-decoration:line-through}
+.aqua{color:#00bfbf}
+.aqua-background{background:#00fafa}
+.black{color:#000}
+.black-background{background:#000}
+.blue{color:#0000bf}
+.blue-background{background:#0000fa}
+.fuchsia{color:#bf00bf}
+.fuchsia-background{background:#fa00fa}
+.gray{color:#606060}
+.gray-background{background:#7d7d7d}
+.green{color:#006000}
+.green-background{background:#007d00}
+.lime{color:#00bf00}
+.lime-background{background:#00fa00}
+.maroon{color:#600000}
+.maroon-background{background:#7d0000}
+.navy{color:#000060}
+.navy-background{background:#00007d}
+.olive{color:#606000}
+.olive-background{background:#7d7d00}
+.purple{color:#600060}
+.purple-background{background:#7d007d}
+.red{color:#bf0000}
+.red-background{background:#fa0000}
+.silver{color:#909090}
+.silver-background{background:#bcbcbc}
+.teal{color:#006060}
+.teal-background{background:#007d7d}
+.white{color:#bfbfbf}
+.white-background{background:#fafafa}
+.yellow{color:#bfbf00}
+.yellow-background{background:#fafa00}
+span.icon>.fa{cursor:default}
+a span.icon>.fa{cursor:inherit}
+.admonitionblock td.icon [class^="fa icon-"]{font-size:2.5em;text-shadow:1px 1px 2px rgba(0,0,0,.5);cursor:default}
+.admonitionblock td.icon .icon-note::before{content:"\f05a";color:#19407c}
+.admonitionblock td.icon .icon-tip::before{content:"\f0eb";text-shadow:1px 1px 2px rgba(155,155,0,.8);color:#111}
+.admonitionblock td.icon .icon-warning::before{content:"\f071";color:#bf6900}
+.admonitionblock td.icon .icon-caution::before{content:"\f06d";color:#bf3400}
+.admonitionblock td.icon .icon-important::before{content:"\f06a";color:#bf0000}
+.conum[data-value]{display:inline-block;color:#fff!important;background:rgba(0,0,0,.8);-webkit-border-radius:100px;border-radius:100px;text-align:center;font-size:.75em;width:1.67em;height:1.67em;line-height:1.67em;font-family:"Open Sans","DejaVu Sans",sans-serif;font-style:normal;font-weight:bold}
+.conum[data-value] *{color:#fff!important}
+.conum[data-value]+b{display:none}
+.conum[data-value]::after{content:attr(data-value)}
+pre .conum[data-value]{position:relative;top:-.125em}
+b.conum *{color:inherit!important}
+.conum:not([data-value]):empty{display:none}
+dt,th.tableblock,td.content,div.footnote{text-rendering:optimizeLegibility}
+h1,h2,p,td.content,span.alt{letter-spacing:-.01em}
+p strong,td.content strong,div.footnote strong{letter-spacing:-.005em}
+p,blockquote,dt,td.content,span.alt{font-size:1.0625rem}
+p{margin-bottom:1.25rem}
+.sidebarblock p,.sidebarblock dt,.sidebarblock td.content,p.tableblock{font-size:1em}
+.exampleblock>.content{background:#fffef7;border-color:#e0e0dc;-webkit-box-shadow:0 1px 4px #e0e0dc;box-shadow:0 1px 4px #e0e0dc}
+.print-only{display:none!important}
+@page{margin:1.25cm .75cm}
+@media print{*{-webkit-box-shadow:none!important;box-shadow:none!important;text-shadow:none!important}
+html{font-size:80%}
+a{color:inherit!important;text-decoration:underline!important}
+a.bare,a[href^="#"],a[href^="mailto:"]{text-decoration:none!important}
+a[href^="http:"]:not(.bare)::after,a[href^="https:"]:not(.bare)::after{content:"(" attr(href) ")";display:inline-block;font-size:.875em;padding-left:.25em}
+abbr[title]::after{content:" (" attr(title) ")"}
+pre,blockquote,tr,img,object,svg{page-break-inside:avoid}
+thead{display:table-header-group}
+svg{max-width:100%}
+p,blockquote,dt,td.content{font-size:1em;orphans:3;widows:3}
+h2,h3,#toctitle,.sidebarblock>.content>.title{page-break-after:avoid}
+#toc,.sidebarblock,.exampleblock>.content{background:none!important}
+#toc{border-bottom:1px solid #dddddf!important;padding-bottom:0!important}
+body.book #header{text-align:center}
+body.book #header>h1:first-child{border:0!important;margin:2.5em 0 1em}
+body.book #header .details{border:0!important;display:block;padding:0!important}
+body.book #header .details span:first-child{margin-left:0!important}
+body.book #header .details br{display:block}
+body.book #header .details br+span::before{content:none!important}
+body.book #toc{border:0!important;text-align:left!important;padding:0!important;margin:0!important}
+body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-break-before:always}
+.listingblock code[data-lang]::before{display:block}
+#footer{padding:0 .9375em}
+.hide-on-print{display:none!important}
+.print-only{display:block!important}
+.hide-for-print{display:none!important}
+.show-for-print{display:inherit!important}}
+@media print,amzn-kf8{#header>h1:first-child{margin-top:1.25rem}
+.sect1{padding:0!important}
+.sect1+.sect1{border:0}
+#footer{background:none}
+#footer-text{color:rgba(0,0,0,.6);font-size:.9em}}
+@media amzn-kf8{#header,#content,#footnotes,#footer{padding:0}}
+</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-18618646-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-18618646-1');
+</script>
+</head>
+<body class="article">
+<div id="header">
+<h1>Building a high performance JSON parser</h1>
+<div class="details">
+<span id="author" class="author">Dave Cheney</span><br>
+<span id="email" class="email"><a href="mailto:dave@cheney.net">dave@cheney.net</a></span><br>
+<span id="revnumber">version {revnumber},</span>
+<span id="revdate">2020-07-16</span>
+</div>
+<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_problem_statement">Problem statement</a></li>
+<li><a href="#_design">Design</a></li>
+<li><a href="#_time_complexity">Time complexity</a></li>
+<li><a href="#_tokenisation">Tokenisation</a></li>
+<li><a href="#_eliminating_allocations_through_api_design">Eliminating allocations through API design.</a></li>
+<li><a href="#_reading">Reading</a></li>
+<li><a href="#_scanning">Scanning</a></li>
+<li><a href="#_decoding">Decoding</a></li>
+<li><a href="#_unmarshalling">Unmarshalling</a></li>
+<li><a href="#_thematic_ideas">Thematic ideas</a></li>
+<li><a href="#_performance_matters_sometimes">Performance matters, sometimes</a></li>
+<li><a href="#_further_work">Further work</a></li>
+<li><a href="#_bonus">Bonus</a></li>
+</ul>
+</div>
+</div>
+<div id="content">
+<div id="preamble">
+<div class="sectionbody">
+<div class="quoteblock abstract">
+<div class="title">Abstract</div>
+<blockquote>
+<div class="paragraph">
+<p>JSON is important, damn near everything that we do as programmers or operators involves JSON at some point.
+JSON decoding is expensive, if your product talks JSON then performance of marshalling data in and out of JSON is important.
+This is a talk about designing an efficient replacement for <code>encoding/json.Decoder</code>.</p>
+</div>
+<div class="paragraph">
+<p>The code for this talk is available <a href="https://github.com/pkg/json" class="bare">https://github.com/pkg/json</a>.</p>
+</div>
+<div class="paragraph">
+<p>Thanks to Jon Forrest and Dave Russell for copy editing.</p>
+</div>
+</blockquote>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_problem_statement"><a class="anchor" href="#_problem_statement"></a><a class="link" href="#_problem_statement">Problem statement</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>JSON is an important data interchange format.
+Damn near everything we do as programmers involves JSON in some way.</p>
+</div>
+<div class="paragraph">
+<p>At the same time, JSON decoding is expensive.
+Every Go release we see improvements in the efficiency of the <code>encoding/json</code> package.
+Sometimes these are large improvements, like the move away from segmented stacks in Go 1.3, more recently these improvements have been moderate.
+In the 1.15 cycle Iâve seen two performance improvements that had to be rolled back because, while they made it faster, they broke a subtle implicit behaviour that people were relying on.
+c.f. Hyrum&#8217;s Law.<sup class="footnote">[<a id="_footnoteref_1" class="footnote" href="#_footnotedef_1" title="View footnote.">1</a>]</sup></p>
+</div>
+<div class="paragraph">
+<p>In the Go ecosystem there are a bunch of alternative JSON libraries, usually maintained by a small number of people, so this suggested to me that this is a problem with some meat on its bones, and equally, not impenetrable.
+I figured I&#8217;d give it a try.</p>
+</div>
+<div class="sect2">
+<h3 id="_results"><a class="anchor" href="#_results"></a><a class="link" href="#_results">Results</a></h3>
+<div class="paragraph">
+<p>At the lowest level <code>pkg/json.Scanner</code> can tokenize streaming JSON without allocation (provided it is supplied a few kilobytes of buffer).</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code>BenchmarkScanner/canada-16                  1561           3524005 ns/op         638.78 MB/s           0 B/op          0 allocs/op
+BenchmarkScanner/citm_catalog-16            3556           1555322 ns/op        1110.51 MB/s           0 B/op          0 allocs/op
+BenchmarkScanner/twitter-16                 7068            836031 ns/op         755.37 MB/s           0 B/op          0 allocs/op
+BenchmarkScanner/code-16                    1543           3640425 ns/op         533.03 MB/s           0 B/op          0 allocs/op
+BenchmarkScanner/example-16               341224             16362 ns/op         796.00 MB/s           0 B/op          0 allocs/op
+BenchmarkScanner/sample-16                 12771            467360 ns/op        1471.01 MB/s           0 B/op          0 allocs/op</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>At the next level <code>pkg/json.Decoder.Token</code> is 2-3x faster than <code>encoding/json.Decoder.Token</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code>BenchmarkDecoderToken/pkgjson/canada-16                      267          22073095 ns/op         101.98 MB/s     4402914 B/op     222279 allocs/op
+BenchmarkDecoderToken/encodingjson/canada-16                  86          67830737 ns/op          33.19 MB/s    17740387 B/op     889106 allocs/op
+BenchmarkDecoderToken/pkgjson/citm_catalog-16               1114           5183226 ns/op         333.23 MB/s      965992 B/op      81995 allocs/op
+BenchmarkDecoderToken/encodingjson/citm_catalog-16           288          20882018 ns/op          82.71 MB/s     5661597 B/op     324692 allocs/op
+BenchmarkDecoderToken/pkgjson/twitter-16                    2356           2467042 ns/op         255.98 MB/s      768354 B/op      38992 allocs/op
+BenchmarkDecoderToken/encodingjson/twitter-16                471          12606205 ns/op          50.10 MB/s     3584017 B/op     187319 allocs/op
+BenchmarkDecoderToken/pkgjson/code-16                        346          16877006 ns/op         114.98 MB/s     4304233 B/op     320235 allocs/op
+BenchmarkDecoderToken/encodingjson/code-16                    73          80255994 ns/op          24.18 MB/s    23355962 B/op    1319125 allocs/op
+BenchmarkDecoderToken/pkgjson/example-16                  113912             53083 ns/op         245.35 MB/s       16016 B/op        914 allocs/op
+BenchmarkDecoderToken/encodingjson/example-16              21734            273991 ns/op          47.53 MB/s       82416 B/op       4325 allocs/op
+BenchmarkDecoderToken/pkgjson/sample-16                     6642            871796 ns/op         788.59 MB/s      213761 B/op       5081 allocs/op
+BenchmarkDecoderToken/encodingjson/sample-16                1803           3287623 ns/op         209.12 MB/s      723782 B/op      26095 allocs/op</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Because allocations make up a large proportion of the <code>Decoder.Token</code> API, <code>pkg/json.Decoder</code> provides an alternative API that produces significantly fewer allocations and is 8-10x faster.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code>BenchmarkDecoderNextToken/pkgjson/canada-16                 1197           4825232 ns/op         466.52 MB/s         136 B/op          3 allocs/op
+BenchmarkDecoderNextToken/encodingjson/canada-16              90          65392440 ns/op          34.42 MB/s    17740399 B/op     889106 allocs/op
+BenchmarkDecoderNextToken/pkgjson/citm_catalog-16           2709           2162849 ns/op         798.58 MB/s         136 B/op          3 allocs/op
+BenchmarkDecoderNextToken/encodingjson/citm_catalog-16       301          20064314 ns/op          86.08 MB/s     5661597 B/op     324692 allocs/op
+BenchmarkDecoderNextToken/pkgjson/twitter-16                5395           1068106 ns/op         591.25 MB/s         152 B/op          4 allocs/op
+BenchmarkDecoderNextToken/encodingjson/twitter-16            494          12072956 ns/op          52.31 MB/s     3584013 B/op     187319 allocs/op
+BenchmarkDecoderNextToken/pkgjson/code-16                   1135           5124666 ns/op         378.65 MB/s         248 B/op          6 allocs/op
+BenchmarkDecoderNextToken/encodingjson/code-16                74          77579973 ns/op          25.01 MB/s    23355955 B/op    1319125 allocs/op
+BenchmarkDecoderNextToken/pkgjson/example-16              269010             22323 ns/op         583.43 MB/s         152 B/op          4 allocs/op
+BenchmarkDecoderNextToken/encodingjson/example-16          22707            264078 ns/op          49.32 MB/s       82416 B/op       4325 allocs/op
+BenchmarkDecoderNextToken/pkgjson/sample-16                10000            510445 ns/op        1346.85 MB/s        1144 B/op          9 allocs/op
+BenchmarkDecoderNextToken/encodingjson/sample-16            1836           3161804 ns/op         217.44 MB/s      723781 B/op      26095 allocs/op</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>At the highest level, <code>pkg/json</code> can unmarshal data into a Go object with the same API as <code>encoding/json</code>.
+This is very much a work in progress, but the results are promising for folks who want to use this package as a drop in replacement.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code>BenchmarkDecoderDecodeInterfaceAny/pkgjson/canada-16                 217          27425893 ns/op          82.08 MB/s     8747163 B/op     281408 allocs/op
+BenchmarkDecoderDecodeInterfaceAny/encodingjson/canada-16            153          38347477 ns/op          58.70 MB/s    20647616 B/op     392553 allocs/op
+BenchmarkDecoderDecodeInterfaceAny/pkgjson/citm_catalog-16           747           8008839 ns/op         215.66 MB/s     5197853 B/op      89673 allocs/op
+BenchmarkDecoderDecodeInterfaceAny/encodingjson/citm_catalog-16      360          16607501 ns/op         104.00 MB/s     9406809 B/op      95389 allocs/op
+BenchmarkDecoderDecodeInterfaceAny/pkgjson/twitter-16               1606           3714515 ns/op         170.01 MB/s     2130731 B/op      30182 allocs/op
+BenchmarkDecoderDecodeInterfaceAny/encodingjson/twitter-16           862           6927998 ns/op          91.15 MB/s     4283407 B/op      31278 allocs/op
+BenchmarkDecoderDecodeInterfaceAny/pkgjson/code-16                   333          17939351 ns/op         108.17 MB/s     7331643 B/op     232059 allocs/op
+BenchmarkDecoderDecodeInterfaceAny/encodingjson/code-16              236          25324951 ns/op          76.62 MB/s    12332753 B/op     271292 allocs/op
+BenchmarkDecoderDecodeInterfaceAny/pkgjson/example-16              76874             78079 ns/op         166.81 MB/s       50980 B/op        739 allocs/op
+BenchmarkDecoderDecodeInterfaceAny/encodingjson/example-16         40886            146685 ns/op          88.79 MB/s       82855 B/op        782 allocs/op
+BenchmarkDecoderDecodeInterfaceAny/pkgjson/sample-16                5240           1116081 ns/op         615.99 MB/s      399970 B/op       5542 allocs/op
+BenchmarkDecoderDecodeInterfaceAny/encodingjson/sample-16           1123           5369313 ns/op         128.04 MB/s     2661872 B/op       7527 allocs/op</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This is a story of how I went about building this package.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+I&#8217;m using a pre release version of Go 1.15 built from source. If you&#8217;re using an older version your numbers may vary. When Go 1.15 comes out, you should upgrade.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_design"><a class="anchor" href="#_design"></a><a class="link" href="#_design">Design</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The design of this package has the following features</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Reasonably compatible with the <code>encoding/json</code> package</dt>
+<dd>
+<p>This package offers the same high level <code>json.Decoder</code> API with higher throughput and/or reduced allocations.
+A success criteria for this package would be as a drop in replacement for <code>encoding/json</code>.</p>
+</dd>
+<dt class="hdlist1">Supports streaming operations</dt>
+<dd>
+<p>Itâs nice if you can have the entire input in memory but thatâs unrealistic.
+Input sizes are usually unknown and potentially unbounded.
+Buffering in memory is a availability risk.
+Buffering before processing introduces latency, streaming reads lets you process data as it arrives and logically overlap with transfer or read.
+This package supports streaming operation via <code>io.Reader</code> input sources (which is also required for compatibility with <code>encoding/json</code>)</p>
+</dd>
+<dt class="hdlist1">Allocation free, or bounded API</dt>
+<dd>
+<p>In addition to the <code>encoding/json</code> API, provide an alternative API that can operate with minimal, ideally no allocations.</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_time_complexity"><a class="anchor" href="#_time_complexity"></a><a class="link" href="#_time_complexity">Time complexity</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Let&#8217;s talk about the time complexity of this problem.</p>
+</div>
+<div class="paragraph">
+<p>JSON doesn&#8217;t use length markers; to know how much to read, we have to read it all.
+This means the lower bounds on the time to process the input is the size of the input.</p>
+</div>
+<div class="paragraph">
+<p>But reading the input isn&#8217;t enough, we have to follow the JSON state machine to figure out where the tokens start and end.
+Now, reading <em>N</em> bytes isn&#8217;t the full story, we need to process those <em>N</em> bytes, so the performance is at least <code>read(N)+parse(N)</code>.
+But there are other costs:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>If we have to allocate memory to read or process those bytes, that overhead will grow with the size of the input.</p>
+</li>
+<li>
+<p>We know that the big factor in the performance of a parse is the size of the input.
+Ideally we want <em>N</em> to be the number of bytes in the input, that is, we want to process each byte only once.
+If we touch the same byte more than once, that adds overhead, and complicates processing if we have to keep those bytes around to come back and look at them again.</p>
+</li>
+<li>
+<p>Just like we don&#8217;t want to process a byte more than once, we want to avoid processing a token more than once.</p>
+</li>
+<li>
+<p>Limit function calls in the hot path inside the <code>Scanner</code> or <code>Decoder</code>.
+<code>encoding/json</code> uses one function call per byte, <code>pkg/json</code> does better at one call per token.
+We want to limit the number of function calls per token.
+Ideally <code>O(tokens)</code>, not <code>O(bytes)</code>.
+If we did nothing else weâd be ahead.</p>
+</li>
+<li>
+<p>Limit copies.
+If we design to limit copying of data then we limit the number times we (re)visit a byte.</p>
+</li>
+<li>
+<p>Limit allocations.
+If you limit the number of places you can copy from and to, ideally only copies within existing buffers, then you naturally limit allocations.
+Limiting allocations reduces runtime in two ways:</p>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Reduce the overhead in taking the allocation.
+The heap is a shared resource, allocating on the heap requires working with shared data structures.
+This means locks, cache contention, etc. c.f. Amdahl&#8217;s Law <sup class="footnote">[<a id="_footnoteref_2" class="footnote" href="#_footnotedef_2" title="View footnote.">2</a>]</sup></p>
+</li>
+<li>
+<p>Reduce the overhead of freeing allocations.
+The less allocations you make, the less heap you consume and the less garbage you produce.
+Reducing these two factors reduces the overhead of background and foreground garbage collection.</p>
+</li>
+</ol>
+</div>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_tokenisation"><a class="anchor" href="#_tokenisation"></a><a class="link" href="#_tokenisation">Tokenisation</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>JSON is a stream of tokens.
+To build higher level components like pretty printers and decoders we need to break the stream into tokens.</p>
+</div>
+<div class="paragraph">
+<p>Go&#8217;s JSON decoder has two main components:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>A scanner, or tokeniser, that converts a stream a bytes into a stream of JSON tokens.</p>
+</li>
+<li>
+<p>An unmarshaller that applies a stream of JSON tokens to a Go object.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s talk about tokenization first.</p>
+</div>
+<div class="sect2">
+<h3 id="_what_is_a_token"><a class="anchor" href="#_what_is_a_token"></a><a class="link" href="#_what_is_a_token">What is a token?</a></h3>
+<div class="paragraph">
+<p>JSON is regular, well defined grammar.
+There is a great set of charts over on json.org.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-json" data-lang="json">{"a": 1, "b": true, "c": [1, "two", null]}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Is a stream of,</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>{</code>, the opening brace, signifying a collection of name/value pairs.</p>
+</li>
+<li>
+<p><code>"a"</code>, the string <code>a</code>.</p>
+</li>
+<li>
+<p><code>:</code>, a colon, the delimiter between the key and the value in the key/value pair.</p>
+</li>
+<li>
+<p><code>1</code>, the number one.</p>
+</li>
+<li>
+<p><code>,</code>, a comma, the delimiter between one key/value pair and the next.</p>
+</li>
+<li>
+<p><code>"b"</code>, the string <code>b</code>.</p>
+</li>
+<li>
+<p><code>:</code></p>
+</li>
+<li>
+<p><code>true</code>, the boolean value for true.</p>
+</li>
+<li>
+<p><code>,</code></p>
+</li>
+<li>
+<p><code>"c"</code>, the string <code>c</code>.</p>
+</li>
+<li>
+<p><code>:</code></p>
+</li>
+<li>
+<p><code>[</code>, the opening square brace, signifying and ordered list of values.</p>
+</li>
+<li>
+<p><code>1</code></p>
+</li>
+<li>
+<p><code>,</code></p>
+</li>
+<li>
+<p><code>"two"</code></p>
+</li>
+<li>
+<p><code>,</code></p>
+</li>
+<li>
+<p><code>null</code>, a null or void value (rare).</p>
+</li>
+<li>
+<p><code>]</code>, closing square brace, terminates the list of values</p>
+</li>
+<li>
+<p><code>}</code>, closing curly brace, terminating the key/value collection.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><code>encoding/json</code> does this with the <code>Decoder.Token</code> API.
+You declare a <code>json.Decoder</code>, then call <code>Token</code> until <code>err</code> is non <code>nil</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-go" data-lang="go">package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"strings"
+)
+
+func main() {
+	input := `{"a": 1, "b": true, "c": [1, "two", null]}`
+	dec := json.NewDecoder(strings.NewReader(input))
+	for {
+		tok, err := dec.Token()
+		if err != nil {
+			break
+		}
+		fmt.Printf("%v\t(%T)\n", tok, tok)
+	}
+
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When we run this we get the following output</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-bash" data-lang="bash">{       (json.Delim)
+a       (string)
+1       (float64)
+b       (string)
+true    (bool)
+c       (string)
+[       (json.Delim)
+1       (float64)
+two     (string)
+&lt;nil&gt;   (&lt;nil&gt;)
+]       (json.Delim)
+}       (json.Delim)</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This is rather convenient, <code>tok</code> is an <code>interface{}</code> value so it can represent both the value being returned, and also its type; strings are <code>string</code>, numbers are <code>float64</code>, booleans are real <code>true</code> and <code>false</code>, even <code>null</code> is represented as a <code>nil</code>.</p>
+</div>
+<div class="paragraph">
+<p>But there is a cost to this convenience.<sup class="footnote">[<a id="_footnoteref_3" class="footnote" href="#_footnotedef_3" title="View footnote.">3</a>]</sup>
+To see why, let&#8217;s talk about a string.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-go" data-lang="go">var b = make([]byte, 10)
+var s = string(b)</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When we write the statement <code>s = string(b)</code> the compiler makes a copy of <code>b</code>, because the rules of Go mandate that strings are immutable.
+If a <code>string</code> and a byte slice shared the same backing data, then changing <code>b</code> could change the contents of <code>s</code>.
+This would be bad, thus the expression <code>string(b)</code> makes a copy of the contents of <code>b</code>.</p>
+</div>
+<div class="paragraph">
+<p>Now, lets look at the inputs to the <code>json.Decoder</code>, it&#8217;s an <code>io.Reader</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-bash" data-lang="bash">% go doc encoding/json NewDecoder
+package json // import "encoding/json"
+
+func NewDecoder(r io.Reader) *Decoder
+    NewDecoder returns a new decoder that reads from r.
+
+    The decoder introduces its own buffering and may read data from r beyond the
+    JSON values requested.</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s look at the <code>io.Reader.Read</code> method</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-bash" data-lang="bash">% go doc io Reader.Read
+package io // import "io"
+
+func Read(p []byte) (n int, err error)</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You give <code>Read</code> a <code>[]byte</code> buffer, <code>Read</code> returns to you the number of bytes it read <em>into</em> the buffer, and possibly an error.</p>
+</div>
+<div class="paragraph">
+<p>Now we know the input is a stream of bytes, and the output is runes, float64s, bools, and strings.
+At a minimum the input <code>"hello"</code> is going to result in a byte slice <code>[]byte{'h','e','l','l','o'}</code> and that byte slice is going to be copied to a string.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-go" data-lang="go">package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"io"
+	"strings"
+)
+
+func main() {
+	input := `"hello"`
+	var r io.Reader = strings.NewReader(input) // reads strings as []byte
+	dec := json.NewDecoder(r)
+	tok, _ := dec.Token()
+	fmt.Printf("%s\t(%T)\n", tok, tok)
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <em>convenience</em> of the <code>Decoder.Token</code> API means one allocation per token.
+But it gets worse.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_values_assigned_to_interfaces_escape"><a class="anchor" href="#_values_assigned_to_interfaces_escape"></a><a class="link" href="#_values_assigned_to_interfaces_escape">Values assigned to interfaces escape</a></h3>
+<div class="paragraph">
+<p>A more serious issue, from a performance point of view, is assigning a value to an interface <em>generally</em> causes an allocation.
+Because of the design of the <code>Decoder.Token</code> API, the concrete value assigned to each token causes the value to escape to the heap.
+So not only do we have an allocation for every <code>[]byte</code> to <code>string</code> conversion, but each token escapes to the heap.
+The number of allocations is tied to the number of tokens in the file, and the size of those allocations will be in part related to the size of the file.
+The reason for this is the garbage collector.</p>
+</div>
+<div class="paragraph">
+<p>We all know that an interface value is a two word structure.
+It looks something like this <sup class="footnote">[<a id="_footnoteref_4" class="footnote" href="#_footnotedef_4" title="View footnote.">4</a>]</sup></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-go" data-lang="go">type interface struct {
+    type uintptr
+    data uintptr
+}</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<code>uintptr</code> above is not to suggest that <code>type</code> and <code>data</code> are pointers (although in most cases they are) just that the <em>size</em> of those fields is large enough to hold the address of a value in memory&#8201;&#8212;&#8201;the size of a pointer.
+It&#8217;s unsigned because a signed pointer would halve the address space, and a negative pointer doesn&#8217;t make any sense.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p><code>interface</code> values are special in that they record both the value and the <em>type of</em> the value.
+Another property of <code>interface</code> values is they can hold <em>any</em> value, regardless of their type.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+In early Go versions it was possible for an interface to store a <code>uintptr</code> or smaller value directly in the <code>data</code> field of the interface.
+However this changed in Go 1.6 <mark>TODO check</mark> because it is not possible to change two fields atomically,
+which caused a problem for the concurrent collector.
+<sup class="footnote">[<a id="_footnoteref_5" class="footnote" href="#_footnotedef_5" title="View footnote.">5</a>]</sup>.
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-go" data-lang="go">var x interface{} = 1
+x = "one"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>From the point of view of the compiler, this must change the type stored in <code>x</code> from <code>int</code> to <code>string</code> <em>and</em> the value from <code>1</code> to <code>"one"</code> atomically.</p>
+</div>
+<div class="paragraph">
+<p>To do this the compiler stores a <em>pointer</em> to the value in the <code>data</code> slot.
+This means, <em>each token escapes to the heap</em>.
+But it gets worse, we know that a Go <code>string</code> is itself a small struct.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-go" data-lang="go">type string struct {
+    ptr *[]byte
+    len int
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>So to convert a <code>[]byte</code> token to a <code>string</code> first we copy the <code>[]byte</code>, that goes on the heap, then a string header is created, and that goes on the heap, and finally the pointer to that header goes into the <code>data</code> slot in the interface.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-go" data-lang="go">package main
+
+import (
+	"encoding/json"
+	"strings"
+	"testing"
+)
+
+func BenchmarkJSONDecodeHello(b *testing.B) {
+	input := `"hello"`
+	r := strings.NewReader(input) // reads strings as []byte
+	dec := json.NewDecoder(r)
+	b.ReportAllocs()
+	b.SetBytes(int64(len(input)))
+	b.ResetTimer()
+	for i := 0; i &lt; b.N; i++ {
+		r.Seek(0, 0)
+		tok, _ := dec.Token()
+		if tok != "hello" {
+			b.Fatal()
+		}
+	}
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-bash" data-lang="bash">% go test -bench=. -memprofile=m.p json/tok_test.go
+goos: darwin
+goarch: amd64
+BenchmarkJSONDecodeHello-4       3523440               355 ns/op          19.73 MB/s          37 B/op          3 allocs/op
+PASS
+ok      command-line-arguments  1.951s</code></pre>
+</div>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="paragraph">
+<p>Take away: API design influences allocation.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_eliminating_allocations_through_api_design"><a class="anchor" href="#_eliminating_allocations_through_api_design"></a><a class="link" href="#_eliminating_allocations_through_api_design">Eliminating allocations through API design.</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Spoiler alert, most of the speedups of this package come from reducing allocations; specifically the time <em>not</em> spent in the heap allocation path, and the time not spent in GC cycles, is available for scanning.</p>
+</div>
+<div class="paragraph">
+<p>If we want to build an API that has lower allocations than <code>encoding/json</code>, we have to address each of the problems I&#8217;ve discussed.</p>
+</div>
+<div class="sect2">
+<h3 id="_implicit_tokens"><a class="anchor" href="#_implicit_tokens"></a><a class="link" href="#_implicit_tokens">Implicit tokens</a></h3>
+<div class="paragraph">
+<p>Let&#8217;s look back at the sequence of tokens; <code>{</code> <code>"a"</code> <code>:</code> <code>1</code> <code>,</code> <code>"b"</code> <code>:</code> <code>true</code> <code>,</code> <code>"c"</code> <code>:</code> <code>[</code> <code>1</code> <code>,</code> <code>"two"</code> <code>,</code> <code>null</code> <code>]</code> and <code>}</code>.</p>
+</div>
+<div class="paragraph">
+<p>It turns out that the first character in the token tells you what the token is</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>{</code>, <code>}</code> - collection start, end</p>
+</li>
+<li>
+<p><code>[</code>, <code>]</code> - array start, end</p>
+</li>
+<li>
+<p><code>t</code> - true</p>
+</li>
+<li>
+<p><code>f</code> - false</p>
+</li>
+<li>
+<p><code>n</code> - null</p>
+</li>
+<li>
+<p><code>"</code> - string</p>
+</li>
+<li>
+<p><code>-</code>, <code>0</code>-<code>9</code> - a number</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>This is the first improvement in the <code>Scanner.Next</code>, and <code>Decoder.NextToken</code> APIs.
+Rather than converting the <code>[]byte</code> to a value, it just returns the token straight from the input&#8212;&#8203;a simple subslice.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-go" data-lang="go">package main
+
+import (
+	"fmt"
+	"github.com/pkg/json"
+	"strings"
+)
+
+func main() {
+	input := `{"a": 1, "b": true, "c": [1, "two", null]}`
+	dec := json.NewDecoder(strings.NewReader(input))
+	for {
+		tok, err := dec.NextToken()
+		if err != nil {
+			break
+		}
+		fmt.Printf("%s\t(%T)\n", tok, tok)
+	}
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-bash" data-lang="bash">{       ([]uint8)
+"a"     ([]uint8)
+1       ([]uint8)
+"b"     ([]uint8)
+true    ([]uint8)
+"c"     ([]uint8)
+[       ([]uint8)
+1       ([]uint8)
+"two"   ([]uint8)
+null    ([]uint8)
+]       ([]uint8)
+}       ([]uint8)</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>There are a few subtleties with this API.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Because the output is a subslice of the input, not a copy, there are restrictions on how long the output is valid for.
+This is similar to the <code>bufio.Scanner</code> API.</p>
+</li>
+<li>
+<p>Sometimes people want to know type of the token; collection, array, string, number, etc, sometimes they want the token <em>value</em>, <em>the string</em>, the <em>number</em>, in a form they can work with.
+<code>Scanner.Next</code> and <code>Decoder.NextToken</code> aren&#8217;t convenient for that, but they can be used to build higher level abstractions.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_reading"><a class="anchor" href="#_reading"></a><a class="link" href="#_reading">Reading</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Let&#8217;s talk about reading data.
+This can be tricky to do efficiently because JSON is not length delimited, you have to read until you find the end of the token.
+The traditional way to do this is with an <code>io.Reader</code>.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>You can read one <code>byte</code> at a time, but you need a place to store the thing you&#8217;re walking over, also might need to put the <code>byte</code> back.</p>
+</li>
+<li>
+<p>You can read into a buffer, then look in buffer for start and end of token.
+If the end token isnât in the buffer you need to do a lot of bookkeeping and copying to move the data around the the buffer or grow the buffer to make room for more data.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><code>encoding/json</code> does a combination of these, often with a smattering of <code>sync.pool</code> to try to reuse small objects transparently.</p>
+</div>
+<div class="paragraph">
+<p>The alternative is an idea inspired by Steven Schveighoffer&#8217;s iopipe <sup class="footnote">[<a id="_footnoteref_6" class="footnote" href="#_footnotedef_6" title="View footnote.">6</a>]</sup> and Phil Pearl <sup class="footnote">[<a id="_footnoteref_7" class="footnote" href="#_footnotedef_7" title="View footnote.">7</a>]</sup>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-go" data-lang="go">// A byteReader implements a sliding window over an io.Reader.
+type byteReader struct {
+	data   []byte
+	offset int
+	r      io.Reader
+	err    error
+}
+
+// release discards n bytes from the front of the window.
+func (b *byteReader) release(n int) {
+	b.offset += n
+}
+
+// window returns the current window.
+// The window is invalidated by calls to release or extend.
+func (b *byteReader) window() []byte {
+	return b.data[b.offset:]
+}
+
+// extend extends the window with data from the underlying reader.
+func (b *byteReader) extend() int {</code></pre>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_example_whitespace"><a class="anchor" href="#_example_whitespace"></a><a class="link" href="#_example_whitespace">Example: whitespace</a></h3>
+<div class="paragraph">
+<p>JSON contains a mixture of tokens and whitespace.
+Space, tab, newline and carriage return can occur between tokens and are ignored, thus the search for a token begins with a search for the first <em>non</em> whitespace character.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-json" data-lang="json">{"a": 1, "b": true, "c": [1, "two", null]}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This is a good time to talk about optimising the search for whitespace with an example of using a <code>byteReader</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-go" data-lang="go">func countWhitespace(br *byteReader) int {
+	n := 0
+	w := br.window()
+	for {
+		for _, c := range w {
+			if isWhitespace(c) {
+				n++
+			}
+		}
+		br.release(len(w))
+		if br.extend() == 0 {
+			return n
+		}
+		w = br.window()
+	}
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This does the minimum, visit each character and makes one function call (which is inlined), and counts the number of whitespace characters.
+Any (useful) JSON decoder code cannot go faster that this.</p>
+</div>
+<div class="paragraph">
+<p>What&#8217;s the fastest way to implement <code>isWhitespace</code>?
+Here&#8217;s the implementation that <code>encoding/json</code> uses (with a different name)</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-go" data-lang="go">func isWhitespace(c byte) bool {
+        return c &lt;= ' ' &amp;&amp; (c == ' ' || c == '\t' || c == '\r' || c == '\n')
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Based on this research<sup class="footnote">[<a id="_footnoteref_8" class="footnote" href="#_footnotedef_8" title="View footnote.">8</a>]</sup>, this is <em>reliably</em> the fastest.<sup class="footnote">[<a id="_footnoteref_9" class="footnote" href="#_footnotedef_9" title="View footnote.">9</a>]</sup></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-go" data-lang="go">var whitespace = [256]bool{
+	' ':  true,
+	'\t': true,
+	'\n': true,
+	'\r': true,
+}
+
+func isWhitespace(c byte) bool {
+	return whitespace[c]
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code>name                             time/op
+CountWhitespace/canada-16          1.10ms Â± 2%
+CountWhitespace/citm_catalog-16     838Âµs Â± 1%
+CountWhitespace/twitter-16          306Âµs Â± 1%
+CountWhitespace/code-16             937Âµs Â± 1%
+CountWhitespace/example-16         6.40Âµs Â± 1%
+CountWhitespace/sample-16           333Âµs Â± 1%
+
+name                             speed
+CountWhitespace/canada-16        2.04GB/s Â± 2%
+CountWhitespace/citm_catalog-16  2.06GB/s Â± 1%
+CountWhitespace/twitter-16       2.06GB/s Â± 1%
+CountWhitespace/code-16          2.07GB/s Â± 1%
+CountWhitespace/example-16       2.04GB/s Â± 1%
+CountWhitespace/sample-16        2.06GB/s Â± 1%</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>So this is our baseline.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_scanning"><a class="anchor" href="#_scanning"></a><a class="link" href="#_scanning">Scanning</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Now we can tell which characters are tokens and which are simply whitespace, let&#8217;s step up a level and talk about breaking up those tokens.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-go" data-lang="go">// Next returns a []byte referencing the the next lexical token in the stream.
+// The []byte is valid until Next is called again.
+// If the stream is at its end, or an error has occured, Next returns a zero
+// length []byte slice.
+//
+// A valid token begins with one of the following:
+//
+//  { Object start
+//  [ Array start
+//  } Object end
+//  ] Array End
+//  , Literal comma
+//  : Literal colon
+//  t JSON true
+//  f JSON false
+//  n JSON null
+//  " A string, possibly containing backslash escaped entites.
+//  -, 0-9 A number
+func (s *Scanner) Next() []byte {
+	// release the previous token
+	s.br.release(s.pos)
+	s.pos = 0
+
+	c := s.token()
+	length := 0
+	switch c {
+	case ObjectStart, ObjectEnd, Colon, Comma, ArrayStart, ArrayEnd:
+		length = 1
+		s.pos = 1
+	case True:
+		length = validateToken(&amp;s.br, "true")
+		s.pos = length
+	case False:
+		length = validateToken(&amp;s.br, "false")
+		s.pos = length
+	case Null:
+		length = validateToken(&amp;s.br, "null")
+		s.pos = length
+	case String:
+		// string
+		length = parseString(&amp;s.br)
+		if length &lt; 2 {
+			return nil
+		}
+		s.pos = length
+	case 0:
+		// eof
+		return nil
+	default:
+		// ensure the number is correct.
+		length = s.parseNumber()
+		if length &lt; 0 {
+			return nil
+		}
+	}
+	return s.br.window()[:length]
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This is the core loop of <code>Scanner.Next</code>.
+<code>Scanner.Next</code> skips over any intermediate whitespace, determines the token from the first character in the window, then continues to read until the token is read or we hit the end of the input.</p>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s look at how <code>token</code> works, then we&#8217;ll talk about some optimisations</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-go" data-lang="go">func (s *Scanner) token() byte {
+	w := s.br.window()
+	for {
+		for _, c := range w {
+			if whitespace[c] {
+				s.pos++
+				continue
+			}
+
+			// release whitespace
+			s.br.release(s.pos)
+			s.pos = 0
+			return c
+		}
+		if s.br.extend() == 0 {
+			// eof
+			return 0
+		}
+		w = s.br.window()[s.pos:]
+	}
+}
+
+var whitespace = [256]bool{
+	' ':  true,
+	'\r': true,
+	'\n': true,
+	'\t': true,
+}</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>We start by getting the current window from the <code>byteReader</code>.
+This is a <code>[]byte</code> slice of all the data that is yet to be read.</p>
+</li>
+<li>
+<p>We&#8217;re looking for the first non whitespace character.
+If the character is a whitespace we increment <code>s.pos</code> to ignore the character and loop around.</p>
+</li>
+<li>
+<p>If we do find a non whitespace character, we release <code>s.pos</code> characters from the front of the window.
+Now the start of the window is properly aligned with the first character of the token.</p>
+</li>
+<li>
+<p>It turns out that we also get the first character of the token for free, it&#8217;s in <code>c</code>, so we can return that as a hint to <code>Scanner.Next</code>.</p>
+</li>
+<li>
+<p>If we run out of characters without hitting a token then we called <code>extend()</code> to grow the window.</p>
+</li>
+<li>
+<p>If we couldn&#8217;t grow, then we&#8217;ve run out of input and haven&#8217;t got a token, so give up.</p>
+</li>
+<li>
+<p>Otherwise update <code>w</code> with a new window.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>This is the basic operation of <code>byteReader</code>, we&#8217;ll see that pattern repeated across the scanner.
+Some things to note:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Note the lack of error handling, it&#8217;s not part of the inner loop, it only happens when we have to read more data from the underlying reader.</p>
+</li>
+<li>
+<p><code>extend</code> hides the process of reading into, growing, refilling the buffer, it makes the loop above it--<code>Scanner.token</code> simpler; if there is data in the window, process it, extend if you need too, give up if you can&#8217;t extend.</p>
+</li>
+<li>
+<p><code>release</code> is similar, it shrinks the start of the window to exclude data that we don&#8217;t care about.</p>
+</li>
+<li>
+<p><code>extend</code> is not in the hot path, so there is no need to optimise it, its performance is a function of the buffer it is given.
+In practice a buffer of 8k is sufficient.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s talk about the performance of this code.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code>name                     time/op
+Scanner/canada-16         4.41ms Â± 2%
+Scanner/citm_catalog-16   2.55ms Â± 3%
+Scanner/twitter-16        1.03ms Â± 1%
+Scanner/code-16           4.21ms Â± 1%
+Scanner/example-16        21.4Âµs Â± 1%
+Scanner/sample-16          822Âµs Â± 1%
+
+name                     speed
+Scanner/canada-16        510MB/s Â± 2%
+Scanner/citm_catalog-16  677MB/s Â± 3%
+Scanner/twitter-16       615MB/s Â± 1%
+Scanner/code-16          461MB/s Â± 1%
+Scanner/example-16       608MB/s Â± 1%
+Scanner/sample-16        837MB/s Â± 1%</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This is a <a href="https://github.com/pkg/json/blob/master/bench_test.go#L35">benchmark</a> you saw earlier, minus a few optimisations we&#8217;ll talk about next.</p>
+</div>
+<div class="paragraph">
+<p>Comparing the performance of <code>Scanner.Next</code> to our whitespace benchmark we can see that we&#8217;re between 1/4 and 2/5ths of our baseline.</p>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s talk about the first improvement we can make to the code.
+Note the amount of work being spent to keep <code>s.pos</code> up to date.
+We know that <code>s.pos</code> is set to 0 just before <code>Scanner.Next</code> calls this function, and we set <code>s.pos</code> to zero on the way out of the function, so the changes we make to <code>s.pos</code> within the function are invisible&#8212;&#8203;it&#8217;s zero on entry, and zero on exit.</p>
+</div>
+<div class="paragraph">
+<p>We can rewrite the function to keep a local <code>pos</code> value, which has an impressive effect on <code>token</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-go" data-lang="go">func (s *Scanner) token() byte {
+	w := s.br.window()
+	pos := 0
+	for {
+		for _, c := range w {
+			if whitespace[c] {
+				pos++
+				continue
+			}
+
+			// release whitespace
+			s.br.release(pos)
+			return c
+		}
+		if s.br.extend() == 0 {
+			// eof
+			return 0
+		}
+		w = s.br.window()[pos:]
+	}
+}
+
+var whitespace = [256]bool{
+	' ':  true,
+	'\r': true,
+	'\n': true,
+	'\t': true,
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code>name                     old time/op    new time/op    delta
+Scanner/canada-16          4.39ms Â± 1%    4.43ms Â± 4%     ~     (p=1.000 n=5+5)
+Scanner/citm_catalog-16    2.52ms Â± 1%    1.80ms Â± 4%  -28.46%  (p=0.008 n=5+5)
+Scanner/twitter-16         1.03ms Â± 2%    0.95ms Â± 3%   -7.41%  (p=0.008 n=5+5)
+Scanner/code-16            4.24ms Â± 2%    4.18ms Â± 1%     ~     (p=0.095 n=5+5)
+Scanner/example-16         21.4Âµs Â± 1%    18.9Âµs Â± 2%  -11.68%  (p=0.008 n=5+5)
+Scanner/sample-16           828Âµs Â± 2%     528Âµs Â± 2%  -36.24%  (p=0.008 n=5+5)
+
+name                     old speed      new speed      delta
+Scanner/canada-16         512MB/s Â± 1%   509MB/s Â± 4%     ~     (p=1.000 n=5+5)
+Scanner/citm_catalog-16   685MB/s Â± 1%   958MB/s Â± 4%  +39.84%  (p=0.008 n=5+5)
+Scanner/twitter-16        616MB/s Â± 2%   665MB/s Â± 3%   +8.01%  (p=0.008 n=5+5)
+Scanner/code-16           458MB/s Â± 2%   465MB/s Â± 1%     ~     (p=0.095 n=5+5)
+Scanner/example-16        608MB/s Â± 1%   688MB/s Â± 2%  +13.23%  (p=0.008 n=5+5)
+Scanner/sample-16         831MB/s Â± 2%  1303MB/s Â± 2%  +56.84%  (p=0.008 n=5+5)</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>By keeping <code>pos</code> local the compiler avoided those temporary writes back to memory.</p>
+</div>
+<div class="paragraph">
+<p>The question I have for you is why did this improve some inputs and not others?</p>
+</div>
+<div class="paragraph">
+<p>The answer, I think, is different inputs have different amounts of whitespace.
+For example <code>canada</code> only has 33 whitespace characters whereas <code>citm</code> has 1,227,563.</p>
+</div>
+<div class="paragraph">
+<p>There is a larger improvement we can make for the runtime of this code, and it relates to inlining.
+Inlining is the process of automatically (or manually) copying the body of a function into, <em>in line with</em>, its caller.
+This avoids the overhead of the function call.</p>
+</div>
+<div class="paragraph">
+<p><em>Usually</em> inlining is performed automatically by the compiler according to a set of rules it controls.
+The Go compiler has reasonable support for inlining, but has a number of limitations.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code> % go build -gcflags=-m=2 2&gt;&amp;1 | grep cannot | grep -v decoder
+./reader.go:31:6: cannot inline (*byteReader).extend: function too complex: cost 198 exceeds budget 80
+./scanner.go:99:6: cannot inline (*Scanner).token: unhandled op FOR
+./scanner.go:130:6: cannot inline validateToken: unhandled op FOR
+./scanner.go:153:6: cannot inline parseString: unhandled op FOR
+./scanner.go:182:6: cannot inline (*Scanner).parseNumber: unhandled op FOR
+./scanner.go:56:6: cannot inline (*Scanner).Next: function too complex: cost 476 exceeds budget 80</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The first is the size of the function, <code>byteReader.extend</code> cannot be inlined because it is too complex.
+<sup class="footnote">[<a id="_footnoteref_10" class="footnote" href="#_footnotedef_10" title="View footnote.">10</a>]</sup>
+The second is statements within the function, <code>Scanner.token</code> cannot be inlined because it contains a <code>for</code> statement.
+Also note that <code>Scanner.Next</code>, the caller of <code>Scanner.token</code> cannot be inlined because it is also too complex.</p>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s go back to the constraints.
+<code>Scanner.Next</code> is called for each token in the input.
+This means that <code>Scanner.token</code> is called for each token in the input.
+<code>Scanner.token</code> cannot be automatically inlined into its caller because it is too complex.
+Therefore we&#8217;re paying for an extra function call for each token.</p>
+</div>
+<div class="paragraph">
+<p>We can remove this overhead by manually inlining <code>Scanner.token</code> into its caller.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-go" data-lang="go">func (s *Scanner) Next() []byte {
+	// release the previous token
+	s.br.release(s.pos)
+	w := s.br.window()
+	pos := 0
+	for {
+		for _, c := range w {
+			if whitespace[c] {
+				pos++
+				continue
+			}
+
+			// release whitespace
+			s.br.release(pos)
+
+			length := 0
+			switch c {
+			case ObjectStart, ObjectEnd, Colon, Comma, ArrayStart, ArrayEnd:
+				length = 1
+				s.pos = 1
+			case True:
+				length = validateToken(&amp;s.br, "true")
+				s.pos = length
+			case False:
+				length = validateToken(&amp;s.br, "false")
+				s.pos = length
+			case Null:
+				length = validateToken(&amp;s.br, "null")
+				s.pos = length
+			case String:
+				// string
+				length = parseString(&amp;s.br)
+				if length &lt; 2 {
+					return nil
+				}
+				s.pos = length
+			default:
+				// ensure the number is correct.
+				length = s.parseNumber()
+				if length &lt; 0 {
+					return nil
+				}
+			}
+			return s.br.window()[:length]
+		}
+		if s.br.extend() == 0 {
+			// eof
+			return nil
+		}
+		w = s.br.window()[pos:]
+	}
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The results support our thesis:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code>name                     old time/op    new time/op    delta
+Scanner/canada-16          4.36ms Â± 1%    3.50ms Â± 0%  -19.68%  (p=0.008 n=5+5)
+Scanner/citm_catalog-16    1.80ms Â± 1%    1.56ms Â± 2%  -13.16%  (p=0.008 n=5+5)
+Scanner/twitter-16          965Âµs Â± 2%     833Âµs Â± 2%  -13.75%  (p=0.008 n=5+5)
+Scanner/code-16            4.15ms Â± 1%    3.61ms Â± 1%  -12.82%  (p=0.008 n=5+5)
+Scanner/example-16         18.9Âµs Â± 2%    16.6Âµs Â± 1%  -12.42%  (p=0.008 n=5+5)
+Scanner/sample-16           515Âµs Â± 1%     472Âµs Â± 2%   -8.34%  (p=0.008 n=5+5)
+
+name                     old speed      new speed      delta
+Scanner/canada-16         516MB/s Â± 1%   642MB/s Â± 0%  +24.50%  (p=0.008 n=5+5)
+Scanner/citm_catalog-16   960MB/s Â± 1%  1105MB/s Â± 2%  +15.16%  (p=0.008 n=5+5)
+Scanner/twitter-16        654MB/s Â± 2%   759MB/s Â± 1%  +15.94%  (p=0.008 n=5+5)
+Scanner/code-16           468MB/s Â± 1%   537MB/s Â± 1%  +14.69%  (p=0.008 n=5+5)
+Scanner/example-16        689MB/s Â± 2%   787MB/s Â± 1%  +14.17%  (p=0.008 n=5+5)
+Scanner/sample-16        1.33GB/s Â± 1%  1.46GB/s Â± 1%   +9.11%  (p=0.008 n=5+5)</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>By saving the function call we&#8217;ve improved throughput by 9-24%.
+The largest improvement comes from <code>canada</code>, which basically contained no whitespace, so the call to <code>Scanner.token</code> almost always returned immediately having done no work, while also paying for all the <code>s.pos</code> and <code>release</code> overhead.</p>
+</div>
+<div class="paragraph">
+<p>This is where the inner loop of the <code>Scanner</code> stands today.
+Note that <code>citm</code> is over 50% of the baseline, <code>sample</code> is nearly 75%.
+To recap the major optimisations were:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>whitespace[c]</code></p>
+</li>
+<li>
+<p>Avoiding <code>s.pos</code> updates. They cannot be registerised, CPU has to do a write on every iteration.
+<code>s.pos</code> updates reduced from one per byte to one per token.</p>
+</li>
+<li>
+<p><code>Scanner.Next</code> and <code>Scanner.token</code> were effectively one function spread over two.
+Each are too large to be inlined, so we&#8217;re paying for an extra function call per token.
+Manually inlining them increased the indentation depth of the function, but delivered substantial speedups.</p>
+</li>
+<li>
+<p><em>Most</em> JSON contains some whitespace, it&#8217;s moderately optimised for human readability.
+It turns out, the more whitespace, the faster <code>pkg/json</code> decodes.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_decoding"><a class="anchor" href="#_decoding"></a><a class="link" href="#_decoding">Decoding</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>So far we have a <code>Scanner</code> which tokenises input at 50-75% of the baseline speed we established before.
+But there are a few more things we need to make the scanner fully functional.</p>
+</div>
+<div class="paragraph">
+<p>The first part of that is validation.</p>
+</div>
+<div class="sect2">
+<h3 id="_validation"><a class="anchor" href="#_validation"></a><a class="link" href="#_validation">Validation</a></h3>
+<div class="paragraph">
+<p>JSON is a state machine.
+Depending on the current token you&#8217;re in, some may be valid some may not be.
+For example, if you&#8217;ve read these tokens <code>{</code>, <code>"username"</code>, then the only valid token is <code>:</code>.
+To track this we need to layer some logic on top of <code>Scanner.Next</code> to assert that the token sequence is valid.
+This is the role of <code>Decoder.NextToken</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-go" data-lang="go">const (
+	stateValue        = 0
+	stateObjectString = iota
+	stateObjectColon
+	stateObjectValue
+	stateObjectComma
+	stateArrayValue
+	stateArrayComma
+	stateEnd
+)
+
+func (d *Decoder) NextToken() ([]byte, error) {
+	tok := d.scanner.Next()
+	if len(tok) &lt; 1 {
+		return nil, io.EOF
+	}
+	switch d.state {
+	case stateValue:
+		return d.stateValue(tok)
+	case stateObjectString:
+		return d.stateObjectString(tok)
+	case stateObjectColon:
+		return d.stateObjectColon(tok)
+	case stateObjectValue:
+		return d.stateObjectValue(tok)
+	case stateObjectComma:
+		return d.stateObjectComma(tok)
+	case stateArrayValue:
+		return d.stateArrayValue(tok)
+	case stateArrayComma:
+		return d.stateArrayComma(tok)
+	case stateEnd:
+		fallthrough
+	default:
+		return nil, io.EOF
+	}
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This is pretty straightforward stuff.
+We take track the current state in <code>d.state</code> and based on its value we dispatch to the various state methods.</p>
+</div>
+<details>
+<summary class="title">Click to see the source for the various <code>state</code> methods.</summary>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-go" data-lang="go">func (d *Decoder) stateObjectString(tok []byte) ([]byte, error) {
+	switch tok[0] {
+	case '}':
+		inObj := d.pop()
+		switch {
+		case d.len() == 0:
+			d.state = stateEnd
+		case inObj:
+			d.state = stateObjectComma
+		case !inObj:
+			d.state = stateArrayComma
+		}
+		return tok, nil
+	case '"':
+		d.state = stateObjectColon
+		return tok, nil
+	default:
+		return nil, fmt.Errorf("stateObjectString: missing string key")
+	}
+}
+
+func (d *Decoder) stateObjectColon(tok []byte) ([]byte, error) {
+	switch tok[0] {
+	case Colon:
+		d.state = stateObjectValue
+		return d.NextToken()
+	default:
+		return tok, fmt.Errorf("stateObjectColon: expecting colon")
+	}
+}
+
+func (d *Decoder) stateObjectValue(tok []byte) ([]byte, error) {
+	switch tok[0] {
+	case '{':
+		d.state = stateObjectString
+		d.push(true)
+		return tok, nil
+	case '[':
+		d.state = stateArrayValue
+		d.push(false)
+		return tok, nil
+	default:
+		d.state = stateObjectComma
+		return tok, nil
+	}
+}
+
+func (d *Decoder) stateObjectComma(tok []byte) ([]byte, error) {
+	switch tok[0] {
+	case '}':
+		inObj := d.pop()
+		switch {
+		case d.len() == 0:
+			d.state = stateEnd
+		case inObj:
+			d.state = stateObjectComma
+		case !inObj:
+			d.state = stateArrayComma
+		}
+		return tok, nil
+	case Comma:
+		d.state = stateObjectString
+		return d.NextToken()
+	default:
+		return tok, fmt.Errorf("stateObjectComma: expecting comma")
+	}
+}
+
+func (d *Decoder) stateArrayValue(tok []byte) ([]byte, error) {
+	switch tok[0] {
+	case '{':
+		d.state = stateObjectString
+		d.push(true)
+		return tok, nil
+	case '[':
+		d.state = stateArrayValue
+		d.push(false)
+		return tok, nil
+	case ']':
+		inObj := d.pop()
+		switch {
+		case d.len() == 0:
+			d.state = stateEnd
+		case inObj:
+			d.state = stateObjectComma
+		case !inObj:
+			d.state = stateArrayComma
+		}
+		return tok, nil
+	case ',':
+		return nil, fmt.Errorf("stateArrayValue: unexpected comma")
+	default:
+		d.state = stateArrayComma
+		return tok, nil
+	}
+}
+
+func (d *Decoder) stateArrayComma(tok []byte) ([]byte, error) {
+	switch tok[0] {
+	case ']':
+		inObj := d.pop()
+		switch {
+		case d.len() == 0:
+			d.state = stateEnd
+		case inObj:
+			d.state = stateObjectComma
+		case !inObj:
+			d.state = stateArrayComma
+		}
+		return tok, nil
+	case Comma:
+		d.state = stateArrayValue
+		return d.NextToken()
+	default:
+		return nil, fmt.Errorf("stateArrayComma: expected comma, %v", d.stack)
+	}
+}
+
+func (d *Decoder) stateValue(tok []byte) ([]byte, error) {
+	switch tok[0] {
+	case '{':
+		d.state = stateObjectString
+		d.push(true)
+		return tok, nil
+	case '[':
+		d.state = stateArrayValue
+		d.push(false)
+		return tok, nil
+	case ',':
+		return nil, fmt.Errorf("stateValue: unexpected comma")
+	default:
+		d.state = stateEnd
+		return tok, nil
+	}
+}</code></pre>
+</div>
+</div>
+</div>
+</details>
+<div class="paragraph">
+<p>Let&#8217;s look at the results.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code>name                                           time/op
+DecoderNextToken/pkgjson/canada-16               5.64ms Â± 1%
+DecoderNextToken/encodingjson/canada-16          65.1ms Â± 1%
+DecoderNextToken/pkgjson/citm_catalog-16         2.42ms Â± 2%
+DecoderNextToken/encodingjson/citm_catalog-16    19.8ms Â± 1%
+DecoderNextToken/pkgjson/twitter-16              1.18ms Â± 1%
+DecoderNextToken/encodingjson/twitter-16         12.1ms Â± 0%
+DecoderNextToken/pkgjson/code-16                 6.10ms Â± 2%
+DecoderNextToken/encodingjson/code-16            77.5ms Â± 1%
+DecoderNextToken/pkgjson/example-16              25.2Âµs Â± 1%
+DecoderNextToken/encodingjson/example-16          266Âµs Â± 1%
+DecoderNextToken/pkgjson/sample-16                559Âµs Â± 0%
+DecoderNextToken/encodingjson/sample-16          3.18ms Â± 2%
+
+name                                           speed
+DecoderNextToken/pkgjson/canada-16              399MB/s Â± 1%
+DecoderNextToken/encodingjson/canada-16        34.6MB/s Â± 1%
+DecoderNextToken/pkgjson/citm_catalog-16        713MB/s Â± 2%
+DecoderNextToken/encodingjson/citm_catalog-16  87.1MB/s Â± 1%
+DecoderNextToken/pkgjson/twitter-16             537MB/s Â± 1%
+DecoderNextToken/encodingjson/twitter-16       52.2MB/s Â± 0%
+DecoderNextToken/pkgjson/code-16                318MB/s Â± 2%
+DecoderNextToken/encodingjson/code-16          25.0MB/s Â± 1%
+DecoderNextToken/pkgjson/example-16             517MB/s Â± 1%
+DecoderNextToken/encodingjson/example-16       49.0MB/s Â± 1%
+DecoderNextToken/pkgjson/sample-16             1.23GB/s Â± 0%
+DecoderNextToken/encodingjson/sample-16         216MB/s Â± 2%</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Compared to <code>encoding/json</code> we&#8217;re 8-10x faster.
+But there are some things we can do to improve:</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_computed_goto"><a class="anchor" href="#_computed_goto"></a><a class="link" href="#_computed_goto">Computed goto</a></h3>
+<div class="paragraph">
+<p>Central to the operation of <code>Decoder.NextToken</code> is the <code>switch</code> statement.
+As we saw earlier in the whitespace benchmark <code>switch</code> was the second worse performer.
+This is because <code>switch</code>, in the general case at least, is implemented as a set of <code>if {} else if {} ..</code> operations.
+Effectively what the compiler sees is</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-go" data-lang="go">func (d *Decoder) NextToken() ([]byte, error) {
+	tok := d.scanner.Next()
+	if len(tok) &lt; 1 {
+		return nil, io.EOF
+	}
+	if d.state == stateValue {
+		return d.stateValue(tok)
+	}
+	if d.state == stateObjectString {
+		return d.stateObjectString(tok)
+	}
+	if d.state == stateObjectColon {
+		return d.stateObjectColon(tok)
+	}
+	if d.state == stateObjectValue {
+		return d.stateObjectValue(tok)
+	}
+	if d.state == stateObjectComma {
+		return d.stateObjectComma(tok)
+	}
+	if d.state == stateArrayValue {
+		return d.stateArrayValue(tok)
+	}
+	if d.state == stateArrayComma {
+		return d.stateArrayComma(tok)
+	}
+	return nil, io.EOF
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Benchmarking this explicit <code>if {} else {} &#8230;&#8203;</code> version confirms this is close to what the compiler is seeing:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code>DecoderNextToken/pkgjson/canada-16               5.60ms Â± 0%    5.65ms Â± 0%  +0.96%  (p=0.008 n=5+5)
+DecoderNextToken/encodingjson/canada-16          64.9ms Â± 1%    65.6ms Â± 1%    ~     (p=0.151 n=5+5)
+DecoderNextToken/pkgjson/citm_catalog-16         2.41ms Â± 1%    2.45ms Â± 1%  +1.42%  (p=0.016 n=5+5)
+DecoderNextToken/encodingjson/citm_catalog-16    19.8ms Â± 1%    19.7ms Â± 0%    ~     (p=0.690 n=5+5)
+DecoderNextToken/pkgjson/twitter-16              1.17ms Â± 1%    1.18ms Â± 2%    ~     (p=1.000 n=5+5)
+DecoderNextToken/encodingjson/twitter-16         12.2ms Â± 1%    12.1ms Â± 1%    ~     (p=0.310 n=5+5)
+DecoderNextToken/pkgjson/code-16                 6.11ms Â± 3%    6.09ms Â± 1%    ~     (p=1.000 n=5+5)
+DecoderNextToken/encodingjson/code-16            77.7ms Â± 2%    77.2ms Â± 1%    ~     (p=0.548 n=5+5)
+DecoderNextToken/pkgjson/example-16              25.0Âµs Â± 0%    25.0Âµs Â± 1%    ~     (p=0.841 n=5+5)
+DecoderNextToken/encodingjson/example-16          263Âµs Â± 1%     264Âµs Â± 1%    ~     (p=0.222 n=5+5)
+DecoderNextToken/pkgjson/sample-16                560Âµs Â± 1%     558Âµs Â± 1%    ~     (p=0.841 n=5+5)
+DecoderNextToken/encodingjson/sample-16          3.16ms Â± 1%    3.19ms Â± 1%    ~     (p=0.095 n=5+5)
+
+name                                           old speed      new speed      delta
+DecoderNextToken/pkgjson/canada-16              402MB/s Â± 0%   398MB/s Â± 0%  -0.95%  (p=0.008 n=5+5)
+DecoderNextToken/encodingjson/canada-16        34.7MB/s Â± 1%  34.3MB/s Â± 1%    ~     (p=0.151 n=5+5)
+DecoderNextToken/pkgjson/citm_catalog-16        716MB/s Â± 1%   706MB/s Â± 1%  -1.39%  (p=0.016 n=5+5)
+DecoderNextToken/encodingjson/citm_catalog-16  87.3MB/s Â± 1%  87.6MB/s Â± 0%    ~     (p=0.690 n=5+5)
+DecoderNextToken/pkgjson/twitter-16             539MB/s Â± 1%   537MB/s Â± 2%    ~     (p=1.000 n=5+5)
+DecoderNextToken/encodingjson/twitter-16       51.9MB/s Â± 1%  52.2MB/s Â± 1%    ~     (p=0.310 n=5+5)
+DecoderNextToken/pkgjson/code-16                318MB/s Â± 2%   319MB/s Â± 1%    ~     (p=1.000 n=5+5)
+DecoderNextToken/encodingjson/code-16          25.0MB/s Â± 2%  25.1MB/s Â± 1%    ~     (p=0.548 n=5+5)
+DecoderNextToken/pkgjson/example-16             521MB/s Â± 0%   520MB/s Â± 1%    ~     (p=0.841 n=5+5)
+DecoderNextToken/encodingjson/example-16       49.5MB/s Â± 1%  49.3MB/s Â± 1%    ~     (p=0.167 n=5+5)
+DecoderNextToken/pkgjson/sample-16             1.23GB/s Â± 1%  1.23GB/s Â± 1%    ~     (p=0.841 n=5+5)
+DecoderNextToken/encodingjson/sample-16         218MB/s Â± 1%   216MB/s Â± 1%    ~     (p=0.095 n=5+5)</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><code>switch</code> is convenient, but not optimal in the hot path.
+This problem turns up in many places; bytecode interpreters are a classic example.
+One of the optimisations compilers can make (although the Go compiler does not implement this currently) is to turn this set of <code>if &#8230;&#8203; else</code> clauses into a table.
+This can be space efficient if the state space is small and dense (often it is not), and the result might be something like this</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-go" data-lang="go">var stateTable = [...]func(*Decoder, []byte) ([]byte, error){
+	stateValue:        (*Decoder).stateValue,
+	stateObjectString: (*Decoder).stateObjectString,
+	stateObjectColon:  (*Decoder).stateObjectColon,
+	stateObjectValue:  (*Decoder).stateObjectValue,
+	stateObjectComma:  (*Decoder).stateObjectComma,
+	stateArrayValue:   (*Decoder).stateArrayValue,
+	stateArrayComma:   (*Decoder).stateArrayComma,
+	stateEnd:          (*Decoder).stateEnd,
+}
+
+func (d *Decoder) NextToken() ([]byte, error) {
+	tok := d.scanner.Next()
+	if len(tok) &lt; 1 {
+		return nil, io.EOF
+	}
+	return stateTable[d.state](d, tok)
+}</code></pre>
+</div>
+</div>
+<details>
+<summary class="title">Unfortunately this won&#8217;t compile because there is an initalisation loop.</summary>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code>./decoder.go:115:5: initialization loop:
+        /Users/davecheney/devel/json/decoder.go:115:5: stateTable refers to
+        /Users/davecheney/devel/json/decoder.go:155:19: (*Decoder).stateObjectColon refers to
+        /Users/davecheney/devel/json/decoder.go:126:19: (*Decoder).NextToken refers to
+        /Users/davecheney/devel/json/decoder.go:115:5: stateTable
+FAIL    github.com/pkg/json [build failed\]</code></pre>
+</div>
+</div>
+</div>
+</details>
+<div class="paragraph">
+<p>But there is a better trick that we <em>can</em> use that is more space efficient than this table.
+It&#8217;s one that <code>encoding/json</code> uses and is sometimes called a <em>computed goto</em>.</p>
+</div>
+<div class="paragraph">
+<p>If you look at the table above there is a pattern.
+Each <code>state</code> enumeration is matched with exactly one method.
+We talk about <code>state</code> values as a proxy for the method we want to call.
+What if we could just store the method directly and call it directly.
+And infact, we can do just that.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-go" data-lang="go">// A Decoder decodes JSON values from an input stream.
+type Decoder struct {
+	scanner *Scanner
+	state   func(*Decoder, []byte) ([]byte, error)
+	stack
+}
+
+func (d *Decoder) NextToken() ([]byte, error) {
+	tok := d.scanner.Next()
+	if len(tok) &lt; 1 {
+		return nil, io.EOF
+	}
+	return d.state(d, tok)
+}</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The the <code>d.state(d.tok)</code> form is known as a <a href="https://golang.org/ref/spec#Method_expressions"><em>method expression</em></a>.
+It&#8217;s rare to see this in most Go code, but in effect it lets you store a method as a value, then later call that method by supplying your own receiver.</p>
+</div>
+<div class="paragraph">
+<p>Method expressions aren&#8217;t that common because in Go 1.1 the ability to capture the receiver of a method was added.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-go" data-lang="go">package main
+
+type T struct{}
+
+func (T) Foo()
+
+func main() {
+	x := (T).Foo // method expression
+	var t T
+	y := t.Foo // regular function value
+}</code></pre>
+</div>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The results aren&#8217;t that promising</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code>name                                           old time/op    new time/op    delta
+DecoderNextToken/pkgjson/canada-16               5.60ms Â± 0%    5.61ms Â± 0%     ~     (p=0.841 n=5+5)
+DecoderNextToken/encodingjson/canada-16          64.9ms Â± 1%    64.4ms Â± 0%     ~     (p=0.222 n=5+5)
+DecoderNextToken/pkgjson/citm_catalog-16         2.41ms Â± 1%    2.42ms Â± 1%     ~     (p=0.310 n=5+5)
+DecoderNextToken/encodingjson/citm_catalog-16    19.8ms Â± 1%    19.7ms Â± 1%     ~     (p=0.548 n=5+5)
+DecoderNextToken/pkgjson/twitter-16              1.17ms Â± 1%    1.20ms Â± 2%   +2.70%  (p=0.008 n=5+5)
+DecoderNextToken/encodingjson/twitter-16         12.2ms Â± 1%    12.1ms Â± 1%     ~     (p=1.000 n=5+5)
+DecoderNextToken/pkgjson/code-16                 6.11ms Â± 3%    6.37ms Â± 4%   +4.26%  (p=0.016 n=5+5)
+DecoderNextToken/encodingjson/code-16            77.7ms Â± 2%    78.6ms Â± 2%     ~     (p=0.310 n=5+5)
+DecoderNextToken/pkgjson/example-16              25.0Âµs Â± 0%    25.6Âµs Â± 1%   +2.25%  (p=0.008 n=5+5)
+DecoderNextToken/encodingjson/example-16          263Âµs Â± 1%     265Âµs Â± 2%     ~     (p=0.222 n=5+5)
+DecoderNextToken/pkgjson/sample-16                560Âµs Â± 1%     553Âµs Â± 0%   -1.15%  (p=0.008 n=5+5)
+DecoderNextToken/encodingjson/sample-16          3.16ms Â± 1%    3.17ms Â± 1%     ~     (p=0.690 n=5+5)
+
+name                                           old speed      new speed      delta
+DecoderNextToken/pkgjson/canada-16              402MB/s Â± 0%   401MB/s Â± 0%     ~     (p=0.841 n=5+5)
+DecoderNextToken/encodingjson/canada-16        34.7MB/s Â± 1%  35.0MB/s Â± 0%     ~     (p=0.222 n=5+5)
+DecoderNextToken/pkgjson/citm_catalog-16        716MB/s Â± 1%   713MB/s Â± 1%     ~     (p=0.310 n=5+5)
+DecoderNextToken/encodingjson/citm_catalog-16  87.3MB/s Â± 1%  87.6MB/s Â± 1%     ~     (p=0.548 n=5+5)
+DecoderNextToken/pkgjson/twitter-16             539MB/s Â± 1%   524MB/s Â± 2%   -2.62%  (p=0.008 n=5+5)
+DecoderNextToken/encodingjson/twitter-16       51.9MB/s Â± 1%  52.0MB/s Â± 1%     ~     (p=1.000 n=5+5)
+DecoderNextToken/pkgjson/code-16                318MB/s Â± 2%   305MB/s Â± 3%   -4.07%  (p=0.016 n=5+5)
+DecoderNextToken/encodingjson/code-16          25.0MB/s Â± 2%  24.7MB/s Â± 2%     ~     (p=0.310 n=5+5)
+DecoderNextToken/pkgjson/example-16             521MB/s Â± 0%   509MB/s Â± 1%   -2.19%  (p=0.008 n=5+5)
+DecoderNextToken/encodingjson/example-16       49.5MB/s Â± 1%  49.1MB/s Â± 2%     ~     (p=0.222 n=5+5)
+DecoderNextToken/pkgjson/sample-16             1.23GB/s Â± 1%  1.24GB/s Â± 0%   +1.16%  (p=0.008 n=5+5)
+DecoderNextToken/encodingjson/sample-16         218MB/s Â± 1%   217MB/s Â± 1%     ~     (p=0.690 n=5+5)</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>But it unlocks several optimisations.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_outlining"><a class="anchor" href="#_outlining"></a><a class="link" href="#_outlining">Outlining</a></h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-go" data-lang="go">func (d *Decoder) NextToken() ([]byte, error) {
+	return d.state(d)
+}
+
+func (d *Decoder) stateObjectColon() ([]byte, error) {
+	tok := d.scanner.Next()
+	if len(tok) &lt; 1 {
+		return nil, io.ErrUnexpectedEOF
+	}
+	switch tok[0] {
+	case Colon:
+		d.state = (*Decoder).stateObjectValue
+		return d.NextToken()
+	default:
+		return tok, fmt.Errorf("stateObjectColon: expecting colon")
+	}
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Moving the <code>tok := d.scanner.Next()</code> call into each state method might seem like a step backwards, but it has several positive effects.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The first is not passing <code>tok</code> into each state method.
+This saves 3 words on the call stack.</p>
+</li>
+<li>
+<p>The second is, by moving the <code>if len(tok) &lt; 1</code> into the same function as the  <code>switch</code>, it enables bounds check elimination.
+Previously, when the <code>len(tok)</code> check happened in <code>Decoder.NextToken</code>, <code>Decoder.stateObjectColon</code> doesn&#8217;t know anything about the length of <code>tok</code>.
+When the compiler encounters <code>switch tok[0]</code>, it needs to put a bounds check to make sure <code>tok</code> is at least 1 element long.</p>
+<div class="paragraph">
+<p>When the <code>if</code> check is moved into the same function, the compiler knows that if we get further than the check then <code>tok</code> is at least 1 element long, so the bounds check is not needed.</p>
+</div>
+<div class="paragraph">
+<p>We can see this in the debug information.
+<code><code>`
+% go build -gcflags=-d=ssa/prove/debug=2 2&gt;&amp;1 | grep 135\:
+./decoder.go:135:13: Proved IsInBounds (v31)
+</code>`</code></p>
+</div>
+</li>
+<li>
+<p>The final optimisation occurs because <code>Decoder.NextToken</code>, which was previously too complex to inline</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code>./decoder.go:107:6: cannot inline (*Decoder).NextToken: function too complex: cost 145 exceeds budget 80</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>is now inlinable</p>
+</div>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code>./bench_test.go:217:29: inlining call to (*Decoder).NextToken method(*Decoder) func() ([]byte, error) { return d.state(d) }</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Which means, calls to <code>dec.NextToken()</code> in</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-go" data-lang="go">for {
+    _, err := dec.NextToken()
+    if err == io.EOF {
+        break
+    }
+    check(b, err)
+    n++
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>becomes a direct call to the current state method.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-go" data-lang="go">for {
+    _, err := dec.state(dec) // this is what the compiler sees
+    if err == io.EOF {
+        break
+    }
+    check(b, err)
+    n++
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s look at the results</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code>DecoderNextToken/pkgjson/canada-16               5.60ms Â± 0%    4.73ms Â± 1%  -15.54%  (p=0.008 n=5+5)
+DecoderNextToken/encodingjson/canada-16          64.9ms Â± 1%    64.2ms Â± 1%     ~     (p=0.056 n=5+5)
+DecoderNextToken/pkgjson/citm_catalog-16         2.41ms Â± 1%    2.17ms Â± 2%   -9.94%  (p=0.008 n=5+5)
+DecoderNextToken/encodingjson/citm_catalog-16    19.8ms Â± 1%    19.6ms Â± 1%     ~     (p=0.095 n=5+5)
+DecoderNextToken/pkgjson/twitter-16              1.17ms Â± 1%    1.05ms Â± 1%  -10.84%  (p=0.008 n=5+5)
+DecoderNextToken/encodingjson/twitter-16         12.2ms Â± 1%    11.9ms Â± 1%   -2.02%  (p=0.008 n=5+5)
+DecoderNextToken/pkgjson/code-16                 6.11ms Â± 3%    5.15ms Â± 1%  -15.77%  (p=0.008 n=5+5)
+DecoderNextToken/encodingjson/code-16            77.7ms Â± 2%    77.0ms Â± 2%     ~     (p=0.095 n=5+5)
+DecoderNextToken/pkgjson/example-16              25.0Âµs Â± 0%    22.0Âµs Â± 0%  -12.15%  (p=0.008 n=5+5)
+DecoderNextToken/encodingjson/example-16          263Âµs Â± 1%     263Âµs Â± 0%     ~     (p=0.690 n=5+5)
+DecoderNextToken/pkgjson/sample-16                560Âµs Â± 1%     510Âµs Â± 1%   -8.92%  (p=0.008 n=5+5)
+DecoderNextToken/encodingjson/sample-16          3.16ms Â± 1%    3.16ms Â± 1%     ~     (p=0.841 n=5+5)
+
+name                                           old speed      new speed      delta
+DecoderNextToken/pkgjson/canada-16              402MB/s Â± 0%   476MB/s Â± 1%  +18.39%  (p=0.008 n=5+5)
+DecoderNextToken/encodingjson/canada-16        34.7MB/s Â± 1%  35.1MB/s Â± 1%     ~     (p=0.056 n=5+5)
+DecoderNextToken/pkgjson/citm_catalog-16        716MB/s Â± 1%   795MB/s Â± 2%  +11.05%  (p=0.008 n=5+5)
+DecoderNextToken/encodingjson/citm_catalog-16  87.3MB/s Â± 1%  88.3MB/s Â± 1%     ~     (p=0.095 n=5+5)
+DecoderNextToken/pkgjson/twitter-16             539MB/s Â± 1%   604MB/s Â± 1%  +12.16%  (p=0.008 n=5+5)
+DecoderNextToken/encodingjson/twitter-16       51.9MB/s Â± 1%  53.0MB/s Â± 1%   +2.05%  (p=0.008 n=5+5)
+DecoderNextToken/pkgjson/code-16                318MB/s Â± 2%   377MB/s Â± 1%  +18.71%  (p=0.008 n=5+5)
+DecoderNextToken/encodingjson/code-16          25.0MB/s Â± 2%  25.2MB/s Â± 2%     ~     (p=0.095 n=5+5)
+DecoderNextToken/pkgjson/example-16             521MB/s Â± 0%   593MB/s Â± 0%  +13.82%  (p=0.008 n=5+5)
+DecoderNextToken/encodingjson/example-16       49.5MB/s Â± 1%  49.6MB/s Â± 0%     ~     (p=0.651 n=5+5)
+DecoderNextToken/pkgjson/sample-16             1.23GB/s Â± 1%  1.35GB/s Â± 1%   +9.80%  (p=0.008 n=5+5)
+DecoderNextToken/encodingjson/sample-16         218MB/s Â± 1%   218MB/s Â± 1%     ~     (p=0.841 n=5+5)</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>9-18% improvement over the previous version.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_unmarshalling"><a class="anchor" href="#_unmarshalling"></a><a class="link" href="#_unmarshalling">Unmarshalling</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The second part of decoding is conversion from JSON tokens to Go object.
+In Go this is called <em>unmarshalling</em>.</p>
+</div>
+<div class="paragraph">
+<p>This part of the package is very much a work in progress.
+Unmarshalling is the most expensive part of the package because it combines reflect, which is expensive, with unavoidable allocations.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code>BenchmarkDecoderDecodeInterfaceAny/pkgjson/canada-16                 217          27425893 ns/op          82.08 MB/s     8747163 B/op     281408 allocs/op
+BenchmarkDecoderDecodeInterfaceAny/encodingjson/canada-16            153          38347477 ns/op          58.70 MB/s    20647616 B/op     392553 allocs/op
+BenchmarkDecoderDecodeInterfaceAny/pkgjson/citm_catalog-16           747           8008839 ns/op         215.66 MB/s     5197853 B/op      89673 allocs/op
+BenchmarkDecoderDecodeInterfaceAny/encodingjson/citm_catalog-16      360          16607501 ns/op         104.00 MB/s     9406809 B/op      95389 allocs/op
+BenchmarkDecoderDecodeInterfaceAny/pkgjson/twitter-16               1606           3714515 ns/op         170.01 MB/s     2130731 B/op      30182 allocs/op
+BenchmarkDecoderDecodeInterfaceAny/encodingjson/twitter-16           862           6927998 ns/op          91.15 MB/s     4283407 B/op      31278 allocs/op
+BenchmarkDecoderDecodeInterfaceAny/pkgjson/code-16                   333          17939351 ns/op         108.17 MB/s     7331643 B/op     232059 allocs/op
+BenchmarkDecoderDecodeInterfaceAny/encodingjson/code-16              236          25324951 ns/op          76.62 MB/s    12332753 B/op     271292 allocs/op
+BenchmarkDecoderDecodeInterfaceAny/pkgjson/example-16              76874             78079 ns/op         166.81 MB/s       50980 B/op        739 allocs/op
+BenchmarkDecoderDecodeInterfaceAny/encodingjson/example-16         40886            146685 ns/op          88.79 MB/s       82855 B/op        782 allocs/op
+BenchmarkDecoderDecodeInterfaceAny/pkgjson/sample-16                5240           1116081 ns/op         615.99 MB/s      399970 B/op       5542 allocs/op
+BenchmarkDecoderDecodeInterfaceAny/encodingjson/sample-16           1123           5369313 ns/op         128.04 MB/s     2661872 B/op       7527 allocs/op</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Can use unsafe here</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_thematic_ideas"><a class="anchor" href="#_thematic_ideas"></a><a class="link" href="#_thematic_ideas">Thematic ideas</a></h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>Allocations affect performance.
+The garbage collector might be fast to allocate and efficient to collect, but not allocating will always be faster.</p>
+</li>
+<li>
+<p>When dealing with <em>data</em>, allocations, can be the biggest performance cost of an algorithm.
+O(n) allocations&#8212;&#8203;Per token or per byte&#8212;&#8203;can be the limiting constraint on an algo, you can never go below that floor.</p>
+</li>
+<li>
+<p>API designÂ influences performance, the <code>encoding/json.Decoder</code> API <em>requires</em> allocations as returning a primitive value via an interface causes it to escape to the heap&#8201;&#8212;&#8201;it effectively becomes a pointer to the value.
+<em>This includes strings</em>.</p>
+</li>
+<li>
+<p>Careful attention to the per byte and per token overheads delivered a JSON decoder that performs 2-3x faster than <code>enconding/json.Decoder.Token</code> and 8-10x faster with the alternative <code>NextToken</code> API.</p>
+</li>
+<li>
+<p>O(n) functions per bytes of input are the second limit.
+Optimising the hot path to convert per byte into per token/line/message/etc batches is key to avoiding function call overhead.
+Note how I predicted the outcome of <code>encoding/json.Decoder.Token</code> without looking at the code.</p>
+</li>
+<li>
+<p>Beyond this is the domain of micro optimisations.
+Things like moving statements across function call boundaries to play inlining tricks.
+Don&#8217;t reach for the tricks I showed here without addressing the big O effects in your api.
+It wonât make any difference.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_performance_matters_sometimes"><a class="anchor" href="#_performance_matters_sometimes"></a><a class="link" href="#_performance_matters_sometimes">Performance matters, sometimes</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>I started this project because I wanted to apply some ideas that I saw to Go.
+I believed that I could implement an efficient JSON parser based on my <em>assumption</em> that <code>encoding/json</code> was slower than it could be because of its API.</p>
+</div>
+<div class="paragraph">
+<p>It turned out that I was right, it looks like there is 2-3x performance in some unmarshalling paths and between 8x and 10x performance in tokenisation, if you&#8217;re prepared to accept a different API.</p>
+</div>
+<div class="paragraph">
+<p>In this presentation I made some statements about performance, but these are because I specifically constructed the question such that the run time of the algorithm was the most important feature.
+Don&#8217;t extrapolate my words to mean that <em>all</em> code should optimise for runtime and allocations above all else.</p>
+</div>
+<div class="paragraph">
+<p>Sometimes performance matters, most times it doesn&#8217;t.
+It probably matters more when writing library code.
+It probably matters when dealing with input data of an unknown size and quality.
+It certainly doesn&#8217;t matter unless you have metrics that show a code path is too slow, and profiling to identify the cause.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_further_work"><a class="anchor" href="#_further_work"></a><a class="link" href="#_further_work">Further work</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The basics are done.
+Now what?</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Better compatibility with the <code>encoding/json</code> package.</p>
+</li>
+<li>
+<p>Reduce allocations in <code>Decoder.NextToken</code>, probably by replacing the []bool state stack with a bit vector.</p>
+</li>
+<li>
+<p>Decode encoded strings in <code>Scanner.parseString</code>, I think this can be done without allocation because the unencoded form is always smaller.</p>
+</li>
+<li>
+<p><code>Scanner.parseNumber</code> is slow because it visits its input twice; once at the scanner and a second time when it is converted to a float.
+I did an experiment and the first parse can be faster if we just look to find the termination of the number without validation, <code>canada.json</code> went from 650mb/s to 820mb/sec.</p>
+</li>
+<li>
+<p>The <code>readBuffer</code> model are generally applicable to other kinds of parsing, xml decoding, http requests, source code &#8230;&#8203;</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_bonus"><a class="anchor" href="#_bonus"></a><a class="link" href="#_bonus">Bonus</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Benchmarking is hard, especially on laptops.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>OSX seems to be very poor at process isolation.</p>
+</li>
+<li>
+<p>Downloading a file while running a benchmark cost 10%.</p>
+</li>
+<li>
+<p>Storing my source on iCloud cost 10% (randomly).</p>
+</li>
+<li>
+<p>OSX seems to scan the binary on first run which can slow the first benchmark in a run.
+Workaround: use <code>go test -c</code> and pause before running the test binary.</p>
+</li>
+<li>
+<p>Workaround: shut down everything on the machine, don&#8217;t touch it, don&#8217;t let it go to sleep.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div id="footnotes">
+<hr>
+<div class="footnote" id="_footnotedef_1">
+<a href="#_footnoteref_1">1</a>. <a href="https://www.hyrumslaw.com" class="bare">https://www.hyrumslaw.com</a>
+</div>
+<div class="footnote" id="_footnotedef_2">
+<a href="#_footnoteref_2">2</a>. <a href="https://en.wikipedia.org/wiki/Amdahl%27s_law" class="bare">https://en.wikipedia.org/wiki/Amdahl%27s_law</a>
+</div>
+<div class="footnote" id="_footnotedef_3">
+<a href="#_footnoteref_3">3</a>. Brad Fitzpatrick called the Token API a <a href="https://go-review.googlesource.com/c/go/+/11651/2/src/encoding/json/stream.go#279">garbage factory</a> back in 2015, so I&#8217;m certainly not the first to make this observation.
+</div>
+<div class="footnote" id="_footnotedef_4">
+<a href="#_footnoteref_4">4</a>. The interface type cannot be expressed directly in Go. Read <a href="https://research.swtch.com/interfaces" class="bare">https://research.swtch.com/interfaces</a>
+</div>
+<div class="footnote" id="_footnotedef_5">
+<a href="#_footnoteref_5">5</a>. To make things even less clear, in Go 1.15 a subset of integers can be stored directly without escaping
+</div>
+<div class="footnote" id="_footnotedef_6">
+<a href="#_footnoteref_6">6</a>. <a href="https://www.youtube.com/watch?v=un-bZdyumog" class="bare">https://www.youtube.com/watch?v=un-bZdyumog</a>
+</div>
+<div class="footnote" id="_footnotedef_7">
+<a href="#_footnoteref_7">7</a>. <a href="https://philpearl.github.io/post/reader/" class="bare">https://philpearl.github.io/post/reader/</a>
+</div>
+<div class="footnote" id="_footnotedef_8">
+<a href="#_footnoteref_8">8</a>. <a href="https://github.com/davecheney/whitespace" class="bare">https://github.com/davecheney/whitespace</a>
+</div>
+<div class="footnote" id="_footnotedef_9">
+<a href="#_footnoteref_9">9</a>. The difference between the manually inlined and compiler inlined version turns out to be two instructions swapped. Semantically this makes no difference but obviously matters for how the processor schedules the instructions for execution.
+</div>
+<div class="footnote" id="_footnotedef_10">
+<a href="#_footnoteref_10">10</a>. Complexity is determined by giving each statement a weighting. The weightings are somewhat arbitrary, but more or less each token costs 1, function calls cost 52. <a href="https://github.com/golang/go/issues/17566" class="bare">https://github.com/golang/go/issues/17566</a> covers improving the inlining cost model.
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Version {revnumber}<br>
+Last updated 2020-07-16 20:51:38 +1000
+</div>
+</div>
+</body>
+</html>

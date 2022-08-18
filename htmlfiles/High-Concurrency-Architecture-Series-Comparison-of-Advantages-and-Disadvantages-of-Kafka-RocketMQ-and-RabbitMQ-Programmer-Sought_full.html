@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<script type="text/javascript" async="true">
+(function() {
+    var host = 'www.themoneytizer.com';
+    var element = document.createElement('script');
+    var firstScript = document.getElementsByTagName('script')[0];
+    var url = 'https://quantcast.mgr.consensu.org'
+        .concat('/choice/', '6Fv0cGNfc_bw8', '/', host, '/choice.js')
+    var uspTries = 0;
+    var uspTriesLimit = 3;
+    element.async = true;
+    element.type = 'text/javascript';
+    element.src = url;
+
+    firstScript.parentNode.insertBefore(element, firstScript);
+
+    function makeStub() {
+        var TCF_LOCATOR_NAME = '__tcfapiLocator';
+        var queue = [];
+        var win = window;
+        var cmpFrame;
+
+        function addFrame() {
+            var doc = win.document;
+            var otherCMP = !!(win.frames[TCF_LOCATOR_NAME]);
+
+            if (!otherCMP) {
+                if (doc.body) {
+                    var iframe = doc.createElement('iframe');
+
+                    iframe.style.cssText = 'display:none';
+                    iframe.name = TCF_LOCATOR_NAME;
+                    doc.body.appendChild(iframe);
+                } else {
+                    setTimeout(addFrame, 5);
+                }
+            }
+            return !otherCMP;
+        }
+
+        function tcfAPIHandler() {
+            var gdprApplies;
+            var args = arguments;
+
+            if (!args.length) {
+                return queue;
+            } else if (args[0] === 'setGdprApplies') {
+                if (
+                    args.length > 3 &&
+                    args[2] === 2 &&
+                    typeof args[3] === 'boolean'
+                ) {
+                    gdprApplies = args[3];
+                    if (typeof args[2] === 'function') {
+                        args[2]('set', true);
+                    }
+                }
+            } else if (args[0] === 'ping') {
+                var retr = {
+                    gdprApplies: gdprApplies,
+                    cmpLoaded: false,
+                    cmpStatus: 'stub'
+                };
+
+                if (typeof args[2] === 'function') {
+                    args[2](retr);
+                }
+            } else {
+                queue.push(args);
+            }
+        }
+
+        function postMessageEventHandler(event) {
+            var msgIsString = typeof event.data === 'string';
+            var json = {};
+
+            try {
+                if (msgIsString) {
+                    json = JSON.parse(event.data);
+                } else {
+                    json = event.data;
+                }
+            } catch (ignore) {}
+
+            var payload = json.__tcfapiCall;
+
+            if (payload) {
+                window.__tcfapi(
+                    payload.command,
+                    payload.version,
+                    function(retValue, success) {
+                        var returnMsg = {
+                            __tcfapiReturn: {
+                                returnValue: retValue,
+                                success: success,
+                                callId: payload.callId
+                            }
+                        };
+                        if (msgIsString) {
+                            returnMsg = JSON.stringify(returnMsg);
+                        }
+                        event.source.postMessage(returnMsg, '*');
+                    },
+                    payload.parameter
+                );
+            }
+        }
+
+        while (win) {
+            try {
+                if (win.frames[TCF_LOCATOR_NAME]) {
+                    cmpFrame = win;
+                    break;
+                }
+            } catch (ignore) {}
+
+            if (win === window.top) {
+                break;
+            }
+            win = win.parent;
+        }
+        if (!cmpFrame) {
+            addFrame();
+            win.__tcfapi = tcfAPIHandler;
+            win.addEventListener('message', postMessageEventHandler, false);
+        }
+    };
+
+    if (typeof module !== 'undefined') {
+        module.exports = makeStub;
+    } else {
+        makeStub();
+    }
+
+    var uspStubFunction = function() {
+        var arg = arguments;
+        if (typeof window.__uspapi !== uspStubFunction) {
+            setTimeout(function() {
+                if (typeof window.__uspapi !== 'undefined') {
+                    window.__uspapi.apply(window.__uspapi, arg);
+                }
+            }, 500);
+        }
+    };
+
+    var checkIfUspIsReady = function() {
+        uspTries++;
+        if (window.__uspapi === uspStubFunction && uspTries < uspTriesLimit) {
+            console.warn('USP is not accessible');
+        } else {
+            clearInterval(uspInterval);
+        }
+    };
+
+    if (typeof window.__uspapi === 'undefined') {
+        window.__uspapi = uspStubFunction;
+        var uspInterval = setInterval(checkIfUspIsReady, 6000);
+    }
+})();
+</script>
+
+<meta charset="utf-8">
+<meta name="keywords" content="High Concurrency Architecture Series: Comparison of Advantages and Disadvantages of Kafka, RocketMQ, and RabbitMQ, Programmer Sought" />
+<meta name="description" content="High Concurrency Architecture Series: Comparison of Advantages and Disadvantages of Kafka, RocketMQ, and RabbitMQ, Programmer Sought, the best programmer technical posts sharing site." />
+<meta name="HandheldFriendly" content="True">
+<meta name="MobileOptimized" content="320">
+<meta name="viewport" content="initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>High Concurrency Architecture Series: Comparison of Advantages and Disadvantages of Kafka, RocketMQ, and RabbitMQ - Programmer Sought</title>
+<link href="/assets/css/css.css" rel="stylesheet" type="text/css">
+<link href='/assets/css/font-awesome.min.css' rel='stylesheet' />
+<link rel="stylesheet" href="/assets/css/style.css">
+<link rel="stylesheet" href="/assets/css/viewer.min.css">
+<script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"></script>
+<script>
+  window.googletag = window.googletag || {cmd: []};
+        googletag.cmd.push(function() {
+          var interstitialSlot = googletag.defineOutOfPageSlot('/147246189,22316101559/programmersought.com_interstitial', googletag.enums.OutOfPageFormat.INTERSTITIAL);
+          if (interstitialSlot) interstitialSlot.addService(googletag.pubads());
+          googletag.pubads().enableSingleRequest();
+          googletag.enableServices();
+          googletag.display(interstitialSlot);
+      });
+</script>
+
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-PC2RG39');</script>
+
+</head>
+<body>
+<nav>
+<div class="container">
+<div class="website-logo"><h2 style="margin-top:5px;"><span style="color:white;font-weight: bold;">Programmer</span><span style="color:#F4785E;font-weight: bold;display: inline-block;">Sought</span></h2></div>
+<div id="menu">
+<ul class="toplinks">
+<li><a href="https://www.programmersought.com" rel="nofollow" target="_blank">Home</a></li>
+<li><a href="/cdn-cgi/l/email-protection#3a4a48555d485b57575f4849554f5d524e7a5d574214595557" rel="nofollow" target="_blank">Contact Us</a></li>
+<li><a href="https://programmersought.com/privacy-policy.html" rel="nofollow" target="_blank">Privacy Policy</a></li>
+</ul>
+</div>
+<a id="menu-toggle" href="#" class=" ">&#9776;</a> </div>
+</nav>
+<header style="padding:0px;">
+<div class="container" style="float:left;">
+<form id="searchForm" action="/search" method="post" onsubmit="return validate();">
+<div>
+<input type="text" name="s" id="s" value="" style="width:300px;" />
+<input type="hidden" id="curPage" name="curPage" value="" />
+<input type="submit" value="search" style="color:black;width:80px;" />
+</div>
+</form>
+</div>
+<div style="clear:both;"></div>
+</header>
+<div id="topads" style="text-align:center;padding-top:10px;">
+<iframe data-id="programmersought.com_980x300_4_DFP" FRAMEBORDER="0" SCROLLING="no" MARGINHEIGHT="0" MARGINWIDTH="0" TOPMARGIN="0" LEFTMARGIN="0" width="1" height="1"></iframe>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+    (function () {
+        var size='970x250|300x250',
+            adunit = 'programmersought.com_980x300_4_DFP',
+            childNetworkId = '22316101559',
+            xmlhttp = new XMLHttpRequest();xmlhttp.onreadystatechange = function(){if(xmlhttp.readyState==4 && xmlhttp.status==200){var es = document.querySelectorAll("[data-id='"+adunit+"']");var e = Array.from(es).filter(function(e) {return !e.hasAttribute("data-rendered")});if(e.length > 0){e.forEach(function(el){var iframe = el.contentWindow.document;iframe.open();iframe.write(xmlhttp.responseText);iframe.close();el.setAttribute('data-rendered', true)})}}};var child=childNetworkId.trim()?','+childNetworkId.trim():'';xmlhttp.open("GET", 'https://pubads.g.doubleclick.net/gampad/adx?iu=/147246189'+child+'/'+adunit+'&sz='+encodeURI(size)+'&t=Placement_type%3Dserving&'+Date.now(), true);xmlhttp.send();})();
+</script>
+</div>
+<section>
+<div class="container" style="min-height: 600px;">
+<div class="docs-content">
+<h3 style="line-height: 30px;word-break: break-all;">
+<span>High Concurrency Architecture Series: Comparison of Advantages and Disadvantages of Kafka, RocketMQ, and RabbitMQ</span>
+</h3>
+<div style="clear:both;"></div>
+<div id="rightads0" style="padding-top:5px;padding-bottom:5px;">
+<iframe data-id="programmersought.com_750x200_5_DFP" FRAMEBORDER="0" SCROLLING="no" MARGINHEIGHT="0" MARGINWIDTH="0" TOPMARGIN="0" LEFTMARGIN="0" width="1" height="1"></iframe>
+<script>
+    (function () {
+        var size='728x90|300x250',
+            adunit = 'programmersought.com_750x200_5_DFP',
+            childNetworkId = '22316101559',
+            xmlhttp = new XMLHttpRequest();xmlhttp.onreadystatechange = function(){if(xmlhttp.readyState==4 && xmlhttp.status==200){var es = document.querySelectorAll("[data-id='"+adunit+"']");var e = Array.from(es).filter(function(e) {return !e.hasAttribute("data-rendered")});if(e.length > 0){e.forEach(function(el){var iframe = el.contentWindow.document;iframe.open();iframe.write(xmlhttp.responseText);iframe.close();el.setAttribute('data-rendered', true)})}}};var child=childNetworkId.trim()?','+childNetworkId.trim():'';xmlhttp.open("GET", 'https://pubads.g.doubleclick.net/gampad/adx?iu=/147246189'+child+'/'+adunit+'&sz='+encodeURI(size)+'&t=Placement_type%3Dserving&'+Date.now(), true);xmlhttp.send();})();
+</script>
+</div>
+<div style="padding:5px 5px 5px 5px;word-wrap: break-word; word-break: normal;max-width: 850px;" id="article_content">
+<div id="vdoai">
+<div id="vdo_ai_div"></div><script>(function(v,d,o,ai){ai=d.createElement('script');ai.defer=true;ai.async=true;ai.src=v.location.protocol+o;d.head.appendChild(ai);})(window, document, '//a.vdo.ai/core/v-programmersought/vdo.ai.js');</script></div>
+<div class="htmledit_views">
+<div class="content-detail markdown-body">
+<p><strong>In the high concurrent business scenario, the typical Ali double 11-second killing service, the message queue middleware has an irreplaceable role in traffic peak clipping and decoupling.</strong></p>
+<p>I introduced [the 12-point core principle summary of MQ message queue], [How to design an MQ message queue from 0 to 1], and [the difference between RPC remote call and message queue MQ].</p>
+<p><strong>Today we will discuss together:</strong></p>
+<p><strong>What is the full amount of message queues? Advantages and disadvantages of Kafka, RocketMQ, RabbitMQ, and the selection of message queues.</strong></p>
+<h1>What are the most complete MQ message queues?</h1>
+<p>So what are the more well-known news engines in the industry? As shown below</p>
+<p><img src="/images/318/730ecb8e9ad90cd938bb9dd40315d456.JPEG" alt="4" title="4" /></p>
+<p>This is almost a complete list of well-known news engines, including:</p>
+<ul>
+<li>ZeroMQ</li>
+<li>Twitter's Distributedlog</li>
+<li>ActiveMQ: Apache's old-fashioned messaging engine</li>
+<li>RabbitMQ, Kafka: The default implementation of AMQP.</li>
+<li>RocketMQ</li>
+<li>Artemis: Subproject under Apache ActiveMQ</li>
+<li>Apollo: Also known as Apache's ActiveMQ subproject, the next-generation messaging engine</li>
+<li>Commercial message engine IronMQ</li>
+<li>And OpenMQ that implements the JMS (Java Message Service) standard.</li>
+</ul>
+<h1>Technical application of MQ message queue</h1>
+<p><strong>Decoupling</strong></p>
+<p>Decoupling is the most essential problem that message queues have to solve.</p>
+<p><strong>2. Final consistency</strong></p>
+<p>Final consistency means that the states of the two systems are consistent, either successful or fail.</p>
+<p>Final consistency is not a must-have feature of message queues, but it does depend on message queues for eventual consistency.</p>
+<p><strong>3. Broadcast</strong></p>
+<p>One of the basic functions of message queues is to broadcast.</p>
+<p>With the message queue, we only need to care whether the message is delivered to the queue. As for who wants to subscribe, it is a downstream matter, which undoubtedly greatly reduces the workload of development and joint debugging.</p>
+<p><strong>4. Wrong peak and flow control</strong></p>
+<p>A typical usage scenario is the spike service used for traffic peaking scenarios.</p>
+<p>Due to the relationship between the pages, this article focuses on the comparison of message queues. For detailed application scenarios, please refer to: My previous article [What is traffic clipping? How to solve the peak clipping scenario of the spike business]</p>
+<h1>Comparison of Kafka, RocketMQ, RabbitMQ</h1>
+<p><strong>1.ActiveMQ</strong></p>
+<p>advantage</p>
+<ul>
+<li>Stand-alone throughput: 10,000</li>
+</ul>
+<ul>
+<li>The number of topics is the impact of throughput:</li>
+<li>Timeliness: ms level</li>
+<li>Availability: High, high availability based on master-slave architecture</li>
+<li>Message reliability: there is a lower probability of losing data</li>
+<li>Functional support: The functions in the MQ field are extremely complete</li>
+</ul>
+<p>Disadvantages:</p>
+<p>The official community now has less and less maintenance on ActiveMQ 5.x and is less used in large-scale throughput scenarios.</p>
+<p>2.Kafka</p>
+<p>Known as the killer of big data, when it comes to message transmission in the field of big data, Kafka cannot be avoided. This message middleware for big data has become famous with its million-level TPS throughput. The darling of the data field plays a pivotal role in the process of data collection, transmission and storage.</p>
+<p>Apache Kafka was originally implemented by LinkedIn as a distributed commit log based on a unique design and later became part of the Apache project.</p>
+<p>It has been adopted by major companies such as LinkedIn, Uber, Twitter, and Netflix.</p>
+<p>advantage</p>
+<ul>
+<li>Excellent performance, single-machine write TPS is about one million / sec, the biggest advantage is the high throughput.</li>
+<li>Timeliness: ms level</li>
+<li>Usability: Very high, kafka is distributed, multiple copies of one data, a few machines down, no data loss, no unavailability</li>
+<li>Consumers use the Pull method to obtain messages, and the messages are in order. Through control, all messages can be guaranteed to be consumed and consumed only once;</li>
+<li>Excellent third-party Kafka web management interface Kafka-Manager;</li>
+<li>Mature in the log field, used by many companies and multiple open source projects;</li>
+<li>Function support: The function is relatively simple, mainly supports simple MQ function, real-time calculation in big data field and log collection are used on a large scale.</li>
+</ul>
+<p>Disadvantages:</p>
+<ul>
+<li>Kafka has more than 64 queues/partitions, and Load will be significantly higher. The more queues, the higher the load, and the longer the response time of sending messages.</li>
+<li>With short polling, real-time depends on the polling interval;</li>
+<li>Consumption failure does not support retry;</li>
+<li>Support message order, but after a proxy is down, it will generate message out of order;</li>
+<li>Community updates are slower;</li>
+</ul>
+<p>3.RabbitMQ</p>
+<p>RabbitMQ was released in 2007 and is a reusable enterprise messaging system based on AMQP (Advanced Message Queuing Protocol). It is one of the most mainstream messaging middlewares.</p>
+<p>RabbitMQ advantages:</p>
+<ul>
+<li>Due to the characteristics of the erlang language, mq performance is good and high concurrency;</li>
+<li>Throughput to 10,000, MQ function is relatively complete</li>
+</ul>
+<ul>
+<li>Robust, stable, easy to use, cross-platform, multi-language support, complete documentation;</li>
+<li>The management interface provided by open source is very good, it is very easy to use.</li>
+<li>High community activity;</li>
+</ul>
+<p>RabbitMQ disadvantages:</p>
+<ul>
+<li>Erlang development, it is difficult to understand the source code, the basic functions depend on the rapid maintenance and repair of bugs in the open source community, which is not conducive to secondary development and maintenance.</li>
+</ul>
+<ul>
+<li>RabbitMQ does have a lower throughput because of the heavier implementation mechanism.</li>
+<li>Need to learn more complex interfaces and protocols, and the cost of learning and maintenance is high.</li>
+</ul>
+<p>4.RocketMQ</p>
+<p>RocketMQ comes from Ali's open source product, implemented in Java, referenced Kafka in design, and made some improvements.</p>
+<p>RocketMQ is widely used in the Alibaba Group for orders, transactions, recharge, stream computing, message push, log streaming, binglog distribution and more.</p>
+<p>RocketMQ advantages:</p>
+<ul>
+<li>Stand-alone throughput: 100,000</li>
+<li>Availability: Very high, distributed architecture</li>
+<li>Message reliability: After parameter optimization configuration, the message can be lost 0</li>
+<li>Function support: MQ function is relatively complete, distributed, and good scalability</li>
+<li>Support 1 billion level message stacking, no performance degradation due to accumulation</li>
+<li>The source code is java, we can read the source code ourselves, customize the MQ of our company, you can control</li>
+</ul>
+<p>RocketMQ disadvantages:</p>
+<ul>
+<li>There are not many supported client languages, currently java and c++, where c++ is not mature;</li>
+<li>Community activity</li>
+<li>There is no interface such as JMS in the mq core. Some systems need to be modified to modify a lot of code.</li>
+</ul>
+<h1>Message queue selection suggestion</h1>
+<p>1.Kafka</p>
+<p>The main feature of Kafka is the processing of message consumption based on the Pull mode, and the pursuit of high throughput. The initial purpose is to collect and transmit logs, and to collect data services for Internet services that generate large amounts of data.</p>
+<p>Large companies suggest that they can be used. If there is a log collection function, it is definitely the preferred kafka.</p>
+<p>2.RocketMQ</p>
+<p>Born to the financial Internet field, the scenes with high reliability requirements, especially the order deductions in e-commerce, and business peaking, when the large number of transactions flooded, the back-end may not be able to deal with it in time.</p>
+<p>RoketMQ may be more reliable in terms of stability. These business scenarios have been tested many times in Ali Double 11. If your business has the above concurrency scenarios, it is recommended to choose RocketMQ.</p>
+<p>3.RabbitMQ</p>
+<p>RabbitMQ: Combining the concurrency advantages of the erlang language itself, the performance is better, and the community activity is higher, but it is not conducive to secondary development and maintenance. However, the RabbitMQ community is very active and can solve the bugs encountered during development.</p>
+<p>If your data volume is not that big, the small company prefers the more complete RabbitMQ.</p>
+<p>If it is useful, please support it and send you a set of recent updates.[Architectural Design Specials 88 Collection]Originally created by the original BAT first-line manufacturer, it took 1 year to complete, and 2019 learning will be a step ahead.</p>
+</div>
+</div><div id="doreport" style="float:right;font-size:15px;padding-top:15px;font-weight: bold;">
+<a href="/cdn-cgi/l/email-protection#68181a070f1a0905050d1a1b071d0f001c280f0510460b0705571b1d0a020d0b1c552b0718111a010f001c482b070518040901061c4e0a070c1155291a1c010b040d48212c524859595a5b59585a5a515859" title="Copyright Complaint">Copyright Complaint</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="/cdn-cgi/l/email-protection#3a4a48555d485b57575f4849554f5d524e7a5d57421459555705494f58505f594e07694a5b571a685f4a55484e1c58555e43077b484e5359565f1a737e001a0b0b08090b0a0808030a0b" title="Spam Report">Spam Report</a>
+</div>
+<div style="clear:both;"></div>
+<div id="rightads1" style="margin-top:15px;margin-bottom:10px;">
+<div id="s-programmersought"></div><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>(function(v,d,o,ai){ai=d.createElement('script');ai.defer=true;ai.async=true;ai.src=v.location.protocol+o;d.head.appendChild(ai);})(window, document, '//a.vdo.ai/core/s-programmersought/vdo.ai.js');</script></div>
+</div>
+<div style="clear:both;"></div>
+<div id="rightads119" style="text-align:center;width:100%;">
+<iframe data-id="programmersought.com_728x90_3_DFP" FRAMEBORDER="0" SCROLLING="no" MARGINHEIGHT="0" MARGINWIDTH="0" TOPMARGIN="0" LEFTMARGIN="0" width="1" height="1"></iframe>
+<script>
+    (function () {
+        var size='728x90|300x250',
+            adunit = 'programmersought.com_728x90_3_DFP',
+            childNetworkId = '22316101559',
+            xmlhttp = new XMLHttpRequest();xmlhttp.onreadystatechange = function(){if(xmlhttp.readyState==4 && xmlhttp.status==200){var es = document.querySelectorAll("[data-id='"+adunit+"']");var e = Array.from(es).filter(function(e) {return !e.hasAttribute("data-rendered")});if(e.length > 0){e.forEach(function(el){var iframe = el.contentWindow.document;iframe.open();iframe.write(xmlhttp.responseText);iframe.close();el.setAttribute('data-rendered', true)})}}};var child=childNetworkId.trim()?','+childNetworkId.trim():'';xmlhttp.open("GET", 'https://pubads.g.doubleclick.net/gampad/adx?iu=/147246189'+child+'/'+adunit+'&sz='+encodeURI(size)+'&t=Placement_type%3Dserving&'+Date.now(), true);xmlhttp.send();})();
+</script>
+</div>
+<h3>Intelligent Recommendation</h3>
+<div>
+<div>
+<div style="padding-top:6px;padding-bottom:6px;">
+<div class="loop-wrap clearfix">
+<div class="loop-thumb">
+<a href="/article/78565943535/"><img style="width:172px;height:120px;" src="/thumbs/38/dc155982deb38ad98673a7c36dc2d636.png">
+</a>
+</div>
+<header class="loop-data" style="padding:0;display:block;text-align: left;width: auto;">
+<h3 style="margin-top:0px;border-bottom-style: none;padding-bottom: 0px;margin-bottom: 0px;overflow:hidden;line-height:30px;">
+<a href="/article/78565943535/" rel="bookmark" title="Comparison of Kafka, RabbitMQ, RocketMQ">Comparison of Kafka, RabbitMQ, RocketMQ</a>
+</h3>
+</header>
+<div class="mh-excerpt">
+<p style="line-height:25px;">2019 Unicorn Enterprise Heavy Recruitment Standards for Python Engineers &gt;&gt;&gt; 1. Basic comparison Kafka is LinkedIn's open source distributed publish-subscribe messaging system, which currentl...</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div>
+<div>
+<div style="padding-top:6px;padding-bottom:6px;">
+<div class="loop-wrap clearfix">
+<div class="loop-thumb">
+<a href="/article/67753257548/"><img style="width:172px;height:120px;" src="/thumbs/999/789d0bb2d447df965ad9c751763fe0ff.png">
+</a>
+</div>
+<header class="loop-data" style="padding:0;display:block;text-align: left;width: auto;">
+<h3 style="margin-top:0px;border-bottom-style: none;padding-bottom: 0px;margin-bottom: 0px;overflow:hidden;line-height:30px;">
+<a href="/article/67753257548/" rel="bookmark" title="Why use a message queue? Message Queue What are the advantages and disadvantages? Kafka, ActiveMQ, RabbitMQ, RocketMQ has what advantages and disadvantages? ...">Why use a message queue? Message Queue What are the advantages and disadvantages? Kafka, ActiveMQ, RabbitMQ, RocketMQ has what advantages and disadvantages? ...</a>
+</h3>
+</header>
+<div class="mh-excerpt">
+<p style="line-height:25px;">Why use a message queue? Message Queue What are the advantages and disadvantages? Kafka, ActiveMQ, RabbitMQ, RocketMQ what's the difference, and what scenarios fit? Why use Message Queue Use scene sum...</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div>
+<div>
+<div style="padding-top:6px;padding-bottom:6px;">
+<div class="loop-wrap clearfix">
+<div class="loop-thumb">
+<a href="/article/61158983817/"><img style="width:172px;height:120px;" src="/thumbs/204/12336ec39c69fcd6ed0792b2ce34f7dc.png">
+</a>
+</div>
+<header class="loop-data" style="padding:0;display:block;text-align: left;width: auto;">
+<h3 style="margin-top:0px;border-bottom-style: none;padding-bottom: 0px;margin-bottom: 0px;overflow:hidden;line-height:30px;">
+<a href="/article/61158983817/" rel="bookmark" title="Kafka / RocketMQ architecture comparison">Kafka / RocketMQ architecture comparison</a>
+</h3>
+</header>
+<div class="mh-excerpt">
+<p style="line-height:25px;">First, Broker design contrast 1. Kafka image Topic A has a total of 2 partitions, and each partition has two copies (a Leader a FOLLOWER), which is distributed on Broker0 and Broker1; Broker0 / Broker...</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div>
+<div>
+<div style="padding-top:6px;padding-bottom:6px;">
+<div class="loop-wrap clearfix">
+<div class="loop-thumb">
+<a href="/article/54049021236/"><img style="width:172px;height:120px;" src="/thumbs/857/7adba6e4ca919f037b39d31371bbd889.png">
+</a>
+</div>
+<header class="loop-data" style="padding:0;display:block;text-align: left;width: auto;">
+<h3 style="margin-top:0px;border-bottom-style: none;padding-bottom: 0px;margin-bottom: 0px;overflow:hidden;line-height:30px;">
+<a href="/article/54049021236/" rel="bookmark" title="Commonly used message middleware MQ (ActiveMq, Rabbitmq, Rocketmq, Kafka) advantages and disadvantages and differences">Commonly used message middleware MQ (ActiveMq, Rabbitmq, Rocketmq, Kafka) advantages and disadvantages and differences</a>
+</h3>
+</header>
+<div class="mh-excerpt">
+<p style="line-height:25px;">Commonly used message middleware MQ (ActiveMq, Rabbitmq, Rocketmq, Kafka) advantages and disadvantages and differences Common news middleware introduction Currently using more messages include Rabbitm...</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div>
+<div>
+<div style="padding-top:6px;padding-bottom:6px;">
+<div class="loop-wrap clearfix">
+<header class="loop-data" style="padding:0;display:block;text-align: left;width: auto;">
+<h3 style="margin-top:0px;border-bottom-style: none;padding-bottom: 0px;margin-bottom: 0px;overflow:hidden;line-height:30px;">
+<a href="/article/62919391506/" rel="bookmark" title="The message team is the advantages and disadvantages of the two common message queues Rabbitmq, Rocketmq, Kafka">The message team is the advantages and disadvantages of the two common message queues Rabbitmq, Rocketmq, Kafka</a>
+</h3>
+</header>
+<div class="mh-excerpt">
+<p style="line-height:25px;">Common message queue comparison product advantage insufficient RabbitMQ Lightweight, easy deployment; support flexible routing configuration; Good compatibility; convenient use in the management backg...</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="clear:both;"></div>
+<div id="rightads2" style="width:100%;height:90px;" class="adsloading">
+<div id="30785-1"><script src="//ads.themoneytizer.com/s/gen.js?type=1"></script><script src="//ads.themoneytizer.com/s/requestform.js?siteId=30785&formatId=1"></script></div>
+</div>
+<div id="adplus-336" style="text-align:center;padding-top:10px;">
+</div>
+<h3>More Recommendation</h3>
+<div>
+<div>
+<div style="padding-top:6px;padding-bottom:6px;">
+<div class="loop-wrap clearfix">
+<div class="loop-thumb">
+<a href="/article/5521800052/"><img style="width:172px;height:120px;" src="/thumbs/42/b1bd2b826fdb9b3e1a179a0bb8751bc2.JPEG">
+</a>
+</div>
+<header class="loop-data" style="padding:0;display:block;text-align: left;width: auto;">
+<h3 style="margin-top:0px;border-bottom-style: none;padding-bottom: 0px;margin-bottom: 0px;overflow:hidden;line-height:30px;">
+<a href="/article/5521800052/" rel="bookmark" title="ActiveMQ RabbitMQ RocketMQ KafKa Comparison">ActiveMQ RabbitMQ RocketMQ KafKa Comparison</a>
+</h3>
+</header>
+<div class="mh-excerpt">
+<p style="line-height:25px;">ActiveMQAnd RabbitMq and Kafka have been used in previous projects. Of course, there is no specific comparison between the three. The following is a comparison of some online comparisons on these thre...</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div>
+<div>
+<div style="padding-top:6px;padding-bottom:6px;">
+<div class="loop-wrap clearfix">
+<div class="loop-thumb">
+<a href="/article/7131902598/"><img style="width:172px;height:120px;" src="/thumbs/234/0345a0691a6034da4f7a527bbb59797a.png">
+</a>
+</div>
+<header class="loop-data" style="padding:0;display:block;text-align: left;width: auto;">
+<h3 style="margin-top:0px;border-bottom-style: none;padding-bottom: 0px;margin-bottom: 0px;overflow:hidden;line-height:30px;">
+<a href="/article/7131902598/" rel="bookmark" title="Comparison of RocketMQ, kafka, RabbitMQ (Figure)">Comparison of RocketMQ, kafka, RabbitMQ (Figure)</a>
+</h3>
+</header>
+<div class="mh-excerpt">
+<p style="line-height:25px;">Currently mainstream MQ is mainly RocketMQ, kafka, RabbitMQ. RocketMQ has the main advantages compared to RabbitMQ and kafka: Support for transactional messages (messages and DB operations maintain ul...</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div>
+<div>
+<div style="padding-top:6px;padding-bottom:6px;">
+<div class="loop-wrap clearfix">
+<div class="loop-thumb">
+<a href="/article/65503868003/"><img style="width:172px;height:120px;" src="/thumbs/797/54242775092a27ef1631e03a6b141c1d.png">
+</a>
+</div>
+<header class="loop-data" style="padding:0;display:block;text-align: left;width: auto;">
+<h3 style="margin-top:0px;border-bottom-style: none;padding-bottom: 0px;margin-bottom: 0px;overflow:hidden;line-height:30px;">
+<a href="/article/65503868003/" rel="bookmark" title="Transfer Kafka, RabbitMQ, RocketMQ and other message middleware comparison-message sending performance and advantages">Transfer Kafka, RabbitMQ, RocketMQ and other message middleware comparison-message sending performance and advantages</a>
+</h3>
+</header>
+<div class="mh-excerpt">
+<p style="line-height:25px;">Comparison of message middleware such as Kafka, RabbitMQ, RocketMQ-message sending performance and advantages introduction In distributed systems, we widely use message middleware to exchange data bet...</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div>
+<div>
+<div style="padding-top:6px;padding-bottom:6px;">
+<div class="loop-wrap clearfix">
+<div class="loop-thumb">
+<a href="/article/56334905843/"><img style="width:172px;height:120px;" src="/thumbs/58/5f8de89dea090954d00fac6fb1381d72.png">
+</a>
+</div>
+<header class="loop-data" style="padding:0;display:block;text-align: left;width: auto;">
+<h3 style="margin-top:0px;border-bottom-style: none;padding-bottom: 0px;margin-bottom: 0px;overflow:hidden;line-height:30px;">
+<a href="/article/56334905843/" rel="bookmark" title="Why use message queues? What are the advantages and disadvantages of message queues? What are the differences between kafka, activemq, rabbitmq, and rocketmq and what scenarios are they suitable for?">Why use message queues? What are the advantages and disadvantages of message queues? What are the differences between kafka, activemq, rabbitmq, and rocketmq and what scenarios are they suitable for?</a>
+</h3>
+</header>
+<div class="mh-excerpt">
+<p style="line-height:25px;">1、 Why use message queues? What are the advantages and disadvantages of message queues? What are the differences between kafka, activemq, rabbitmq, and rocketmq and what scenarios are they suitable fo...</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div>
+<div>
+<div style="padding-top:6px;padding-bottom:6px;">
+<div class="loop-wrap clearfix">
+<div class="loop-thumb">
+<a href="/article/10891425395/"><img style="width:172px;height:120px;" src="/thumbs/540/f9a786f1400699af00fb011fa814b16c.png">
+</a>
+</div>
+<header class="loop-data" style="padding:0;display:block;text-align: left;width: auto;">
+<h3 style="margin-top:0px;border-bottom-style: none;padding-bottom: 0px;margin-bottom: 0px;overflow:hidden;line-height:30px;">
+<a href="/article/10891425395/" rel="bookmark" title="Microservices Series (1): Advantages and Disadvantages of Microservice Architecture">Microservices Series (1): Advantages and Disadvantages of Microservice Architecture</a>
+</h3>
+</header>
+<div class="mh-excerpt">
+<p style="line-height:25px;">Microservices have attracted widespread attention in the moment, becoming a hot topic for articles, blogs, social media discussions, and conference speeches; they are also ranked very high on Gartner'...</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="rightads3" style="width:100%;height:90px;" class="adsloading">
+<div id="30785-28"><script src="//ads.themoneytizer.com/s/gen.js?type=28"></script><script src="//ads.themoneytizer.com/s/requestform.js?siteId=30785&formatId=28"></script></div>
+</div>
+<div style="clear:both;"></div>
+</div>
+<ul class="docs-nav" id="menu-left">
+<div id="lefttopads" style="width:320px;text-align:center;padding-bottom:10px;">
+<iframe data-id="programmersought.com_300x250_1_DFP" FRAMEBORDER="0" SCROLLING="no" MARGINHEIGHT="0" MARGINWIDTH="0" TOPMARGIN="0" LEFTMARGIN="0" width="1" height="1"></iframe>
+<script>
+    (function () {
+        var size='300x250',
+            adunit = 'programmersought.com_300x250_1_DFP',
+            childNetworkId = '22316101559',
+            xmlhttp = new XMLHttpRequest();xmlhttp.onreadystatechange = function(){if(xmlhttp.readyState==4 && xmlhttp.status==200){var es = document.querySelectorAll("[data-id='"+adunit+"']");var e = Array.from(es).filter(function(e) {return !e.hasAttribute("data-rendered")});if(e.length > 0){e.forEach(function(el){var iframe = el.contentWindow.document;iframe.open();iframe.write(xmlhttp.responseText);iframe.close();el.setAttribute('data-rendered', true)})}}};var child=childNetworkId.trim()?','+childNetworkId.trim():'';xmlhttp.open("GET", 'https://pubads.g.doubleclick.net/gampad/adx?iu=/147246189'+child+'/'+adunit+'&sz='+encodeURI(size)+'&t=Placement_type%3Dserving&'+Date.now(), true);xmlhttp.send();})();
+</script>
+</div>
+<li style="font-weight: bold;font-size: 20px;"><strong>Related Posts</strong></li>
+<li style="list-style-type: circle;color:#F4785E;word-wrap:break-word;"><a href="/article/74991455539/" title="High Concurrency Architecture Series: Comparison of Advantages and Disadvantages of Kafka, RocketMQ, and RabbitMQ">High Concurrency Architecture Series: Comparison of Advantages and Disadvantages of Kafka, RocketMQ, and RabbitMQ</a></li>
+<li style="list-style-type: circle;color:#F4785E;word-wrap:break-word;"><a href="/article/45905733871/" title="High Concurrency Architecture Series: Comparison of the advantages and disadvantages of Kafka, RocketMQ, and RabbitMQ">High Concurrency Architecture Series: Comparison of the advantages and disadvantages of Kafka, RocketMQ, and RabbitMQ</a></li>
+<li style="list-style-type: circle;color:#F4785E;word-wrap:break-word;"><a href="/article/76769115822/" title="High concurrent architecture series: Kafka, Rocketmq, Rabbitmq of Excellent Disadvantages">High concurrent architecture series: Kafka, Rocketmq, Rabbitmq of Excellent Disadvantages</a></li>
+<li style="list-style-type: circle;color:#F4785E;word-wrap:break-word;"><a href="/article/84414056411/" title="RabbitMQ/RocketMQ/Kafka high-availability architecture comparison">RabbitMQ/RocketMQ/Kafka high-availability architecture comparison</a></li>
+<li style="list-style-type: circle;color:#F4785E;word-wrap:break-word;"><a href="/article/5437367500/" title="Interview questions: What are the advantages and disadvantages of Kafka, ActiveMQ, RabbitMQ, RocketMQ?">Interview questions: What are the advantages and disadvantages of Kafka, ActiveMQ, RabbitMQ, RocketMQ?</a></li>
+<li style="list-style-type: circle;color:#F4785E;word-wrap:break-word;"><a href="/article/75913854023/" title="Message queue Kafka, RocketMQ, RabbitMQ advantages and disadvantages, technical applications and choices">Message queue Kafka, RocketMQ, RabbitMQ advantages and disadvantages, technical applications and choices</a></li>
+<li style="list-style-type: circle;color:#F4785E;word-wrap:break-word;"><a href="/article/18493640824/" title="RabbitMQ / RocketMQ / Kafka stand-alone architecture comparison">RabbitMQ / RocketMQ / Kafka stand-alone architecture comparison</a></li>
+<li style="list-style-type: circle;color:#F4785E;word-wrap:break-word;"><a href="/article/44295764272/" title="Zhu Daneng’s job hunting trip-Why use message queue? What are the advantages and disadvantages of message queue? Comparison of advantages and disadvantages of Kafka/Activemq/Rabbitmq/Rocketmq?">Zhu Daneng’s job hunting trip-Why use message queue? What are the advantages and disadvantages of message queue? Comparison of advantages and disadvantages of Kafka/Activemq/Rabbitmq/Rocketmq?</a></li>
+<li style="list-style-type: circle;color:#F4785E;word-wrap:break-word;"><a href="/article/7332192234/" title="Comparison of message middleware such as Kafka, RabbitMQ, RocketMQ - message delivery performance and advantages">Comparison of message middleware such as Kafka, RabbitMQ, RocketMQ - message delivery performance and advantages</a></li>
+<li style="list-style-type: circle;color:#F4785E;word-wrap:break-word;"><a href="/article/45214636363/" title="Comparison of message middleware such as Kafka, RabbitMQ, RocketMQ-message sending performance and advantages">Comparison of message middleware such as Kafka, RabbitMQ, RocketMQ-message sending performance and advantages</a></li>
+<div style="padding-bottom:10px;"></div>
+<div style="width:320px;height:250px;background-color: white;" id="leftads1" class="adsloading">
+<div id="30785-2"><script src="//ads.themoneytizer.com/s/gen.js?type=2"></script><script src="//ads.themoneytizer.com/s/requestform.js?siteId=30785&formatId=2"></script></div>
+</div>
+<div id="adplus-300-600" style="text-align:center;padding-top:10px;padding-bottom:10px;">
+</div>
+<li style="font-weight: bold;font-size: 20px;"><strong>Popular Posts</strong></li>
+<li style="list-style-type: circle;color:#F4785E;word-wrap:break-word;"><a href="/article/185510166454/" title="Several ways of eS6 export">Several ways of eS6 export</a></li>
+<li style="list-style-type: circle;color:#F4785E;word-wrap:break-word;"><a href="/article/57121105615/" title="Introduction to Spring's three basic components">Introduction to Spring's three basic components</a></li>
+<li style="list-style-type: circle;color:#F4785E;word-wrap:break-word;"><a href="/article/66182540999/" title="form an encrypted form the background foreground js java">form an encrypted form the background foreground js java</a></li>
+<li style="list-style-type: circle;color:#F4785E;word-wrap:break-word;"><a href="/article/90397142428/" title="Spring framework learning three (type data injection)">Spring framework learning three (type data injection)</a></li>
+<li style="list-style-type: circle;color:#F4785E;word-wrap:break-word;"><a href="/article/50994222883/" title="spring-datesource.xml configuration, spring integration mybatis">spring-datesource.xml configuration, spring integration mybatis</a></li>
+<li style="list-style-type: circle;color:#F4785E;word-wrap:break-word;"><a href="/article/76467945282/" title="Leetcode 592. Score Adjusting C ++">Leetcode 592. Score Adjusting C ++</a></li>
+<li style="list-style-type: circle;color:#F4785E;word-wrap:break-word;"><a href="/article/6711448747/" title="LeetCode2  Add Two Numbers">LeetCode2 Add Two Numbers</a></li>
+<li style="list-style-type: circle;color:#F4785E;word-wrap:break-word;"><a href="/article/90132310096/" title="Introduction to database integrity [Chapter] mind mapping database system">Introduction to database integrity [Chapter] mind mapping database system</a></li>
+<li style="list-style-type: circle;color:#F4785E;word-wrap:break-word;"><a href="/article/79783526753/" title="ResNet101V2 network structure">ResNet101V2 network structure</a></li>
+<li style="list-style-type: circle;color:#F4785E;word-wrap:break-word;"><a href="/article/3257319512/" title="[Minimum path coverage]hdoj 3335: Divisibility">[Minimum path coverage]hdoj 3335: Divisibility</a></li>
+<div style="padding-bottom:10px;"></div>
+<div style="width:320px;height:615px;background-color: white;" id="leftads2" class="adsloading">
+<div id="30785-3"><script src="//ads.themoneytizer.com/s/gen.js?type=3"></script><script src="//ads.themoneytizer.com/s/requestform.js?siteId=30785&formatId=3"></script></div>
+</div>
+<div id="adplus-300-250" style="text-align:center;padding-top:10px;padding-bottom:10px;">
+</div>
+<li style="font-weight: bold;font-size: 20px;"><strong>Recommended Posts</strong></li>
+<li style="list-style-type: circle;color:#F4785E;word-wrap:break-word;"><a href="/article/15028925778/" title="Solve Selenium.common.Exceptions.webdriveRexception: Message: Unknown Error: Cannot Find Chrome Binary">Solve Selenium.common.Exceptions.webdriveRexception: Message: Unknown Error: Cannot Find Chrome Binary</a></li>
+<li style="list-style-type: circle;color:#F4785E;word-wrap:break-word;"><a href="/article/67479719811/" title="JS references text information in the outermost JS">JS references text information in the outermost JS</a></li>
+<li style="list-style-type: circle;color:#F4785E;word-wrap:break-word;"><a href="/article/20765174044/" title="The realization of Window, WindowManager and floating frame video playback in Android">The realization of Window, WindowManager and floating frame video playback in Android</a></li>
+<li style="list-style-type: circle;color:#F4785E;word-wrap:break-word;"><a href="/article/81569292108/" title="Design Mode - Component mode">Design Mode - Component mode</a></li>
+<li style="list-style-type: circle;color:#F4785E;word-wrap:break-word;"><a href="/article/256110291596/" title="Java foundation (20) (thread pool, waiting wake-up mechanism, Voliate keyword, single case design pattern " lazy mode" "Hungry Mode")">Java foundation (20) (thread pool, waiting wake-up mechanism, Voliate keyword, single case design pattern "lazy mode" "Hungry Mode")</a></li>
+<li style="list-style-type: circle;color:#F4785E;word-wrap:break-word;"><a href="/article/91732187827/" title="Apache common interview">Apache common interview</a></li>
+<li style="list-style-type: circle;color:#F4785E;word-wrap:break-word;"><a href="/article/17767513389/" title="leetcode209. The smallest length sub-array/double pointer, prefix sum, dichotomy">leetcode209. The smallest length sub-array/double pointer, prefix sum, dichotomy</a></li>
+<li style="list-style-type: circle;color:#F4785E;word-wrap:break-word;"><a href="/article/16855396432/" title="[0CTF 2016]piapiapia">[0CTF 2016]piapiapia</a></li>
+<li style="list-style-type: circle;color:#F4785E;word-wrap:break-word;"><a href="/article/13905410737/" title="Java string interview questions and answers">Java string interview questions and answers</a></li>
+<li style="list-style-type: circle;color:#F4785E;word-wrap:break-word;"><a href="/article/465926060/" title="Mina develops an example of the udp protocol">Mina develops an example of the udp protocol</a></li>
+<div style="padding-bottom:10px;"></div>
+<div style="width:320px;height:250px;background-color: white;" id="leftads3" class="adsloading">
+<div id="30785-19"><script src="//ads.themoneytizer.com/s/gen.js?type=19"></script><script src="//ads.themoneytizer.com/s/requestform.js?siteId=30785&formatId=19"></script></div>
+</div>
+<div style="padding-bottom:10px;"></div>
+<li style="font-weight: bold;font-size: 20px;"><strong>Related Tags</strong></li>
+<a href='/tag/Message+middleware/' title='Message middleware'>Message middleware</a><a href='/tag/java/' title='java'>java</a><a href='/tag/MQ/' title='MQ'>MQ</a><a href='/tag/kafka/' title='kafka'>kafka</a><a href='/tag/rocketmq/' title='rocketmq'>rocketmq</a><a href='/tag/rabbitmq/' title='rabbitmq'>rabbitmq</a><a href='/tag/MQ+high+availability/' title='MQ high availability'>MQ high availability</a><a href='/tag/RocketMQ/' title='RocketMQ'>RocketMQ</a><a href='/tag/RabbitMQ/' title='RabbitMQ'>RabbitMQ</a><a href='/tag/Java/' title='Java'>Java</a><div id="leftbottomads" style="width:320px;text-align:center;padding-top:10px;padding-bottom:10px;">
+<iframe data-id="programmersought.com_300x600_2_DFP" FRAMEBORDER="0" SCROLLING="no" MARGINHEIGHT="0" MARGINWIDTH="0" TOPMARGIN="0" LEFTMARGIN="0" width="1" height="1"></iframe>
+<script>
+    (function () {
+        var size='300x600|300x250',
+            adunit = 'programmersought.com_300x600_2_DFP',
+            childNetworkId = '22316101559',
+            xmlhttp = new XMLHttpRequest();xmlhttp.onreadystatechange = function(){if(xmlhttp.readyState==4 && xmlhttp.status==200){var es = document.querySelectorAll("[data-id='"+adunit+"']");var e = Array.from(es).filter(function(e) {return !e.hasAttribute("data-rendered")});if(e.length > 0){e.forEach(function(el){var iframe = el.contentWindow.document;iframe.open();iframe.write(xmlhttp.responseText);iframe.close();el.setAttribute('data-rendered', true)})}}};var child=childNetworkId.trim()?','+childNetworkId.trim():'';xmlhttp.open("GET", 'https://pubads.g.doubleclick.net/gampad/adx?iu=/147246189'+child+'/'+adunit+'&sz='+encodeURI(size)+'&t=Placement_type%3Dserving&'+Date.now(), true);xmlhttp.send();})();
+</script>
+</div>
+</ul>
+</div>
+</section>
+<section class="vibrant centered">
+<div class="container">
+<h4> Copyright&nbsp;&nbsp;<a href="/cdn-cgi/l/email-protection#6414160b03160509090116170b11030c102403091c4a070b09" rel="nofollow" target="_blank">DMCA</a> &copy; 2018-2022 - All Rights Reserved - <a href="https://www.programmersought.com" style="color:white;">www.programmersought.com</a>&nbsp;&nbsp;<a href="https://programmersought.com/user-notice.html" rel="nofollow" target="_blank">User Notice</a> </h4>
+</div>
+</section>
+<a class="totop" href="#">Top</a>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="/assets/js/jquery.min.js"></script>
+<script src="/assets/js/layout.js"></script>
+<script src="/assets/js/jquery.localscroll-1.2.7.js" type="text/javascript"></script>
+<script src="/assets/js/jquery.scrollTo-1.4.3.1.js" type="text/javascript"></script>
+<script src="/assets/js/top.js" type="text/javascript"></script>
+<script src="/assets/js/viewer.min.js"></script>
+<script>
+var viewer = new Viewer(document.getElementById('article_content'));
+</script>
+<script src="/assets/js/bottom.js"></script>
+
+<script type="text/javascript">
+   (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+   m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+   (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+   ym(80623051, "init", {
+        clickmap:true,
+        trackLinks:true,
+        accurateTrackBounce:true
+   });
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/80623051" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+
+</body>
+</html>

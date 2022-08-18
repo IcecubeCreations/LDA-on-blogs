@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="de">
+    <head>
+        <meta charset="utf-8">
+        <title>Why RESTful communication between microservices can be perfectly fine – INNOQ</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="Accept-CH" content="DPR, Width, Viewport-Width">
+        <meta name="theme-color" content="#004153">
+        <link rel="stylesheet" href="/assets/frontend-f7190cd02e737b38c9f1cf98150a4cc4.css" media="all" />
+        <link rel="preload" href="https://hello.myfonts.net/count/350ed6" as="style">
+        <link rel="preload" as="font" type="font/woff2" href="https://www.innoq.com/assets/350ED6_1_unhinted_0.woff2?cachebuster=2" crossorigin>
+        <link rel="preload" as="font" type="font/woff2" href="https://www.innoq.com/assets/350ED6_2_unhinted_0.woff2?cachebuster=2" crossorigin>
+        <link rel="preload" as="font" type="font/woff2" href="https://www.innoq.com/assets/hack-regular.woff2?cachebuster=2" crossorigin>
+        <link rel="preload" as="font" type="font/woff2" href="https://www.innoq.com/assets/icomoon.woff2?cachebuster=2" crossorigin>
+        <link rel="preload" as="font" type="font/woff2" href="https://www.innoq.com/assets/MarkPro-Bold.woff2?cachebuster=2" crossorigin>
+        <link rel="preload" as="font" type="font/woff2" href="https://www.innoq.com/assets/MarkPro-Book.woff2?cachebuster=2" crossorigin>
+        <link rel="preload" as="font" type="font/woff2" href="https://www.innoq.com/assets/MarkPro-Heavy.woff2?cachebuster=2" crossorigin>
+                <link rel="canonical" href="https://www.innoq.com/en/blog/why-restful-communication-between-microservices-can-be-perfectly-fine/">
+    <meta name="description" content="Recent debates about REST versus message passing in microservice communication have led to some confusion. What is meant with asynchronous communication in this context and why is REST a perfectly valid choice?
+">
+    <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@innoq">
+<meta name="twitter:title" content="Why RESTful communication between microservices can be perfectly fine">
+<meta name="twitter:description" content="Recent debates about REST versus message passing in microservice communication have led to some confusion. What is meant with asynchronous communication in this context and why is REST a perfectly valid choice?
+">
+<meta name="twitter:creator" content="@kaffeecoder">
+<meta name="twitter:image" content="https://hotshot.innoq.io/shoot?path=%2Fde%2Fblog%2Fwhy-restful-communication-between-microservices-can-be-perfectly-fine%2Fcover%2F&amp;selector=.cover&amp;padding=0">
+<meta name="twitter:label1" content="Lesedauer">
+<meta name="twitter:data1" content="8 Minuten Lesedauer">
+    <meta property="og:type" content="article">
+<meta property="og:url" content="https://www.innoq.com/en/blog/why-restful-communication-between-microservices-can-be-perfectly-fine/">
+<meta property="og:title" content="Why RESTful communication between microservices can be perfectly fine">
+<meta property="og:description" content="Recent debates about REST versus message passing in microservice communication have led to some confusion. What is meant with asynchronous communication in this context and why is REST a perfectly valid choice?
+">
+<meta property="og:image" content="https://hotshot.innoq.io/shoot?path=%2Fde%2Fblog%2Fwhy-restful-communication-between-microservices-can-be-perfectly-fine%2Fcover%2F&amp;selector=.cover&amp;padding=0">
+
+        
+        <link rel="alternate" type="application/atom+xml" title="INNOQ" href="https://www.innoq.com/de/feed.atom" />
+        <link rel="alternate" type="application/json" title="INNOQ" href="https://www.innoq.com/de/feed.json" />
+        <link rel="alternate" type="application/atom+xml" title="INNOQ Blog &amp; Artikel" href="https://www.innoq.com/de/written.atom" />
+        <link rel="alternate" type="application/json" title="INNOQ Blog &amp; Artikel" href="https://www.innoq.com/de/written.json" />
+        <link rel="alternate" type="application/rss+xml" title="Der INNOQ Podcast" href="https://innoq.podigee.io/feed/aac" />
+        <link rel="alternate" type="application/rss+xml" title="Der Security Podcast" href="https://innoqsecurity.podigee.io/feed/aac" />
+        <link rel="icon" href="/assets/favicons/edition-02/favicon-apricot/favicon-9cc8ca7a1fe6731b2f1f9ee6170bb9e9.svg" type="image/svg+xml">
+        <link rel="apple-touch-icon" href="/assets/favicons/edition-02/favicon-apricot/favicon180-c343543f79104d25106d2a14c0e2851a.png">
+        <link rel="mask-icon" sizes="any" color="#FF9C66" href="/assets/favicons/safari-mask-icon-boxed-349dbf30517ba70daea91a1e187b71c0.svg">
+        <script src="/assets/frontend-be84791ddd980fe9f6244977fc480074.js" crossorigin="anonymous" defer="defer"></script>
+        <script src="/assets/custom-elements-bb0630c2bd03bcc3c468cd0dbb008eaa.js" crossorigin="anonymous" type="module"></script>
+        
+        <script src="https://comments.innoq.com/js/commento.js" defer="defer" data-css-override="/assets/commento-9f32aa56ddfd1aef474420b9be9ced1c.css" data-no-fonts="true"></script>
+
+            <script defer data-domain="innoq.com" data-api="/worker/api/event" src="/worker/js/script.js"></script>
+    </head>
+    <body>
+            <div class="eyecatcher eyecatcher--event">
+                <p class="eyecatcher--event__text">
+                    🔥 DATA MESH Workshop: Was, Warum, Wie, Wann? <a class="eyecatcher--event__link" href="/de/topics/data-mesh-workshop/">Mehr erfahren</a>
+                </p>
+            </div>
+        <h-include src="/de/announcement/"></h-include>
+        <nav-bar class="navbar">
+            <nav class="navbar__inner">
+                <div class="navbar__brand">
+                    <a class="navbar__brand-link" href="/de/">
+                        <img alt="INNOQ" class="logo navbar__logo" src="/assets/logos/edition-02/svg/innoq-logo--whiteapricot-36114a48eef4bf449a7b1c832e9fe02e.svg" />
+</a>                </div>
+
+                <input type="checkbox" id="navbar-toggle--menu" class="sr-only navbar__toggle-state navbar__toggle-state--menu-toggler" aria-label="Navigation ein- oder ausblenden">
+                <input type="checkbox" id="navbar-toggle--search" class="sr-only navbar__toggle-state navbar__toggle-state--search-toggler" aria-label="Suche ein- oder ausblenden">
+
+                <div class="navbar__meta">
+                    <a class="navbtn navbtn--meta " href="/de/jobs/people-from-ukraine-ua/"><span aria-label="Ви з України та розробляєте програмнi (software) продукти? Зв’язатися з нами.">💙💛</span></a>
+                    <a class="navbtn navbtn--meta " href="/de/newsletter/">Newsletter</a>
+                    <a class="navbtn navbtn--meta " href="/de/contact_messages/new/">Kontakt</a>
+                    <a class="navbtn navbtn--meta navbtn--locale navbtn--active" title="Zu Deutsch wechseln" aria-label="Zu Deutsch wechseln" href="/de/blog/why-restful-communication-between-microservices-can-be-perfectly-fine/">DE</a> | <a class="navbtn navbtn--meta navbtn--locale" title="Zu Englisch wechseln" aria-label="Zu Englisch wechseln" href="/en/blog/why-restful-communication-between-microservices-can-be-perfectly-fine/">EN</a>
+                </div>
+
+                <div class="navbar__togglers">
+                    <label class="navbar-toggle--menu" for="navbar-toggle--menu" aria-label="Navigation ein- oder ausblenden">
+                        <span class="navbtn navbtn--menu">
+                            Menü
+                        </span>
+                    </label>
+
+                    <label for="navbar-toggle--search" aria-label="Suche ein- oder ausblenden">
+                        <a class="navbtn navbtn--search" title="Suche" href="/de/search/">
+                            <i class="icon icon-search" aria-hidden="true"></i>
+</a>                    </label>
+                </div>
+
+                <div class="navbar__primary-nav primary-nav">
+                    <ul class="primary-nav__list">
+                        <li class="primary-nav__item">
+                            <div class="dropdown">
+                                <a data-for="dropdown__toggle--services" class="navbtn navbtn--primary" href="/de/services/">Leistungen</a>
+                                <input type="checkbox" role="button" aria-haspopup="true" id="dropdown__toggle--services" class="sr-only dropdown__checkbox">
+                                <label for="dropdown__toggle--services" class="dropdown__toggle dropdown__toggle--navbar">
+                                    <i class="icon icon-chevron-2-down dropdown__icon dropdown__icon--navbar" aria-hidden="true"></i>
+                                    <span class="sr-only dropdown__toggle--expanded-text">ausgeklappt</span>
+                                    <span class="sr-only dropdown__toggle--collapsed-text">eingeklappt</span>
+                                </label>
+                                <div role="menu" data-origin="left" class="dropdown__list-wrapper dropdown__list-wrapper--navbar" title="Leistungen">
+                                    <ul class="dropdown__list">
+                                        <li class="dropdown__item dropdown__item--navbar"><a class="dropdown__link dropdown__link--navbar navbtn" href="/de/services/strategie-technologie-beratung/">Strategie- und Technologieberatung</a></li>
+                                        <li class="dropdown__item dropdown__item--navbar"><a class="dropdown__link dropdown__link--navbar navbtn" href="/de/services/produktentwicklung/">Digitale Produktentwicklung</a></li>
+                                        <li class="dropdown__item dropdown__item--navbar"><a class="dropdown__link dropdown__link--navbar navbtn" href="/de/services/softwarearchitektur-entwicklung/">Softwarearchitektur und -entwicklung</a></li>
+                                        <li class="dropdown__item dropdown__item--navbar"><a class="dropdown__link dropdown__link--navbar navbtn" href="/de/services/digitale-plattformen/">Digitale Plattformen und Infrastrukturen</a></li>
+                                        <li class="dropdown__item dropdown__item--navbar"><a class="dropdown__link dropdown__link--navbar navbtn" href="/de/services/trainings/">Wissenstransfer, Coaching und Trainings</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </li>
+                        <li class="primary-nav__item">
+                            <a class="navbtn navbtn--primary" href="/de/success-stories/">Success Stories</a>
+                        </li>
+                        <li class="primary-nav__item">
+                            <div class="dropdown">
+                                <a data-for="dropdown__toggle--culture" class="navbtn navbtn--primary" href="/de/culture/">Kultur</a>
+                                <input type="checkbox" role="button" aria-haspopup="true" id="dropdown__toggle--culture" class="sr-only dropdown__checkbox">
+                                <label for="dropdown__toggle--culture" class="dropdown__toggle dropdown__toggle--navbar">
+                                    <i class="icon icon-chevron-2-down dropdown__icon dropdown__icon--navbar" aria-hidden="true"></i>
+                                    <span class="sr-only dropdown__toggle--expanded-text">ausgeklappt</span>
+                                    <span class="sr-only dropdown__toggle--collapsed-text">eingeklappt</span>
+                                </label>
+                                <div role="menu" data-origin="left" class="dropdown__list-wrapper dropdown__list-wrapper--navbar" title="Untermenü Kultur">
+                                    <ul class="dropdown__list">
+                                        <li class="dropdown__item dropdown__item--navbar"><a class="dropdown__link dropdown__link--navbar navbtn" href="/de/culture/how-we-collaborate/">Wie wir zusammenarbeiten</a></li>
+                                        <li class="dropdown__item dropdown__item--navbar"><a class="dropdown__link dropdown__link--navbar navbtn" href="/de/culture/whats-important/">Was uns wichtig ist</a></li>
+                                        <li class="dropdown__item dropdown__item--navbar"><a class="dropdown__link dropdown__link--navbar navbtn" href="/de/culture/working-at-innoq/">Arbeiten bei INNOQ</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </li>
+                        <li class="primary-nav__item">
+                            <div class="dropdown">
+                                <a data-for="dropdown__toggle--magazine" class="navbtn navbtn--primary" href="/de/magazine/">Magazin</a>
+                                <input type="checkbox" role="button" aria-haspopup="true" id="dropdown__toggle--magazine" class="sr-only dropdown__checkbox">
+                                <label for="dropdown__toggle--magazine" class="dropdown__toggle dropdown__toggle--navbar">
+                                    <i class="icon icon-chevron-2-down dropdown__icon dropdown__icon--navbar" aria-hidden="true"></i>
+                                    <span class="sr-only dropdown__toggle--expanded-text">ausgeklappt</span>
+                                    <span class="sr-only dropdown__toggle--collapsed-text">eingeklappt</span>
+                                </label>
+                                <div role="menu" data-origin="right" class="dropdown__list-wrapper dropdown__list-wrapper--navbar" title="Untermenü Magazin">
+                                    <ul class="dropdown__list">
+                                        <li class="dropdown__item dropdown__item--navbar"><a class="dropdown__link dropdown__link--navbar navbtn" href="/de/written/">Blog &amp; Artikel</a></li>
+                                        <li class="dropdown__item dropdown__item--navbar"><a class="dropdown__link dropdown__link--navbar navbtn" href="/de/podcasts/">Podcasts</a></li>
+                                        <li class="dropdown__item dropdown__item--navbar"><a class="dropdown__link dropdown__link--navbar navbtn" href="/de/talks/">Vorträge</a></li>
+                                        <li class="dropdown__item dropdown__item--navbar"><a class="dropdown__link dropdown__link--navbar navbtn" href="/de/technology-lunch/">Technology Lunch</a></li>
+                                        <li class="dropdown__item dropdown__item--navbar"><a class="dropdown__link dropdown__link--navbar navbtn" href="/de/topics/primer/">Primer</a></li>
+                                        <li class="dropdown__item dropdown__item--navbar"><a class="dropdown__link dropdown__link--navbar navbtn" href="/de/newsletter/">Newsletter</a></li>
+                                        <li class="dropdown__item dropdown__item--navbar">
+                                            <a class="dropdown__link dropdown__link--navbar navbtn" href="/de/artists/">Medienkunst</a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </li>
+                        <li class="primary-nav__item">
+                            <a class="navbtn navbtn--primary" href="/de/talks/">Termine</a>
+                        </li>
+                        <li class="primary-nav__item">
+                            <div class="dropdown">
+                                <a data-for="dropdown__toggle--trainings" class="navbtn navbtn--primary" href="/de/trainings/">Schulungen</a>
+                                <input type="checkbox" role="button" aria-haspopup="true" id="dropdown__toggle--trainings" class="sr-only dropdown__checkbox">
+                                <label for="dropdown__toggle--trainings" class="dropdown__toggle dropdown__toggle--navbar">
+                                    <i class="icon icon-chevron-2-down dropdown__icon dropdown__icon--navbar" aria-hidden="true"></i>
+                                    <span class="sr-only dropdown__toggle--expanded-text">ausgeklappt</span>
+                                    <span class="sr-only dropdown__toggle--collapsed-text">eingeklappt</span>
+                                </label>
+                                <div role="menu" data-origin="right" class="dropdown__list-wrapper dropdown__list-wrapper--navbar" title="Untermenü Schulungen">
+                                    <ul class="dropdown__list">
+                                        <li class="dropdown__item dropdown__item--navbar"><a class="dropdown__link dropdown__link--navbar navbtn" href="/de/trainings/warum-online/">Warum Online-Schulungen?</a></li>
+                                        <li class="dropdown__item dropdown__item--navbar"><a class="dropdown__link dropdown__link--navbar navbtn" href="https://www.socreatory.com/de/trainings/foundation">iSAQB CPSA-F Foundation Level</a></li>
+                                        <li class="dropdown__item dropdown__item--navbar"><a class="dropdown__link dropdown__link--navbar navbtn" href="https://www.socreatory.com/de/trainings/flex">Flexible Architekturen</a></li>
+                                        <li class="dropdown__item dropdown__item--navbar"><a class="dropdown__link dropdown__link--navbar navbtn" href="https://www.socreatory.com/de/trainings/ddd">Domain-driven Design</a></li>
+                                        <li class="dropdown__item dropdown__item--navbar"><a class="dropdown__link dropdown__link--navbar navbtn" href="https://www.socreatory.com/de/trainings/web-security">Web-Security</a></li>
+                                        <li class="dropdown__item dropdown__item--navbar"><a class="dropdown__link dropdown__link--navbar navbtn" href="https://www.socreatory.com/de/trainings/software-analytics">Software Analytics</a></li>
+                                        <li class="dropdown__item dropdown__item--navbar"><a class="dropdown__link dropdown__link--navbar navbtn" href="https://www.socreatory.com/de/trainings/javascript">JavaScript</a></li>
+                                        <li class="dropdown__item dropdown__item--navbar"><a class="dropdown__link dropdown__link--navbar navbtn" href="https://www.socreatory.com/de/trainings/improve">Modernisierung</a></li>
+                                        <li class="dropdown__item dropdown__item--navbar"><a class="dropdown__link dropdown__link--navbar navbtn" href="https://www.socreatory.com/de/trainings/cloudinfra">Cloud Native Infrastruktur</a></li>
+                                        <li class="dropdown__item dropdown__item--navbar"><a class="dropdown__link dropdown__link--navbar navbtn" href="https://www.socreatory.com/de/trainings/web">Web-Architekturen</a></li>
+                                        <li class="dropdown__item dropdown__item--navbar"><a class="dropdown__link dropdown__link--navbar navbtn" href="https://www.socreatory.com/de/trainings/po">Advanced Product Owner</a></li>
+                                        <li class="dropdown__item dropdown__item--navbar"><a class="dropdown__link dropdown__link--navbar navbtn" href="https://www.socreatory.com/de/trainings/blockchain-verteilter-konsens">Blockchain</a></li>
+                                        <li class="dropdown__item dropdown__item--navbar"><a class="dropdown__link dropdown__link--navbar navbtn" href="https://www.socreatory.com/de/trainings/remote-mob-programming">Remote Mob Programming</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+                    <button class="navbtn navbtn--drill-up">
+                        <span class="icon-svg icon-arrow-medium-left icon--brand-primary"></span>
+                        Hauptmenü
+                    </button>
+                </div>
+            </nav>
+        </nav-bar>
+
+        
+
+<header class="standard-header bg-image-edition-02" style="">
+        <h3 class="standard-header__type standard-header__type--underlined">
+            Blog-Post
+        </h3>
+    <h1 class="standard-header__title">Why RESTful communication between microservices can be perfectly fine</h1>
+    <div class="standard-header__intro">
+                <time datetime="2016-03-06" class="standard-header__intro__label"> 6. März 2016</time>
+        <div class="standard-header__intro__text" role="paragraph">
+            Recent debates about REST versus message passing in microservice communication have led to some confusion. What is meant with asynchronous communication in this context and why is REST a perfectly valid choice?
+
+        </div>
+            <div class="content-separator content-seperator--inverted">
+                <time class="content-separator__duration duration" datetime="PxM">
+                    8 Minuten Lesedauer
+                </time>
+            </div>
+    </div>
+</header>
+
+
+<main role="main">
+
+    <div class="page-layout--grid">
+        <section class="center ">
+                
+
+        <a class="author-bio author-bio--short" itemscope="itemscope" itemtype="http://schema.org/Person" title="Daniel Westheide" style="margin-bottom: inherit;" href="/de/staff/daniel-westheide/">
+            <div class="author-bio__image avatar avatar--small">
+                <img width="85" height="85" class="avatar__image" itemprop="photo" loading="lazy" alt="Avatar of Daniel Westheide" src="https://res.cloudinary.com/innoq/image/upload/c_thumb,dpr_2.0,e_grayscale,f_auto,g_center,h_85,q_auto,w_85/e_sharpen:100/v1/uploads-production/CxjmirwRLJvTG49i1ELnJo9t" />
+            </div>
+            <div class="author-bio__text">
+                <span rel="author" class="author-bio__name" itemprop="fullName">
+                    Daniel Westheide
+                </span>
+            </div>
+</a>
+
+        </section>
+    </div>
+    <article class="page-layout--grid">
+        <section class="center">
+            <p>Recently, Lightbend CTO and co-founder Jonas Bonér, whom I highly respect, was talking a bit about how synchronous HTTP is a bad choice, even an anti-pattern, for communication between microservices:</p>
+
+<wall-of-consent><template>
+
+<blockquote class="twitter-tweet" data-lang="en" data-dnt="true">
+<p lang="da" dir="ltr">Synchronous RESTful communication between Microservices is an anti-pattern Jonas Bonér CTO Typesafe <a href="https://twitter.com/hashtag/vdz16?src=hash">#vdz16</a></p>— openwms (@openwms) <a href="https://twitter.com/openwms/status/705315348430594049">March 3, 2016</a>
+</blockquote>
+<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+</template><p data-hide-if-consent class="standalone">An dieser Stelle möchten wir Dir gerne einen Tweet anzeigen. Um ihn zu sehen, musst Du dem Laden von Fremdinhalten von twitter.com zustimmen.</p>
+<div class="custom-form-control checkbox">
+            <input id="25c8695e051ab62f337a5d5aaa25bb8b" type="checkbox" class="form-control__input">
+            <label for="25c8695e051ab62f337a5d5aaa25bb8b" class="form-label">Inhalt anzeigen (<a href="https://www.innoq.com/datenschutz/">Datenschutzhinweise</a>)</label>
+          </div></wall-of-consent>
+
+<p>According to Bonér, synchronous REST is acceptable for public APIs, but internal communication between microservices should be based on asynchronous message-passing:</p>
+
+<wall-of-consent><template>
+
+<blockquote class="twitter-tweet" data-lang="en" data-dnt="true">
+<p lang="en" dir="ltr">Sync REST could be ok in external client-&gt;microservice comm, internal microservice-&gt;microservice comm should rely on async message-passing</p>— Jonas Bonér (@jboner) <a href="https://twitter.com/jboner/status/705843596369502209">March 4, 2016</a>
+</blockquote>
+<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+</template><p data-hide-if-consent class="standalone">An dieser Stelle möchten wir Dir gerne einen Tweet anzeigen. Um ihn zu sehen, musst Du dem Laden von Fremdinhalten von twitter.com zustimmen.</p>
+<div class="custom-form-control checkbox">
+            <input id="49dd2085637821a6fe622c8cf72fcb40" type="checkbox" class="form-control__input">
+            <label for="49dd2085637821a6fe622c8cf72fcb40" class="form-label">Inhalt anzeigen (<a href="https://www.innoq.com/datenschutz/">Datenschutzhinweise</a>)</label>
+          </div></wall-of-consent>
+
+<p>In a <a href="https://www.voxxed.com/blog/2016/02/typesafe-rebrands-as-lightbend-debuts-with-java-microservices-framework">recent article on Lightbend’s new Lagom framework</a>, this thinking is summarized even more briefly than in the aforementioned tweets:</p>
+
+<blockquote>
+<p>Bonér cites the example of REST in microservices in particular as an example of this snafu[…]</p>
+</blockquote>
+
+<p>Statements such as these are problematic, because they are confounding the protocol used for communication with the mode of integration between services.</p>
+
+<p>In this blog post, I want to clarify how the terms used should be understood and show that HTTP and REST for internal service communication can be perfectly fine, as choosing to do so has nothing to do with whether your services integrate synchronously or asynchronously – and the latter question is what you should really be concerned with.</p>
+
+<p>Let’s begin with the different levels at which we can talk about sync versus async:</p>
+
+<h3><a id="asyncio" href="#asyncio">Async IO</a></h3>
+
+<p>This simply means that when you communicate over the network (e.g. with another service), your current thread is not blocked until the remote service has responded, but is free to do other things in between. Usually, it means it will serve other requests to your service until the service you have called has come back to you with a reply. The mechanisms for working with non-blocking IO are callbacks, futures, or streams. Async IO can help you to be able to serve more requests by keeping your CPUs busy, but as you will see, this is not the kind of asynchronicity you should be worried about when it comes to communication between your (micro)-services.</p>
+
+<h3><a id="asynchronousprotocols" href="#asynchronousprotocols">Asynchronous protocols</a></h3>
+
+<p>HTTP is a synchronous protocol: the client issues a request and waits for a response. If you are using non-blocking (aka async) IO, the current thread of the client does not really have to wait, but can do other things (see above). Still, it can only continue doing whatever it wanted to do until it has received the server’s response.</p>
+
+<p>In contrast to HTTP, message passing (e.g. over AMQP, or between Akka actors) is asynchronous. As a sender, you usually don’t wait for a response. This can be implemented with non-blocking IO, as it happens to be done in Akka, or with blocking IO, as it is done in JMS.</p>
+
+<p>It is also perfectly possible to use a request-reply pattern using asynchronous message passing protocols.</p>
+
+<p>Again, though, this is not the kind of asynchronicity we should be concerned with when thinking about communication between services.</p>
+
+<h3><a id="asynchronousserviceintegration" href="#asynchronousserviceintegration">Asynchronous service integration</a></h3>
+
+<p>In an ideal world, no communication whatsoever between your microservices should be necessary. And if it has to happen, it should be asynchronous.</p>
+
+<p>What does this mean? It is really quite simple: Do not communicate with other services during your own service’s request/response cycle. Ultimately, the goal is for your service to be available to the end-user even if other services that are part of the whole system are offline or unhealthy.</p>
+
+<p>If you have to call other services in order to be able to serve a response to a request from a public client, this is really an architectural problem. Don’t blame the protocol! It doesn’t matter whether you are using HTTP or asynchronous message passing (with a request-reply pattern), the overall response time for the public client will be bad, and your service will not be as resilient as it could be, because it is coupled in time to the service it depends on.</p>
+
+<p>If your service needs to trigger some action in another service, do that outside of the request/response cycle. You can use message passing or HTTP for this, it doesn’t really matter. If you really want to, I won’t even prevent you from using blocking IO for this stuff. Actors are pretty nice for handling the communication with other services outside of your own request/response cycle, but any other mechanism using some kind of buffer or queue should work as well.</p>
+
+<p>If your service relies on data that is located in another service, replicate that data into your own service’s data store, using eventual consistency. This also has the advantage that you can translate that data into the language of your own Bounded Context. You can either update your version of the data by receiving domain events via message passing, or by polling a RESTful notification resource, which can, for instance, be implemented using Atom. It is easy to dismiss the RESTful approach to service integration, but it can have some advantages that shouldn’t be easily carelessly ignored: You can make use of the standard infrastructure of the web, e.g. HTTP caches, instead of having to reinvent the wheel. Also, your teams remain free in their choice of technology for the services each of them are responsible for. This is possible with message passing for integration as well, if you choose an open standardized protocol, but not if you, say, use Akka or Erlang message passing for communication between your services.</p>
+
+<h3><a id="self-containedsystems" href="#self-containedsystems">Self-contained systems</a></h3>
+
+<p>Unfortunately, it is not always possible to avoid synchronous integration completely: At least the communication with the database will usually have to be synchronous in the sense that it happens within the request-response cycle. You should strive to apply such necessary synchronous communication only in narrowly defined boundaries.</p>
+
+<p>Such a boundary can, for example, be what we call a <em>self-contained system (SCS)</em> – an autonomous, isolated unit that includes its own data, logic, and UI. A system of self-contained systems is depicted below:</p>
+
+<figure>
+<img src="https://res.cloudinary.com/innoq/image/upload/uploads-production/system-of-systems-scs_c4f01ff4-79d1-446b-a1a5-a48032ae017c.png" alt="A system of decoupled systems" loading="lazy">
+
+<figcaption>A system of decoupled systems</figcaption></figure>
+
+<p>Whenever feasible, „integration“ between two self-contained systems should happen in the UI, using good old hypertext links and/or transclusion. Where this is not possible, integration with other services should happen asynchronously using the techniques for asynchronous integration described above.</p>
+
+<h3><a id="summary" href="#summary">Summary</a></h3>
+
+<p>I hope this blog post helped to shed some light on what you should really care about when designing your services: decoupling in time, which can be achieved or violated with both REST and message passing.</p>
+
+<p>If you want to learn more about the kind of decoupled, self-contained systems I mentioned above, please have a look at the <a href="http://scs-architecture.org/">SCS architecture website</a> and feel free to <a href="http://scs-architecture.org/discussion.html">participate in the discussion</a>. Also, I would be happy to discuss my take on the asynchronous communication debate on Twitter.</p>
+
+        </section>
+    </article>
+
+    <section class="tag-section">
+    <h3 class="tag-section__headline">TAGS</h3>
+    <div class="tag-section__container">
+        <ul class="tag-list">
+                <li class="tag-list__item">
+                    <a class="tag-list__link" href="/de/topics/Architecture/">Architecture</a>
+                </li>
+                <li class="tag-list__item">
+                    <a class="tag-list__link" href="/de/topics/Web/">Web</a>
+                </li>
+                <li class="tag-list__item">
+                    <a class="tag-list__link" href="/de/topics/scs/">scs</a>
+                </li>
+                <li class="tag-list__item">
+                    <a class="tag-list__link" href="/de/topics/rest/">rest</a>
+                </li>
+                <li class="tag-list__item">
+                    <a class="tag-list__link" href="/de/topics/restful/">restful</a>
+                </li>
+                <li class="tag-list__item">
+                    <a class="tag-list__link" href="/de/topics/microservices/">microservices</a>
+                </li>
+        </ul>
+    </div>
+</section>
+
+
+    <aside class="page-layout--grid">
+        <section class="center">
+                <div class="blocks">
+            <div class="author-bio author-bio--long" itemscope="" itemtype="http://schema.org/Person">
+        <a class="author-bio__head" title="Daniel Westheide" href="/de/staff/daniel-westheide/">
+            <div class="author-bio__image avatar avatar--base">
+                <img width="120" height="120" class="avatar__image" itemprop="photo" loading="lazy" alt="Avatar of Daniel Westheide" src="https://res.cloudinary.com/innoq/image/upload/c_thumb,dpr_2.0,e_grayscale,f_auto,g_center,h_120,q_auto,w_120/e_sharpen:100/v1/uploads-production/CxjmirwRLJvTG49i1ELnJo9t" />
+            </div>
+            <address class="author">
+                <span rel="author" class="author-bio__name" itemprop="fullName">
+                    Daniel Westheide
+                </span>
+                <span class="author-bio__info" itemprop="jobTitle">
+                    Senior Consultant
+                </span>
+            </address>
+</a>    <address rel="author author-bio__social">
+        <div class="author-bio__social">
+                <a class="author-bio__social-profile" itemprop="url" title="Twitter" href="https://twitter.com/kaffeecoder">
+                    <span class="icon-svg icon-svg--small icon-twitter icon--brand-secondary"></span>
+</a>        </div>
+    </address>
+    <div class="author-bio__text">
+        <p>Daniel Westheide ist Senior Consultant bei INNOQ und entwickelt seit 2006 Server-Applikationen auf der JVM. Er intessiert sich besonders für funktionale Progammierung und verteilte Systeme und ist Autor des E-Books „The Neophyte’s Guide to Scala“.</p>
+
+    </div>
+</div>
+
+    </div>
+
+        </section>
+        <section class="center">
+    <h3 class="teaser-section-heading">Kommentare</h3>
+        <div id="commento"></div>
+</section>
+
+        <section class="center share-section">
+            <span class="icon-svg icon-arrow-long-down icon--brand-secondary"></span>
+<h3 class="share-section__heading">Teilen auf</h3>
+<ul class="share-section__list">
+    <li>
+        <a class="share-section__link" target="_blank" title="Twitter" rel="noopener" href="https://twitter.com/share?url=https%3A%2F%2Fwww.innoq.com%2Fen%2Fblog%2Fwhy-restful-communication-between-microservices-can-be-perfectly-fine%2F&amp;text=Why+RESTful+communication+between+microservices+can+be+perfectly+fine+von+%40kaffeecoder&amp;via=innoq">
+            <span class="icon-svg icon-svg--medium icon-twitter icon--brand-secondary"></span>
+            <span class="sr-only">Twitter</span>
+</a>    </li>
+    <li>
+        <a class="share-section__link" target="_blank" title="Facebook" rel="noopener" href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fwww.innoq.com%2Fen%2Fblog%2Fwhy-restful-communication-between-microservices-can-be-perfectly-fine%2F">
+            <span class="icon-svg icon-svg--medium  icon-facebook icon--brand-secondary"></span>
+            <span class="sr-only">Facebook</span>
+</a>    </li>
+    <li>
+        <a class="share-section__link" title="Mail" href="/cdn-cgi/l/email-protection#447b3731262e21273079132c3d6f160117102231286f272b2929312a2d2725302d2b2a6f2621303321212a6f292d27362b372136322d2721376f27252a6f26216f34213622212730283d6f222d2a21622529347f262b203d792c303034376177056176026176023333336a2d2a2a2b356a272b29617602212a61760226282b23617602332c3d693621373022312869272b2929312a2d2725302d2b2a692621303321212a69292d27362b372136322d2721376927252a6926216934213622212730283d69222d2a21617602">
+            <span class="icon-svg icon-svg--medium icon-email icon--brand-secondary"></span>
+            <span class="sr-only">Mail</span>
+</a>    </li>
+</ul>
+
+        </section>
+
+            <section class="center">
+                <h-include src="/de/recommendations/?for=https%3A%2F%2Fwww.innoq.com%2Fen%2Fblog%2Fwhy-restful-communication-between-microservices-can-be-perfectly-fine%2F">
+                    <a href="/de/recommendations/?for=https%3A%2F%2Fwww.innoq.com%2Fen%2Fblog%2Fwhy-restful-communication-between-microservices-can-be-perfectly-fine%2F">Mehr zum Thema</a>
+                </h-include>
+            </section>
+
+        <section class="center">
+            <h-include src="/de/upcoming_talks/?for=daniel-westheide">
+                <a href="/de/upcoming_talks/?for=daniel-westheide">Kommende Vorträge</a>
+            </h-include>
+        </section>
+    </aside>
+
+</main>
+
+
+        <div class="dark-background">
+    <div class="page-layout-xl--default">
+        <footer class="footer">
+            <h2 class="footer__heading">Kontakt</h2>
+            <div class="footer__left">
+                <div class="footer__form">
+                    <p class="footer__paragraph">Nutzen Sie unser Kontaktformular oder schreiben Sie uns eine E-Mail an <a class="footer__link" href="/cdn-cgi/l/email-protection#01686f676e41686f6f6e702f626e6c"><span class="__cf_email__" data-cfemail="670e090108270e090908164904080a">[email&#160;protected]</span></a>.</p>
+                    <p class="footer__paragraph">Wenn Sie mögen, können Sie uns auch verschlüsselte E-Mails mit dem Programm Ihrer Wahl senden. Nutzen Sie dazu wahlweise unsere S/MIME-Zertifikate (<a class="footer__link" href="/innoq_deutschland_gmbh.asc.cer">.cer</a>, <a class="footer__link" href="/innoq_deutschland_gmbh.asc.p7b">.p7b</a>, <a class="footer__link" href="/innoq_deutschland_gmbh.asc.pem">.pem</a>) oder unseren öffentlichen <a class="footer__link" href="/innoq_deutschland_gmbh.asc">PGP-Schlüssel</a>.</p>
+                    <remote-form>
+
+    <form class="form form--inverted" novalidate="novalidate" action="/de/contact_messages/" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="Tn1vSFRIZtzgu3e7c1xzQA9n_EHYXUjNpoQxaW9Eno96JCe6gy262shJcAkQAyr_SPprD8SfU8p9umEZzl4ToQ" autocomplete="off" />
+        <input type="text" name="hp_full_name" tabindex="-1" autocomplete="nope" class="hp_full_name">
+
+        <div class="form-group">
+            <label class="form-label" for="contact_message_name">Name</label>
+            <input required="required" class="form-control" type="text" name="contact_message[name]" id="contact_message_name" />
+</div>        <div class="form-group">
+            <label class="form-label" for="contact_message_email">E-Mail</label>
+            <input required="required" class="form-control" type="email" name="contact_message[email]" id="contact_message_email" />
+</div>        <div class="form-group">
+            <label class="form-label" for="contact_message_content">Nachricht</label>
+            <textarea required="required" class="form-control" rows="5" name="contact_message[content]" id="contact_message_content"></textarea>
+</div>        <button name="button" type="submit" class="btn btn--small btn--inverted" data-wait-label="Bitte warten…">Senden</button>
+</form></remote-form>
+
+                </div>
+                <div class="footer__flex">
+                    <div class="footer__aside footer__aside--bottom-left">
+                        <h2 class="footer__heading">Links</h2>
+                        <ul class="footer__list">
+                            <li class="footer__list__item"><a class="footer__list__link" href="/de/written/">Blog &amp; Artikel</a></li>
+                            <li class="footer__list__item"><a class="footer__list__link" href="/de/talks/">Vorträge</a></li>
+                            <li class="footer__list__item"><a class="footer__list__link" href="/de/podcasts/">Podcasts</a></li>
+                            <li class="footer__list__item"><a class="footer__list__link" href="/de/technology-lunch/">Technology Lunch</a></li>
+                            <li class="footer__list__item"><a class="footer__list__link" href="/de/topics/primer/">Primer</a></li>
+                            <li class="footer__list__item"><a class="footer__list__link" href="/de/topics/buecher/">Bücher</a></li>
+                            <li class="footer__list__item"><a class="footer__list__link" href="/de/management/">Management</a></li>
+                            <li class="footer__list__item"><a class="footer__list__link" href="https://www.socreatory.com">socreatory – The Software Creators’ Academy</a></li>
+                            <li class="footer__list__item"><a class="footer__list__link" href="/de/contact_messages/new/">Kontakt</a></li>
+                            <li class="footer__list__item"><a class="footer__list__link" href="/de/datenschutz/">Datenschutz</a></li>
+                            <li class="footer__list__item"><a class="footer__list__link" href="/de/impressum/">Impressum</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer__aside footer__aside--bottom-left">
+                        <h2 class="footer__heading">Leistungen</h2>
+                        <ul class="footer__list">
+                            <li class="footer__list__item"><a class="footer__list__link" href="/de/services/#strategie_technologie_beratung">Strategie- und Technologieberatung</a></li>
+                            <li class="footer__list__item"><a class="footer__list__link" href="/de/services/produktentwicklung/">Digitale Produktentwicklung</a></li>
+                            <li class="footer__list__item"><a class="footer__list__link" href="/de/services/#softwarearchitektur_entwicklung">Softwarearchitektur und -entwicklung</a></li>
+                            <li class="footer__list__item"><a class="footer__list__link" href="/de/services/#digitale_plattformen">Digitale Plattformen und Infrastrukturen</a></li>
+                            <li class="footer__list__item"><a class="footer__list__link" href="/de/trainings/">Wissenstransfer, Coaching und Trainings</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <h2 class="footer__heading">Standorte</h2>
+            <div class="footer__aside footer__aside--top-left">
+                <h3 class="footer__subheading">innoQ Deutschland GmbH</h3>
+                <address class="footer__address" itemprop="address" itemscope itemtype="http://schema.org/PostalAddress">
+                    <span itemprop="streetAddress">Krischerstr. 100</span><br>
+                    <span itemprop="postalCode">40789</span> <span itemprop="addressLocality">Monheim am Rhein</span><br>
+                    <a href="tel:(+49) 2173 3366 0" class="footer__link" itemprop="telephone">Tel (+49) 2173 3366 0</a><br>
+                    <a href="https://goo.gl/maps/w3Yp3KicooD2" class="footer__directions-link">Anfahrt</a>
+                </address>
+                <address class="footer__address" itemscope itemtype="http://schema.org/PostalAddress">
+                    <span itemprop="streetAddress">Ohlauer Str. 43</span><br>
+                    <span itemprop="postalCode">10999</span> <span itemprop="addressLocality">Berlin</span><br>
+                    <a href="https://goo.gl/maps/JkQ8JUq5GpM2" class="footer__directions-link">Anfahrt</a>
+                </address>
+                <address class="footer__address" itemscope itemtype="http://schema.org/PostalAddress">
+                    <span itemprop="streetAddress">Ludwigstr. 180 E</span><br>
+                    <span itemprop="postalCode">63067</span> <span itemprop="addressLocality">Offenbach</span><br>
+                    <a href="https://goo.gl/maps/ej3YSyw5mUz" class="footer__directions-link">Anfahrt</a>
+                </address>
+                <address class="footer__address" itemscope itemtype="http://schema.org/PostalAddress">
+                    <span itemprop="streetAddress">Kreuzstr. 16</span><br>
+                    <span itemprop="postalCode">80331</span> <span itemprop="addressLocality">München</span><br>
+                    <a href="https://goo.gl/maps/q3oHmZwHahJ2" class="footer__directions-link">Anfahrt</a>
+                </address>
+                <address class="footer__address" itemscope itemtype="http://schema.org/PostalAddress">
+                    <span itemprop="streetAddress">c/o WeWork</span><br>
+                    <span itemprop="streetAddress">Hermannstrasse 13</span><br>
+                    <span itemprop="postalCode">20095</span> <span itemprop="addressLocality">Hamburg</span><br>
+                    <a href="https://goo.gl/maps/xvsZWT5zzZ42" class="footer__directions-link">Anfahrt</a>
+                </address>
+                <address class="footer__address" itemscope itemtype="http://schema.org/PostalAddress">
+                    <span itemprop="streetAddress">c/o Design Offices Mediapark</span><br>
+                    <span itemprop="streetAddress">Erftstr. 15-17</span><br>
+                    <span itemprop="postalCode">50672</span> <span itemprop="addressLocality">Köln</span><br>
+                    <a href="https://goo.gl/maps/cSKGLHHAe8QAuhQN7" class="footer__directions-link">Anfahrt</a>
+                </address>
+                <address class="footer__address" itemscope itemtype="http://schema.org/PostalAddress">
+                    <span itemprop="streetAddress">c/o Design Offices</span><br>
+                    <span itemprop="streetAddress">Königstorgraben 11</span><br>
+                    <span itemprop="postalCode">90402</span> <span itemprop="addressLocality">Nürnberg</span><br>
+                    <a href="https://goo.gl/maps/vKxB7ngt2vhkJW6G6" class="footer__directions-link">Anfahrt</a>
+                </address>
+            </div>
+            <div class="footer__aside footer__aside--top-right">
+                <h3 class="footer__subheading">innoQ Schweiz GmbH</h3>
+                <address class="footer__address" itemscope itemtype="http://schema.org/PostalAddress">
+                    <span itemprop="streetAddress">Schutzengelstr. 57</span><br>
+                    <span itemprop="postalCode">6340</span> <span itemprop="addressLocality">Baar</span><br>
+                    <a href="tel:(+41) 41 743 01 11" class="footer__link" itemprop="telephone">Tel (+41) 41 743 01 11</a>
+                    <br>
+                    <a href="https://goo.gl/maps/N9qbZPPjr9R2" class="footer__directions-link">Anfahrt</a>
+                </address>
+                <address class="footer__address" itemscope itemtype="http://schema.org/PostalAddress">
+                    <span itemprop="streetAddress">Hardturmstrasse 253</span><br>
+                    <span itemprop="postalCode">8005</span> <span itemprop="addressLocality">Zürich</span><br>
+                    <a href="https://goo.gl/maps/Gbgw7tBprifJxiKj9" class="footer__directions-link">Anfahrt</a>
+                </address>
+            </div>
+        </footer>
+    </div>
+</div>
+
+        <div class="newsletter-optin" id="newsletter" style="min-height: 100vh;">
+    <div class="page-layout-md--default">
+        <div class="newsletter-optin__title">Unsere Newsletter</div>
+        <remote-form>
+        <div class="newsletter-optin__subtitle">
+            Nie mehr spannende Artikel, Veranstaltungstipps und Podcasts zu Architektur, Entwicklung und Technologietrends verpassen!
+        </div>
+    <form class="newsletter-optin__form" action="/de/newsletter_subscriptions/" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="Ic9C6KCuTmSqgEOX3UJfqbUjnfjPU2vTdFEPwhxHMMbpIMdmhFz1JARJs_Fkyl39jU3SruSSvIXKbfnPOSSuow" autocomplete="off" />
+        <input type="text" name="hp_full_name" tabindex="-1" autocomplete="nope" class="hp_full_name">
+        <div class="form-group">
+            <check-to-toggle class="custom-form-control checkbox" target="#newsletter-checkbox-innoq">
+                <input name="newsletter_subscription[wants_innoq]" type="hidden" value="0" autocomplete="off" /><input id="custom-checkbox-1" class="form-control__input" type="checkbox" value="1" name="newsletter_subscription[wants_innoq]" />
+                <label for="custom-checkbox-1" class="form-label">
+                    <span class="form-label--emphasized">Der INNOQ Newsletter</span>
+                    <br>
+                    Spannende Artikel, Veranstaltungstipps und Podcasts zu Architektur, Entwicklung und Technologietrends. Erscheint ca. 1 mal pro Monat.
+                    <br>
+                    <span id="newsletter-checkbox-innoq" class="is-hidden">
+                        <br>
+                        <br>
+                        Hiermit willige ich in die Erhebung und Verarbeitung der vorstehenden Daten für das Empfangen des monatlichen Newsletters per E-Mail ein. Diese Einwilligung kann ich per Email an <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="85ecebe3eac5ecebebeaf4abe6eae8">[email&#160;protected]</a>, direkt per Link in der Newsletter-Email oder an die im Impressum genannten Kontaktdaten jederzeit widerrufen. <a target="_blank" class="link-teaser inverted-interaction-color" rel="noopener" href="/de/datenschutz/#innoqnewsletter">Die Datenschutzhinweise</a> habe ich zur Kenntnis genommen und bestätige dies mit Absenden des Formulars.
+                    </span>
+                </label>
+            </check-to-toggle>
+        </div>
+        <div class="form-group">
+            <check-to-toggle class="custom-form-control checkbox" target="#newsletter-checkbox-rauchzeichen">
+                <input name="newsletter_subscription[wants_rauchzeichen]" type="hidden" value="0" autocomplete="off" /><input id="custom-checkbox-2" class="form-control__input" type="checkbox" value="1" name="newsletter_subscription[wants_rauchzeichen]" />
+                <label for="custom-checkbox-2" class="form-label">
+                    <span class="form-label--emphasized">Das Digitale Rauchzeichen</span><br>
+                    Success Stories aus Digitalisierung und Modernisierung von INNOQ Schweiz. Erscheint max. 4 mal pro Jahr.
+                    <span id="newsletter-checkbox-rauchzeichen" class="is-hidden">
+                        <br>
+                        <br>
+                        Hiermit willige ich in die Erhebung und Verarbeitung der vorstehenden Daten für den Empfang des Newsletters der innoQ Schweiz GmbH per E-Mail ein. Diese Einwilligung kann ich per Email an <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="d8b1b6beb798b1b6b6b7a9f6bbb7b5">[email&#160;protected]</a>, direkt per Link in der Newsletter-Email oder an die im Impressum genannten Kontaktdaten jederzeit widerrufen. <a target="_blank" class="link-teaser inverted-interaction-color" rel="noopener" href="/de/datenschutz/#newsletter:dasdigitalerauchzeichen">Die Datenschutzhinweise</a> habe ich zur Kenntnis genommen und bestätige dies mit Absenden des Formulars.
+                    </span>
+                </label>
+            </check-to-toggle>
+        </div>
+        <div class="form-group">
+            <label class="form-label form-label--emphasized" for="newsletter_subscription_email">Email</label>
+            <input class="form-control" type="email" name="newsletter_subscription[email]" id="newsletter_subscription_email" />
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="newsletter_subscription_firstname">
+                <span class=" form-label--emphasized">Vorname</span> <small>optional</small>
+            </label>
+            <input class="form-control" type="text" name="newsletter_subscription[firstname]" id="newsletter_subscription_firstname" />
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="newsletter_subscription_lastname">
+                <span class=" form-label--emphasized">Nachname</span> <small>optional</small>
+            </label>
+            <input class="form-control" type="text" name="newsletter_subscription[lastname]" id="newsletter_subscription_lastname" />
+            <!--            <input type="text" name="newsletter_lastname" id="newsletter_lastname" class="form-control" />-->
+        </div>
+        <button type="submit" class="btn btn--small btn--cta" data-wait-label="Bitte warten…" data-label="Anmelden">
+            Anmelden
+        </button>
+</form></remote-form>
+
+    </div>
+</div>
+
+        <div class="eyecatcher eyecatcher--social">
+    <p class="eyecatcher--social__text">Finden können Sie uns auch auf</p>
+    <ul class="social-media-bar">
+        <li class="social-media-bar__item">
+            <a href="https://twitter.com/innoq" class="social-media-bar__link" title="Twitter">
+                <span class="sr-only">Twitter</span>
+                <span class="icon-svg icon-twitter icon--brand-white"></span>
+            </a>
+        </li>
+        <li class="social-media-bar__item">
+            <a href="https://www.youtube.com/channel/UC4YqjApdFRXszRNmuNJx9Wg" class="social-media-bar__link" title="Youtube">
+                <span class="sr-only">Youtube</span>
+                <span class="icon-svg icon-youtube icon--brand-white"></span>
+            </a>
+        </li>
+        <li class="social-media-bar__item">
+            <a href="https://www.linkedin.com/company/innoq/" class="social-media-bar__link" title="LinkedIn">
+                <span class="sr-only">LinkedIn</span>
+                <span class="icon-svg icon-linkedin icon--brand-white"></span>
+            </a>
+        </li>
+        <li class="social-media-bar__item">
+            <a href="https://www.xing.com/company/innoq-deutschland" class="social-media-bar__link" title="Xing">
+                <span class="sr-only">Xing</span>
+                <span class="icon-svg icon-xing icon--brand-white"></span>
+            </a>
+        </li>
+        <li class="social-media-bar__item">
+            <a href="https://www.innoq.com/de/feed.atom" class="social-media-bar__link" title="RSS">
+                <span class="sr-only">Feed</span>
+                <span class="icon-svg icon-rss-1 icon--brand-white"></span>
+            </a>
+        </li>
+    </ul>
+</div>
+
+    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script></body>
+</html>

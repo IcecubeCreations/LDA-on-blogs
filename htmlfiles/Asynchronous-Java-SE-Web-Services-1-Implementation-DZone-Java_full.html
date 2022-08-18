@@ -1,0 +1,1267 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A few years ago, I posted a how-to on Java-SE-based Web Services. More recently, I've become interested in asynchronous web-service invocation, and, as it turns...">
+  <meta name="keywords" content="web service, java, Implementation">
+
+  <meta property="og:description" content="A few years ago, I posted a how-to on Java-SE-based Web Services. More recently, I've become interested in asynchronous web-service invocation, and, as it turns...">
+  <meta property="og:site_name" content="dzone.com">
+  <meta property="og:title" content="Asynchronous Java SE Web Services: 1. Implementation  - DZone Java">
+  <meta property="og:url" content="https://dzone.com/articles/asynchronous-java-se-web">
+  <meta property="og:image" content="/themes/dz20/images/ArticleImg_9.jpg">
+  <meta property="og:type" content="article">
+
+  <meta name="twitter:site" content="@DZoneInc">
+  <meta name="twitter:image" content="/themes/dz20/images/ArticleImg_9.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:description" content="A few years ago, I posted a how-to on Java-SE-based Web Services. More recently, I've become interested in asynchronous web-service invocation, and, as it turns...">
+  <meta name="twitter:title" content="Asynchronous Java SE Web Services: 1. Implementation  - DZone Java">
+
+  <meta name="referrer" content="origin-when-cross-origin">
+  <meta name="google-site-verification" content="kndbhxcupfEqWmZclhCpB6vlgOs7QSmx2UHAGGnP2mA">
+  <meta name="df-verify" content="df0d76632b4543">
+
+  <link rel="icon" type="image/x-icon" href="https://dz2cdn1.dzone.com/themes/dz20/images/favicon.png">
+  <link rel="image_src" href="/themes/dz20/images/ArticleImg_9.jpg">
+  <link rel="canonical" href="https://dzone.com/articles/asynchronous-java-se-web">
+
+  <title>Asynchronous Java SE Web Services: 1. Implementation  - DZone Java</title>
+
+  <link rel="preload" href="https://fonts.dzone.com/themes/dz20/font/fontello.woff?11773374" as="font" type="font/woff" crossorigin="anonymous">
+
+  <link rel="stylesheet" media="all" href="https://dz2cdn1.dzone.com/themes/dz20/ftl/icons.css">
+  <link rel="stylesheet" media="all" href="https://dz2cdn1.dzone.com/themes/dz20/lib/static/bootstrap/bootstrap.min.css">
+  <link rel="stylesheet" media="all" href="https://dz2cdn1.dzone.com/themes/dz20/ftl/article/global.css">
+  <link rel="stylesheet" media="all" href="https://dz2cdn1.dzone.com/themes/dz20/ftl/header/styles.css">
+</head>
+<body>
+<div id="ftl-header">
+  <div class="container-fluid header">
+    <div class="row">
+      <div class="col-md-12" style="padding: 0;">
+        <div class="header-top">
+          <div class="header-container">
+            <div class="pull-left logo-container">
+              <div class="logo">
+                <a class="inner" href="/">
+                  <picture>
+                    <source srcset="https://dz2cdn1.dzone.com/themes/dz20/images/dz_logo_2021_cropped.webp" type="image/webp">
+                    <source srcset="https://dz2cdn1.dzone.com/themes/dz20/images/dz_logo_2021_cropped.png" type="image/png">
+                    <img src="https://dz2cdn1.dzone.com/themes/dz20/images/dz_logo_2021_cropped.png" width="160" height="52" alt="DZone">
+                  </picture>
+                </a>
+              </div>
+
+                <div class="active-portal"><a href="/java-jdk-development-tutorials-tools-news">Java Zone</a></div>
+            </div>
+
+            <div class="pull-right login-and-search">
+              <div id="authenticated-block" class="logged-in">
+                <div class="welcome-back">Thanks for visiting DZone today,</div>
+                <div id="user-header" class="user-info">
+                  <button class="user-avatar">
+                    <span id="header-username" class="username"></span>
+                    <img id="header-avatar" src="" alt="user avatar">
+                  </button>
+                  <div id="user-dropdown" class="browse-user-menu">
+                    <div class="user-content">
+                      <a id="header-user-plug" href="#" class="user-description"></a>
+                      <a id="header-user-edit" href="#" class="edit-profile">Edit Profile</a>
+                    </div>
+                    <ul class="user-actions">
+                      <li id="first-user-action"><a id="header-dropdown-manage-email" href="#">Manage Email Subscriptions</a></li>
+                      <li>
+                        <a href="/articles/how-to-submit-a-post-to-dzone?utm_source=DZone&utm_medium=user_dropdown&utm_campaign=how_to_post">
+                          How to Post to DZone
+                        </a>
+                      </li>
+                      <li>
+                        <a href="/articles/dzones-article-submission-guidelines">
+                          Article Submission Guidelines
+                        </a>
+                      </li>
+                    </ul>
+                    <div class="bottom">
+                      <a href="/users/logout.html" class="sign-out">Sign Out</a>
+                      <a id="dropdown-view-profile" href="#" class="view-profile">View Profile</a>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="post-content">
+                  <button id="post-button" class="post-content--button">
+                    <span class="post-class">Post</span>
+                    <i class="icon-plus"></i>
+                  </button>
+
+                  <div id="post-menu" class="posting-links">
+                    <div class="posting-links-menu">
+                      <ul>
+                        <li>
+                          <img src="/themes/dz20/images/dz-postarticle.svg">
+                          <a href="/content/article/post.html">Post an Article</a>
+                        </li>
+                        <li>
+                          <a id="drafts-link" href="#">Manage My Drafts</a>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div id="unauthenticated-block">
+                <div class="dz-intro">Over 2 million developers have joined DZone.</div>
+                <div class="mobile-invisible sign-in-join">
+                  <a href="/users/login.html">Log In</a>
+                  <span class="dz-intro-span">/</span>
+                  <a href="/static/registration.html">Join</a>
+                </div>
+                <a class="join-icon" href="/users/login.html"><i class="icon-user"></i></a>
+              </div>
+              <div class="headerSearch">
+                <a class="icon-search dropdown-toggle" href="/search"></a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="header-bottom">
+
+
+          <ul class="portals header-container scrollable-ul">
+            <li>
+              <a href="/refcardz" id="header-refcardz">
+                <em>Refcardz</em>
+              </a>
+            </li>
+            <li>
+              <a href="/trendreports" id="header-research">
+                <em>Trend Reports</em>
+              </a>
+            </li>
+            <li>
+              <a href="/webinars" id="header-webinars">
+                <em>Webinars</em>
+              </a>
+            </li>
+            <li class="last-portal-link">
+              <a href="#" id="header-portals">
+                <em>
+                  Zones
+                  <span id="zone-arrow" class="collapsible-toggle">
+                    <i class="icon-angle-down"></i>
+                    <i class="icon-angle-up"></i>
+                  </span>
+                </em>
+              </a>
+            </li>
+
+            <li class="separator" aria-hidden="true" style="color: #d9dcdd;">|</li>
+            <li id="portal-list" class="portal-topics">
+              <ul>
+                  <li>
+                    <a href="/agile-methodology-training-tools-news" id="header-2">Agile</a>
+                  </li>
+                  <li>
+                    <a href="/artificial-intelligence-tutorials-tools-news" id="header-4001">AI</a>
+                  </li>
+                  <li>
+                    <a href="/big-data-analytics-tutorials-tools-news" id="header-3">Big Data</a>
+                  </li>
+                  <li>
+                    <a href="/cloud-computing-tutorials-tools-news" id="header-4">Cloud</a>
+                  </li>
+                  <li>
+                    <a href="/database-sql-nosql-tutorials-tools-news" id="header-5">Database</a>
+                  </li>
+                  <li>
+                    <a href="/devops-tutorials-tools-news" id="header-6">DevOps</a>
+                  </li>
+                  <li>
+                    <a href="/enterprise-integration-training-tools-news" id="header-7">Integration</a>
+                  </li>
+                  <li>
+                    <a href="/iot-developer-tutorials-tools-news-reviews" id="header-8">IoT</a>
+                  </li>
+                  <li>
+                    <a href="/java-jdk-development-tutorials-tools-news" id="header-1">Java</a>
+                  </li>
+                  <li>
+                    <a href="/microservices-news-tutorials-tools" id="header-6001">Microservices</a>
+                  </li>
+                  <li>
+                    <a href="/open-source-news-tutorials-tools" id="header-7001">Open Source</a>
+                  </li>
+                  <li>
+                    <a href="/apm-tools-performance-monitoring-optimization" id="header-10">Performance</a>
+                  </li>
+                  <li>
+                    <a href="/application-web-network-security" id="header-2001">Security</a>
+                  </li>
+                  <li>
+                    <a href="/web-development-programming-tutorials-tools-news" id="header-11">Web Dev</a>
+                  </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script async src="https://dz2cdn1.dzone.com/themes/dz20/ftl/header/bundle.js"></script><link rel="stylesheet" media="all" href="https://dz2cdn1.dzone.com/themes/dz20/ftl/article/styles.css">
+
+
+
+
+<div id="ftl-article" >
+  <div class="container-fluid body">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="articles-wrap">
+              <div class="ad-container">
+                <div id="div-gpt-ad-1435246566686-0" class="ads-billboard-article" data-gpt-slot="top"></div>
+              </div>
+
+
+          <div class="article-stream widget-top-border">
+                <div class="content-right-images">
+                  <div id="div-gpt-ad-1435246566686-2" class="sidebar-ad" data-gpt-desktop="true" data-gpt-slot="sidebar1"></div>
+                </div>
+
+                <script type="application/ld+json">
+                  {
+                    "@context": "http://schema.org",
+                    "@type": "Article",
+                    "headline": "Asynchronous Java SE Web Services: 1. Implementation ",
+                    "author": {
+                      "@type": "Person",
+                      "name": "Wayne Adams"
+                    },
+                    "audience": "software developers",
+                    "keywords": "No keywords",
+                    "timeRequired": "PT8M",
+                    "commentCount": 2,
+                    "wordCount": "1771",
+                    "accessMode": "textual, visual",
+                    "dateCreated": "2012-01-16T00:29:07Z",
+                    "datePublished": "2012-01-16T00:29:07Z",
+                    "dateModified": "2012-01-16T00:29:07Z",
+                    "articleSection": "java-jdk-development-tutorials-tools-news",
+                    "publisher": {
+                      "@type": "Organization",
+                      "name": "DZone",
+                      "url": "https://dzone.com",
+                      "logo": {
+                        "@type": "ImageObject",
+                        "url": "https://dzone.com/themes/dz20/images/dz_logo_2021_cropped.png"
+                      }
+                    },
+                    "articleBody": "A few years ago, I posted a how-to on Java-SE-based Web Services. More recently, I've become interested in asynchronous web-service invocation, and, as it turns out, Java SE supports that, too. This post, then, is the asynchronous version of that older post. How I got to the structure of this post is a story in itself. To make things simpler, I will first go through all the steps to deployan asynchronous Java SE web service. Then, I will explain the route I chose, and what I see as the positives and negatives of the results.Here's the outline: Create a WSDL definition file Using the WSDL file, generate server artifacts; implement the web service operations Create an external JAX-WS binding definitions file Generate client-side artifacts using the WSDL and binding definitions files Demonstrate synchronous and asynchronous client-side invocations of the web-service operations Let's cut to the chase. Create a WSDL definition file Here I'll create a minimal WSDL file, describing a web service which returns the exchange rate of two currencies. Here's the file, called exchange-rate.wsdl: &lt;?xml version=\"1.0\" encoding=\"UTF-8\"?&gt; &lt;definitions xmlns:wsu=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd\" xmlns:wsp=\"http://www.w3.org/ns/ws-policy\" xmlns:wsp1_2=\"http://schemas.xmlsoap.org/ws/2004/09/policy\" xmlns:wsam=\"http://www.w3.org/2007/05/addressing/metadata\" xmlns:soap=\"http://schemas.xmlsoap.org/wsdl/soap/\" xmlns:tns=\"http://async.ws.adamsresearch.com/\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns=\"http://schemas.xmlsoap.org/wsdl/\" targetNamespace=\"http://async.ws.adamsresearch.com/\" name=\"ExchangeRateService\"&gt; &lt;types&gt; &lt;xsd:schema xmlns:tns=\"http://async.ws.adamsresearch.com/\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" version=\"1.0\" targetNamespace=\"http://async.ws.adamsresearch.com/\"&gt; &lt;xsd:element name=\"getExchangeRate\" type=\"tns:getExchangeRate\"&gt;&lt;/xsd:element&gt; &lt;xsd:element name=\"getExchangeRateResponse\" type=\"tns:getExchangeRateResponse\"&gt;&lt;/xsd:element&gt; &lt;xsd:complexType name=\"getExchangeRate\"&gt; &lt;xsd:sequence&gt; &lt;xsd:element name=\"arg0\" type=\"xsd:string\" minOccurs=\"0\"&gt;&lt;/xsd:element&gt; &lt;xsd:element name=\"arg1\" type=\"xsd:string\" minOccurs=\"0\"&gt;&lt;/xsd:element&gt; &lt;/xsd:sequence&gt; &lt;/xsd:complexType&gt; &lt;xsd:complexType name=\"getExchangeRateResponse\"&gt; &lt;xsd:sequence&gt; &lt;xsd:element name=\"return\" type=\"xsd:double\"&gt;&lt;/xsd:element&gt; &lt;/xsd:sequence&gt; &lt;/xsd:complexType&gt; &lt;/xsd:schema&gt; &lt;/types&gt; &lt;message name=\"getExchangeRate\"&gt; &lt;part name=\"parameters\" element=\"tns:getExchangeRate\"&gt;&lt;/part&gt; &lt;/message&gt; &lt;message name=\"getExchangeRateResponse\"&gt; &lt;part name=\"parameters\" element=\"tns:getExchangeRateResponse\"&gt;&lt;/part&gt; &lt;/message&gt; &lt;portType name=\"ExchangeRate\"&gt; &lt;operation name=\"getExchangeRate\"&gt; &lt;input wsam:Action=\"http://async.ws.adamsresearch.com/ExchangeRate/getExchangeRateRequest\" message=\"tns:getExchangeRate\"&gt;&lt;/input&gt; &lt;output wsam:Action=\"http://async.ws.adamsresearch.com/ExchangeRate/getExchangeRateResponse\" message=\"tns:getExchangeRateResponse\"&gt;&lt;/output&gt; &lt;/operation&gt; &lt;/portType&gt; &lt;binding name=\"ExchangeRatePortBinding\" type=\"tns:ExchangeRate\"&gt; &lt;soap:binding transport=\"http://schemas.xmlsoap.org/soap/http\" style=\"document\"&gt;&lt;/soap:binding&gt; &lt;operation name=\"getExchangeRate\"&gt; &lt;soap:operation soapAction=\"\"&gt;&lt;/soap:operation&gt; &lt;input&gt; &lt;soap:body use=\"literal\"&gt;&lt;/soap:body&gt; &lt;/input&gt; &lt;output&gt; &lt;soap:body use=\"literal\"&gt;&lt;/soap:body&gt; &lt;/output&gt; &lt;/operation&gt; &lt;/binding&gt; &lt;service name=\"ExchangeRateService\"&gt; &lt;port name=\"ExchangeRatePort\" binding=\"tns:ExchangeRatePortBinding\"&gt; &lt;soap:address location=\"http://localhost:8282/exchangeRate\"&gt;&lt;/soap:address&gt; &lt;/port&gt; &lt;/service&gt; &lt;/definitions&gt; The web service has a single operation -- getExchangeRate -- which takes a String representation of two currencies and returns a double. There's no need to flesh this service out with a lot of operations -- I just want to demonstrate the dev cycle required to deploy a web service with asynchronous operations. Generate the service-side artifacts Next, we'll create a Java web-service project using Maven. In a convenient directory, enter mvn archetype:generate -DgroupId=com.adamsresearch.ws.async -DartifactId=AsyncService(substituting your values, of course) and accept all the default values. This creates the skeleton of what will be our web service. Next, we'll modify the POM file to read the WSDL file and generate the service-side artifacts. For this, we will use the JAX-WS utility wsimport (found in the Java SE SDK; we will be using the Maven wsimport plugin, however). First, we have to decide where to put the WSDL file. We can put it anywhere we want, of course, but note from the jaxws:import docs page that the default location is ${basedir}/src/wsdl. I prefer to put mine in a directory src/main/resources/wsdl, so I'll need to specify that directory below, in the arguments to wsimport. Open the POM file in the top-level directory of the project and add the following, after the dependencies element: &lt;build&gt; &lt;finalName&gt;ExchangeRateWebService&lt;/finalName&gt; &lt;plugins&gt; &lt;plugin&gt; &lt;artifactId&gt;maven-compiler-plugin&lt;/artifactId&gt; &lt;configuration&gt; &lt;source&gt;1.6&lt;/source&gt; &lt;target&gt;1.6&lt;/target&gt; &lt;/configuration&gt; &lt;/plugin&gt; &lt;plugin&gt; &lt;groupId&gt;org.codehaus.mojo&lt;/groupId&gt; &lt;artifactId&gt;jaxws-maven-plugin&lt;/artifactId&gt; &lt;executions&gt; &lt;execution&gt; &lt;goals&gt; &lt;goal&gt;wsimport&lt;/goal&gt; &lt;/goals&gt; &lt;configuration&gt; &lt;wsdlDirectory&gt;${basedir}/src/main/resources/wsdl&lt;/wsdlDirectory&gt; &lt;keep&gt;true&lt;/keep&gt; &lt;packageName&gt;com.adamsresearch.ws.async.generated&lt;/packageName&gt; &lt;sourceDestDir&gt;${basedir}/src/main/java&lt;/sourceDestDir&gt; &lt;/configuration&gt; &lt;/execution&gt; &lt;/executions&gt; &lt;/plugin&gt; &lt;/plugins&gt; &lt;/build&gt;The first dependency is an acknowledgment that Maven defaults to 1.3. For those of you without white hair, that's a really old version of Java. I've decided to override a number of wsimport defaults, to create the service in the desired package and to drop the files in the desired directory. Note that packageName does not have a default setting. Now enter mvn install from the project top-level directory. I now have an interface -- ExchangeRate -- as well as some additional supporting classes. It is time to write our service implementation. Here is my first cut: package com.adamsresearch.ws.async; import javax.jws.WebMethod; import javax.jws.WebService; import javax.xml.ws.Endpoint; import com.adamsresearch.ws.async.generated.ExchangeRate; @WebService(serviceName=\"ExchangeRateService\", portName=\"ExchangeRatePort\", endpointInterface=\"com.adamsresearch.ws.async.generated.ExchangeRate\") public class ExchangeRateEndpoint implements ExchangeRate { public static void main(String[] args) { if (args.length != 1) { System.out.println(\"Usage: java -cp &lt;jarFile&gt; com.adamsresearch.ws.async.ExchangeRateEndpoint publishURL\"); System.exit(-1); } ExchangeRateEndpoint wsInstance = new ExchangeRateEndpoint(); Endpoint.publish(args[0], wsInstance); System.out.println(\"Published endpoint at URL \" + args[0]); } @WebMethod public double getExchangeRate(String fromCurrency, String toCurrency) { if (fromCurrency.equals(\"AS1\") &amp;&amp; toCurrency.equals(\"GMD\")) { return 2.78; } else { return 0.0; } } }I then run mvn install once more, then launch the web service with the following: C:\\dev\\AsyncWSDev\\AsyncService&gt;java -cp target\\ExchangeRateWebService.jar com.adamsresearch.ws.async.ExchangeRateEndpoint http:// localhost:8282/exchangeRateService Published endpoint at URL http://localhost:8282/exchangeRateService If we open a browser at the specified URL with \"?wsdl\" appended, we'll see the web-service WSDL file, verifying that we successfully deployed the service. Note that the Java runtime cleverly extracts the XML Schema from the WSDL file and references it via import. Both the WSDL file and the XML Schema file (as retrieved by the HTTP request in the browser) are dynamically generated by the Java runtime. Create an external JAX-WS binding definitions file Why are we performing this step? To produce a more-fully-functional client-side API for our to-be-created web service client. You can provide two types of binding definitions files to wsimport -- JAXB-related files, and a file that specifies some customizations of the web service (which is why it's called a binding customization). Here is our binding customization file: &lt;?xml version=\"1.0\" encoding=\"UTF-8\"?&gt; &lt;bindings xmlns:wsdl=\"http://schemas.xmlsoap.org/wsdl/\" wsdlLocation=\"http://localhost:8282/exchangeRateService?wsdl\" xmlns=\"http://java.sun.com/xml/ns/jaxws\"&gt; &lt;!-- applies to wsdl:definitions node, that would mean the entire wsdl --&gt; &lt;enableAsyncMapping&gt;false&lt;/enableAsyncMapping&gt; &lt;!-- wsdl:portType operation customization --&gt; &lt;bindings node=\"wsdl:definitions/wsdl:portType [@name='ExchangeRate']/wsdl:operation[@name='getExchangeRate']\"&gt; &lt;enableAsyncMapping&gt;true&lt;/enableAsyncMapping&gt; &lt;/bindings&gt; &lt;/bindings&gt; Note that the outer envelope of the file is called bindings, and that there is an inner element also called bindings. Not to go into too much detail, but elements can be applied at the global level, and at a portType or even an operation level. In this file, I've disabled asynchronous mapping at the global level, but turned it on just for the getExchangeRate operation. This precaution prevents potential new operations from being inadvertently exposed as asynchronous operations. More on the wsdlLocation later. Generate the client-side artifacts We're going to create a new Maven project for the web-service client (more on this later), so next we'll create another project: mvn archetype:generate -DgroupId=com.adamsresearch.ws.async -DartifactId=AsyncClient As with the service-side artifacts, I will create a resources directory, but I'll do this a little differently this time. Instead of referencing the WSDL file in the project filesystem, I'll point wsimport to it via URL. Note this is what I did above in the binding customization file, since it also references the WSDL location. In the client project directory structure, I'll create a src/main/resources/jaxws directory and put the binding customization file (which I called async-bindings.xml) in the directory. Here's the relevant section of the client-project POM file, modified to point to the binding customization file and to access the WSDL file from the service itself: &lt;build&gt; &lt;finalName&gt;ExchangeRateWebService&lt;/finalName&gt; &lt;plugins&gt; &lt;plugin&gt; &lt;artifactId&gt;maven-compiler-plugin&lt;/artifactId&gt; &lt;configuration&gt; &lt;source&gt;1.6&lt;/source&gt; &lt;target&gt;1.6&lt;/target&gt; &lt;/configuration&gt; &lt;/plugin&gt; &lt;plugin&gt; &lt;groupId&gt;org.codehaus.mojo&lt;/groupId&gt; &lt;artifactId&gt;jaxws-maven-plugin&lt;/artifactId&gt; &lt;executions&gt; &lt;execution&gt; &lt;goals&gt; &lt;goal&gt;wsimport&lt;/goal&gt; &lt;/goals&gt; &lt;configuration&gt; &lt;wsdlUrls&gt; &lt;wsdlUrl&gt;http://localhost:8282/exchangeRateService?wsdl&lt;/wsdlUrl&gt; &lt;/wsdlUrls&gt; &lt;bindingDirectory&gt;${basedir}/src/main/resources/jaxws&lt;/bindingDirectory&gt; &lt;keep&gt;true&lt;/keep&gt; &lt;packageName&gt;com.adamsresearch.ws.async.generated&lt;/packageName&gt; &lt;sourceDestDir&gt;${basedir}/src/main/java&lt;/sourceDestDir&gt; &lt;/configuration&gt; &lt;/execution&gt; &lt;/executions&gt; &lt;/plugin&gt; &lt;/plugins&gt; &lt;/build&gt; Let's do a first build, before we actually write a client, and see what we get: mvn installNow take a look at the generated ExchangeRate Java interface. When we generated the artifacts for the server, we had a single method declaration for our one operation in this file: @WebMethod @WebResult(targetNamespace = \"\") @RequestWrapper(localName = \"getExchangeRate\", targetNamespace = \"http://async.ws.adamsresearch.com/\", className = \"com.adamsresearch.ws.async.generated.GetExchangeRate\") @ResponseWrapper(localName = \"getExchangeRateResponse\", targetNamespace = \"http://async.ws.adamsresearch.com/\", className = \"com.adamsresearch.ws.async.generated.GetExchangeRateResponse\") public double getExchangeRate( @WebParam(name = \"arg0\", targetNamespace = \"\") String arg0, @WebParam(name = \"arg1\", targetNamespace = \"\") String arg1); When we implemented this interface in our endpoint, it was a simple matter to process the input parameters and return the double value. If you open the artifact that we just generated, you'll see there are two additional declarations: @WebMethod(operationName = \"getExchangeRate\") @RequestWrapper(localName = \"getExchangeRate\", targetNamespace = \"http://async.ws.adamsresearch.com/\", className = \"com.adamsresearch.ws.async.generated.GetExchangeRate\") @ResponseWrapper(localName = \"getExchangeRateResponse\", targetNamespace = \"http://async.ws.adamsresearch.com/\", className = \"com.adamsresearch.ws.async.generated.GetExchangeRateResponse\") public Response getExchangeRateAsync( @WebParam(name = \"arg0\", targetNamespace = \"\") String arg0, @WebParam(name = \"arg1\", targetNamespace = \"\") String arg1); @WebMethod(operationName = \"getExchangeRate\") @RequestWrapper(localName = \"getExchangeRate\", targetNamespace = \"http://async.ws.adamsresearch.com/\", className = \"com.adamsresearch.ws.async.generated.GetExchangeRate\") @ResponseWrapper(localName = \"getExchangeRateResponse\", targetNamespace = \"http://async.ws.adamsresearch.com/\", className = \"com.adamsresearch.ws.async.generated.GetExchangeRateResponse\") public Future getExchangeRateAsync( @WebParam(name = \"arg0\", targetNamespace = \"\") String arg0, @WebParam(name = \"arg1\", targetNamespace = \"\") String arg1, @WebParam(name = \"asyncHandler\", targetNamespace = \"\") AsyncHandler asyncHandler); What happened here is that we got two additional options to retrieve the data -- one which returns a pollable object, and one which allows you to specify an asynchronous handler (note that Response is a subinterface of Future).Implement the client-side logicAt this point, you're probably wondering why we will be invoking an asynchronous operation when we haven't yet implemented it on the server. Bear with me for a moment, while we write our client.Here's my version of a client which exercises the three different available method signatures. package com.adamsresearch.ws.async; import java.net.MalformedURLException; import java.net.URL; import javax.xml.namespace.QName; import javax.xml.ws.AsyncHandler; import javax.xml.ws.Response; import com.adamsresearch.ws.async.generated.ExchangeRate; import com.adamsresearch.ws.async.generated.ExchangeRateService; import com.adamsresearch.ws.async.generated.GetExchangeRateResponse; public class ExchangeRateClient { protected ExchangeRateClient theClient = null; protected String wsdlUrl = null; protected double rate = 0.0d; ExchangeRate excRate = null; public static void main(String args[]) throws MalformedURLException, InterruptedException { if (args.length != 1) { System.out.println(\"Usage java -cp &lt;jarFile&gt; com.adamsresearch.ws.async.ExchangeRateClient serviceWsdlUrl\"); System.exit(-1); } ExchangeRateClient client = new ExchangeRateClient(args[0]); Thread.sleep(5000L); } public ExchangeRateClient(String urlStr) throws MalformedURLException { theClient = this; wsdlUrl = urlStr; URL url = new URL(wsdlUrl); QName qname = new QName(\"http://async.ws.adamsresearch.com/\", \"ExchangeRateService\"); ExchangeRateService exchangeRateService = new ExchangeRateService(url, qname); excRate = exchangeRateService.getExchangeRatePort(); // synchronous: System.out.println(\"Airstrip One / Ganymede exchange rate, retrieved synchronously, is: \" + excRate.getExchangeRate(\"AS1\", \"GMD\")); // asynchronous with polling: try { Response = excRate.getExchangeRateAsync(\"AS1\", \"GMD\"); Thread.sleep (2000L); GetExchangeRateResponse output = response.get(); System.out.println(\"--&gt; retrieved via polling: \" + output.getReturn()); } catch (Exception exc) { System.out.println(exc.getClass().getName() + \" polling for response: \" + exc.getMessage()); } // asynchronous with callback: excRate.getExchangeRateAsync(\"AS1\", \"GMD\", new AsyncHandler() { public void handleResponse(Response response) { System.out.println(\"In AsyncHandler\"); try { theClient.setCurrencyExchangeRate(response.get().getReturn()); } catch (Exception exc) { System.out.println(exc.getClass().getName() + \" using callback for response:\" + exc.getMessage()); } } }); } protected void setCurrencyExchangeRate(double newRate) { rate = newRate; System.out.println(\"--&gt; via callback, updated exchange rate to \" + rate); } } The Thread.sleep() in main is just to make sure we're still around when the web service responds. Finally, invoking the client: c:\\dev\\AsyncWSDev\\AsyncClient&gt;java -cp target\\ExchangeRateWebService.jar com.adamsresearch.ws.async.ExchangeRateClient http://localhost:8282/exchangeRateService?wsdl Airstrip One / Ganymede exchange rate, retrieved synchronously, is: 2.78 --&gt; retrieved via polling: 2.78 In AsyncHandler --&gt; via callback, updated exchange rate to 2.78 So there we have it -- a Java SE client which hits a Java SE web service three ways: synchronously, asynchronously with polling, and asynchronously with a callback handler.There's a lot to discuss about these results, some of which, frankly, I did not expect (for example, why did we not have to explicitly implement asynchronous service-side logic?). That is the topic of another post, which I hope you'll find interesting, too. From http://wayne-adams.blogspot.com/2012/01/asynchronous-java-se-web-services-1.html",
+                    "mainEntityOfPage": {
+                      "@type": "WebPage",
+                      "@id": "https://dzone.com/articles/asynchronous-java-se-web"
+                    },
+                    "image": {
+                      "@type": "ImageObject",
+                      "url": "https://dzone.com/themes/dz20/images/dz_logo_2021_cropped.png"
+                    }
+                  }
+                </script>
+
+                  <script type="application/ld+json">
+                    {
+                      "@context": "https://schema.org",
+                      "@type": "BreadcrumbList",
+                      "itemListElement": [{
+                        "@type": "ListItem",
+                        "position": 1,
+                        "name": "DZone",
+                        "item": "https://dzone.com"
+                      }, {
+                        "@type": "ListItem",
+                        "position": 2,
+                        "name": "Java Zone",
+                        "item": "https://dzone.com/java-jdk-development-tutorials-tools-news"
+                      }, {
+                        "@type": "ListItem",
+                        "position": 3,
+                        "name": "Asynchronous Java SE Web Services: 1. Implementation ",
+                        "item": "https://dzone.com/articles/asynchronous-java-se-web"
+                      }]
+                    }
+                  </script>
+
+            <article>
+              <div class="content">
+                <div class="header">
+                  <div class="col-xs-12 breadcrumb-padding">
+                    <a href="/">DZone</a>
+                    >
+                      <a href="/java-jdk-development-tutorials-tools-news">Java Zone</a>
+                      >
+                      <a href="#">Asynchronous Java SE Web Services: 1. Implementation </a>
+                  </div>
+
+
+                  <div class="header-title">
+                    <div class="title">
+                      <h1 class="article-title">Asynchronous Java SE Web Services: 1. Implementation </h1>
+                    </div>
+
+                    <div class="subhead">
+                      <h3></h3>
+                    </div>
+
+                    <div class="publish-meta">
+                        <div class="article-author-meta">
+                          <img src="https://secure.gravatar.com/avatar/fdf316a4ce6fd4257334fb35e4605857?d=identicon&r=PG" class="avatar" alt="Wayne Adams user avatar" width="40">
+                          by
+
+                          <div class="author-info">
+                            <span class="author-name">
+                              <a href="/users/501429/wmadams.html" rel="nofollow">Wayne Adams</a>
+                            </span>
+                          </div>
+
+
+                            <div class="mvb-award">
+                              <i title="Most Valuable Blogger" class="icon-mvb-1"></i>
+                            </div>
+
+
+                          &middot;
+                        </div>
+                      <span class="author-date">
+                        Jan. 16, 12
+                      </span>
+                      &middot;
+                        <a href="/java-jdk-development-tutorials-tools-news" id="portal-name">
+                          <span class="portal-name">Java Zone</span>
+                        </a>
+                      &middot;
+                      <span>Interview</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="author-n-useraction">
+                  <div class="like action">
+                    <div id="activity-like-icon" class="dz-like icon-thumbs-up">
+                      <span class="action-label">
+                        <span id="activity-like-text">Like</span>
+                      </span>
+                      <a href="#">
+                        <span id="activity-like-counter">(1)</span>
+                      </a>
+                    </div>
+                  </div>
+
+                  <div class="action">
+
+                    <button class="comment">
+                      <i class="icon-comment"></i>
+                      Comment
+                      <span id="activity-comment-counter" class="comment-count"></span>
+                    </button>
+                  </div>
+
+                  <div class="save action">
+                    <div id="activity-save-icon" class="save icon-star-empty">
+                      <span id="activity-save-text" class="action-label">Save</span>
+                    </div>
+                  </div>
+
+                  <div class="tweet action">
+                    <a id="tweet-link" href="" class="title" target="_blank">
+                      <span><i class="icon-twitter"></i></span>
+                      <span class="action-label">Tweet</span>
+                    </a>
+                  </div>
+
+                  <div class="pull-right">
+                    <div id="activity-view-container" class="article-views action">
+                      <i class="icon-eye"></i> 30.40K
+                      <span class="action-label">Views</span>
+                    </div>
+                  </div>
+                </div>
+
+                    <div class="signin-prompt">
+                      <p>Join the DZone community and get the full member experience.</p>
+                      <a id="article-signin-prompt" href="/static/registration.html">Join For Free</a>
+                    </div>
+                    <div class="arrow-down"></div>
+
+                  <div id="top-bumper-container"></div>
+
+                <div>
+                  <div class="content-html"><p>A few years ago, I posted a how-to on<a href="http://wayne-%0a%0aadams.blogspot.com/2009/03/java-se-based-web-services.html"> Java-SE-based Web Services</a>.
+  More recently, I've become interested in asynchronous web-service 
+invocation, and, as it turns out, Java SE supports that, too.  This 
+post, then, is the asynchronous version of that older post.  How I got 
+to the structure of this post is a story in itself.  To make things 
+simpler, I will first go through all the steps to deploy<br />an 
+asynchronous Java SE web service.  Then, I will explain the route I 
+chose, and what I see as the positives and negatives of the results.<br /><br />Here's the outline:</p><ul><li>Create a WSDL definition file</li><li>Using the WSDL file, generate server artifacts; implement the web service operations</li><li>Create an external JAX-WS binding definitions file</li><li>Generate client-side artifacts using the WSDL and binding definitions files</li><li>Demonstrate synchronous and asynchronous client-side invocations of the web-service operations</li></ul>Let's cut to the chase.<br /><br /><span style="font-weight: bold">Create a WSDL definition file</span><br /><br />Here I'll create a minimal WSDL file, describing a web service which returns the exchange<br />rate of two currencies.  Here's the file, called <span style="font-family: courier new">exchange-rate.wsdl</span>:<br /><pre class="brush:xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;definitions xmlns:wsu=&quot;http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd&quot;
+           xmlns:wsp=&quot;http://www.w3.org/ns/ws-policy&quot;
+           xmlns:wsp1_2=&quot;http://schemas.xmlsoap.org/ws/2004/09/policy&quot;
+           xmlns:wsam=&quot;http://www.w3.org/2007/05/addressing/metadata&quot;
+           xmlns:soap=&quot;http://schemas.xmlsoap.org/wsdl/soap/&quot;
+           xmlns:tns=&quot;http://async.ws.adamsresearch.com/&quot;
+           xmlns:xsd=&quot;http://www.w3.org/2001/XMLSchema&quot;
+           xmlns=&quot;http://schemas.xmlsoap.org/wsdl/&quot;
+           targetNamespace=&quot;http://async.ws.adamsresearch.com/&quot;
+           name=&quot;ExchangeRateService&quot;&gt;
+        
+&lt;types&gt;
+  &lt;xsd:schema xmlns:tns=&quot;http://async.ws.adamsresearch.com/&quot;
+              xmlns:xs=&quot;http://www.w3.org/2001/XMLSchema&quot;
+              version=&quot;1.0&quot;
+              targetNamespace=&quot;http://async.ws.adamsresearch.com/&quot;&gt;
+    &lt;xsd:element name=&quot;getExchangeRate&quot;  type=&quot;tns:getExchangeRate&quot;&gt;&lt;/xsd:element&gt;
+    &lt;xsd:element name=&quot;getExchangeRateResponse&quot;  type=&quot;tns:getExchangeRateResponse&quot;&gt;&lt;/xsd:element&gt;
+    &lt;xsd:complexType name=&quot;getExchangeRate&quot;&gt;
+      &lt;xsd:sequence&gt;
+        &lt;xsd:element name=&quot;arg0&quot; type=&quot;xsd:string&quot; minOccurs=&quot;0&quot;&gt;&lt;/xsd:element&gt;
+        &lt;xsd:element name=&quot;arg1&quot; type=&quot;xsd:string&quot; minOccurs=&quot;0&quot;&gt;&lt;/xsd:element&gt;
+      &lt;/xsd:sequence&gt;
+    &lt;/xsd:complexType&gt;
+    &lt;xsd:complexType name=&quot;getExchangeRateResponse&quot;&gt;
+      &lt;xsd:sequence&gt;
+        &lt;xsd:element name=&quot;return&quot; type=&quot;xsd:double&quot;&gt;&lt;/xsd:element&gt;
+      &lt;/xsd:sequence&gt;
+    &lt;/xsd:complexType&gt;
+  &lt;/xsd:schema&gt;
+&lt;/types&gt;
+&lt;message name=&quot;getExchangeRate&quot;&gt;
+  &lt;part name=&quot;parameters&quot; element=&quot;tns:getExchangeRate&quot;&gt;&lt;/part&gt;
+&lt;/message&gt;
+&lt;message name=&quot;getExchangeRateResponse&quot;&gt;
+  &lt;part name=&quot;parameters&quot; element=&quot;tns:getExchangeRateResponse&quot;&gt;&lt;/part&gt;
+&lt;/message&gt;
+&lt;portType name=&quot;ExchangeRate&quot;&gt;
+  &lt;operation name=&quot;getExchangeRate&quot;&gt;
+    &lt;input wsam:Action=&quot;http://async.ws.adamsresearch.com/ExchangeRate/getExchangeRateRequest&quot;
+message=&quot;tns:getExchangeRate&quot;&gt;&lt;/input&gt;
+    &lt;output wsam:Action=&quot;http://async.ws.adamsresearch.com/ExchangeRate/getExchangeRateResponse&quot;
+message=&quot;tns:getExchangeRateResponse&quot;&gt;&lt;/output&gt;
+  &lt;/operation&gt;
+&lt;/portType&gt;
+
+&lt;binding name=&quot;ExchangeRatePortBinding&quot; type=&quot;tns:ExchangeRate&quot;&gt;
+  &lt;soap:binding transport=&quot;http://schemas.xmlsoap.org/soap/http&quot; style=&quot;document&quot;&gt;&lt;/soap:binding&gt;
+  &lt;operation name=&quot;getExchangeRate&quot;&gt;
+    &lt;soap:operation soapAction=&quot;&quot;&gt;&lt;/soap:operation&gt;
+    &lt;input&gt;
+      &lt;soap:body use=&quot;literal&quot;&gt;&lt;/soap:body&gt;
+    &lt;/input&gt;
+    &lt;output&gt;
+      &lt;soap:body use=&quot;literal&quot;&gt;&lt;/soap:body&gt;
+    &lt;/output&gt;
+  &lt;/operation&gt;
+&lt;/binding&gt;
+
+&lt;service name=&quot;ExchangeRateService&quot;&gt;
+  &lt;port name=&quot;ExchangeRatePort&quot; binding=&quot;tns:ExchangeRatePortBinding&quot;&gt;
+    &lt;soap:address location=&quot;http://localhost:8282/exchangeRate&quot;&gt;&lt;/soap:address&gt;
+  &lt;/port&gt;
+&lt;/service&gt;
+
+&lt;/definitions&gt;</pre><br />The web service has a single operation -- <span style="font-family: courier new">getExchangeRate</span> -- which takes a <span style="font-family: courier new">String </span>representation of two currencies and returns a <span>double</span>.
+  There's no need to flesh this service out with a lot of operations -- I
+ just want to demonstrate the dev cycle required to deploy a web service
+ with asynchronous operations.<br /><br /><span style="font-weight: bold">Generate the service-side artifacts</span><br /><br />Next, we'll create a Java web-service project using Maven.  In a convenient directory, enter<br /><pre class="brush:shell">mvn archetype:generate -DgroupId=com.adamsresearch.ws.async -DartifactId=AsyncService</pre>(substituting
+ your values, of course) and accept all the default values.  This 
+creates the skeleton of what will be our web service.  Next, we'll 
+modify the POM file to read the WSDL file and generate the service-side 
+artifacts.  For this, we will use the JAX-WS utility <span style="font-family: courier new">wsimport</span> (found in the Java SE SDK; we will be using the Maven <span style="font-family: courier new">wsimport</span>
+ plugin, however).  First, we have to decide where to put the WSDL file.
+  We can put it anywhere we want, of course, but note from the <a href="http://jax-ws-commons.java.net/jaxws-%0A%0Amaven-plugin/wsimport-mojo.html"><span style="font-family: courier new">jaxws:import</span> docs page</a> that the default location is ${basedir}/src/wsdl.  I prefer to put mine in a directory <span style="font-family: courier new">src/main/resources/wsdl</span>, so I'll need to specify that directory below, in the arguments to <span style="font-family: courier new">wsimport</span>.<br /><br />Open the POM file in the top-level directory of the project and add the following, after the <span style="font-family: courier new">dependencies</span> element:<br /><pre class="brush:xml">&lt;build&gt;
+  &lt;finalName&gt;ExchangeRateWebService&lt;/finalName&gt;
+  &lt;plugins&gt;
+    &lt;plugin&gt;
+      &lt;artifactId&gt;maven-compiler-plugin&lt;/artifactId&gt;
+      &lt;configuration&gt;
+        &lt;source&gt;1.6&lt;/source&gt;
+        &lt;target&gt;1.6&lt;/target&gt;
+      &lt;/configuration&gt;
+    &lt;/plugin&gt;
+    &lt;plugin&gt;
+      &lt;groupId&gt;org.codehaus.mojo&lt;/groupId&gt;
+      &lt;artifactId&gt;jaxws-maven-plugin&lt;/artifactId&gt;
+      &lt;executions&gt;
+        &lt;execution&gt;
+          &lt;goals&gt;
+            &lt;goal&gt;wsimport&lt;/goal&gt;
+          &lt;/goals&gt;
+          &lt;configuration&gt;
+            &lt;wsdlDirectory&gt;${basedir}/src/main/resources/wsdl&lt;/wsdlDirectory&gt;
+            &lt;keep&gt;true&lt;/keep&gt;
+            &lt;packageName&gt;com.adamsresearch.ws.async.generated&lt;/packageName&gt;
+            &lt;sourceDestDir&gt;${basedir}/src/main/java&lt;/sourceDestDir&gt;
+          &lt;/configuration&gt;
+        &lt;/execution&gt;
+      &lt;/executions&gt;
+    &lt;/plugin&gt;
+  &lt;/plugins&gt;
+&lt;/build&gt;</pre>The
+ first dependency is an acknowledgment that Maven defaults to 1.3.  For 
+those of you without white hair, that's a really old version of Java.<br /><br />I've decided to override a number of <span style="font-family: courier new">wsimport</span> defaults, to create the service in the desired package and to drop the files in the desired directory.  Note that <span style="font-family: courier new">packageName</span> does  not have a default setting.  Now enter <span style="font-family: courier new">mvn install</span><span style="font-family: courier new"> </span>from the project top-level directory.<br /><br />I now have an interface -- <span style="font-family: courier new">ExchangeRate</span> -- as well as some additional supporting classes.  It is time to write our service implementation.  Here is my first cut:<br /><pre class="brush:java">package com.adamsresearch.ws.async;
+
+import javax.jws.WebMethod;
+import javax.jws.WebService;
+import javax.xml.ws.Endpoint;
+import com.adamsresearch.ws.async.generated.ExchangeRate;
+
+@WebService(serviceName=&quot;ExchangeRateService&quot;, portName=&quot;ExchangeRatePort&quot;, endpointInterface=&quot;com.adamsresearch.ws.async.generated.ExchangeRate&quot;)
+public class ExchangeRateEndpoint implements ExchangeRate
+{
+  public static void main(String[] args)
+  {
+      if (args.length != 1)
+      {
+          System.out.println(&quot;Usage: java -cp &lt;jarFile&gt; com.adamsresearch.ws.async.ExchangeRateEndpoint publishURL&quot;);
+          System.exit(-1);
+      }
+      ExchangeRateEndpoint wsInstance = new ExchangeRateEndpoint();
+      Endpoint.publish(args[0], wsInstance);
+      System.out.println(&quot;Published endpoint at URL &quot; + args[0]);
+  }
+
+  @WebMethod
+  public double getExchangeRate(String fromCurrency, String toCurrency)
+  {
+    if (fromCurrency.equals(&quot;AS1&quot;) &amp;&amp; toCurrency.equals(&quot;GMD&quot;))
+    {
+      return 2.78;
+    }
+    else
+    {
+      return 0.0;
+    }
+  }
+}</pre>I then run <span style="font-family: courier new">mvn install</span> once more, then launch the web service with the following:<br /><br /><pre class="brush:shell">C:\dev\AsyncWSDev\AsyncService&gt;java -cp target\ExchangeRateWebService.jar com.adamsresearch.ws.async.ExchangeRateEndpoint
+
+http:// localhost:8282/exchangeRateService Published endpoint at URL http://localhost:8282/exchangeRateService</pre><br />If we open a browser at the specified URL with &quot;<span style="font-family: courier new">?wsdl</span>&quot;
+ appended, we'll see the web-service WSDL file, verifying that we 
+successfully deployed the service.  Note that the Java runtime cleverly 
+extracts the XML Schema from the WSDL file and references it via import.
+  Both the WSDL file and the XML Schema file (as retrieved by the HTTP 
+request in the browser) are dynamically generated by the Java runtime.<br /><br /><span style="font-weight: bold">Create an external JAX-WS binding definitions file</span><br /><br />Why
+ are we performing this step?  To produce a more-fully-functional 
+client-side API for  our to-be-created web service client.  You can 
+provide two types of binding definitions files to  <span style="font-family: courier new">wsimport</span>
+ -- JAXB-related files, and a file that specifies some customizations of
+ the web service (which is why it's called a binding customization).<br /><br />Here is our binding customization file:<br /><pre class="brush:xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+
+&lt;bindings
+  xmlns:wsdl=&quot;http://schemas.xmlsoap.org/wsdl/&quot;
+  wsdlLocation=&quot;http://localhost:8282/exchangeRateService?wsdl&quot;
+  xmlns=&quot;http://java.sun.com/xml/ns/jaxws&quot;&gt;
+
+  &lt;!-- applies to wsdl:definitions node, that would mean the entire wsdl --&gt;
+  &lt;enableAsyncMapping&gt;false&lt;/enableAsyncMapping&gt;
+
+  &lt;!-- wsdl:portType operation customization --&gt;
+  &lt;bindings node=&quot;wsdl:definitions/wsdl:portType [@name='ExchangeRate']/wsdl:operation[@name='getExchangeRate']&quot;&gt;
+      &lt;enableAsyncMapping&gt;true&lt;/enableAsyncMapping&gt;
+  &lt;/bindings&gt;
+&lt;/bindings&gt;</pre><br />Note that the outer envelope of the file is called <span style="font-family: courier new">bindings</span><span style="font-family: georgia">, and that there is an inner element also called </span><span style="font-family: courier new">bindings</span><span style="font-family: georgia">.   Not to go into too much detail, but elements can be applied at the global level, and at a </span><span style="font-family: courier new">portType</span><span style="font-family: georgia"> or even an </span><span style="font-family: georgia">operation</span><span style="font-family: georgia"> level.  In this file, I've disabled asynchronous mapping at the global level, </span><span style="font-family: georgia">but turned it on <span style="font-style: italic">just for the </span></span><span style="font-style: italic; font-family: courier new">getExchangeRate</span><span style="font-style: italic; font-family: georgia"> operation</span><span style="font-family: georgia">.  This precaution prevents potential new </span><span style="font-family: courier new">operation</span><span style="font-family: georgia">s from being inadvertently exposed as asynchronous operations.  More on the</span> <span style="font-family: courier new">wsdlLocation</span><span style="font-family: georgia"> later.</span><br /><br /><span style="font-weight: bold">Generate the client-side artifacts</span><br /><br />We're going to create a new Maven project for the web-service client (more on this later), so next we'll create another project:<br /><br /><span style="font-family: courier new">mvn archetype:generate -DgroupId=com.adamsresearch.ws.async -DartifactId=AsyncClient</span><br /><br />As with the service-side artifacts, I will create a <span style="font-family: courier new">resources</span> directory, but I'll do this a little differently this time.<br /><br />Instead of referencing the WSDL file in the project filesystem, I'll point <span style="font-family: courier new">wsimport</span>
+ to it via URL.  Note this is what I did above in the binding 
+customization file, since it also references the WSDL location.  In the 
+client project directory structure, I'll create a <span style="font-family: courier new">src/main/resources/jaxws</span> directory and put the binding customization file (which I called <span style="font-family: courier new">async-bindings.xml</span>) in the<br />directory.<br /><br /><span style="font-family: georgia">Here's
+ the relevant section of the client-project POM file, modified to point 
+to the binding customization file and to access the WSDL file from the 
+service itself:</span><br /><pre class="brush:xml">&lt;build&gt;
+  &lt;finalName&gt;ExchangeRateWebService&lt;/finalName&gt;
+  &lt;plugins&gt;
+    &lt;plugin&gt;
+      &lt;artifactId&gt;maven-compiler-plugin&lt;/artifactId&gt;
+      &lt;configuration&gt;
+        &lt;source&gt;1.6&lt;/source&gt;
+        &lt;target&gt;1.6&lt;/target&gt;
+      &lt;/configuration&gt;
+    &lt;/plugin&gt;
+    &lt;plugin&gt;
+      &lt;groupId&gt;org.codehaus.mojo&lt;/groupId&gt;
+      &lt;artifactId&gt;jaxws-maven-plugin&lt;/artifactId&gt;
+      &lt;executions&gt;
+        &lt;execution&gt;
+          &lt;goals&gt;
+            &lt;goal&gt;wsimport&lt;/goal&gt;
+          &lt;/goals&gt;
+          &lt;configuration&gt;
+            &lt;wsdlUrls&gt;
+              &lt;wsdlUrl&gt;http://localhost:8282/exchangeRateService?wsdl&lt;/wsdlUrl&gt;
+            &lt;/wsdlUrls&gt;
+            &lt;bindingDirectory&gt;${basedir}/src/main/resources/jaxws&lt;/bindingDirectory&gt;
+            &lt;keep&gt;true&lt;/keep&gt;
+            &lt;packageName&gt;com.adamsresearch.ws.async.generated&lt;/packageName&gt;
+            &lt;sourceDestDir&gt;${basedir}/src/main/java&lt;/sourceDestDir&gt;
+          &lt;/configuration&gt;
+        &lt;/execution&gt;
+      &lt;/executions&gt;
+    &lt;/plugin&gt;
+  &lt;/plugins&gt;
+&lt;/build&gt;</pre><br /><span style="font-family: georgia">Let's do a first build, before we actually write a client, and see what we get:</span><br /><pre class="brush:shell">   mvn install</pre><span style="font-family: georgia">Now take a look at the generated </span><span style="font-family: courier new">ExchangeRate</span><span style="font-family: georgia">
+ Java interface.  When we generated the artifacts for the server, we had
+ a single method declaration for our one operation in this file:<br /></span><pre class="brush:java"> @WebMethod
+  @WebResult(targetNamespace = &quot;&quot;)
+  @RequestWrapper(localName = &quot;getExchangeRate&quot;, targetNamespace = &quot;http://async.ws.adamsresearch.com/&quot;, className = &quot;com.adamsresearch.ws.async.generated.GetExchangeRate&quot;)
+  @ResponseWrapper(localName = &quot;getExchangeRateResponse&quot;, targetNamespace = &quot;http://async.ws.adamsresearch.com/&quot;, className = &quot;com.adamsresearch.ws.async.generated.GetExchangeRateResponse&quot;)
+  public double getExchangeRate(
+      @WebParam(name = &quot;arg0&quot;, targetNamespace = &quot;&quot;)
+      String arg0,
+      @WebParam(name = &quot;arg1&quot;, targetNamespace = &quot;&quot;)
+      String arg1);</pre><br /><span style="font-family: georgia"><span style="font-family: georgia">When we implemented this interface in our endpoint, it was a simple matter to process the input parameters and return the </span><span style="font-family: courier new">double</span><span> value.  If you open the artifact that we just generated, you'll see there are two additional declarations:</span><br /></span><pre class="brush:java">@WebMethod(operationName = &quot;getExchangeRate&quot;)
+  @RequestWrapper(localName = &quot;getExchangeRate&quot;, targetNamespace = &quot;http://async.ws.adamsresearch.com/&quot;, className = &quot;com.adamsresearch.ws.async.generated.GetExchangeRate&quot;)
+  @ResponseWrapper(localName = &quot;getExchangeRateResponse&quot;, targetNamespace = &quot;http://async.ws.adamsresearch.com/&quot;, className = &quot;com.adamsresearch.ws.async.generated.GetExchangeRateResponse&quot;)
+  public Response getExchangeRateAsync(
+      @WebParam(name = &quot;arg0&quot;, targetNamespace = &quot;&quot;)
+      String arg0,
+      @WebParam(name = &quot;arg1&quot;, targetNamespace = &quot;&quot;)
+      String arg1);
+
+  @WebMethod(operationName = &quot;getExchangeRate&quot;)
+  @RequestWrapper(localName = &quot;getExchangeRate&quot;, targetNamespace = &quot;http://async.ws.adamsresearch.com/&quot;, className = &quot;com.adamsresearch.ws.async.generated.GetExchangeRate&quot;)
+  @ResponseWrapper(localName = &quot;getExchangeRateResponse&quot;, targetNamespace = &quot;http://async.ws.adamsresearch.com/&quot;, className = &quot;com.adamsresearch.ws.async.generated.GetExchangeRateResponse&quot;)
+  public Future getExchangeRateAsync(
+      @WebParam(name = &quot;arg0&quot;, targetNamespace = &quot;&quot;)
+      String arg0,
+      @WebParam(name = &quot;arg1&quot;, targetNamespace = &quot;&quot;)
+      String arg1,
+      @WebParam(name = &quot;asyncHandler&quot;, targetNamespace = &quot;&quot;)
+      AsyncHandler asyncHandler);</pre><br /><span style="font-family: georgia"><span style="font-family: georgia">What
+ happened here is that we got two additional options to retrieve the 
+data -- one which returns a pollable object, and one which allows you to
+ specify an asynchronous handler (note that </span><span style="font-family: courier new">Response</span><span style="font-family: georgia"> is a subinterface of </span><span style="font-family: courier new">Future</span><span style="font-family: georgia">).</span><br /><br /><span style="font-weight: bold; font-family: georgia">Implement the client-side logic</span><br /><br /><span style="font-family: georgia">At
+ this point, you're probably wondering why we will be invoking an 
+asynchronous operation when we haven't yet implemented it on the server.
+  Bear with me for a moment, while we write our client.<br /><br />Here's my version of a client which exercises the three different available method signatures.<br /></span></span><pre class="brush:java">package com.adamsresearch.ws.async;
+
+import java.net.MalformedURLException;
+import java.net.URL;
+import javax.xml.namespace.QName;
+import javax.xml.ws.AsyncHandler;
+import javax.xml.ws.Response;
+import com.adamsresearch.ws.async.generated.ExchangeRate;
+import com.adamsresearch.ws.async.generated.ExchangeRateService;
+import com.adamsresearch.ws.async.generated.GetExchangeRateResponse;
+
+public class ExchangeRateClient
+{
+protected ExchangeRateClient theClient = null;
+protected String wsdlUrl = null;
+protected double rate = 0.0d;
+ExchangeRate excRate = null;
+
+public static void main(String args[]) throws MalformedURLException, InterruptedException
+{
+  if (args.length != 1)
+  {
+    System.out.println(&quot;Usage java -cp &lt;jarFile&gt; com.adamsresearch.ws.async.ExchangeRateClient serviceWsdlUrl&quot;);
+    System.exit(-1);
+  }
+  ExchangeRateClient client = new ExchangeRateClient(args[0]);
+  Thread.sleep(5000L);
+}
+
+public ExchangeRateClient(String urlStr) throws MalformedURLException
+{
+  theClient = this;
+  wsdlUrl = urlStr;
+  URL url = new URL(wsdlUrl);
+  QName qname = new QName(&quot;http://async.ws.adamsresearch.com/&quot;, &quot;ExchangeRateService&quot;);
+  ExchangeRateService exchangeRateService = new ExchangeRateService(url, qname);
+  excRate = exchangeRateService.getExchangeRatePort();
+
+  // synchronous:
+  System.out.println(&quot;Airstrip One / Ganymede exchange rate, retrieved synchronously, is: &quot; + excRate.getExchangeRate(&quot;AS1&quot;, &quot;GMD&quot;));
+
+  // asynchronous with polling:
+  try
+  {
+    Response = excRate.getExchangeRateAsync(&quot;AS1&quot;, &quot;GMD&quot;);
+    Thread.sleep (2000L);
+    GetExchangeRateResponse output = response.get();
+    System.out.println(&quot;--&gt; retrieved via polling: &quot; + output.getReturn());
+  }
+  catch (Exception exc)
+  {
+    System.out.println(exc.getClass().getName() + &quot; polling for response: &quot; + exc.getMessage());
+  }
+
+  // asynchronous with callback:
+  excRate.getExchangeRateAsync(&quot;AS1&quot;, &quot;GMD&quot;, new AsyncHandler()
+  {
+    public void handleResponse(Response response)
+    {
+      System.out.println(&quot;In AsyncHandler&quot;);
+      try
+      {
+        theClient.setCurrencyExchangeRate(response.get().getReturn());
+      }
+      catch (Exception exc)
+      {
+          System.out.println(exc.getClass().getName() + &quot; using callback for response:&quot; + exc.getMessage());
+      }
+    }
+  });
+}
+
+protected void setCurrencyExchangeRate(double newRate)
+{
+    rate = newRate;
+    System.out.println(&quot;--&gt; via callback, updated exchange rate to &quot; + rate);
+}
+}</pre><br /><span style="font-family: georgia"><span style="font-family: georgia">The <span style="font-family: courier new">Thread.sleep()</span> in <span>main</span> is just to make sure we're still around when the web service responds.  Finally, invoking the client:<br /></span></span><pre class="brush:shell">c:\dev\AsyncWSDev\AsyncClient&gt;java -cp target\ExchangeRateWebService.jar
+com.adamsresearch.ws.async.ExchangeRateClient http://localhost:8282/exchangeRateService?wsdl
+Airstrip One / Ganymede exchange rate, retrieved synchronously, is: 2.78
+--&gt; retrieved via polling: 2.78
+In AsyncHandler
+--&gt; via callback, updated exchange rate to 2.78</pre><br /><span style="font-family: georgia"><span style="font-family: georgia">So
+ there we have it -- a Java SE client which hits a Java SE web service 
+three ways:  synchronously, asynchronously with polling, and 
+asynchronously with a callback handler.<br /><br />There's a lot to discuss 
+about these results, some of which, frankly, I did not expect (for 
+example, why did we not have to explicitly implement asynchronous 
+service-side logic?).  That is the topic of <a href="http://wayne-adams.blogspot.com/2012/01/asynchronous-java-se-web-services-2.html">another post</a>, which I hope you'll find interesting, too.<br /></span></span><p>&nbsp;</p><p><em>From <a href="http://wayne-adams.blogspot.com/2012/01/asynchronous-java-se-web-services-1.html">http://wayne-adams.blogspot.com/2012/01/asynchronous-java-se-web-services-1.html</a></em><a href="http://wayne-adams.blogspot.com/2012/01/asynchronous-java-se-web-services-1.html"> </a></p></div>
+                </div>
+
+                  <div id="bottom-bumper-container"></div>
+                  <div class="article-tag-pill-container">
+                      <span class="article-tag-pill">Web Service</span>
+                      <span class="article-tag-pill">Java (programming language)</span>
+                      <span class="article-tag-pill">Implementation</span>
+                  </div>
+
+                  <div class="attribution">
+                    <p>Opinions expressed by DZone contributors are their own.</p>
+                  </div>
+
+                    <div class="related">
+                      <h3>Popular on DZone</h3>
+                        <ul>
+                            <li class="relateddiv">
+                              <a href="/articles/9-extraordinary-terraform-best-practices-that-will?fromrel=true">9 Extraordinary Terraform Best Practices That Will Change Your Infra World</a>
+                            </li>
+                            <li class="relateddiv">
+                              <a href="/articles/debugging-the-java-message-service-jms-api-using-l?fromrel=true">Debugging the Java Message Service (JMS) API Using Lightrun</a>
+                            </li>
+                            <li class="relateddiv">
+                              <a href="/articles/functional-vs-non-functional-requirements-the-full?fromrel=true">Functional vs. Non-Functional Requirements: The Full Guide, Definitions, and Technical Examples</a>
+                            </li>
+                            <li class="relateddiv">
+                              <a href="/articles/how-to-optimize-mysql-queries-for-speed-and-perfor?fromrel=true">How to Optimize MySQL Queries for Speed and Performance</a>
+                            </li>
+                        </ul>
+                      </div>
+<div class="comments-overlay"></div>
+<div id="comment-box">
+  <div class="comment-box-wrapper">
+    <div id="comment-input-editor"></div>
+  </div>
+  <div class="info hidden"></div>
+  <div class="comments-content">
+    <div class="comment-header">
+      <hr />
+      <span class="icon-comment">
+        <span class="numOfComments"></span> Comments
+      </span>
+    </div>
+    <div class="comments"></div>
+  </div>
+</div>
+            </article>
+          </div>
+
+            <div id="above-pr-ad" class="bottom-ad-container">
+              <div id="div-gpt-ad-1435246566686-11" data-gpt-slot="bottom"></div>
+            </div>
+            <div class="layout-card widget-top-border partner-resources-block" style="width:100%; margin-bottom: 1em;">
+              <div class="main-container">
+                <div class="featured-header">
+                  <h2>
+                      Java<span> Partner Resources</span>
+                  </h2>
+                </div>
+                <div class="partner-resources-container">
+                  <div id="div-gpt-ad-1435246566686-5" class="resource-block" data-gpt-slot="partner" data-gpt-position="pr1"></div>
+                  <div id="div-gpt-ad-1435246566686-6" class="resource-block" data-gpt-slot="partner" data-gpt-position="pr2"></div>
+                  <div id="div-gpt-ad-1435246566686-7" class="resource-block" data-gpt-slot="partner" data-gpt-position="pr3"></div>
+                </div>
+              </div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <div id="bsa-parent" class="bottom-sticky-ad-container hide">
+      <div class="container">
+        <div class="col-md-9">
+          <div class="fixed-bottom-div">
+            <div class="inline-block">
+              <div id="div-gpt-ad-1635294790718-12" data-gpt-desktop="true" class="bottom-sticky-ad"></div>
+            </div>
+            <div class="inline-block">
+              <span id="close" class="bottom-sticky-ad-close-button" onclick="removeBottomStickyAd()">
+                X
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  <div class="modal fade bd-example-modal-lg" id="modal-message" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header"></div>
+        <div class="modal-body"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script async>const articleTitle = 'Asynchronous Java SE Web Services: 1. Implementation '
+const articleUrl = 'https://dzone.com/articles/asynchronous-java-se-web'
+
+const retweetLink = document.querySelector('#tweet-link')
+
+function retweet(event) {
+    event.preventDefault()
+    event.stopPropagation()
+
+    const twitter = 'https://twitter.com/intent/tweet'
+    const params = '?text=' + encodeURIComponent(articleTitle) + '&url=' + articleUrl + '&ref=dzone.com&via=DZoneInc'
+    const win = window.open(twitter + params, '_blank')
+    win.focus()
+}
+
+retweetLink.addEventListener('click', retweet);
+
+function showStatusMessage(options) {
+  var modal = document.getElementById("modal-message");
+
+  if(modal) {
+    modal.classList.add(options.type);
+    var modalBody = modal.querySelector(".modal-content .modal-body");
+    var modalHeader = modal.querySelector(".modal-content .modal-header");
+
+    modalHeader.innerText = options.header ? options.header : "";
+    modalBody.innerText = options.body ? options.body : "" ;
+
+    $(modal).modal("show");
+
+    $(modal).on('hidden.bs.modal', function () {
+      modal.classList.remove(options.type);
+    });
+  }
+}
+
+function showConfirmMessage(options) {
+  var modal = document.getElementById("modal-message");
+
+  if(modal) {
+    modal.classList.add(options.type);
+    var modalBody = modal.querySelector(".modal-content .modal-body");
+    var modalHeader = modal.querySelector(".modal-content .modal-header");
+
+    modalHeader.innerText = options.header ? options.header : "";
+    modalBody.innerText = options.body ? options.body : "" ;
+
+    if (options.textarea) {
+      const textareaDiv = document.createElement('div')
+      const textareaLabel = document.createElement('label')
+      textareaLabel.setAttribute('for', 'modal-textarea')
+      textareaLabel.innerText = options.textarea.label
+
+      const textarea = document.createElement('textarea')
+      textarea.id = 'modal-textarea'
+      textarea.placeholder = (options.textarea.placeholder || '')
+      textarea.setAttribute('rows', (options.textarea.rows || 3))
+      textarea.classList.add('form-control', 'not-resizable')
+
+      if (options.textarea.maxlength) {
+        textarea.maxLength = options.textarea.maxlength
+      }
+
+      textareaDiv.appendChild(textareaLabel)
+      textareaDiv.appendChild(textarea)
+      modalBody.appendChild(textareaDiv)
+    }
+
+    var btnContainer = document.createElement("div");
+    btnContainer.classList.add("btn-container");
+
+    var noBtn = document.createElement("button");
+    noBtn.innerText = options.noBtnText ? options.noBtnText : "No";
+    noBtn.classList.add("no-btn");
+
+    var yesBtn = document.createElement("button");
+    yesBtn.innerText = options.yesBtnText ? options.yesBtnText : "Yes";
+    yesBtn.classList.add("yes-btn");
+
+    btnContainer.appendChild(noBtn);
+    btnContainer.appendChild(yesBtn);
+
+    modalBody.appendChild(btnContainer);
+
+    $(modal).modal("show");
+
+    $(noBtn).one("click", function() {
+      $(modal).modal("hide");
+
+      if(options.noCallback) {
+        $(modal).one('hidden.bs.modal', function () {
+          options.noCallback();
+        });
+      }
+    });
+
+    $(yesBtn).one("click", function() {
+      $(modal).modal("hide");
+
+      if(options.yesCallback) {
+        $(modal).one('hidden.bs.modal', function () {
+          options.yesCallback();
+        });
+      }
+    });
+
+    $(modal).on('hidden.bs.modal', function () {
+      modal.classList.remove(options.type);
+    });
+  }
+}
+</script><link rel="stylesheet" media="all" href="https://dz2cdn1.dzone.com/themes/dz20/ftl/footer/styles.css">
+
+<div id="ftl-footer">
+  <div class="container-fluid footerOuter">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="container">
+          <div class="row footer">
+            <div class="col-md-12 footerWidget">
+              <div class="row footerContainer footer">
+                <div class="left col-xs-12 col-sm-7">
+                  <div class="col-xs-12 social-media-icons footer-mobile">
+                    <ul class="icons-only">
+                      <li class="rss-icon" id="rss-footer-1">
+                        <a href="/pages/feeds" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-rss-1"></i>
+                        </a>
+                      </li>
+                      <li class="twitter-icon">
+                        <a href="https://twitter.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-twitter"></i>
+                        </a>
+                      </li>
+                      <li class="facebook-icon">
+                        <a href="https://www.facebook.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-facebook-1"></i>
+                        </a>
+                      </li>
+                      <li class="linkedin-icon">
+                        <a href="https://www.linkedin.com/company/dzone/" target="_blank"
+                           rel="noreferrer noopener">
+                          <i class="icon-linkedin-1"></i>
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div class="top-section col-xs-12">
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">ABOUT US</p>
+                      <ul class="link-group">
+                        <li><a href="/pages/about" rel="noreferrer noopener">About DZone</a></li>
+                        <li><a href="mailto:support@dzone.com" rel="noreferrer noopener">Send feedback</a></li>
+                        <li><a href="https://careers.dzone.com/" target="_blank" rel="noreferrer noopener">Careers</a></li>
+                          <li><a href="/sitemap" rel="noreferrer noopener">Sitemap</a></li>
+                      </ul>
+                    </div>
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">ADVERTISE</p>
+                      <ul class="link-group">
+                        <li><a href="https://advertise.dzone.com" target="_blank" rel="noreferrer noopener">Advertise with DZone</a></li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div class="bottom-section col-xs-12">
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">CONTRIBUTE ON DZONE</p>
+                      <ul class="bottom-top-list link-group">
+                        <li><a href="/articles/dzones-article-submission-guidelines">Article Submission Guidelines</a></li>
+                        <li><a href="/pages/mvb" rel="noreferrer noopener">MVB Program</a></li>
+                        <li><a href="/pages/contribute" rel="noreferrer noopener">Become a Contributor</a></li>
+                        <li><a href="/writers-zone" rel="noreferrer noopener">Visit the Writers' Zone</a></li>
+                      </ul>
+
+                      <p class="section-header">LEGAL</p>
+                      <ul class="link-group">
+                        <li><a href="/pages/tos" rel="noreferrer noopener">Terms of Service</a></li>
+                        <li><a href="/pages/privacy" rel="noreferrer noopener">Privacy Policy</a></li>
+                      </ul>
+                    </div>
+                    <div class="col-xs-12 col-sm-6">
+                      <p class="section-header">CONTACT US</p>
+                      <ul class="link-group">
+                        <li>600 Park Offices Drive</li>
+                        <li>Suite 300</li>
+                        <li>Durham, NC 27709</li>
+                        <li><a href="mailto:support@dzone.com" rel="noreferrer noopener">support@dzone.com</a></li>
+                        <li><a href="tel:+19196780300" rel="noreferrer noopener">+1 (919) 678-0300</a></li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="right col-xs-12 col-sm-5">
+
+                  <p class="connect-text">Let's be friends:</p>
+                  <div class="col-xs-12 social-media-icons footer-wide">
+                    <ul class="icons-only">
+                      <li class="rss-icon" id="rss-footer-1">
+                        <a href="/pages/feeds" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-rss-1"></i>
+                        </a>
+                      </li>
+                      <li class="twitter-icon">
+                        <a href="https://twitter.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-twitter"></i>
+                        </a>
+                      </li>
+                      <li class="facebook-icon">
+                        <a href="https://www.facebook.com/DZoneInc" target="_blank" rel="noreferrer noopener">
+                          <i class="icon-facebook-1"></i>
+                        </a>
+                      </li>
+                      <li class="linkedin-icon">
+                        <a href="https://www.linkedin.com/company/dzone/" target="_blank"
+                           rel="noreferrer noopener">
+                          <i class="icon-linkedin-1"></i>
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div class="col-xs-12 powered-by">
+                    <p>DZone.com is powered by&nbsp;</p>
+                    <a href="https://devada.com/answerhub/" rel="noreferrer noopener">
+                      <img src=""
+                           data-src="https://dz2cdn1.dzone.com/themes/dz20/images/answerhub_logo_white_footer.png"
+                           width="150"
+                           height="56"
+                           class="lazyload"
+                           alt="AnswerHub logo">
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  <script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"></script>
+
+  <script async>
+      (function(w, d, s, l, i) {
+          w[l] = w[l] || [];
+          w[l].push({'gtm.start': new Date().getTime(), event: 'gtm.js'});
+          var f = d.getElementsByTagName(s)[0], j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : '';
+          j.async = true;
+          j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+          f.parentNode.insertBefore(j,f);
+      })(window, document, 'script', 'dataLayer', 'GTM-K25QL22');
+  </script>
+
+  <script>
+      window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+      ga('create', 'UA-410289-1', 'auto');
+      ga('require', 'linkid', 'linkid.js');
+      ga('require', 'GTM-TSD9TZP');
+      ga('set', 'siteSpeedSampleRate', 25);
+  </script>
+  <script async src="https://www.google-analytics.com/analytics.js"></script>
+  <script async>const analytics = {
+    'dimension1': 'java',
+    'dimension2': 'article/',
+    'dimension3': '2012-01-16',
+    'dimension4': '0',
+    'dimension5': '',
+    'dimension7': 'web service, java, Implementation',
+    'dimension8': 'wmadams',
+    'dimension9': 'undefined',
+    'dimension10': 'Adams Research LLC'
+}
+
+if (window.ga) {
+    Object.keys(analytics).forEach(function(key) {
+        window.ga('set', key, analytics[key])
+    })
+
+    window.ga('send', 'pageview')
+}</script>
+
+  <script>
+      !function (e, o, n, i) {
+          if (!e) {
+              e = e || {}, window.permutive = e, e.q = [];
+              var t = function () {
+                  return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, function (e) {
+                      return (e ^ (window.crypto || window.msCrypto).getRandomValues(new Uint8Array(1))[0] & 15 >> e / 4).toString(16)
+                  })
+              };
+              e.config = i || {}, e.config.apiKey = o, e.config.workspaceId = n, e.config.environment = e.config.environment || "production", (window.crypto || window.msCrypto) && (e.config.viewId = t());
+              for (var g = ["addon", "identify", "track", "trigger", "query", "segment", "segments", "ready", "on", "once", "user", "consent"], r = 0; r < g.length; r++) {
+                  var w = g[r];
+                  e[w] = function (o) {
+                      return function () {
+                          var n = Array.prototype.slice.call(arguments, 0);
+                          e.q.push({
+                              functionName: o,
+                              arguments: n
+                          })
+                      }
+                  }(w)
+              }
+          }
+      }(window.permutive, "bca90777-e088-4f2a-96c2-13ad18deeccc", "18ad0c5b-460c-4d19-a729-dc537805538f", {});
+      window.googletag = window.googletag || {}, window.googletag.cmd = window.googletag.cmd || [], window.googletag.cmd.push(function () {
+          if (0 === window.googletag.pubads().getTargeting("permutive").length) {
+              var e = window.localStorage.getItem("_pdfps");
+              window.googletag.pubads().setTargeting("permutive", e ? JSON.parse(e) : []);
+              var o = window.localStorage.getItem("permutive-id");
+              o && (window.googletag.pubads().setTargeting("puid", o), window.googletag.pubads().setTargeting("ptime", Date.now().toString())), window.permutive.config.viewId && window.googletag.pubads().setTargeting("prmtvvid", window.permutive.config.viewId), window.permutive.config.workspaceId && window.googletag.pubads().setTargeting("prmtvwid", window.permutive.config.workspaceId)
+          }
+      });
+
+
+      permutive.addon('web', {
+          'page': {
+              'category': 'Java',
+              'node': {
+                  'authorCompany': 'Adams Research LLC',
+                  'authors': [501429, ],
+                  'publishDate': new Date(1326673747000),
+                  'sponsorAuthor': false,
+                  'tags': ['web service', 'java', 'Implementation', ],
+                  'title': 'Asynchronous Java SE Web Services: 1. Implementation ',
+                  'type': 'article',
+              },
+              'section': 'article',
+          }
+      });
+  </script>
+  <script async src="https://18ad0c5b-460c-4d19-a729-dc537805538f.edge.permutive.app/18ad0c5b-460c-4d19-a729-dc537805538f-web.js"></script>
+
+  <script>
+      const csrf = '3660830897473978283'
+      const articleId = 478355
+      const likes = 1
+      const assetDomain = 'https://dz2cdn1.dzone.com'
+      const codemirrorVars = {
+          modeURI: 'https://dz2cdn1.dzone.com/themes/dz20/lib/codemirror/mode/',
+          requiredScripts: [
+              'https://dz2cdn1.dzone.com/themes/dz20/lib/codemirror/lib/codemirror.js',
+              'https://dz2cdn1.dzone.com/themes/dz20/lib/codemirror/mode/meta.js'
+          ]
+      }
+
+      const gptTags = {
+          'zone': 'java',
+          'topicTag': 'web service,java,Implementation',
+          'company': '',
+          'siteSection': 'Zones',
+          'articleCategory': '',
+          'nodeID': '478355',
+          'authorID': '501429',
+          'publishYear': '2012',
+          'publishMonth': '01',
+          'jobRole': '',
+          'companySize': ''
+      }
+
+      const minCommentChar = 10;
+      const peer39Enabled = true;
+  </script>
+
+  <script src="https://dz2cdn1.dzone.com/themes/dz20/lib/static/jquery/jquery.min.js"></script>
+  <script async src="https://dz2cdn1.dzone.com/themes/dz20/lib/static/bootstrap/bootstrap.min.js"></script>
+  <script async src="https://dz2cdn1.dzone.com/themes/dz20/ftl/article/ads.js"></script>
+
+
+
+  <script>
+      function loadScript(src) {
+          return new Promise(function (resolve, reject) {
+              const s = document.createElement('script')
+              s.src = src
+              s.onload = resolve
+              s.onerror = reject
+              document.head.appendChild(s)
+          })
+      }
+
+      function loadStyle(href) {
+          const link = document.createElement('link')
+          link.rel = 'stylesheet'
+          link.href = href
+          document.head.appendChild(link)
+      }
+
+      function loadScriptsSync(deferred) {
+          var p = Promise.resolve()
+          for (var i = 0; i < deferred.length; i++) {
+              let script = deferred[i]
+              p = p.then(function() {
+                  return loadScript(script)
+              })
+          }
+          return p
+      }
+
+      function loadStyles() {
+          const deferred = [
+              'https://dz2cdn1.dzone.com/themes/dz20/lib/codemirror/lib/codemirror.css',
+              'https://dz2cdn1.dzone.com/themes/dz20/ftl/comments/styles.css',
+              'https://dz2cdn1.dzone.com/themes/dz20/lib/froala3/css/froala_editor.pkgd.min.css',
+              'https://dz2cdn1.dzone.com/themes/dz20/lib/froala3/css/themes/gray.min.css',
+              'https://dz2cdn1.dzone.com/themes/dz20/ftl/article/mini-profile.css'
+          ]
+
+          for (var i = 0; i < deferred.length; i++) {
+              loadStyle(deferred[i])
+          }
+      }
+
+      window.addEventListener('load', function(event) {
+          loadStyles()
+          loadScriptsSync([
+              'https://dz2cdn1.dzone.com/themes/dz20/ftl/header/auth-status.js',
+              'https://dz2cdn1.dzone.com/themes/dz20/lib/lazysizes.min.js',
+              'https://dz2cdn1.dzone.com/themes/dz20/ftl/article/codeblocks.js',
+              'https://dz2cdn1.dzone.com/themes/dz20/ftl/article/activity-bar.js',
+              'https://dz2cdn1.dzone.com/themes/dz20/lib/froala3/js/froala_editor.pkgd.min.js',
+              'https://dz2cdn1.dzone.com/themes/dz20/ftl/froala/content.js',
+              'https://dz2cdn1.dzone.com/themes/dz20/ftl/comments/content.js',
+              'https://dz2cdn1.dzone.com/themes/dz20/ftl/article/content.js'
+          ])
+      })
+  </script>
+</body>
+</html>

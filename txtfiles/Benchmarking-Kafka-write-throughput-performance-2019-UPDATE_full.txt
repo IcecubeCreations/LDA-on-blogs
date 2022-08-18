@@ -1,0 +1,53 @@
+Benchmarking Kafka write throughput performance [2019 UPDATE]
+
+BlogMenuBlogCloseBlogAll articlesTech tipsOpen sourceApache Kafka®Flink®M3Apache Cassandra®OpenSearch®PostgreSQL®MySQLRedis™InfluxDB®Grafana®SolutionsTime series databasesIoTIntegrationsProduct updatesAnnouncementsOpen micOtherPricingCase StudiesAboutCareersPress RoomSupportContact UsFree trialGet StartedSign InSupportDocumentationContact UsSign In|BlogAll articlesTech tipsOpen sourceApache Kafka®Flink®M3Apache Cassandra®OpenSearch®PostgreSQL®MySQLRedis™InfluxDB®Grafana®SolutionsTime series databasesIoTIntegrationsProduct updatesAnnouncementsOpen micBenchmarking Kafka write throughput performance [2019 UPDATE]It's been a long time coming, but we've now have updated write throughput kafka benchmark numbers and a few extras surprises.20 March 2019Heikki NousiainenHeikki Nousiainen RSS FeedChief Technology Officer at AivenBack in 2017, we published a performance benchmark to showcase the vast volumes of events Apache Kafka can process. Natural to Aiven services, we evaluated the performance across the public cloud providers we supported.
+A number of changes have been made to Kafka and the resources that the public cloud providers offer since then. As such, we felt it was a due time for a refresher and decided to remeasure write performance in this test.
+That said, we made some small changes to the benchmark set up so that it better reflected real world workloads. We also calculated the monthly throughput cost for each plan, on each cloud this time. So, let’s jump in!
+2019 Aiven Kafka benchmark setup
+As with the previous test, we really wanted to estimate the true performance you’d expect from using Aiven Kafka. That is, we used standard Aiven plans and configurations, standard client configurations and ran the test over the external network interfaces.
+
+ But this time around, we’re using a replication factor of 3 to match the regular use case. With replication, this test accounts for the network traffic between the brokers as well.
+
+We used a single topic for our write operations with a partition count set to either 3 or 6, depending on the number of brokers in each test cluster. As the test clusters were regular Aiven services, the partitions and replicas were spread out across availability zones.
+Messages were produced via the librdkafka_performance tool with a message size of 512 bytes, a default batch size of 10,000 and no compression. Continuing our quest to simulate real-world use, client connections were made over TLS.
+We used Kafka version 2.1 running with Java 8; as a side note, it’ll be interesting to benchmark Aiven Kafka running with Java 11 in future tests because we expect Java improvements to positively impact its performance.
+During the test, we kept increasing the number of producing clients until we reached the maximum throughput rate each plan tier’s cluster could accept. To verify our readings, we left the load running for some time.
+If you’re interested in verifying our results, you can get the test code here. In our tests, we actually used Google’s managed Kubernetes service to easily scale number of load generating nodes up and down.
+Aiven Kafka Business-4 benchmark results
+We first tested the performance of our Business-4 plan. That’s a three broker cluster with 1-2 CPU (depending on the cloud) and 4GB RAM per instance. On Amazon Web Services, this plan handled about 135,000 messages per second while the same plan on Google Cloud Platform and Azure handled around 70,000.
+
+Since our previous test omitted replication, the somewhat lower performance of GCP and Azure can be explained by this test’s inclusion of it. Surprisingly, AWS’s performance jumped from 50,000 messages/second in the previous test to this number. This is explained by the more recent instance types and network improvements AWS has been fielding in their cloud.
+Aiven Kafka Business-4 performance in MB/second
+
+We then used the message rates to derive throughput numbers, which were over 65 MB/second for AWS, and just under 35 MB/second for GCP and Azure. Pretty impressive! But, what is the cost per performance?
+Business-4 monthly throughput cost
+Those plans are priced $660/month on AWS (us-east-1), $500/month on GCP (us-east1) and $550/month on Azure (eastus2). That’d be just over $10 per MB/s per month for this plan size in AWS, and $15 and $16 per MB/s for GCP and Azure respectively.
+
+Aiven Business-8 benchmark results
+Next, we moved on to increasing the size of the brokers. The next test was based on Business-8 plan tier, essentially doubling the resources to 2-4 CPUs and 8 GB RAM  per instance. This time, there was a slight increase in AWS to 137,000 messages per second, but larger ones in Azure and GCP to 120,000 and 95,000 respectively.
+
+AWS performance didn’t move from the previous plan sizes. A look into our monitoring revealed that both tests were capped by the available network bandwidth on the broker instances.
+Aiven Kafka Business-8 performance in MB/second
+Again, we used these same numbers converted to throughput: that’s 67 MB/s for AWS, 46 MB/s for GCP and 59 MB/s for Azure.
+
+Business-8 monthly throughput cost
+With the Business-8 plans, monthly estimated costs increased across the board at $19 per MB/s for AWS and Azure and around $22 per MB/s for GCP. However, it’s important to note that throughput is only one way to measure value. For example, Business-8 plans come with double the storage of Business-4 plans which allows for longer retention times.
+
+Aiven Kafka Premium-6x-8 benchmark results
+Our last test doubled the number of brokers. We wanted to verify just how well Kafka scales vertically - as it did quite perfectly in our previous round of testing. Thus, we ran this one with a six broker Premium-6x-8 plan tier, with similarly sized instances as Business-8.
+And the message rates? An impressive 270,000 messages per second on AWS, 238,000 on Azure and 167,000 on GCP; well in line with the expected results.
+
+Aiven Kafka Premium-6x-8 performance in MB/second
+And the same as throughput figures: 132 MB/s on AWS, 116 on Azure and 82 on GCP.
+
+Premium-6x-8 monthly throughput cost
+From the plan pricing, estimated monthly costs are around $19 per MB/s for AWS, $18 for Azure and $23 for GCP.
+
+Wrapping up
+Apache Kafka continues to perform just as well as we’ve come to expect and scales nicely with both added resources and increased cluster sizes. It’s performant, scalable and cost effective — a solid centerpiece of the modern data architecture.
+Again, we’d like to stress that monthly throughput cost should not be considered in isolation when comparing plans. Although important, there are additional factors that come into play when pricing plans, such as storage.
+Additionally, we can’t stress enough that workloads vary and you should definitely benchmark your own representative event flows. For a more robust test, we’ll be addressing read/write tests in the near future.
+Aiven Kafka
+Aiven Kafka is one of 8 integrable services offered on the Aiven platform. It’s a fully-managed and hosted Kafka service available in AWS, GCP, Microsoft Azure, DigitalOcean, UpCloud, and Packet.
+After launching your Aiven Kafka service in minutes, you can rest assured they’ll remain operational, performant, up-to-date, and secure. Find out more about Aiven Kafka, keep up to date on our changelog, find us on social, and try the Aiven platform free for 30 days.
+benchmarkskafkaShare on FacebookProductsAiven for Apache Kafka®Aiven for Apache Kafka® ConnectAiven for Apache Kafka® MirrorMaker 2Aiven for Apache Flink® BetaAiven for M3Aiven for M3 AggregatorAiven for Apache Cassandra®Aiven for OpenSearch®Aiven for PostgreSQL®Aiven for MySQL®Aiven for Redis™*Aiven for InfluxDB®Aiven for Grafana®SolutionsTime Series DatabasesEvent-Driven ArchitectureObservabilityAiven For IoTAiven for RetailAiven For EnergyAiven for DevelopersIntegrationsAll SolutionsResourcesPricingBlogCase StudiesDocumentationChangelogSecurity & ComplianceDevOpsAiven StatusCompanyAboutPress RoomCareersSupportPartnersOpen SourceCluster Startup ProgramAiven Invoicing AddressesTerms & PoliciesTerms of ServiceSLAData Processing AgreementPrivacy PolicyCookie PolicySupport ServicesSubprocessors & subcontractorsLet‘s connectAiven FacebookAiven LinkedInAiven TwitterAiven YouTubeAiven EmailApache, Apache Kafka, Kafka, Apache Flink, Flink, Apache Cassandra, and Cassandra are either registered trademarks or trademarks of the Apache Software Foundation in the United States and/or other countries. ClickHouse is a registered trademark of ClickHouse, Inc. https://clickhouse.com. M3, M3 Aggregator, M3 Coordinator, OpenSearch, PostgreSQL, MySQL, InfluxDB, Grafana, Terraform, and Kubernetes are trademarks and property of their respective owners. *Redis is a trademark of Redis Ltd. and the Redis box logo is a mark of Redis Ltd. Any rights therein are reserved to Redis Ltd. Any use by Aiven is for referential purposes only and does not indicate any sponsorship, endorsement or affiliation between Redis and Aiven. All product and service names used in this website are for identification purposes only and do not imply endorsement.

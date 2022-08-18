@@ -1,0 +1,191 @@
+<!doctype html><html><head><script>(function(t,s,o,e,a){t[e]=t[e]||[],t[e].push({'gtm.start':(new Date).getTime(),event:"gtm.js"});var i=s.getElementsByTagName(o)[0],n=s.createElement(o),r=e!="dataLayer"?"&amp;l="+e:'';n.async=!0,n.src="https://www.googletagmanager.com/gtm.js?id="+a+r,i.parentNode.insertBefore(n,i)})(window,document,"script","dataLayer","GTM-NSPM4RC")</script><meta xmlns=http://www.w3.org/1999/xhtml name=googlebot content="NOODP"></meta><meta xmlns=http://www.w3.org/1999/xhtml name=google-site-verification content="nSYeDgyKM9mw5CWcZuD0xu7iSWXlJijAlg9rcxVOYf4"></meta><meta xmlns=http://www.w3.org/1999/xhtml name=google-site-verification content="6UEaC3SWhpGQvqRnSJIEm2swxXpM5Adn4dxZhFsNdw0"></meta><meta charset=utf-8><meta content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no" id=viewport name=viewport><title>Some queuing theory: throughput, latency and bandwidth | RabbitMQ - Blog</title><meta name=description content><link xmlns=http://www.w3.org/1999/xhtml rel=icon type=/image/vnd.microsoft.icon href=https://www.rabbitmq.com/favicon.ico></link>
+<link href="https://fonts.googleapis.com/css?family=Raleway:400,500,600,700" rel=stylesheet><link rel=stylesheet href=/assets/css/syntax.css type=text/css><link xmlns=http://www.w3.org/1999/xhtml rel=stylesheet rev="stylesheet" href=https://www.rabbitmq.com/css/rabbit.css type=text/css></link>
+<link xmlns=http://www.w3.org/1999/xhtml rel=icon type=/image/vnd.microsoft.icon href=https://www.rabbitmq.com/favicon.ico></link>
+<link rel=stylesheet href=/assets/css/rabbitmq-blog.css type=text/css><script>window.twttr=function(n,s,o){var t,i=n.getElementsByTagName(s)[0],e=window.twttr||{};return n.getElementById(o)?e:(t=n.createElement(s),t.id=o,t.src="https://platform.twitter.com/widgets.js",i.parentNode.insertBefore(t,i),e._e=[],e.ready=function(t){e._e.push(t)},e)}(document,"script","twitter-wjs")</script></head><body><noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-NSPM4RC" height=0 width=0 style=display:none;visibility:hidden></iframe></noscript><div xmlns=http://www.w3.org/1999/xhtml id=outerContainer><div class=container><div class=rabbit-logo><a href=https://www.rabbitmq.com/><img src=https://www.rabbitmq.com/img/logo-rabbitmq.svg alt=RabbitMQ></a></div><a class="btn menubtn" onclick=showHide()>Menu <img src=https://www.rabbitmq.com/img/carrot-down-white.svg></a><div class=mobilemenuicon onclick=showHide()><img src=https://www.rabbitmq.com/img/mobile-menu-icon.svg></div><div id=nav><ul id=mainNav><li><a href=https://www.rabbitmq.com/#features>Features</a></li><li><a href=https://www.rabbitmq.com/#getstarted>Get Started</a></li><li><a href=https://www.rabbitmq.com/#support>Support</a></li><li><a href=https://www.rabbitmq.com/#community>Community</a></li><li><a href=https://www.rabbitmq.com/documentation.html>Docs</a></li><li><a href=https://blog.rabbitmq.com class=selected>Blog</a></li></ul></div></div><div class=nav-separator></div><div id=innerContainer class=container><div>« <a href=https://blog.rabbitmq.com/posts/2012/04/rabbitmq-performance-measurements-part-2/ rel=prev>RabbitMQ Performance Measurements, part 2</a></div><div><a href=https://blog.rabbitmq.com/posts/2012/05/introducing-rabbitmq-web-stomp/ rel=next>Introducing RabbitMQ-Web-Stomp</a> »</div><h1>Some queuing theory: throughput, latency and bandwidth</h1><a class=twitter-share-button href=https://twitter.com/intent/tweet>Tweet</a>
+<a class=twitter-follow-button href=https://twitter.com/RabbitMQ data-show-count=false data-lang=en>Follow @RabbitMQ</a><br><em>May 11, 2012</em><p>You have a queue in Rabbit. You have some clients consuming from that
+queue. If you don&rsquo;t set a QoS setting at all (<code>basic.qos</code>), then
+Rabbit will push all the queue&rsquo;s messages to the clients as fast as
+the network and the clients will allow. The consumers will balloon in
+memory as they buffer all the messages in their own RAM. The queue may
+appear empty if you ask Rabbit, but there may be millions of messages
+unacknowledged as they sit in the clients, ready for processing by the
+client application. If you add a new consumer, there are no messages
+left in the queue to be sent to the new consumer. Messages are just
+being buffered in the existing clients, and may be there for a long
+time, even if there are other consumers that become available to
+process such messages sooner. This is rather sub optimal.</p><p>So, the default QoS <code>prefetch</code> setting gives clients an <em>unlimited</em>
+buffer, and that can result in poor behaviour and performance. But
+what should you set the QoS <code>prefetch</code> buffer size to? The goal is to
+keep the consumers saturated with work, but to minimise the client&rsquo;s
+buffer size so that more messages stay in Rabbit&rsquo;s queue and are thus
+available for new consumers or to just be sent out to consumers as
+they become free.</p><p>Let&rsquo;s say it takes 50ms for Rabbit to take a message from this queue,
+put it on the network and for it to arrive at the consumer. It takes
+4ms for the client to process the message. Once the consumer has
+processed the message, it sends an <code>ack</code> back to Rabbit, which takes a
+further 50ms to be sent to and processed by Rabbit. So we have a total
+round trip time of 104ms. If we have a QoS <code>prefetch</code> setting of 1
+message then Rabbit won&rsquo;t sent out the next message until after this
+round trip completes. Thus the client will be busy for only 4ms of
+every 104ms, or 3.8% of the time. We want it to be busy 100% of the
+time.</p><p><img src=/assets/images/2012/05/qos.svg class=blog alt></p><p>If we do <em>total round trip time</em> / <em>processing time on the client for
+each message</em>, we get <code>104 / 4 = 26</code>. If we have a QoS <code>prefetch</code> of
+26 messages this solves our problem: assume that the client has 26
+messages buffered, ready and waiting for processing. (This is a
+sensible assumption: once you set <code>basic.qos</code> and then <code>consume</code> from
+a queue, Rabbit will send as many messages as it can from the queue
+you&rsquo;ve subscribed to to the client, up to the QoS limit. If you assume
+messages aren&rsquo;t very big and bandwidth is high, it&rsquo;s likely Rabbit
+will be able to send messages to your consuming client faster than
+your client can process them. Thus it&rsquo;s reasonable (and simpler) to do
+all the maths from the assumption of a full client-side buffer.) If
+each message takes 4ms of processing to deal with then it&rsquo;ll take a
+total of <code>26 * 4 = 104ms</code> to deal with the entire buffer. The first
+4ms is the client processing of the first message. The client then
+issues an <code>ack</code> and goes on to process the next message from the
+buffer. That ack takes 50ms to get to the broker. The broker than
+issues a new message to the client, which takes 50ms to get there, so
+by the time 104ms has passed and the client has finished processing
+its buffer, the next message from the broker has already arrived and
+is ready and waiting for the client to process it. Thus the client
+remains busy all the time: having a bigger QoS <code>prefetch</code> will not
+make it go faster; but we minimise the buffer size and thus latency of
+messages in the client: messages are buffered by the client for no
+longer than they need to be in order to keep the client saturated with
+work. In fact, the client is able to fully drain the buffer before the
+next message arrives, thus the buffer actually stays empty.</p><p>This solution is absolutely fine, provided processing time and network
+behaviour remains the same. But consider what happens if suddenly the
+network halves in speed: your <code>prefetch</code> buffer is no longer big
+enough and now the client will sit idle, waiting for new messages to
+arrive as the client is able to process messages faster than Rabbit
+can supply fresh messages.</p><p>To address this problem, we might just decide to double (or nearly
+double) the QoS <code>prefetch</code> size. If we push it to 51 from 26, then if
+the client processing remains at 4ms per message, we now have <code>51 * 4 = 204ms</code> of messages in the buffer, of which 4ms will be spent
+processing a message, leaving 200ms for the sending an ack back to
+Rabbit and receiving the next message. Thus we can now cope with the
+network halving in speed.</p><p>But if the network&rsquo;s performing normally, doubling our QoS <code>prefetch</code>
+now means each message will sit in the client side buffer for a while,
+instead of being processed immediately upon arrival at the
+client. Again, starting from a full buffer of now 51 messages we know
+that new messages will start appearing at the client 100ms after the
+client finishes processing the first message. But in those 100ms, the
+client will have processed <code>100 / 4 = 25</code> messages out of the 50
+available. Which means as a new message arrives at the client, it&rsquo;ll
+be added to the end of the buffer as the client removes from the head
+of the buffer. The buffer will thus always stay <code>50 - 25 = 25</code>
+messages long and every message will thus sit in the buffer for <code>25 * 4 = 100ms</code>, increasing the latency between Rabbit sending it to the
+client and the client starting to process it from 50ms to 150ms.</p><p>Thus we see that increasing the <code>prefetch</code> buffer so that the client
+can cope with deteriorated network performance whilst keeping the
+client busy, substantially increases the latency when the network is
+performing normally.</p><p>Equally, rather than the network&rsquo;s performance deteriorating, what
+happens if the client starts taking 40ms to process each message
+rather than 4ms? If the queue in Rabbit was previously at a steady
+length (i.e. ingress and egress rates were the same), it&rsquo;ll now start
+growing rapidly, as the egress rate has dropped to a tenth of what it
+was. You might decide to try and work through this growing backlog by
+adding more consumers, but there are messages now being buffered by
+the existing clients. Assuming the original buffer size of 26
+messages, the client will spend 40ms processing the first message,
+will then send the ack back to Rabbit and move onto the next
+message. The ack still takes 50ms to get to Rabbit and a further 50ms
+for Rabbit to send out a new message, but in that 100ms, the client
+has only worked through <code>100 / 40 = 2.5</code> further messages rather than
+the remaining 25 messages. Thus the buffer is at this point <code>25 - 3 = 22</code> messages long. The new message arriving from Rabbit, rather than
+being processed immediately, now sits in 23rd place, behind 22 other
+messages still waiting to be processed, and will not be touched by the
+client for a further <code>22 * 40 = 880ms</code>. Given the network delay from
+Rabbit to the client is only 50ms, this additional 880ms delay is now
+95% of the latency (<code>880 / (880 + 50) = 0.946</code>).</p><p>Even worse, what happens if we doubled the buffer size to 51 messages
+in order to cope with network performance degradation? After the first
+message has been processed, there will be 50 further messages buffered
+in the client. 100ms later (assuming the network is running normally),
+a new message will arrive from Rabbit, and the client will be half way
+through processing the 3rd of those 50 messages (the buffer will now
+be 47 messages long), thus the new message will be 48th in the buffer,
+and will not be touched for a further <code>47 * 40 = 1880ms</code>. Again, given
+the network delay of getting the message to the client is only 50ms,
+this further 1880ms delay now means client side buffering is
+responsible for over 97% of the latency (<code>1880 / (1880 + 50) = 0.974</code>). This may very well be unacceptable: the data may only be
+valid and useful if it&rsquo;s processed promptly, not some 2 seconds after
+the client received it! If other consuming clients are idle, there&rsquo;s
+nothing they can do: once Rabbit has sent a message to a client, the
+message is the client&rsquo;s responsibility until it acks or rejects the
+message. Clients can&rsquo;t steal messages from each other once the message
+has been sent to a client. What you want is for clients to be kept
+busy, but for clients to buffer as few messages as possible so that
+messages are not delayed by client-side buffers and thus new consuming
+clients can be quickly fed with messages from Rabbit&rsquo;s queue.</p><p>So, too small a buffer results in clients going idle if the network
+gets slower, but too big a buffer results in lots of extra latency if
+the network performs normally, and huge amounts of extra latency if
+the client suddenly starts taking longer to process each message than
+normal. It&rsquo;s clear that what you really want is a varying buffer
+size. These problems are common across network devices and have been
+the subject of much study. <em>Active Queue Management</em> algorithms seek
+to try and drop or reject messages so that you avoid messages sitting
+in buffers for long periods of time. The lowest latency is achieved
+when the buffer is kept empty (each message suffers network latency
+only and does not sit around in a buffer at all) and buffers are there
+to absorb spikes. <a href=http://gettys.wordpress.com/>Jim Gettys</a> has been
+working on this problem from the point of view of network routers:
+differences between performance of the LAN and the WAN suffer exactly
+the same sorts of problems. Indeed whenever you have a buffer between
+a producer (in our case Rabbit) and a consumer (the client-side
+application logic) where the performance of both sides can vary
+dynamically, you will suffer these sorts of problems. Recently a new
+algorithm called
+<a href="https://queue.acm.org/detail.cfm?id=2209336">Controlled Delay</a> has
+been published which
+<a href=http://arstechnica.com/information-technology/2012/05/codel-buffer-management-could-solve-the-internets-bufferbloat-jams/>appears to work well</a>
+in solving these problems.</p><p>The authors claim that their <em>CoDel</em> (&ldquo;coddle&rdquo;) algorithm is a &ldquo;knob
+free&rdquo; algorithm. This is a bit of a lie really: there are two knobs
+and they do need setting appropriately. But they don&rsquo;t need changing
+every time performance changes, which is a massive benefit. I have
+<a href=https://gist.github.com/2658712>implemented this algorithm</a> for our
+AMQP Java Client as a variant of the QueueingConsumer. Whilst the
+original algorithm is aimed at the TCP layer, where it&rsquo;s valid to just
+drop packets (TCP itself will take care
+of re-transmission of lost packets), in AMQP that&rsquo;s not so polite! As a result,
+my implementation uses Rabbit&rsquo;s <code>basic.nack</code> extension to explicitly
+return messages to the queue so they can be processed by others.</p><p><a href=https://gist.github.com/2658727>Using it is pretty much the same</a> as
+the normal QueueingConsumer except that you should provide three extra
+parameters to the constructor to get the best performance.</p><ol><li>The first is <code>requeue</code> which says whether, when messages are
+nacked, should they be requeued or discarded. If false, they will
+be discarded which may trigger the dead letter exchange mechanisms
+if they&rsquo;re set up.</li><li>The second is the <code>targetDelay</code> which is the acceptable time in
+milliseconds for messages to wait in the client-side QoS <code>prefetch</code>
+buffer.</li><li>The third is the <code>interval</code> and is the expected worst case
+processing time of one message in milliseconds. This doesn&rsquo;t have
+to be spot on, but within an order of magnitude certainly helps.</li></ol><p>You should still set a QoS <code>prefetch</code> size appropriately. If you do
+not, what is likely is that the client will be sent a lot of messages,
+and the algorithm will then have to return them to Rabbit if they sit
+in the buffer for too long. It&rsquo;s easy to end up with a lot of extra
+network traffic as messages are returned to Rabbit. The CoDel
+algorithm is meant to only start dropping (or rejecting) messages once
+performance diverges from the norm, thus a worked example might help.</p><p>Again, assume network traversal time in each direction of 50ms, and we
+expect the client to spend 4ms on average processing each message, but
+this can spike to 20ms. We thus set the <code>interval</code> parameter of CoDel
+to 20. Sometimes the network halves in speed, so the traversal time
+can be 100ms in each direction. To cater for that, we set the
+<code>basic.qos prefetch</code> to <code>204 / 4 = 51</code>. Yes, this means that the
+buffer will remain 25 messages long most of the time when the network
+is running normally (see workings earlier), but we decide that&rsquo;s
+OK. Each message will thus sit in the buffer for an expected <code>25 * 4 = 100ms</code>, so we set the <code>targetDelay</code> of CoDel to 100.</p><p>When things are running normally, CoDel should not get in the way, and
+few if any messages should be being nacked. But should the client
+start processing messages more slowly than normal, CoDel will spot
+that messages have been buffered by the client for too long, and will
+return those messages to the queue. If those messages are requeued
+then they will become available for delivery to other clients.</p><p>This is very much experimental at the moment, and it&rsquo;s possible to see
+reasons why CoDel isn&rsquo;t as appropriate for dealing with AMQP messages
+as it is for plain IP. It&rsquo;s also worth remembering that requeuing
+messages via nacks is a fairly expensive operation, so it&rsquo;s a good
+idea to set the parameters of CoDel to ensure in normal operation very
+few if any messages are being nacked. The management plugin is an easy
+way to inspect how many messages are being nacked. As ever, comments,
+feedback and improvements are most welcome!</p><p></p><p>Written by:
+<a href=https://blog.rabbitmq.com/authors/matthew/>Matthew Sackman</a></p><p>Categories:
+<a href=https://blog.rabbitmq.com/categories/howto-new-features/>HowTo New Features</a></p></div><div class=clear></div><div class=pageFooter><div class=container><div class=rabbit-logo><a href=https://www.rabbitmq.com/><img src=https://www.rabbitmq.com/img/logo-rabbitmq-white.svg alt=RabbitMQ></a></div><ul class=footerNav><li><a href=https://www.rabbitmq.com/#features>Features</a></li><li><a href=https://www.rabbitmq.com/#getstarted>Get Started</a></li><li><a href=https://www.rabbitmq.com/#support>Support</a></li><li><a href=https://www.rabbitmq.com/#community>Community</a></li><li><a href=https://www.rabbitmq.com/documentation.html>Docs</a></li><li><a href=https://blog.rabbitmq.com>Blog</a></li></ul><p id=copyright>Copyright &#169; 2007-2021 <a href=https://tanzu.vmware.com/>VMware</a>, Inc. or its affiliates. All rights reserved.
+<a href=https://pivotal.io/terms-of-use>Terms of Use</a>,
+<a href=https://pivotal.io/privacy-policy>Privacy</a> and
+<a href=https://www.rabbitmq.com/trademark-guidelines.html>Trademark Guidelines</a></p><p><small>The postings on this site are by individual members of the
+RabbitMQ team, and do not represent VMware’s positions, strategies
+or opinions.</small></p></div></div></div></body></html>

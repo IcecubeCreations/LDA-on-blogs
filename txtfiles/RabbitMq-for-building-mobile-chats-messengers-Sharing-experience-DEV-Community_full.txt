@@ -1,0 +1,1014 @@
+
+
+
+
+RabbitMq for building mobile chats & messengers. Sharing experience - DEV Community
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Skip to content
+
+
+
+Navigation menu
+
+
+
+
+
+
+
+
+
+
+
+
+
+Search
+
+
+
+
+
+
+
+
+
+Search
+
+
+
+
+
+            Log in
+          
+
+
+          Create account
+        
+
+
+
+
+
+
+DEV Community
+
+Close
+
+
+
+
+
+DEV Community is a community of 851,150 amazing developers
+
+  
+
+      We're a place where coders share, stay up-to-date and grow their careers.
+    
+
+Create account
+Log in
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      Home
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+      Listings
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      Podcasts
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+      Videos
+    
+
+
+
+
+
+
+
+
+
+
+
+
+      Tags
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      FAQ
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+      Forem Shop
+    
+
+
+
+
+
+
+
+
+      Sponsors
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      About
+    
+
+
+
+
+
+
+
+
+
+
+
+
+      Contact
+    
+
+
+
+
+
+      Other
+    
+
+
+
+
+
+
+
+
+
+
+
+      Code of Conduct
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      Privacy Policy
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      Terms of use
+    
+
+
+
+
+
+Twitter
+
+
+
+
+Facebook
+
+
+
+
+Github
+
+
+
+
+Instagram
+
+
+
+
+Twitch
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+More...
+
+
+
+
+Copy link
+Copy link
+
+
+
+Copied to Clipboard
+
+
+
+            Share to Twitter
+          
+
+            Share to LinkedIn
+          
+
+            Share to Reddit
+          
+
+            Share to Hacker News
+          
+
+            Share to Facebook
+          
+
+
+
+
+Report Abuse
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Diana Maltseva
+
+                      Posted on Dec 6, 2017
+
+                      • Updated on Jul 29, 2019
+
+
+
+
+
+              RabbitMq for building mobile chats & messengers. Sharing experience
+            
+
+#rabbitmq
+#appdev
+#programming
+
+
+
+
+
+By now, mobile messenger development has gained significant popularity. Today, there are millions of mobile chats and messengers, with the most famous Viber, WhatsApp, or Telegram, each having its pros and cons.
+To be competitive, such mobile apps have to be able to support heavy loads and be easily scalable up to millions (sometimes billions) of users, which creates certain challenges for developers. That’s why we recommend integrating ready and reliable messaging platforms in these solutions. 
+Such integration will enable to transfer the solution to scalability problem to the messaging platform side and allow to pay more attention to new functionality development.
+One of the platforms that is a good fit for messenger development is  RabbitMQ, an open source multi-protocol messaging broker, which supports various messaging protocols like AMQP, MQTT, STOMP, etc.
+RabbitMQ has a number of client libraries allowing it to be integrated with almost any client app platform.
+RabbitMQ has the following components:
+
+producer – client which creates a message;
+consumer – client which receives a message;
+queue – unlimited queue that stores messages;
+exchange – component allowing routing messages to sent to it to different queues.
+
+Generally, the interaction of the components within RabbitMq is the following: producer sends a message to exchange, then exchange receives the message and routes it to queues subscribed to it. 
+Depending on the type of exchange messages can be filtered based on a correspondence of keys with which the queue is connected to the exchange and the keys in the message or routed to all interested queues, after which the consumer receives messages from the queue he/she is subscribed to.
+Types of exchange:
+
+fanout – routes messages sent to it to all connected queues
+direct – routes messages sent to it to connected queues according to filtration settings using routeld (can be one word)
+topic – routes messages sent to it to connected queues according to filtration settings with using routeld consisting of a few words which allow achieving more flexible filtering.
+
+In general, the system includes the following components:
+
+RabbitMQ;
+Backend application;
+Client applications: Android, iOS.
+
+For the architecture to function one needs already set up exchanges and queues created at the first start of the backend application.
+The main exchanges and queues:
+“conversation.outgoing” is an exchange, type fanout, which in our case is required for receiving incoming messages from clients and routing them to the queues.
+“conversation.incoming” is an exchange, type topic, for sending already processed messages to exchange of certain users. In our case topic type enables to send only those messages to users that relate to those dialogues they participate in.
+“chat-application-messages” is a queue for processing incoming messages by backend application.
+After initialization all used exchanges and queues we connect exchange “conversation.outgoing” with queue “chat-application-messages” and create backend message processor from queue “chat-application-messages”.
+Integration of all parts of the system starts with user registration functionality.
+When a user registers on the server using one of the clients, a backend application makes an exchange of a fanout type in RabbitMQ with unique generated name and returns this exchange name to the client application in which the user registered.
+From then all authorized clients will also receive the name of this already existing exchange.
+After receiving the exchange name of this user, the clients create a temporary queue in RabbitMQ, which exists only during the connection of the client with RabbitMQ message broker, and connect it with this exchange.
+Creating one unique exchange for each user allows receiving messages from all clients (iOS, Android) at the same time.
+After turning off the Internet on the client or in any other case when connection with RabbitMQ message broker is lost, a temporary queue will be automatically deleted on the server by RabbitMQ, thus preventing redundant messaging and optimizing our delivery. With a new connection, a new queue will be created.
+After registration, the user is ready for both sending and receiving messages.
+Sending messages takes place within dialogues. The system must enable to create conversations with both one and several contacts.
+When creating a conversation, exchange of each user links with an exchange of the backend application “conversation.incoming”, using conversation id as routeId.
+Check out more about using RabbitMq for creating mobile applications.
+Also, get insight into RabbitMq tutorial and installation guide.
+A bit about user data security and privacy in mobile chat apps
+Concerning the development of mobile chat apps, there come security issues regarding user data privacy and communication security. 
+At the moment end-to-end encryption (E2EE) is the most reliable way to protect user data and remove the possibility of hackers, governments, and security service to view any data, including chat messages.
+Most popular mobile messengers have already take care of providing security. For intance, WhatsApp integrated E2EE encryption in 2016 thus getting a competitive advantage. 
+Find out how to use end2end encryption for protecting mobile apps and ensuring data privacy.
+
+
+
+
+
+          Discussion (1)
+
+
+
+Subscribe
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Upload image
+
+
+
+
+
+
+
+
+
+Templates
+
+
+Editor guide
+
+
+
+
+
+
+
+Personal
+Moderator
+
+
+
+
+
+
+
+        Create template
+      
+Templates let you quickly answer FAQs or store snippets for re-use.
+
+
+
+Submit
+Preview
+Dismiss
+
+
+
+
+
+
+
+
+Collapse
+
+
+Expand
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+O. Jaaouani
+
+
+
+      O. Jaaouani
+    
+
+
+
+
+
+
+
+O. Jaaouani
+
+
+
+Follow
+
+
+
+
+
+            Location
+          
+
+            Grenoble, France
+          
+
+
+
+              Work
+            
+
+              Freelance Developer at Student
+            
+
+
+
+          Joined
+        
+
+Feb 4, 2020
+
+
+
+
+
+
+
+•
+
+
+    Feb 4 '20
+  
+
+
+
+Dropdown menu
+
+
+
+
+
+Copy link
+
+
+
+              Hide
+            
+
+
+
+
+
+
+
+
+
+
+
+Great Introduction to RabbitMQ ! Thank you !
+
+
+
+
+
+Like comment: 
+Like comment: 
+
+
+1 like
+
+
+Comment button
+Reply
+
+
+
+
+
+
+
+
+
+
+Code of Conduct
+•
+Report abuse
+
+
+
+
+
+
+
+        Are you sure you want to hide this comment? It will become hidden in your post, but will still be visible via the comment's permalink.
+      
+
+
+Hide child comments as well
+
+
+
+          Confirm
+        
+
+
+ For further actions, you may consider blocking this person and/or reporting abuse
+
+
+
+Read next
+
+
+
+
+
+
+A Guide to Java Records
+
+              Abhinav Pandey - May 15
+
+
+
+
+
+
+
+
+
+
+Can You Resolve Merge Conflicts Before They Happen? 💥
+
+              Benjamin C. Baker - May 12
+
+
+
+
+
+
+
+
+
+
+So, you can benchmark in AssemblyScript...
+
+              Jairus Tanaka - May 14
+
+
+
+
+
+
+
+
+
+
+JavaScript - Map
+
+              Tanwa Sripan - May 14
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Diana Maltseva
+
+
+
+Follow
+
+
+    Having been a professional tech blogger since 2015 and having proficiency in programming, I generally cover such topics as mobile & web development, dev technologies, AI, and IoT.
+  
+
+
+
+
+            Location
+          
+
+            Belarus, Minsk
+          
+
+
+
+              Work
+            
+
+              Marketer and tech blogger at Self-employed
+            
+
+
+
+          Joined
+        
+
+Jul 27, 2017
+
+
+
+
+
+
+
+
+            More from Diana Maltseva
+
+
+
+
+              Software testing tasks, process, tools for QA engineers
+              
+#qa
+#appdev
+#testing
+#programming
+
+
+
+              Why use Kotlin for Android development? Kotlin benefits, features, versions
+              
+#kotlin
+#appdev
+#androiddev
+#programming
+
+
+
+              How to develop a crypto wallet application
+              
+#blockchain
+#crypto
+#appdev
+#bitcoin
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+DEV Community — A constructive and inclusive social network for software developers. With you every step of your journey.
+    
+
+Built on Forem — the open source software that powers DEV and other inclusive communities.
+Made with love and Ruby on Rails. DEV Community © 2016 - 2022.
+
+
+Forem logo
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+          We're a place where coders share, stay up-to-date and grow their careers.
+      
+
+
+
+        Log in
+      
+
+        Create account
+      
+
+
+
+
+
+
+
+

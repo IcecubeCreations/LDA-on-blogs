@@ -1,0 +1,514 @@
+
+
+
+
+
+
+
+
+
+
+Message middleware selection analysis: from the comparison of Kafka and RabbitMQ - Programmer Sought
+
+
+
+
+
+
+
+
+
+
+
+ProgrammerSought
+
+
+Home
+Contact Us
+Privacy Policy
+
+
+☰ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Message middleware selection analysis: from the comparison of Kafka and RabbitMQ
+
+
+
+
+
+
+
+
+
+
+
+I. Introduction
+Message Queuing Middleware (referred to as message middleware) refers to platform-independent data exchange using efficient and reliable messaging mechanism, and distributed system integration based on data communication. By providing a messaging and message queuing model, it can provide application decoupling, elastic scaling, redundant storage, traffic clipping, asynchronous communication, data synchronization, etc. in a distributed environment, as one of the distributed system architectures. Important components have a pivotal position.
+At present, the open source message middleware can be described as dazzling, and there are many familiar to everyone, such as ActiveMQ, RabbitMQ, Kafka, RocketMQ, ZeroMQ and so on. No matter which one you choose, it's a useful place to be handy. After all, it's not tailored for you. Some large factories have accumulated a certain amount of experience in the long-term use process, and the use of the message queue is relatively stable and solidified, or the current message middleware on the market cannot meet their own needs, and also has sufficient energy and manpower to choose from Developed to create a message middleware for yourself. But most companies still don't choose to re-create the wheel, so it's especially important to choose a suitable middleware. Even if it is the former, it will undergo such a selection process before it develops stable and reliable related products.
+Introducing message middleware in the overall architecture, it is necessary to consider many factors, such as cost and revenue issues, how to achieve the best cost performance? Although there are many kinds of message middleware, each has its own focus. It is undoubtedly the best way to choose the right one and to avoid weaknesses. If you feel at a loss about this, this article may refer to one or two.
+Second, a variety of message queues
+
+ 
+
+
+
+
+
+ 
+
+
+
+
+ActiveMQ is an Apache-based, message-based middleware based on the JMS 1.1 specification written in the Java language to provide efficient, scalable, stable, and secure enterprise-class messaging for applications. However, due to historical reasons, the burden is too heavy. At present, there is no more news middleware in the market. The latest architecture is named Apollo, which is called the next generation ActiveMQ. Interested students can understand it.
+RabbitMQ is a messaging middleware for the AMQP protocol implemented in the Erlang language. It originated from the financial system and is used to store and forward messages in distributed systems. RabbitMQ has been developed to the present day and is recognized by more and more people, which is inseparable from its outstanding performance in reliability, usability, scalability and feature richness.
+Kafka was originally a distributed, multi-partition, multi-copy, zookeeper-based distributed distributed messaging system developed by LinkedIn using the Scala language and is now donated to the Apache Foundation. It is a high-throughput distributed publish and subscribe messaging system that is widely used for horizontal scalability and high throughput. More and more open source distributed processing systems such as Cloudera, Apache Storm, Spark, Flink, etc. support integration with Kafka.
+
+ 
+
+RocketMQ is Ali's open source messaging middleware. It has donated an Apache Foundation. It is developed by the Java language and has high throughput, high availability, and is suitable for large-scale distributed system applications. It has undergone double 11 baptism. Strength should not be underestimated.
+ZeroMQ claims to be the fastest message queue in history, based on C language development. ZeroMQ is a message processing queue library that can flexibly scale between multi-threaded, multi-core and host. Although most of the time we are used to classifying it into the message queue family, it is essentially different from the previous ones. ZeroMQ itself is not a message queue server, more like a set of underlying network communication libraries, adding a layer of encapsulation to the original Socket API.
+There are still a lot of message middleware on the market, such as PhexQueue, CMQ, CKafka of Tencent, and NSQ based on Go. Sometimes people like Redis products are also regarded as a kind of message middleware. Of course, they all Very good, but the limitations of this article can not be extremely poor. The following will select RabbitMQ and Kafka two typical message middlewares for analysis, and strive to explain each of the message middleware selection in a fair and equitable position. Key points.
+Third, the selection of key points
+To measure whether a message middleware meets the requirements needs to be examined from multiple dimensions, the first is the functional dimension, which directly determines whether you can achieve out of the box to the greatest extent, thereby shortening the project cycle and reducing costs. If the functionality of a message middleware does not meet the desired functionality, then secondary development is required, which increases the technical difficulty, complexity, and project cycle of the project.
+Functional dimension
+The functional dimension can be divided into multiple sub-dimensions, which can be roughly divided into the following:
+
+ Priority queue 
+
+The priority queue is different from the FIFO queue, and the message with higher priority has the privilege of being preferentially consumed, which can provide different message level guarantees for the downstream. However, this priority also needs to have a premise: if the consumer's consumption speed is greater than the producer's speed, and there is no message accumulation in the message middleware server (generally simply called the Broker), then set the priority for the sent message. There is no substantive meaning, because the producer has just consumed a message and is consumed by the consumer, which is equivalent to at most one message in the broker. For a single message, the priority does not make sense.
+
+ Delay queue 
+
+When you shop online, do you encounter such a prompt: "Not paid within 30 minutes, the order is automatically cancelled"? This is a typical application scenario for a delay queue. The delay queue stores the corresponding delayed message. The so-called "delay message" means that after the message is sent, the consumer does not want to get the message immediately, but waits for a certain time before the consumer can get the message for consumption. Delay queues are generally divided into two types: message-based delays and queue-based delays. Message-based latency refers to setting different delay times for each message, so each time a new message enters the queue, it will be sorted according to the delay time. Of course, this will also have a great impact on performance. Most of the practical applications use queue-based delays, and set queues with different delay levels, such as 5s, 10s, 30s, 1min, 5mins, 10mins, etc., the delay time of messages in each queue is the same, thus eliminating the delay sorting. The performance suffers, and the timeout message can be delivered through a certain scanning strategy (such as timing).
+
+ Dead letter queue 
+
+For some reason, the message cannot be delivered correctly. In order to ensure that the message will not be discarded without any reason, it is generally placed in a queue of a special role, which is generally called a dead letter queue. Corresponding to this is also a concept of "return queue". Imagine if the consumer has an abnormality during consumption, then this purchase will not be confirmed (Ack), and then the message after the rollback message occurs. Will be placed at the top of the queue, and then continuously processed and rolled back, causing the queue to fall into an infinite loop. In order to solve this problem, a back-off queue can be set for each queue, and the dead-letter queue is a mechanism guarantee for the abnormal processing. In practice, the role of the backoff queue can be played by the dead letter queue and the retry queue.
+
+ Retry queue 
+
+The retry queue can be regarded as a fallback queue. Specifically, when the consumer consumes a message, the message is rolled back to the broker to prevent the message from being lost for no reason. Unlike the back-off queue, the retry queue is generally divided into multiple retry levels. Each retry level is also generally set to re-delivery delay. The more retry times, the greater the delivery delay. For example, the first time the message fails to enter the retry queue Q1, the re-delivery delay of Q1 is 5s, and the message is re-delivered after 5s; if the message fails to consume again, it enters the retry queue Q2, and the re-delivery delay of Q2 is 10s, the message is delivered again after 10s. By analogy, the longer the retry is repeated, the longer it takes to re-deliver. For this purpose, you need to set an upper limit, and the number of delivery times will enter the dead letter queue. The retry queue has the same place as the delay queue. It is necessary to set the delay level. The difference between them is that the delay queue action is triggered internally, the retry queue action is triggered by the external consumer; the delay queue acts once, and the retry queue The scope of action will be passed backwards.
+
+ Consumption pattern 
+
+The consumption mode is divided into a push mode and a pull mode. Push mode means that the broker actively pushes the message to the consumer, which is better in real time, but requires a certain flow mechanism to ensure that the message pushed by the server does not overwhelm the consumer. The pull mode means that the consumer actively requests the pull (usually timing or quantitative) message from the broker, and the real-time performance is worse than the push mode, but the amount of the pull message can be controlled according to its own processing capability.
+
+ Broadcast consumption 
+
+Messages generally have two delivery modes: point-to-point (P2P) mode and publish/subscribe (Pub/Sub) mode. For the peer-to-peer mode, after the message is consumed, it will not be stored in the queue, so the message consumer cannot consume the message that has already been consumed. Although a queue can support multiple consumers, a message can only be consumed by one consumer. The publish-subscribe pattern defines how to publish and subscribe to a content node. This content node is called a topic. The topic can be thought of as an intermediary for messaging. The message publisher posts the message to a topic, while the message subscribers Subscribe to a message from a topic. The topic makes the subscriber of the message and the publisher of the message independent of each other, and the message delivery can be guaranteed without contact. The publish/subscribe mode is used in the one-to-many broadcast of the message. RabbitMQ is a typical peer-to-peer mode, and Kafka is a typical publish-subscribe model. However, RabbitMQ can achieve the effect of broadcast consumption by setting the switch type to achieve the publish and subscribe mode. Kafka can also consume in the form of peer-to-peer. You can completely regard the concept of its consumer group as the concept of queue. . However, in contrast, in Kafka, because of the existence of the message backtracking function, the support for broadcast consumption is stronger than that of RabbitMQ.
+
+ Message backtracking 
+
+The general message is processed after the consumption is completed, and the message cannot be consumed anymore. The message backtracking is just the opposite. It means that after the message is completed, the message can be consumed until it is consumed. For the message, the problem often is “message loss”. As for the loss of the message middleware or the loss of the user’s misuse, it is generally difficult to trace. If the message middleware itself has the message backtracking function, The "missing" message can be reproduced by retrospective consumption to find out where the problem is. The back-tracking effect of the message is far more than this. For example, there are index recovery and local cache reconstruction. Some service compensation schemes can also be implemented in a backtracking manner.
+
+ Message stacking + persistence 
+
+Traffic clipping is a very important feature of messaging middleware, and this feature actually benefits from its message stacking capabilities. In a sense, if a message middleware does not have the ability to accumulate messages, then it cannot be considered a qualified message middleware. Messages are stacked in both memory and disk stacks. RabbitMQ is a typical memory stack, but this is not absolute. After some conditions are triggered, there will be a page break to page the message in memory to disk (page change will affect the throughput), or use the lazy queue directly The message is directly persisted to disk. Kafka is a typical disk-like stack, with all messages stored on disk. In general, the capacity of a disk is much larger than the capacity of a disk. For a disk-like stack, its stacking capacity is the size of the entire disk. From another perspective, message stacking also provides redundant storage for message middleware. Citing the case of the New York Times, it uses Kafka directly as a storage system.
+
+ Message tracking 
+
+For the trace tracing in a distributed architecture system, you will not be unfamiliar. For message middleware, link tracking of messages (hereinafter referred to as message tracking) is equally important. The most common understanding of message tracking is to know where the message comes from, where it exists, and where it is sent. Based on this function, we can perform link tracking service on the sent or consumed messages, so that the problem can be quickly located and checked.
+
+ Message filtering 
+
+Message filtering refers to providing downstream users with messages of a specified category according to established filtering rules. In the case of kafka, it is possible to send different types of messages to different topics, so that message filtering can be implemented in a certain sense, or Kafka can classify messages in the same topic according to partitions. However, message filtering in a more strict sense should be a certain way to filter a given message according to certain filtering rules. Also taking Kafka as an example, message filtering can be done through the ConsumerInterceptor interface provided by the client or the filter function of Kafka Stream.
+
+ Multi-tenant 
+
+Also known as multi-tenancy technology, it is a software architecture technology that is mainly used to implement the same system or program components in a multi-user environment, and still ensure the isolation of data between users. RabbitMQ is capable of supporting multi-tenancy technology. Each tenant is represented as a vhost, which is essentially a stand-alone small RabbitMQ server with its own separate queues, switches, and bindings, and it has its own independent permissions. Vhosts, like virtual machines in physical machines, provide a logical separation between instances, allowing data to be securely and confidentially held for different programs. It can distinguish between many clients in the same RabbitMQ and avoid queues. Conflict with naming such as switches.
+
+ Multi-protocol support 
+
+Messages are the carrier of information. In order for both producers and consumers to understand the information they carry (producers need to know how to construct messages, consumers need to know how to parse messages), they need to describe the message in a uniform format. This unified format is called a message protocol. A valid message must have some format, and a message without a format is meaningless. The general message level protocols are AMQP, MQTT, STOMP, XMPP, etc. (JMS in the message field is more of a specification than a protocol). The more supported protocols, the wider the scope of application and the more versatile. For example, RabbitMQ can support the MQTT protocol to gain a place in IoT applications. Other message middleware is based on its own proprietary protocol, typically Kafka.
+
+ Cross-language support 
+
+For many companies, there are many programming languages ​​in the technology stack system, such as C/C++, JAVA, Go, PHP, etc. The message middleware itself has the application decoupling feature, if it can further support multi-client language. Then you can expand the performance of this feature. Cross-language support can also reflect the popularity of a message middleware.
+
+ flow control 
+
+The flow control is for the problem that the sender and receiver speeds do not match, and a speed matching service is provided to suppress the transmission rate to adapt the read rate of the receiver application. Common flow control methods include Stop-and-wait, sliding windows, and token buckets.
+
+ Message order 
+
+As the name implies, message ordering means ensuring that messages are in order. A very common application scenario for this function is CDC (Change Data Chapture). Take MySQL as an example. If the order of the binlogs it transmits is wrong, for example, it is originally to add 1 to a piece of data, then multiply by 2 to send the wrong order. After that, it becomes the first multiplied by 2 and then increased by 1, resulting in inconsistent data.
+
+ Security Mechanism 
+
+After Kafka 0.9, the two security mechanisms of identity authentication and access control have been added. Identity authentication means that the client and the server are connected for identity authentication, including connection authentication between the client and the broker, between the Broker and the Broker, and between the Broker and the ZooKeeper. Currently, the authentication mechanism such as SSL and SASL is supported. Permission control refers to the access control of the client's read and write operations, including the control of the message or Kafka cluster operation rights. Permission controls are pluggable and support integration with external authorization services. For RabbitMQ, it also provides security mechanisms for authentication (TLS/SSL, SASL) and access control (read and write operations).
+
+ Message idempotence 
+
+There are generally three delivery guarantees for ensuring that messages are transmitted between producers and consumers: At most once, at most once, messages may be lost, but never repeated; At least once, at least once, The message will never be lost, but it may be repeated; Exactly once, once accurately, each message will be transmitted once and only once. For most message middlewares, only At most once and At least once are generally provided. For the third type, it is generally difficult to do so, and thus the idempotency of the message is difficult to guarantee.
+Kafka introduced idempotence and transactions since version 0.11. Kafka's idempotency refers to the power of a single producer for a single-partition single session, while transactions can guarantee atomic writes to multiple partitions, ie writes to Messages from multiple partitions are either all successful or all rolled back. These two functions add up to allow Kafka to have EOS (Exactly Once Semantic) capabilities.
+However, if we want to consider the global power, we need to consider the upstream and downstream aspects, that is, the related business level. The idempotent processing itself is also an important issue to be considered at the business level. For example, the following consumer level is an example. It is possible that an abnormality occurs after a consumer consumes a message and does not have time to confirm the message. After the recovery, the message that was originally consumed is re-consumed, then this type of message is impossible. There is a message middleware level to guarantee. If you want to ensure the power of the global, you need to introduce more external resources to ensure, such as the order number as a unique identifier, and set a deduplication table downstream.
+
+ Transactional message 
+
+The transaction itself is a familiar word, and the transaction consists of the entire operation performed between the Begin Transaction and the End Transaction. There are a handful of message middleware that supports transactions, both Kafka and RabbitMQ support, but the transaction between the two refers to the transaction in which the producer has a message, either successfully sent or failed. Message middleware can be used as a means of implementing distributed transactions, but does not itself provide the functionality of a globally distributed transaction.
+The following table is a summary comparison and additional explanation of the Kafka and RabbitMQ functions.
+
+
+
+performance
+The functional dimension is an important reference dimension in message middleware selection, but it is not the only dimension. Sometimes performance is more important than function. Moreover, performance and function are often contradictory. Fish and bear's paw can't have both. Kafka will reduce its performance when it opens idempotent and transactional functions. RabbitMQ opens rabbitmq_tracing plugin. It will also greatly affect its performance. The performance of message middleware generally refers to its throughput. Although the advantage of RabbitMQ is greater than that of Kafka in terms of functional dimension, the throughput of Kafka is 1 to 2 orders of magnitude higher than that of RabbitMQ. Generally, the stand-alone QPS of RabbitMQ is at the level of 10,000. Within, Kafka's stand-alone QPS can be maintained at 100,000 or even millions.
+
+The throughput of message middleware is always limited by the hardware level. Take the NIC bandwidth as an example. If the bandwidth of a single NIC is 1 Gbps, if you want to achieve a million-level throughput, the message size must not exceed (1Gb/8)/100W, which is equal to 134B, in other words, if the message body With a size of more than 134B, it is impossible to achieve a million-level throughput. This calculation can also be applied to both memory and disk.
+
+As an important indicator of the performance dimension, time delay is often neglected in the field of message middleware, because the requirements of timeliness for the use of message middleware are not very high. If timeliness is required, it can be implemented by RPC. . Message middleware has the ability to accumulate messages. The larger the message stack, the longer the end-to-end delay. At the same time, the delay queue is also a feature of some message middleware. So why pay attention to the delay of message middleware? The message middleware can decouple the system. For a message middleware with low latency, it can allow the upstream producer to return after sending the message quickly, and also allows the consumer to get the message more quickly without accumulating. In this case, the cascading action between the entire upstream and downstream applications can be more efficient. Although it is not recommended to use the message middleware in a time-sensitive scenario, if the message middleware used is excellent in delay, So the performance of the overall system will be a big improvement.
+Reliability + availability
+Message loss is a common point that must be faced when using message middleware. The reliability of the message behind it is also a key factor in measuring the quality of message middleware. Especially in the field of financial payments, message reliability is particularly important. However, when it comes to reliability, it is necessary to talk about usability. Pay attention to the difference between the two. The reliability of message middleware refers to the degree of guarantee that the message is not lost. The availability of message middleware refers to the percentage of time for trouble-free operation. , usually measured in a few nines.
+From a narrower perspective, the distributed system architecture is the application implementation of the coherence protocol theory, and can be traced back to the consistency protocol behind the message middleware for message reliability and availability. For Kafka, it uses a PacificA-like coherency protocol that guarantees synchronization between multiple replicas via ISR (In-Sync-Replica) and supports strong consistency semantics (implemented by acks). The corresponding RabbitMQ implements multiple copies and strong consistency semantics through a mirrored circular queue. Multiple copies ensure that the slave can be promoted as a new master after the master node downtime and continue to provide services to ensure availability. Kafka was originally designed for log processing, leaving people with a bad impression of data reliability requirements, but with the upgrade of the version, its reliability has been greatly enhanced, please refer to KIP101 for details. At present, most of the use of RabbitMQ in the financial payment field, and Kafka use in log processing, big data, etc., with the continuous improvement of RabbitMQ performance and the further enhancement of Kafka reliability, I believe that each other can not be good at the past. The field has a share.
+
+Synchronous brushing is an effective way to enhance the reliability of a component. Message middleware is no exception. Kafka and RabbitMQ can support synchronous brushing, but I have some doubts about synchronous brushing: in most cases, one component Reliability should not be guaranteed by the extremely lossy performance of the synchronous brush, but by a multi-copy mechanism.
+
+One aspect that I want to mention here is the scalability. Here I narrowly narrow this into the dimension of usability. The extension of message middleware can enhance the usability and scope of its use. For example, the aforementioned RabbitMQ supports multiple messages. Protocol, this is an extension implementation based on its plugin. Also from the perspective of cluster deployment, thanks to Kafka's horizontal scalability, it can basically reach the level of linear capacity improvement. In the introduction to LinkedIn, there are mentioned Kafka clusters with more than one thousand devices deployed.
+Operation and maintenance management
+In the process of using the message middleware, various exceptions will inevitably occur. There are clients and servers, so how to monitor and repair them in a timely and effective manner. Business line traffic has peaks and valleys, especially in the e-commerce sector. So how do you conduct effective capacity assessment before, especially during the promotion period? There are endless activities such as kicking power and network cables being dug. How to effectively do more live and work? These are inseparable from the derivative of the message middleware - operation and maintenance management.
+Operation and maintenance management can also be further subdivided, such as: application, audit, monitoring, alarm, management, disaster recovery, deployment, etc.
+The application and review are well understood. The resources are controlled and controlled at the source. It can effectively correct the application specifications of the application. The distribution and monitoring can also do the traffic statistics and traffic assessment. The general application, audit and the internal system of the company are more compatible. Large, not suitable for use with open source products.
+Monitoring and alarming are also well understood. The monitoring of the use of message middleware can provide the benchmark data for the system, and can also cooperate with the alarm when the abnormality is detected, so that the operation and maintenance and the rapid intervention of the developer. In addition to general monitoring items (such as hardware, GC, etc.), message middleware also needs to pay attention to end-to-end delay, message auditing, message stacking and so on. For RabbitMQ, the most orthodox monitoring management tool is the rabbitmq_management plugin, but there are many excellent products in the community such as AppDynamics, Collectd, DataDog, Ganglia, Munin, Nagios, New Relic, Prometheus, Zenoss. Kafka is also in no way in this respect, such as Kafka Manager, Kafka Monitor, Kafka Offset Monitor, Burrow, Chaperone, Confluent Control Center, etc., especially Cruise can also provide automatic operation and maintenance functions.
+Whether it is expansion, downgrade, version upgrade, cluster node deployment, or fault handling, management tools are indispensable. A well-equipped management toolset can do more with less. The fault can be large or small, generally it is some application abnormality, or it can be a single machine fault such as machine power failure, network abnormality, disk damage, etc., and multiple copies in the single room of the fault are sufficient. If it is a machine room failure, it will involve remote disaster recovery. The key point is how to effectively copy data. For Kafka, you can refer to MirrorMarker, uReplicator, etc., and RabbitMQ can refer to Federation and Shovel.
+Community strength and ecological development
+For the current popular programming languages, such as Java and Python, if you encounter some exceptions during use, you can basically solve them with the help of search engines, because the more people use a product, the pits you stepped on. The more, the more solutions there are. The same applies to message middleware. If you choose a kind of "uncommon" message middleware, it may be handy in some aspects, but the version is slow to update, and it is difficult to get support from the community and it is getting stuck. On the contrary; if you choose a "popular" message middleware, it is more powerful, not only can quickly make up for the previous deficiencies, but also can adapt to the rapid development of technology to change some new features, so that you can "Stand on the shoulders of giants." In the dimension of operation and maintenance management, we mentioned that both Kafka and RabbitMQ have a series of open source monitoring and management products, which are benefited from the rapid development of their communities and ecology.
+Fourth, the discussion of the misunderstanding of message middleware selection
+Before asking for message middleware, you can ask yourself a question: Do you really need a message middleware? After you have figured out this problem, you can continue to ask yourself a question: Do you need to maintain a set of message middleware yourself? In order to save costs, many start-up companies choose to directly purchase cloud services related to message middleware. They only need to pay attention to sending and receiving messages, and the rest can be outsourced.
+Many people have a self-study impulse when facing message middleware. You can make a simple wrapper around ArrayBlockingQueue in Java. You can also form a message middleware based on the underlying storage encapsulation of files, databases, Redis and so on. As a basic component, the message middleware is not as simple as it is supposed to be. It also needs a set of products to manage the whole ecosystem. Self-research will also have problems with handover. If the documents are incomplete and the operation is not standardized, it will bring a nightmare experience to the newcomers. Is it really necessary to have self-study? If it is not the oppression of KPI, you can consider these two questions first: 1. Is the current message middleware on the market really unable to meet the current business needs? 2. Does the team have sufficient capacity, manpower, financial resources, and energy to support self-study?
+Many people refer to many comparative articles on the Internet when they are making message middleware selections, but their professionalism, rigor, and political positions are still to be verified. They need to be examined with suspicion. For example, some articles will directly define a message middleware without any qualifications and scenarios. Some articles do not specify the message middleware version and test environment for functional and performance comparison analysis. Stubborn.
+Message middleware is like a pony crossing the river. It is most important to choose the right one. This needs to fit your own business needs. The technology serves the business. Generally, it can be based on the six dimensions of functions and performance mentioned in the previous section. One is for screening. The deeper choice is whether you can master the soul. The author glimps: RabbitMQ lies in routing, and Kafka lies in streaming, knowing that it is especially important for you to choose the right message middleware for the right medicine.
+Message middleware selection should not blindly pursue performance or function, performance can be optimized, and functions can be developed twice. If you want to make a choice between function and performance, then the performance is preferred, because in general, the space for performance optimization has no room for functional expansion. For long-term development, however, ecology is more important than performance and function.
+Many times, there is a misunderstanding about reliability: to find a product to ensure the absolute reliability of the message, unfortunately there is no absolute thing in the world, can only say that it is as perfect as possible. To ensure the reliability of the message as much as possible, it is not only relying on the message middleware itself, but also relying on the upstream and downstream. It is necessary to ensure the reliability of the RabbitMQ message from the three dimensions of the production side, the server side and the consumer side. Analysis This article analyzes the reliability of RabbitMQ from these three dimensions.
+Message middleware selection also has a consideration standard is to fit the team's own technology stack system as much as possible, although there is no crappy message middleware only crappy programmers, but let a C stack team go deep into PhxQueue is better than deep It's much easier to dig Kafka written by Scala.
+Message middleware avenue to Jane: one for one, one for consumption, no best news middleware, only the most appropriate message middleware.
+about the author
+Zhu Zhonghua is mainly engaged in the research and development of news middleware. He once wrote "RabbitMQ Practical Guide".
+ 
+Original address: http://www.infoq.com/cn/articles/kafka-vs-rabbitmq?utm_source=infoq&utm_medium=popular_widget&utm_campaign=popular_content_list&utm_content=homepage
+
+
+Copyright Complaint      
+Spam Report
+
+
+
+
+
+
+
+
+
+
+Intelligent Recommendation
+
+
+
+
+
+
+
+
+
+
+Message middleware selection comparison
+
+
+
+Common news queue introduction This section mainly introduces the main features, advantages, disadvantages of four commonly used messages (Rabbitmq / Activemq / Rocketmq / Kafka). 1 RabbitMQ Rabbitmq ...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Selection of message queue middleware RabbitMQ RocketMQ ActiveMQ Kafka
+
+
+
+Selection of message queue middleware RabbitMQ RocketMQ ActiveMQ Kafka Copyright statement: This article is an original article of CSDN blogger "Xiaochao Blog", which follows the CC 4.0 BY-S...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+RabbitMQ and Kafka selection comparison
+
+
+
+background This company is a .NET project. There are relatively few MQ options in .NET. The main ones are Kafka and RabbitMQ. I have used RabbitMQ for many years. I can't ignore the recent Kafka adver...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Explain in detail the technical selection of message middleware and its application scenarios and common message middleware (RabbitMQ, Kafka, RocketMQ, ActiveMQ)
+
+
+
+Article Directory Introduction to messaging middleware Common concepts news Middleware message queue Message middleware The background of message middleware Features of message queue Common protocols ...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+MQ (message queue framework) selection comparison: ActiveMQ, RabbitMQ, RocketMQ, Kafka
+
+
+
+Market usage (background) For small and medium software companies, RabbitMQ is recommended. On the one hand, the erlang language is inherently highly concurrent, and its management interface is very c...
+
+
+
+
+
+
+
+
+
+
+
+More Recommendation
+
+
+
+
+
+
+
+
+
+
+Message middleware selection analysis
+
+
+
+Why use a message queue? Decoupling, asynchronous, peak clipping In fact, this topic is also a question that the interviewer often asks. Ask you what usage scenarios are in the message queue, and then...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Comparison of message middleware such as Kafka, RabbitMQ, RocketMQ, etc. - message delivery performance and difference
+
+
+
+original:http://jm.taobao.org/2016/04/01/kafka-vs-rabbitmq-vs-rocketmq-message-send-performance/?utm_source=tuicool&utm_medium=referral In distributed systems, we use message middleware extensivel...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Transfer Kafka, RabbitMQ, RocketMQ and other message middleware comparison-message sending performance and advantages
+
+
+
+Comparison of message middleware such as Kafka, RabbitMQ, RocketMQ-message sending performance and advantages introduction In distributed systems, we widely use message middleware to exchange data bet...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Selection comparison-Kafka VS RabbitMQ
+
+
+
+What is RabbitMQ General purpose message broker, based around message queues, designed with a smart broker / passive consumer model Why RabbitMQ Support provided by multiple languages, and a rich plug...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Message queue Kafka and Rabbitmq comparison
+
+
+
+Different message middleware have different adaptation scenarios. For Kafka and Rabbitmq, the following function points can be divided under different scenarios: 1. Priority queue: For messages that e...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Related Posts
+Message Middleware Selection Analysis - From the comparison of Kafka and RabbitMQ
+Message middleware selection analysis: from the comparison of Kafka and RabbitMQ
+Analysis and comparison of message middleware (RabbitMq, Kafka)
+Kafka, RabbitMQ, RocketMQ message middleware comparison - message delivery performance - transferred from Ali middleware
+Comparison of message middleware such as Kafka, RabbitMQ, RocketMQ
+Message middleware (ActiveMQ RabbitMQ KafKa comparison)
+Message Queuing MQ Selection - Kafka, RabbitMQ Comparison
+Comparison of message middleware such as Kafka, RabbitMQ, RocketMQ - message delivery performance and advantages
+Comparison of Kafka, RabbitMQ, RocketMQ message middleware | Message sending performance
+Comparison of message middleware such as Kafka, RabbitMQ, RocketMQ-message sending performance and advantages
+
+
+
+
+
+
+Popular Posts
+Several ways of eS6 export
+Introduction to Spring's three basic components
+form an encrypted form the background foreground js java
+Spring framework learning three (type data injection)
+spring-datesource.xml configuration, spring integration mybatis
+Leetcode 592. Score Adjusting C ++
+LeetCode2 Add Two Numbers
+Introduction to database integrity [Chapter] mind mapping database system
+ResNet101V2 network structure
+[Minimum path coverage]hdoj 3335: Divisibility
+
+
+
+
+
+
+Recommended Posts
+Solve Selenium.common.Exceptions.webdriveRexception: Message: Unknown Error: Cannot Find Chrome Binary
+JS references text information in the outermost JS
+The realization of Window, WindowManager and floating frame video playback in Android
+Design Mode - Component mode
+Java foundation (20) (thread pool, waiting wake-up mechanism, Voliate keyword, single case design pattern "lazy mode" "Hungry Mode")
+Apache common interview
+leetcode209. The smallest length sub-array/double pointer, prefix sum, dichotomy
+[0CTF 2016]piapiapia
+Java string interview questions and answers
+Mina develops an example of the udp protocol
+
+
+
+
+
+Related Tags
+MQMessage middleware# message queuemessage queuerabbitmqrocketmqactivemqkafkaOpen source frameworkRabbitMQ
+
+
+
+
+
+
+
+
+ Copyright  DMCA © 2018-2022 - All Rights Reserved - www.programmersought.com  User Notice 
+
+
+Top
+
+
+
+
+
+
+
+
+
+
+
+

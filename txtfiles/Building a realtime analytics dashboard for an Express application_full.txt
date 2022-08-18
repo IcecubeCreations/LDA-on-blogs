@@ -1,0 +1,733 @@
+
+
+
+
+
+
+
+
+Building a realtime analytics dashboard for an Express application
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Pusher Logo
+
+
+
+
+Show navigation menu
+
+
+
+Hide navigation menu
+
+
+
+
+Channels
+              Channels
+            
+
+
+
+Beams
+            Beams
+            
+
+
+
+            Developers
+            
+
+
+
+            Support
+            
+
+
+
+            Blog
+            
+
+
+
+                Sign up
+            
+
+
+
+
+
+
+
+            Products
+
+            
+
+
+
+
+
+
+
+Channels
+
+                    Build scalable realtime features
+                    
+
+
+
+
+Beams
+
+                    Programmatic push notifications
+                    
+
+
+
+
+
+
+            Developers
+
+            
+
+
+
+
+
+Docs
+                    Read the docs to learn how to use our products
+                    
+
+
+
+Tutorials
+                    Explore our tutorials to build apps with Pusher products
+                    
+
+
+
+Support
+                    Reach out to our support team for help and advice
+                    
+
+
+
+
+
+
+            Customer stories
+          
+
+
+
+            Blog
+          
+
+
+
+            Pricing
+
+            
+
+
+
+
+
+
+
+Channels
+
+                    Build scalable realtime features
+                    
+
+
+
+
+Beams
+
+                    Programmatic push notifications
+                    
+
+
+
+
+
+
+            Sign in
+          
+
+
+
+            Sign up
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+          Search Pusher tutorials
+        
+
+Search
+
+
+
+Search powered by Algolia
+
+
+
+
+
+
+
+
+Building a realtime analytics dashboard for an Express application
+
+
+
+You will need Node.js 8.10 or higher, MongoDB 3.4 or higher, and a Pusher account.
+
+It’s important for website administrators and developers to have useful statistics regarding their web applications, to help them monitor, for instance, their app’s performance. This helps them to be proactive in bringing improvements and fixes to their sites. In this tutorial, we’ll build an Express application that uses a middleware to log all requests made to our application and pushes updated analytics on our requests in realtime to a dashboard. Here’s a preview of our app in action:
+
+Prerequisites
+
+Node.js 8.10.0 or higher
+MongoDB 3.4 or higher.
+A Pusher account.
+
+Setting up
+We’ll start by using the express application generator:
+    # if you don't already have it installed
+    npm install express-generator -g
+    
+    # create a new express app with view engine set to Handlebars (hbs)
+    express --view=hbs express-realtime-analytics-dashboard
+    cd express-realtime-analytics-dashboard && npm install
+
+Then we’ll add our dependencies:
+    npm install --save dotenv mongoose moment pusher
+
+Here’s a breakdown of what each module is for:
+
+Dotenv is a small package for loading sensitive data (namely our Pusher app credentials) from a .env file.
+Mongoose helps us map our models to MongoDB documents.
+Moment helps for easy manipulation of dates and times.
+Pusher provides the realtime APIs.
+
+Logging all requests
+We’ll create a middleware that logs every request to our database. Our middleware will be an "after” middleware, which means it will run after the request has been processed but just before sending the response. We’ll store the following details:
+
+The relative URL (for instance, /users)
+The HTTP method (for instance, “GET”)
+The time it took to respond to the request
+The day of the week
+The hour of day,
+
+Let’s create our RequestLog model. Create the file models/request_log.js with the following content:
+    let mongoose = require('mongoose');
+    
+    let RequestLog = mongoose.model('RequestLog', {
+        url: String,
+        method: String,
+        responseTime: Number,
+        day: String,
+        hour: Number
+    });
+    
+    module.exports = RequestLog;
+
+Replace the code in your app.js with the following:
+    const express = require('express');
+    const path = require('path');
+    const moment = require('moment');
+    const RequestLog = require('./models/request_log');
+    
+    const app = express();
+    require('mongoose').connect('mongodb://localhost/express-realtime-analytics');
+    
+    app.use((req, res, next) => {
+        let requestTime = Date.now();
+        res.on('finish', () => {
+            if (req.path === '/analytics') {
+                return;
+            }
+    
+            RequestLog.create({
+                url: req.path,
+                method: req.method,
+                responseTime: (Date.now() - requestTime) / 1000, // convert to seconds
+                day: moment(requestTime).format("dddd"),
+                hour: moment(requestTime).hour()
+            });
+        });
+        next();
+    });
+    
+    // view engine setup
+    app.set('views', path.join(__dirname, 'views'));
+    require('hbs').registerHelper('toJson', data => JSON.stringify(data));
+    app.set('view engine', 'hbs');
+    
+    module.exports = app;
+
+Here, we attach a middleware that attaches a listener to the finish event of the response. This event is triggered when the response has finished sending. This means we can use this to calculate the response time. In our listener, we create a new request log in MongoDB.
+Displaying our analytics on a dashboard
+First, we’ll create an analytics service object that computes the latest stats for us. Put the following code in the file analytics_service.js in the root of your project:
+    const RequestLog = require('./models/request_log');
+    
+    module.exports = {
+        getAnalytics() {
+            let getTotalRequests = RequestLog.count();
+            let getStatsPerRoute = RequestLog.aggregate([
+                {
+                    $group: {
+                        _id: {url: '$url', method: '$method'},
+                        responseTime: {$avg: '$response_time'},
+                        numberOfRequests: {$sum: 1},
+                    }
+                }
+            ]);
+    
+            let getRequestsPerDay = RequestLog.aggregate([
+                {
+                    $group: {
+                        _id: '$day',
+                        numberOfRequests: {$sum: 1}
+                    }
+                },
+                { $sort: {numberOfRequests: 1} }
+            ]);
+    
+            let getRequestsPerHour = RequestLog.aggregate([
+                {
+                    $group: {
+                        _id: '$hour',
+                        numberOfRequests: {$sum: 1}
+                    }
+                },
+                {$sort: {numberOfRequests: 1}}
+            ]);
+    
+            let getAverageResponseTime = RequestLog.aggregate([
+                {
+                    $group: {
+                        _id: null,
+                        averageResponseTime: {$avg: '$responseTime'}
+                    }
+                }
+            ]);
+    
+            return Promise.all([
+                getAverageResponseTime,
+                getStatsPerRoute,
+                getRequestsPerDay,
+                getRequestsPerHour,
+                getTotalRequests
+            ]).then(results  => {
+                return {
+                    averageResponseTime: results[0][0].averageResponseTime,
+                    statsPerRoute: results [1],
+                    requestsPerDay: results[2],
+                    requestsPerHour: results[3],
+                    totalRequests: results[4],
+                };
+            })
+        }
+    };
+
+Our service makes use of MongoDB aggregations to retrieve the following statistics:
+
+averageResponseTime is the average time taken by our routes to return a response.
+statsPerRoute contains information specific to each route, such as the average response time and number of requests.
+requestsPerDays contains a list of all the days, ordered by the number of requests per day.
+requestsPerHour contains a list of all the hours, ordered by the number of requests per hour.
+totalRequests is the total number of requests we’ve gotten.
+
+Next, we define a route for the dashboard Add the following code just before the module.exports line in your app.js:
+    app.get('/analytics', (req, res, next) => {
+        require('./analytics_service').getAnalytics()
+            .then(analytics => res.render('analytics', { analytics }));
+    });
+
+Finally, we create the view. We’ll use Bootstrap for quick styling and Vue.js for easy data binding. Create the file views/analytics.hbs with the following content:
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+          integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    
+    <div class="container" id="app">
+        <div class="row">
+            <div class="col-md-5">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Total requests</h5>
+                        <div class="card-text">
+                            <h3>\{{ totalRequests }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-5">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Average response time</h5>
+                        <div class="card-text">
+                            <h3>\{{ averageResponseTime }} seconds</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    
+        <div class="row">
+            <div class="col-md-5">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Busiest days of the week</h5>
+                        <div class="card-text" style="width: 18rem;" v-for="day in requestsPerDay">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item">
+                                    \{{ day._id }} (\{{ day.numberOfRequests }} requests)
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-5">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Busiest hours of day</h5>
+                        <div class="card-text" style="width: 18rem;" v-for="hour in requestsPerHour">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item">
+                                    \{{ hour._id }} (\{{ hour.numberOfRequests }} requests)
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    
+        <div class="row">
+            <div class="col-md-5">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Most visited routes</h5>
+                        <div class="card-text" style="width: 18rem;" v-for="route in statsPerRoute">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item">
+                                    \{{ route._id.method }} \{{ route._id.url }} (\{{ route.numberOfRequests }} requests)
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-5">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Slowest routes</h5>
+                        <div class="card-text" style="width: 18rem;" v-for="route in statsPerRoute">
+                            <ul class="list-group list-group-flush">
+                                \{{ route._id.method }} \{{ route._id.url }} (\{{ route.responseTime }} s)
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        window.analytics = JSON.parse('{{{ toJson analytics }}}');
+    
+        const app = new Vue({
+            el: '#app',
+    
+            data: window.analytics
+        });
+    </script>
+
+Making the dashboard realtime
+To make our dashboard realtime, we need to re-calculate the analytics as new requests come in. This means we’ll:
+
+Notify all clients of the updated analytics when there’s a new request
+Listen for the new analytics on our frontend and update the view accordingly
+
+Pusher will power our app’s realtime functionality. Sign in to your Pusher dashboard and create a new app. Copy your app credentials from the App Keys section. Create a .env file and add your credentials in it:
+    PUSHER_APP_ID=your-app-id
+    PUSHER_APP_KEY=your-app-key
+    PUSHER_APP_SECRET=your-app-secret
+    PUSHER_APP_CLUSTER=your-app-cluster
+
+Now modify the code in your app.js so it looks like this:
+    const express = require('express');
+    const path = require('path');
+    const moment = require('moment');
+    const RequestLog = require('./models/request_log');
+    
+    const app = express();
+    require('mongoose').connect('mongodb://localhost/poster');
+    
+    require('dotenv').config();
+    const Pusher = require('pusher');
+    const pusher = new Pusher({
+        appId: process.env.PUSHER_APP_ID,
+        key: process.env.PUSHER_APP_KEY,
+        secret: process.env.PUSHER_APP_SECRET,
+        cluster: process.env.PUSHER_APP_CLUSTER
+    });
+    
+    app.use((req, res, next) => {
+        let requestTime = Date.now();
+        res.on('finish', () => {
+            if (req.path === '/analytics') {
+                return;
+            }
+    
+            RequestLog.create({
+                url: req.path,
+                method: req.method,
+                responseTime: (Date.now() - requestTime) / 1000, // convert to seconds
+                day: moment(requestTime).format("dddd"),
+                hour: moment(requestTime).hour()
+            });
+    
+            // trigger a message with the updated analytics
+            require('./analytics_service').getAnalytics()
+                .then(analytics => pusher.trigger('analytics', 'updated', {analytics}));
+        });
+        next();
+    });
+    
+    // view engine setup
+    app.set('views', path.join(__dirname, 'views'));
+    require('hbs').registerHelper('toJson', data => JSON.stringify(data));
+    app.set('view engine', 'hbs');
+    
+    app.get('/analytics', (req, res, next) => {
+        require('./analytics_service').getAnalytics()
+            .then(analytics => res.render('analytics', { analytics }));
+    });
+    
+    module.exports = app;
+
+On the frontend, we’ll pull in Pusher and listen for the update message on the analytics channel. We’l then update the window.analytics values, and allow Vue to update the UI for us. Add the following code to the end of your views/analytics.hbs:
+    <script src="https://js.pusher.com/4.2/pusher.min.js"></script>
+    <script>
+        const pusher = new Pusher('your-app-key', { cluster: 'your-app-cluster'});
+        pusher.subscribe('analytics')
+                .bind('updated', (data) => {
+                    Object.keys(data.analytics).forEach(stat => {
+                        window.analytics[stat] = data.analytics[stat];
+                    })
+                })
+    </script>
+
+Replace your-app-key and your-app-id with your Pusher app credentials.
+Time for us to test our app. Let’s create some dummy routes—one, actually. This route will take different amounts of time to load, depending on the URL, so we can see the effect on our statistics. Visiting /wait/3 will wait for three seconds, /wait/1 for one second and so on. Add this to your app.js, just before the module.exports line:
+    app.get('/wait/:seconds', async (req, res, next) => {
+        await ((seconds) => {
+            return new Promise(resolve => {
+                setTimeout(
+                    () => resolve(res.send(`Waited for ${seconds} seconds`)),
+                    seconds * 1000
+                )
+            });
+        })(req.params.seconds);
+    });
+
+Now to see the app in action. Start your MongoDB server by running mongod. (On Linux/macOS, you might need to run it as sudo).
+Then start your app by running:
+    npm start
+
+Visit your analytics dashboard at http://localhost:3000/analytics. Then play around with the app by visiting a few pages (the wait URL with different values for the number of seconds) and watch the stats displayed on the dashboard change in realtime.
+
+Note: you might see that the number of requests increases by more than one when you visit a page. That’s because it’s also counting the requests for the CSS files (included with Express).
+
+Conclusion
+In this article, we’ve built a middleware that tracks every request, a service that computes analytics for us based on these tracks, and a dashboard that displays them. Thanks to Pusher, we’ve been able to make the dashboard update in realtime as requests come in. The full source code is available on GitHub.
+
+
+
+            JavaScript
+          
+
+            Node.js
+          
+
+            Live Table
+          
+
+
+
+April 30, 2018
+by Shalvah Adebayo
+
+
+Share article
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        Clone the project repository
+      
+
+Contents
+
+
+
+PrerequisitesSetting upLogging all requestsDisplaying our analytics on a dashboardMaking the dashboard realtimeConclusion
+
+
+
+
+
+
+
+
+
+Pusher Logo
+
+
+
+
+Products
+
+
+Channels
+
+
+Beams
+
+
+
+
+Developers
+
+
+Docs
+
+
+Tutorials
+
+
+Status
+
+
+Support
+
+
+Sessions
+
+
+
+
+Company
+
+
+Contact Sales
+
+
+Customer stories
+
+
+Terms of Service
+
+
+Security
+
+
+Careers
+
+
+Blog
+
+
+Legal
+
+
+
+
+
+
+Connect
+
+Follow Pusher on Twitter
+Follow Pusher on Medium
+Subscribe to Pusher’s channel on YouTube
+Follow Pusher on LinkedIn
+Follow Pusher on Github
+
+© 2020 Pusher Ltd. All rights reserved.
+Pusher Limited is a company registered in England and Wales (No. 07489873) whose registered office is at 160 Old Street, London, EC1V 9BW.
+
+
+
+
+
+
+

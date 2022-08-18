@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+**************************************************************
+*                                                            *
+*       Thanks for your interest in the source code!         *
+*     This website is hand-coded the old fashioned way.      *
+*     Feel free to use or re-use any part of this site.      *
+*  This design is adapted from an original by John O'Nolan.  *
+*                                                            *
+*                                               - Arthur G.  *
+**************************************************************
+-->
+
+<head>
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+    <title>Camel and RabbitMQ</title>
+    <link rel="stylesheet" href="/css/stylesheet.css" type="text/css" media="screen" /> 
+    <link rel="stylesheet" href="/css/syntax.css" type="text/css" media="screen" /> 
+    <link rel="alternate" type="application/atom+xml" title="Feed" href="http://arthur.gonigberg.com/atom.xml" />
+    <link rel="author" href="http://twitter.com/agonigberg" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A guide for setting up Apache Camel with RabbitMQ" />
+    <meta name="keywords" content="arthur, gonigberg, blog, java, scala, tech, programming, xml, frameworks, code, coding, architecture" />
+    <link rel="canonical" href="http://arthur.gonigberg.com/2012/02/11/camel-rabbitmq/" />
+    <meta name="google-site-verification" content="aqLgYQYx0RJnTELokuzelTUZOpcf69AJ5AloAVUfR_8" />
+    <script type="text/javascript">
+
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-27084052-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+
+    </script>
+</head>
+<body>
+	<div id="wrapper">
+		<div id="header">
+      <nav>
+        <ul id="nav">
+          <li id="first"><a href="/">Recent</a></li>
+          <li><a href="/archive">Archive</a></li>
+          <li><a href="#about">About</a></li>
+        </ul>
+      </nav>
+      <h2 id="arthurHeader"><span class="oranje">Arthur</span>Gonigberg</h2>
+			<div class="clearfix"></div>
+		</div><!--header-->
+		<div id="content">
+
+      			<div class="box">
+        <article>
+				<h3>Camel and RabbitMQ</h3>	
+        <div class="clearfix"></div>
+				<div class="right big">
+            <p>A common model for implementing <a href="http://www.eaipatterns.com/" title="Enterprise Integration Patterns">EIP</a> in Java, is to use <a href="http://camel.apache.org/">Apache Camel</a>, with some sort of MQ or JMS backing. One of the more interesting MQ frameworks in use today is the <a href="http://www.erlang.org/">Erlang</a>-based <a href="http://www.rabbitmq.com/">RabbitMQ</a>.</p>
+
+<p>Camel is a very widely used <a href="http://en.wikipedia.org/wiki/Integration_platform">integration platform</a>. It’s very flexible and takes care of wiring up services, mediating messages, transforming data, among many other useful things. It also comes with tons of <a href="http://camel.apache.org/components.html">components</a> out of the box. Notice, one of the components it supports is AMQP. However, that would make life far too easy for RabbitMQ users. What the Camel documentation doesn’t mention is that Camel is using Apache’s <a href="http://qpid.apache.org/">Qpid</a> as the AMQP implementation. For whatever reason, Qpid does <a href="http://www.rabbitmq.com/interoperability.html">not play nicely</a> with RabbitMQ, thus the need for some help from, the always handy, <a href="http://www.springsource.org/">Spring Framework</a>.</p>
+
+<p>Spring offers an AMQP solution, with the <a href="http://www.springsource.org/spring-amqp">Spring AMQP module</a>. Since, Spring and RabbitMQ are owned by the same company, it’s pretty <a href="http://static.springsource.org/spring-amqp/reference/html/#d0e51">clear</a> that they’re designed to work together. However, in order to get Camel talking to Spring AMQP, we need to roll our own component – or better yet – troll <a href="http://www.github.com">Github</a>.</p>
+
+<!--more-->
+
+<p>Github is awesome. The ability to grab someone’s code, see its full history, easily fork and modify it – makes life much easier. Fortunately I found a module that implements a Camel component that can talk to a RabbitMQ broker via RabbitMQ’s Java native client and the Spring AMQP implementation. The module was created by Bluelock, you can find it <a href="https://github.com/Bluelock/camel-spring-amqp">here</a>. Additionally awesome, is that Bluelock submitted the module to Maven Central, so it’s super easy to get at.</p>
+
+<p>First, let’s add some dependencies to our pom.xml file. Add the following to your standard Java and Camel dependencies:</p>
+
+<figure class="highlight"><pre><code class="language-xml" data-lang="xml"><span class="nt">&lt;dependency&gt;</span>
+  <span class="nt">&lt;groupId&gt;</span>com.bluelock<span class="nt">&lt;/groupId&gt;</span>
+  <span class="nt">&lt;artifactId&gt;</span>camel-spring-amqp<span class="nt">&lt;/artifactId&gt;</span>
+  <span class="nt">&lt;version&gt;</span>1.0<span class="nt">&lt;/version&gt;</span>
+<span class="nt">&lt;/dependency&gt;</span>
+<span class="nt">&lt;dependency&gt;</span>
+  <span class="nt">&lt;groupId&gt;</span>javax.jms<span class="nt">&lt;/groupId&gt;</span>
+  <span class="nt">&lt;artifactId&gt;</span>jms<span class="nt">&lt;/artifactId&gt;</span>
+  <span class="nt">&lt;version&gt;</span>1.1<span class="nt">&lt;/version&gt;</span>
+<span class="nt">&lt;/dependency&gt;</span></code></pre></figure>
+
+<p>Next, we’ll need to modify the camel-context.xml (or whatever you’ve named it) and add the following headers:</p>
+
+<figure class="highlight"><pre><code class="language-xml" data-lang="xml">xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+xsi:schemaLocation="http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit-1.0.xsd"</code></pre></figure>
+
+<p>Then the beans:</p>
+
+<figure class="highlight"><pre><code class="language-xml" data-lang="xml"><span class="nt">&lt;rabbit:connection-factory</span> <span class="na">id=</span><span class="s">"amqpConnectionFactory"</span> <span class="nt">/&gt;</span>
+<span class="nt">&lt;rabbit:template</span> <span class="na">id=</span><span class="s">"amqpTemplate"</span> <span class="na">connection-factory=</span><span class="s">"amqpConnectionFactory"</span> 
+      <span class="na">message-converter=</span><span class="s">"messageConverter"</span><span class="nt">/&gt;</span>
+<span class="nt">&lt;rabbit:admin</span> <span class="na">connection-factory=</span><span class="s">"amqpConnectionFactory"</span><span class="nt">/&gt;</span>
+
+<span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">"amqpConnectionFactory"</span> 
+      <span class="na">class=</span><span class="s">"org.springframework.amqp.rabbit.connection.CachingConnectionFactory"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">"host"</span> <span class="na">value=</span><span class="s">"localhost"</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">"port"</span> <span class="na">value=</span><span class="s">"5672"</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">"username"</span> <span class="na">value=</span><span class="s">"guest"</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">"password"</span> <span class="na">value=</span><span class="s">"guest"</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">"virtualHost"</span> <span class="na">value=</span><span class="s">"/"</span><span class="nt">/&gt;</span>
+<span class="nt">&lt;/bean&gt;</span>
+
+<span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">"messageConverter"</span> <span class="na">class=</span><span class="s">"amqp.spring.converter.XStreamConverter"</span><span class="nt">/&gt;</span></code></pre></figure>
+
+<p>The first 3 beans set up the rabbit converter, the template and the connection factory, for Spring AMQP. The next two bean definitions set the configuration (default settings) for the RabbitMQ broker and the XStream converter, provided by Bluelock’s framework.</p>
+
+<p>I assume the converter is necessary because, unlike JMS (i.e. when using Camel+ActiveMQ) you can’t just serialize Java Objects using Java’s built-in serialization – you have to explicitly specify the method of serializing the data to the broker.</p>
+
+<p>Now for the fun part; setting up the Camel routes. Being a developer, my killer feature in Camel is being able to define my routes via DSL, in my IDE. Using XML to set these up (i.e. using Mule ESB, WSO2, etc.) is a real pain. Furthermore, you can use Groovy, Scala and of course Java-based DSLs.</p>
+
+<p>In this example I’m using the Scala DSL for defining the routes. I’ll demonstrate two (rather simple) routes producing to and consuming from the broker.</p>
+
+<p>Producer:</p>
+
+<figure class="highlight"><pre><code class="language-scala" data-lang="scala"><span class="k">class</span> <span class="nc">Producer</span> <span class="k">extends</span> <span class="nc">RouteBuilder</span>
+<span class="o">{</span>
+    <span class="n">handle</span><span class="o">[</span> <span class="kt">Exception</span> <span class="o">]</span>
+    <span class="o">{</span>
+        <span class="nf">to</span><span class="o">(</span><span class="s">"file:tmp/test/error"</span><span class="o">)</span>
+    <span class="o">}.</span><span class="py">maximumRedeliveries</span><span class="o">(</span><span class="mi">0</span><span class="o">).</span><span class="py">handled</span>
+
+    <span class="k">val</span> <span class="nv">jaxb</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">JaxbDataFormat</span><span class="o">()</span>
+    <span class="nv">jaxb</span><span class="o">.</span><span class="py">setContextPath</span><span class="o">(</span><span class="s">"com.artgon.message.schema"</span><span class="o">)</span>
+
+    <span class="s">"file:tmp/test?move=done"</span> <span class="o">==&gt;</span>
+    <span class="o">{</span>
+        <span class="nf">to</span><span class="o">(</span><span class="s">"log:FileMover"</span><span class="o">)</span>
+        <span class="nf">unmarshal</span><span class="o">(</span><span class="n">jaxb</span><span class="o">)</span>
+        <span class="nf">to</span><span class="o">(</span><span class="s">"log:ArtMessage"</span><span class="o">)</span>
+
+        <span class="nf">split</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">in</span><span class="o">[</span> <span class="kt">java.util.List</span><span class="o">[</span><span class="kt">ArtMessage</span><span class="o">]</span> <span class="o">])</span>
+        <span class="o">{</span>
+            <span class="nf">to</span><span class="o">(</span><span class="s">"spring-amqp:myExchange:testQueue:test?type=direct"</span><span class="o">)</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span></code></pre></figure>
+
+<p>Grab an XML file, and unmarshal into a list of ArtMessage objects. Split the list into individual objects and dump them into a queue.</p>
+
+<p>Consumer:</p>
+
+<figure class="highlight"><pre><code class="language-scala" data-lang="scala"><span class="k">class</span> <span class="nc">Consumer</span> <span class="k">extends</span> <span class="nc">RouteBuilder</span>
+<span class="o">{</span>
+  <span class="s">"spring-amqp:myExchange:testQueue:test?type=direct?concurrentConsumers=8"</span> <span class="o">==&gt;</span>
+  <span class="o">{</span>
+      <span class="nf">to</span><span class="o">(</span><span class="s">"log:MQ"</span><span class="o">)</span>
+  <span class="o">}</span>
+<span class="o">}</span></code></pre></figure>
+
+<p>Pretty simple. Grab messages off the queue and log them.</p>
+
+<p>So that’s basically it. I didn’t go over <a href="http://www.rabbitmq.com/download.html">installing</a> RabbitMQ or setting up Maven for compiling Scala and Java <a href="http://scala-tools.org/mvnsites/maven-scala-plugin/">in the same build</a>. However, now you should be able to get going with RabbitMQ and Camel fairly quickly.</p>
+
+<p>Bluelock has done a great job implementing this module. However, I’m not sure if I’d be fully comfortable throwing this code into a production system because it simply isn’t proven yet. On the other hand, it’s open source. So if you’re willing to fork it and support it yourself, then you’re golden. Personally, if I was using Java and Camel for primary development, I would stick with <a href="http://activemq.apache.org/">ActiveMQ</a>. It’s designed to work with Camel (i.e. you don’t need any of the above setup) and is certainly proven on countless production deployments.</p>
+
+				</div>
+        </article>
+			</div>
+
+
+		</div><!--content-->
+	</div><!--wrapper-->
+	<div id="footer">
+		<div class="inner">
+      <div class="about" id="about">
+			  <p id="about-img"><img src="/images/arthur-unbounce-small-sq.jpg" alt="me" /></p>
+        <p id="about-text">Hello, I'm Arthur. I'm a software engineer.<br/><br/>
+
+          Currently my focus is on test-driven software design and
+          development for scalable web services and web applications. 
+          This site is largely dedicated, but not limited to, topics in this area.<br/><br/>
+
+          Feel free to contact me using any of the links below.
+        </p>
+      </div>
+			<div class="clearfix"></div>
+			<div id="copyright" class="credits left">&copy; Copyright 2021  <a href="http://arthur.gonigberg.com"><span class="oranje">Arthur</span>Gonigberg</a></div>
+
+      <div id="social" class="credits right">
+        <ul>
+          <li><a href="mailto:arthur@gonigberg.com"><img src="/images/email.png" alt="Email" height="32" width="32"/></a></li>
+          <li><a href="http://twitter.com/agonigberg"><img src="/images/twitter.png" alt="Twitter" height="32" width="32"/></a></li>
+          <li><a href="http://linkedin.com/in/artgon"><img src="/images/linkedin.png" alt="LinkedIn" height="32" width="32"/></a></li>
+          <li><a href="http://github.com/artgon"><img src="/images/github.png" alt="Github" height="32" width="32"/></a></li>
+        </ul>
+      </div>
+		</div>
+	</div><!--footer-->
+  <!-- last generated at 2021-12-02 20:18:18 +0000 -->
+</body>
+</html>

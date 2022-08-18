@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Standard Meta -->
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Site Stylesheets -->
+<!-- <link rel="stylesheet" href="https://www.scrapehero.com/wp/wp-content/themes/superhero-2019/css/bulma.min.css"> -->
+<!-- For Marketplace  -->
+<!-- For only in Tutorial Page --> 
+<!-- <link type="text/css" rel="stylesheet" href="https://www.scrapehero.com/wp/wp-content/themes/superhero-2019/css/jquery.tocify.css" /> -->
+<!-- <link type="text/css" rel="stylesheet"  href="https://www.scrapehero.com/wp/wp-content/themes/superhero-2019/libraries/highlight/styles/foundation.css"/> -->
+<link rel="stylesheet" type="text/css" href="//www.scrapehero.com/wp/wp-content/cache/wpfc-minified/pdrnjov/dmskj.css" media="all"/>
+<!-- For only in Pricing Page --> 
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600;700&display=swap">
+<!-- <link rel="stylesheet" href="https://www.scrapehero.com/wp/wp-content/themes/superhero-2019/css/app.css"> -->
+<link rel="stylesheet" type="text/css" href="//www.scrapehero.com/wp/wp-content/cache/wpfc-minified/feop2qhx/dmsc7.css" media="all"/>
+<!-- End Jquery Toc --> 
+<!-- JSON LD for Website --> 
+<script type="application/ld+json">
+{"@context":"http:\/\/schema.org\/","@type":"Article","url":"https:\/\/www.scrapehero.com\/scrape-nasdaq-stock-market-data\/","author":{"@type":"Organization","name":"ScrapeHero","logo":"https:\/\/www.scrapehero.com\/wp\/wp-content\/uploads\/2017\/12\/cropped-logo-800.png","url":"https:\/\/www.scrapehero.com","sameAs":["https:\/\/twitter.com\/scrapehero","https:\/\/www.facebook.com\/scrapehero","https:\/\/plus.google.com\/+ScrapeHero\/"]},"headline":"How to scrape Nasdaq and extract Stock Market data using Python and LXML","datePublished":"2018-02-14 03:12:41","image":"https:\/\/www.scrapehero.com\/wp\/wp-content\/uploads\/2018\/02\/featured-image-nasdaq-tutorial-2.png","ArticleSection":"Financial Data Gathering Tutorials","Publisher":{"@type":"Organization","name":"ScrapeHero","logo":"https:\/\/www.scrapehero.com\/wp\/wp-content\/uploads\/2017\/12\/cropped-logo-800.png","url":"https:\/\/www.scrapehero.com","sameAs":["https:\/\/twitter.com\/scrapehero","https:\/\/www.facebook.com\/scrapehero","https:\/\/plus.google.com\/+ScrapeHero\/"]},"dateModified":"2021-08-12 09:27:25","mainEntityOfPage":"https:\/\/www.scrapehero.com\/scrape-nasdaq-stock-market-data\/","description":"NASDAQ is a great source for stock market data. We will demonstrate how to write a scraper that will <a href=\"https:\/\/www.scrapehero.com\/web-scraping-financial-data\/\" target=\"_blank\" rel=\"noopener\">extract some key stock data<\/a> based on a company's ticker symbol.\r\n\r\nIn this tutorial, we will extract the summary quote for a public company from Nasdaq.\r\n<h2>What data are we extracting?<\/h2>\r\nHere is the list of fields we will be extracting:\r\n<ol>\r\n \t<li>Best Bid\/Ask<\/li>\r\n \t<li>1 Year Target<\/li>\r\n \t<li>Share Volume<\/li>\r\n \t<li>50 Day Avg. Daily Volume<\/li>\r\n \t<li>Previous Close<\/li>\r\n \t<li>52 Week High\/Low<\/li>\r\n \t<li>Market Cap<\/li>\r\n \t<li>P\/E Ratio<\/li>\r\n \t<li>Forward P\/E (1y)<\/li>\r\n \t<li>Earnings Per Share (EPS)<\/li>\r\n \t<li>Annualized Dividend<\/li>\r\n \t<li>Ex-Dividend\u00a0Date<\/li>\r\n \t<li>Dividend Payment Date<\/li>\r\n \t<li>Current Yield<\/li>\r\n \t<li>Beta<\/li>\r\n \t<li>Open Price<\/li>\r\n \t<li>Open Date<\/li>\r\n \t<li>Close Price<\/li>\r\n \t<li>Close Date<\/li>\r\n<\/ol>\r\n[inlinelink]\r\n\r\n<strong>Read More<\/strong> - <a href=\"https:\/\/www.scrapehero.com\/how-to-scrape-competitor-prices-from-ebay-com-using-python-and-lxml\/\" target=\"_blank\" rel=\"noopener noreferrer\">Learn to scrape Ebay product data<\/a>\r\n\r\n[\/inlinelink]\r\n\r\nBelow is a screenshot of the data we will be extracting.\r\n\r\n<img class=\"alignnone size-full wp-image-4808\" src=\"https:\/\/www.scrapehero.com\/wp\/wp-content\/uploads\/2018\/02\/nasdaq-key-stock-data.png\" alt=\"extract-nasdaq-key-stock-data-web-scraping-tutorial\" width=\"1171\" height=\"744\" \/><img class=\"alignnone size-full wp-image-4806\" src=\"https:\/\/www.scrapehero.com\/wp\/wp-content\/uploads\/2018\/02\/nasdaq.com-fields-to-extract-1.png\" alt=\"data-to-be-extracted-from-nasdaq.com\" width=\"853\" height=\"232\" \/>\r\n<h2>Finding the Data<\/h2>\r\nBefore we start building the scraper, we need to find where the data is present in the web page\u2019s HTML Tags. You need to understand the HTML tags inside the page\u2019s content to do so.\r\n\r\nWe assume you already understand HTML and know to code in Python. You don\u2019t need advanced programming skills for the most part of this tutorial,\r\n\r\n<b>If you don\u2019t know much about HTML and Python, spend some time reading\u00a0<\/b><a href=\"https:\/\/developer.mozilla.org\/en-US\/docs\/Learn\/HTML\/Introduction_to_HTML\/Getting_started\" rel=\"noopener\">Getting started with HTML \u2013 Mozilla Developer Network<\/a>\u00a0and\u00a0<a href=\"https:\/\/www.programiz.com\/python-programming\" rel=\"noopener\">https:\/\/www.programiz.com\/python-programming<\/a>\r\n\r\nLet\u2019s inspect the HTML of the web page and find out where the data is. Here is our logic\r\n<ol>\r\n \t<li>Find the tag that encloses the list of links<\/li>\r\n \t<li>Get links from it and extract data<\/li>\r\n<\/ol>\r\n<h3>Inspecting the HTML<\/h3>\r\nOpen a browser (we are using Chrome here) and go to\u00a0<em>http:\/\/www.nasdaq.com\/symbol\/aapl<\/em>\r\n\r\nRight-click on any link on the page and choose \u2013 Inspect Element. The browser will open a toolbar and show the HTML Content of the Web Page, formatted nicely.\r\n\r\n<a href=\"https:\/\/www.scrapehero.com\/wp\/wp-content\/uploads\/2018\/02\/2.gif\"><img class=\"alignnone size-full wp-image-4873\" src=\"https:\/\/www.scrapehero.com\/wp\/wp-content\/uploads\/2018\/02\/2.gif\" alt=\"\" width=\"1551\" height=\"974\" \/><\/a>\r\n\r\nIf you look closely at the GIF above, there is DIV tag, with its attribute called \u2018class\u2019 as 'table-table'. This DIV encloses the data we need to extract.\r\n\r\n<a href=\"https:\/\/www.scrapehero.com\/wp\/wp-content\/uploads\/2018\/02\/table.png\"><img class=\"alignnone wp-image-4954 size-full\" src=\"https:\/\/www.scrapehero.com\/wp\/wp-content\/uploads\/2018\/02\/table.png\" alt=\"\" width=\"1515\" height=\"975\" \/><\/a>\r\n\r\nNow let\u2019s find the HTML tag(s) which has the links we need to extract. You can right-click on the link title in the browser and do\u00a0<b>inspect element<\/b>\u00a0again. It will open the HTML Content like before, and highlight the tag which holds the data you right clicked on\r\n\r\n<a href=\"https:\/\/www.scrapehero.com\/wp\/wp-content\/uploads\/2018\/02\/1.gif\"><img class=\"alignnone size-full wp-image-4858\" src=\"https:\/\/www.scrapehero.com\/wp\/wp-content\/uploads\/2018\/02\/1.gif\" alt=\"\" width=\"1582\" height=\"980\" \/><\/a>\r\n<h2>How to set up your computer for web scraper development<\/h2>\r\nWe will use Python 3 for this tutorial. The code will not run if you are using Python 2.7. To start, you need a computer with Python 3 and PIP installed in it.\r\n\r\nMost UNIX operating systems like Linux and Mac OS comes with Python pre-installed. But, not all the Linux Operating Systems ship with Python 3 by default.\r\n\r\nLet's check your python version. Open a terminal ( in Linux and Mac OS ) or Command Prompt ( on Windows ) and type\r\n<pre class=\"\">python --version<\/pre>\r\nand press enter. If the output looks something like Python 3.x.x, you have Python 3 installed. If it says Python 2.x.x you have Python 2. If it prints an error, you don't probably have python installed.\r\n\r\nIf you don't have Python 3, install it first.\r\n<h3>Install Python 3 and Pip<\/h3>\r\n<b>Here is a guide to install Python 3 in Linux<\/b> - <a href=\"http:\/\/docs.python-guide.org\/en\/latest\/starting\/install3\/linux\/\" rel=\"noopener\">http:\/\/docs.python-guide.org\/en\/latest\/starting\/install3\/linux\/<\/a>\r\n\r\nMac Users can follow this guide - <a href=\"http:\/\/docs.python-guide.org\/en\/latest\/starting\/install3\/osx\/\" rel=\"noopener\">http:\/\/docs.python-guide.org\/en\/latest\/starting\/install3\/osx\/<\/a>\r\n\r\nWindows Users go here - <a href=\"https:\/\/www.scrapehero.com\/how-to-install-python3-in-windows-10\/\" rel=\"noopener\">https:\/\/www.scrapehero.com\/how-to-install-python3-in-windows-10\/<\/a>\r\n<h3>Install Packages<\/h3>\r\n<ul>\r\n \t<li>Python Requests, to make requests and download the HTML content of the pages ( http:\/\/docs.python-requests.org\/en\/master\/user\/install\/).<\/li>\r\n \t<li>Python LXML, for parsing the HTML Tree Structure using\u00a0<a href=\"https:\/\/www.scrapehero.com\/xpaths-and-their-relevance-in-web-scraping\/\"><strong>Xpaths<\/strong><\/a>\u00a0(Learn how to install that here \u2013 http:\/\/lxml.de\/installation.html)<\/li>\r\n<\/ul>\r\n[cloudpromo]\r\n\r\n[inlinelink]\r\n\r\n<strong>Read More<\/strong> - <a href=\"https:\/\/www.scrapehero.com\/how-to-scrape-yelp-com-business-details-using-python-and-lxml\/\" target=\"_blank\" rel=\"noopener noreferrer\">Learn to scrape Yelp business data<\/a>\r\n\r\n[\/inlinelink]\r\n<h2>The Code<\/h2>\r\n<pre class=\"tab-size:2 lang:python decode:true\" title=\"nasdaq_finance.py\">#!\/usr\/bin\/env python\r\n# -*- coding: utf-8 -*-\r\n\r\nfrom lxml import html\r\nimport requests\r\nfrom time import sleep\r\nimport json\r\nimport argparse\r\nfrom random import randint\r\n\r\ndef parse_finance_page(ticker):\r\n  \"\"\"\r\n  Grab financial data from NASDAQ page\r\n  \r\n  Args:\r\n    ticker (str): Stock symbol\r\n  \r\n  Returns:\r\n    dict: Scraped data\r\n  \"\"\"\r\n  key_stock_dict = {}\r\n  headers = {\r\n        \"Accept\":\"text\/html,application\/xhtml+xml,application\/xml;q=0.9,image\/webp,image\/apng,*\/*;q=0.8\",\r\n        \"Accept-Encoding\":\"gzip, deflate\",\r\n        \"Accept-Language\":\"en-GB,en;q=0.9,en-US;q=0.8,ml;q=0.7\",\r\n        \"Connection\":\"keep-alive\",\r\n        \"Host\":\"www.nasdaq.com\",\r\n        \"Referer\":\"http:\/\/www.nasdaq.com\",\r\n        \"Upgrade-Insecure-Requests\":\"1\",\r\n        \"User-Agent\":\"Mozilla\/5.0 (X11; Linux x86_64) AppleWebKit\/537.36 (KHTML, like Gecko) Chrome\/64.0.3282.119 Safari\/537.36\"\r\n  }\r\n\r\n  # Retrying for failed request\r\n  for retries in range(5):\r\n    try:    \r\n      url = \"http:\/\/www.nasdaq.com\/symbol\/%s\"%(ticker)\r\n      response = requests.get(url, headers = headers, verify=False)\r\n      \r\n      if response.status_code!=200:\r\n        raise ValueError(\"Invalid Response Received From Webserver\")\r\n\r\n      print(\"Parsing %s\"%(url))\r\n      # Adding random delay\r\n      sleep(randint(1,3))   \r\n      parser = html.fromstring(response.text)\r\n      xpath_head = \"\/\/div[@id='qwidget_pageheader']\/\/h1\/\/text()\"\r\n      xpath_key_stock_table = '\/\/div[@class=\"row overview-results relativeP\"]\/\/div[contains(@class,\"table-table\")]\/div'\r\n      xpath_open_price = '\/\/b[contains(text(),\"Open Price:\")]\/following-sibling::span\/text()'\r\n      xpath_open_date = '\/\/b[contains(text(),\"Open Date:\")]\/following-sibling::span\/text()'\r\n      xpath_close_price = '\/\/b[contains(text(),\"Close Price:\")]\/following-sibling::span\/text()'\r\n      xpath_close_date = '\/\/b[contains(text(),\"Close Date:\")]\/following-sibling::span\/text()'\r\n      xpath_key = '.\/\/div[@class=\"table-cell\"]\/b\/text()'\r\n      xpath_value = '.\/\/div[@class=\"table-cell\"]\/text()'\r\n\r\n      raw_name = parser.xpath(xpath_head)\r\n      key_stock_table =  parser.xpath(xpath_key_stock_table)\r\n      raw_open_price = parser.xpath(xpath_open_price)\r\n      raw_open_date = parser.xpath(xpath_open_date)\r\n      raw_close_price = parser.xpath(xpath_close_price)\r\n      raw_close_date = parser.xpath(xpath_close_date)\r\n\r\n      company_name = raw_name[0].replace(\"Common Stock Quote &amp; Summary Data\",\"\").strip() if raw_name else ''\r\n      open_price =raw_open_price[0].strip() if raw_open_price else None\r\n      open_date = raw_open_date[0].strip() if raw_open_date else None\r\n      close_price = raw_close_price[0].strip() if raw_close_price else None\r\n      close_date = raw_close_date[0].strip() if raw_close_date else None\r\n\r\n      # Grabbing ans cleaning keystock data\r\n      for i in key_stock_table:\r\n        key = i.xpath(xpath_key)\r\n        value = i.xpath(xpath_value)\r\n        key = ''.join(key).strip() \r\n        value = ' '.join(''.join(value).split()) \r\n        key_stock_dict[key] = value\r\n\r\n      nasdaq_data = {\r\n\r\n              \"company_name\":company_name,\r\n              \"ticker\":ticker,\r\n              \"url\":url,\r\n              \"open price\":open_price,\r\n              \"open_date\":open_date,\r\n              \"close_price\":close_price,\r\n              \"close_date\":close_date,\r\n              \"key_stock_data\":key_stock_dict\r\n      }\r\n      return nasdaq_data\r\n\r\n    except Exception as e:\r\n      print(\"Failed to process the request, Exception:%s\"%(e))\r\n\r\nif __name__==\"__main__\":\r\n\r\n  argparser = argparse.ArgumentParser()\r\n  argparser.add_argument('ticker',help = 'Company stock symbol')\r\n  args = argparser.parse_args()\r\n  ticker = args.ticker\r\n  print(\"Fetching data for %s\"%(ticker))\r\n  scraped_data = parse_finance_page(ticker)\r\n  print(\"Writing scraped data to output file\")\r\n\r\n  with open('%s-summary.json'%(ticker),'w') as fp:\r\n    json.dump(scraped_data,fp,indent = 4,ensure_ascii=False)<\/pre>\r\nExecute the full code with the script name followed by the ticker symbol of the company's stock data you would like:\r\n<pre class=\"\">python3 nasdaq_finance.py stock symbol<\/pre>\r\nAs an example, let's find the summary data for Apple Inc. The script would be executed as:\r\n<pre class=\"\">python3 nasdaq_finance.py aapl<\/pre>\r\nYou should see a file AAPL-summary.json called in the same folder as the script, with the extracted data.\u00a0Here is some sample data extracted from Nasdaq.com for the command above.\r\n<pre class=\"\">{\r\n    \"company_name\": \"Apple Inc.\",\r\n    \"ticker\": \"AAPL\",\r\n    \"url\": \"http:\/\/www.nasdaq.com\/symbol\/AAPL\",\r\n    \"open price\": \"$\u00a0167.24\",\r\n    \"open_date\": \"Feb. 1, 2018\",\r\n    \"close_price\": \"$\u00a0167.43\",\r\n    \"close_date\": \"Jan. 31, 2018\",\r\n    \"key_stock_data\": {\r\n        \"Best Bid \/ Ask\": \"$ 167.95 \/ $ 167.96\",\r\n        \"1 Year Target\": \"193\",\r\n        \"Today's High \/ Low\": \"$ 168.26 \/ $ 166.76\",\r\n        \"Share Volume\": \"15,654,756\",\r\n        \"50 Day Avg. Daily Volume\": \"28,511,634\",\r\n        \"Previous Close\": \"$ 167.43\",\r\n        \"52 Week High \/ Low\": \"$ 180.10 \/ $ 127.01\",\r\n        \"Market Cap\": \"854,371,055,200\",\r\n        \"P\/E Ratio\": \"18.26\",\r\n        \"Forward P\/E (1y)\": \"15.04\",\r\n        \"Earnings Per Share (EPS)\": \"$ 9.20\",\r\n        \"Annualized Dividend\": \"$ 2.52\",\r\n        \"Ex Dividend Date\": \"11\/10\/2017\",\r\n        \"Dividend Payment Date\": \"11\/16\/2017\",\r\n        \"Current Yield\": \"1.51 %\",\r\n        \"Beta\": \"1.27\"\r\n    }\r\n}<\/pre>\r\nThe data will be saved as a JSON file. Instead of writing the data to a JSON file you can connect it to a MySQL database.\r\n\r\nYou can download the code at\u00a0<a href=\"https:\/\/gist.github.com\/scrapehero\/c7794d9e4522d9c72ba167496b849228\" rel=\"noopener\">https:\/\/gist.github.com\/scrapehero\/c7794d9e4522d9c72ba167496b849228.\u00a0<\/a>Let us know in the comments how this scraper worked for you.\r\n<h2>Known Limitations<\/h2>\r\nThis code should be capable of scraping the details of most ticker symbols. If you want to scrape the details of thousands of companies you should read\u00a0\u00a0<a href=\"https:\/\/www.scrapehero.com\/scalable-do-it-yourself-scraping-how-to-build-and-run-scrapers-on-a-large-scale\/\">Scalable do-it-yourself scraping \u2013 How to build and run scrapers on a large scale<\/a>\u00a0and\u00a0<a href=\"https:\/\/www.scrapehero.com\/how-to-prevent-getting-blacklisted-while-scraping\/\">How to prevent getting blacklisted while scraping<\/a>\u00a0.\r\n\r\nIf you need some professional help with scraping websites contact us by filling up the form below.\r\n\r\n[leadform]\r\n\r\n[TutorialDisclaimer]"}	</script> 
+<!-- DNS and Preconnect optimizations --> 
+<link rel=preconnect href='//www.google-analytics.com'/>
+<link rel=preconnect href='//ajax.googleapis.com'/>
+<link rel=preconnect href='//d10lpsik1i8c69.cloudfront.net'/>
+<link rel=preconnect href='//settings.luckyorange.net'/>
+<link rel=preconnect href='//jetpack.wordpress.com'/>
+<link rel=preconnect href='//s.w.org'/>
+<link rel=preconnect href='//v0.wordpress.com'/>
+<link rel=preconnect href='//s0.wp.com'/>
+<link rel=preconnect href='//s1.wp.com'/>
+<link rel=preconnect href='//s2.wp.com'/>
+<link rel=preconnect href='//public-api.wordpress.com'/>
+<link rel=preconnect href='//0.gravatar.com'/>
+<link rel=preconnect href='//1.gravatar.com'/>
+<link rel=preconnect href='//2.gravatar.com'/>
+<meta name='robots' content='index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1' />
+<script type="text/javascript" >                function apbct_attach_event_handler__backend(elem, event, callback){                    if(typeof window.addEventListener === "function") elem.addEventListener(event, callback);                    else                                              elem.attachEvent(event, callback);                }                apbct_attach_event_handler__backend(window, 'load', function(){                    if (typeof ctSetCookie === "function")                        ctSetCookie('ct_checkjs', '1031694979' );                    else                         console.log('APBCT ERROR: apbct-public--functions is not loaded.');                });    </script>
+<!-- This site is optimized with the Yoast SEO plugin v18.9 - https://yoast.com/wordpress/plugins/seo/ -->
+<title>How to scrape Nasdaq and extract Stock Market data using Python and LXML</title>
+<meta name="description" content="Learn how to scrape financial and stock market data from Nasdaq.com, using Python and LXML in this web scraping tutorial. We will show you how to extract the key stock data such as best bid, market cap, earnings per share and more of a company using its ticker symbol." />
+<link rel="canonical" href="https://www.scrapehero.com/scrape-nasdaq-stock-market-data/" />
+<meta property="og:locale" content="en_US" />
+<meta property="og:type" content="article" />
+<meta property="og:title" content="How to Scrape Finance and Stock Market data from Nasdaq using Python and LXML" />
+<meta property="og:description" content="Learn how to scrape financial and stock market data from Nasdaq.com, using Python and LXML in this web scraping tutorial. We will show you how to extract the key stock data such as best bid, market cap, earnings per share and more of a company using its ticker symbol." />
+<meta property="og:url" content="https://www.scrapehero.com/scrape-nasdaq-stock-market-data/" />
+<meta property="og:site_name" content="ScrapeHero" />
+<meta property="article:publisher" content="https://www.facebook.com/scrapehero/" />
+<meta property="article:published_time" content="2018-02-14T08:12:41+00:00" />
+<meta property="article:modified_time" content="2021-08-12T13:27:25+00:00" />
+<meta property="og:image" content="https://www.scrapehero.com/wp/wp-content/uploads/2018/02/fb-post-how-to-scrape-finance-data-from-nasdaq.png" />
+<meta property="og:image:width" content="1024" />
+<meta property="og:image:height" content="512" />
+<meta property="og:image:type" content="image/png" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="How to Scrape Finance and Stock Market data from Nasdaq using Python and LXML" />
+<meta name="twitter:description" content="Learn how to scrape financial and stock market data from Nasdaq.com, using Python and LXML in this web scraping tutorial. We will show you how to extract the key stock data such as best bid, market cap, earnings per share and more of a company using its ticker symbol." />
+<meta name="twitter:image" content="https://www.scrapehero.com/wp/wp-content/uploads/2018/02/twitterpost-how-to-scrape-finance-data-from-nasdaq.png" />
+<meta name="twitter:creator" content="@scrapehero" />
+<meta name="twitter:site" content="@scrapehero" />
+<meta name="twitter:label1" content="Written by" />
+<meta name="twitter:data1" content="Nithu" />
+<meta name="twitter:label2" content="Est. reading time" />
+<meta name="twitter:data2" content="7 minutes" />
+<script type="application/ld+json" class="yoast-schema-graph">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://www.scrapehero.com/#organization","name":"ScrapeHero","url":"https://www.scrapehero.com/","sameAs":["https://www.linkedin.com/company/scrape-hero","https://www.facebook.com/scrapehero/","https://twitter.com/scrapehero"],"logo":{"@type":"ImageObject","inLanguage":"en-US","@id":"https://www.scrapehero.com/#/schema/logo/image/","url":"https://www.scrapehero.com/wp/wp-content/uploads/2017/12/logo-800.png","contentUrl":"https://www.scrapehero.com/wp/wp-content/uploads/2017/12/logo-800.png","width":800,"height":800,"caption":"ScrapeHero"},"image":{"@id":"https://www.scrapehero.com/#/schema/logo/image/"}},{"@type":"WebSite","@id":"https://www.scrapehero.com/#website","url":"https://www.scrapehero.com/","name":"ScrapeHero","description":"USA Based - Web Scraping and Data Extraction Scraping Service","publisher":{"@id":"https://www.scrapehero.com/#organization"},"potentialAction":[{"@type":"SearchAction","target":{"@type":"EntryPoint","urlTemplate":"https://www.scrapehero.com/?s={search_term_string}"},"query-input":"required name=search_term_string"}],"inLanguage":"en-US"},{"@type":"ImageObject","inLanguage":"en-US","@id":"https://www.scrapehero.com/scrape-nasdaq-stock-market-data/#primaryimage","url":"https://www.scrapehero.com/wp/wp-content/uploads/2018/02/fb-post-how-to-scrape-finance-data-from-nasdaq.png","contentUrl":"https://www.scrapehero.com/wp/wp-content/uploads/2018/02/fb-post-how-to-scrape-finance-data-from-nasdaq.png","width":1024,"height":512},{"@type":"WebPage","@id":"https://www.scrapehero.com/scrape-nasdaq-stock-market-data/#webpage","url":"https://www.scrapehero.com/scrape-nasdaq-stock-market-data/","name":"How to scrape Nasdaq and extract Stock Market data using Python and LXML","isPartOf":{"@id":"https://www.scrapehero.com/#website"},"primaryImageOfPage":{"@id":"https://www.scrapehero.com/scrape-nasdaq-stock-market-data/#primaryimage"},"datePublished":"2018-02-14T08:12:41+00:00","dateModified":"2021-08-12T13:27:25+00:00","description":"Learn how to scrape financial and stock market data from Nasdaq.com, using Python and LXML in this web scraping tutorial. We will show you how to extract the key stock data such as best bid, market cap, earnings per share and more of a company using its ticker symbol.","breadcrumb":{"@id":"https://www.scrapehero.com/scrape-nasdaq-stock-market-data/#breadcrumb"},"inLanguage":"en-US","potentialAction":[{"@type":"ReadAction","target":["https://www.scrapehero.com/scrape-nasdaq-stock-market-data/"]}]},{"@type":"BreadcrumbList","@id":"https://www.scrapehero.com/scrape-nasdaq-stock-market-data/#breadcrumb","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://www.scrapehero.com/"},{"@type":"ListItem","position":2,"name":"All Articles","item":"https://www.scrapehero.com/articles/"},{"@type":"ListItem","position":3,"name":"How to scrape Nasdaq and extract Stock Market data using Python and LXML"}]},{"@type":"Article","@id":"https://www.scrapehero.com/scrape-nasdaq-stock-market-data/#article","isPartOf":{"@id":"https://www.scrapehero.com/scrape-nasdaq-stock-market-data/#webpage"},"author":{"@id":"https://www.scrapehero.com/#/schema/person/18b9676ffd2816974ecdc79da9a45c42"},"headline":"How to scrape Nasdaq and extract Stock Market data using Python and LXML","datePublished":"2018-02-14T08:12:41+00:00","dateModified":"2021-08-12T13:27:25+00:00","mainEntityOfPage":{"@id":"https://www.scrapehero.com/scrape-nasdaq-stock-market-data/#webpage"},"wordCount":830,"commentCount":12,"publisher":{"@id":"https://www.scrapehero.com/#organization"},"image":{"@id":"https://www.scrapehero.com/scrape-nasdaq-stock-market-data/#primaryimage"},"thumbnailUrl":"https://www.scrapehero.com/wp/wp-content/uploads/2018/02/fb-post-how-to-scrape-finance-data-from-nasdaq.png","keywords":["scrape nasdaq","scrape stock market data","stock market web scraping"],"articleSection":["Financial Data Gathering Tutorials","Web Scraping Tutorials"],"inLanguage":"en-US","potentialAction":[{"@type":"CommentAction","name":"Comment","target":["https://www.scrapehero.com/scrape-nasdaq-stock-market-data/#respond"]}]},{"@type":"Person","@id":"https://www.scrapehero.com/#/schema/person/18b9676ffd2816974ecdc79da9a45c42","name":"Nithu","image":{"@type":"ImageObject","inLanguage":"en-US","@id":"https://www.scrapehero.com/#/schema/person/image/","url":"https://secure.gravatar.com/avatar/313a15b2d18f64a5dda38ef0b53cd73a?s=96&d=retro&r=g","contentUrl":"https://secure.gravatar.com/avatar/313a15b2d18f64a5dda38ef0b53cd73a?s=96&d=retro&r=g","caption":"Nithu"}}]}</script>
+<!-- / Yoast SEO plugin. -->
+<link rel='dns-prefetch' href='//s.w.org' />
+<link rel="alternate" type="application/rss+xml" title="ScrapeHero &raquo; Feed" href="https://www.scrapehero.com/feed/" />
+<link rel="alternate" type="application/rss+xml" title="ScrapeHero &raquo; Comments Feed" href="https://www.scrapehero.com/comments/feed/" />
+<link rel="alternate" type="application/rss+xml" title="ScrapeHero &raquo; How to scrape Nasdaq and extract Stock Market data using Python and LXML Comments Feed" href="https://www.scrapehero.com/scrape-nasdaq-stock-market-data/feed/" />
+<style>
+.wc_apbct_email_id {
+display: none !important;
+}
+</style><style id='global-styles-inline-css' type='text/css'>
+body{--wp--preset--color--black: #000000;--wp--preset--color--cyan-bluish-gray: #abb8c3;--wp--preset--color--white: #ffffff;--wp--preset--color--pale-pink: #f78da7;--wp--preset--color--vivid-red: #cf2e2e;--wp--preset--color--luminous-vivid-orange: #ff6900;--wp--preset--color--luminous-vivid-amber: #fcb900;--wp--preset--color--light-green-cyan: #7bdcb5;--wp--preset--color--vivid-green-cyan: #00d084;--wp--preset--color--pale-cyan-blue: #8ed1fc;--wp--preset--color--vivid-cyan-blue: #0693e3;--wp--preset--color--vivid-purple: #9b51e0;--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple: linear-gradient(135deg,rgba(6,147,227,1) 0%,rgb(155,81,224) 100%);--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan: linear-gradient(135deg,rgb(122,220,180) 0%,rgb(0,208,130) 100%);--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange: linear-gradient(135deg,rgba(252,185,0,1) 0%,rgba(255,105,0,1) 100%);--wp--preset--gradient--luminous-vivid-orange-to-vivid-red: linear-gradient(135deg,rgba(255,105,0,1) 0%,rgb(207,46,46) 100%);--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray: linear-gradient(135deg,rgb(238,238,238) 0%,rgb(169,184,195) 100%);--wp--preset--gradient--cool-to-warm-spectrum: linear-gradient(135deg,rgb(74,234,220) 0%,rgb(151,120,209) 20%,rgb(207,42,186) 40%,rgb(238,44,130) 60%,rgb(251,105,98) 80%,rgb(254,248,76) 100%);--wp--preset--gradient--blush-light-purple: linear-gradient(135deg,rgb(255,206,236) 0%,rgb(152,150,240) 100%);--wp--preset--gradient--blush-bordeaux: linear-gradient(135deg,rgb(254,205,165) 0%,rgb(254,45,45) 50%,rgb(107,0,62) 100%);--wp--preset--gradient--luminous-dusk: linear-gradient(135deg,rgb(255,203,112) 0%,rgb(199,81,192) 50%,rgb(65,88,208) 100%);--wp--preset--gradient--pale-ocean: linear-gradient(135deg,rgb(255,245,203) 0%,rgb(182,227,212) 50%,rgb(51,167,181) 100%);--wp--preset--gradient--electric-grass: linear-gradient(135deg,rgb(202,248,128) 0%,rgb(113,206,126) 100%);--wp--preset--gradient--midnight: linear-gradient(135deg,rgb(2,3,129) 0%,rgb(40,116,252) 100%);--wp--preset--duotone--dark-grayscale: url('#wp-duotone-dark-grayscale');--wp--preset--duotone--grayscale: url('#wp-duotone-grayscale');--wp--preset--duotone--purple-yellow: url('#wp-duotone-purple-yellow');--wp--preset--duotone--blue-red: url('#wp-duotone-blue-red');--wp--preset--duotone--midnight: url('#wp-duotone-midnight');--wp--preset--duotone--magenta-yellow: url('#wp-duotone-magenta-yellow');--wp--preset--duotone--purple-green: url('#wp-duotone-purple-green');--wp--preset--duotone--blue-orange: url('#wp-duotone-blue-orange');--wp--preset--font-size--small: 13px;--wp--preset--font-size--medium: 20px;--wp--preset--font-size--large: 36px;--wp--preset--font-size--x-large: 42px;}.has-black-color{color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-color{color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-color{color: var(--wp--preset--color--white) !important;}.has-pale-pink-color{color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-color{color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-color{color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-color{color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-color{color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-color{color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-color{color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-color{color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-color{color: var(--wp--preset--color--vivid-purple) !important;}.has-black-background-color{background-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-background-color{background-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-background-color{background-color: var(--wp--preset--color--white) !important;}.has-pale-pink-background-color{background-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-background-color{background-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-background-color{background-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-background-color{background-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-background-color{background-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-background-color{background-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-background-color{background-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-background-color{background-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-background-color{background-color: var(--wp--preset--color--vivid-purple) !important;}.has-black-border-color{border-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-border-color{border-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-border-color{border-color: var(--wp--preset--color--white) !important;}.has-pale-pink-border-color{border-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-border-color{border-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-border-color{border-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-border-color{border-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-border-color{border-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-border-color{border-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-border-color{border-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-border-color{border-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-border-color{border-color: var(--wp--preset--color--vivid-purple) !important;}.has-vivid-cyan-blue-to-vivid-purple-gradient-background{background: var(--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple) !important;}.has-light-green-cyan-to-vivid-green-cyan-gradient-background{background: var(--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan) !important;}.has-luminous-vivid-amber-to-luminous-vivid-orange-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange) !important;}.has-luminous-vivid-orange-to-vivid-red-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-orange-to-vivid-red) !important;}.has-very-light-gray-to-cyan-bluish-gray-gradient-background{background: var(--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray) !important;}.has-cool-to-warm-spectrum-gradient-background{background: var(--wp--preset--gradient--cool-to-warm-spectrum) !important;}.has-blush-light-purple-gradient-background{background: var(--wp--preset--gradient--blush-light-purple) !important;}.has-blush-bordeaux-gradient-background{background: var(--wp--preset--gradient--blush-bordeaux) !important;}.has-luminous-dusk-gradient-background{background: var(--wp--preset--gradient--luminous-dusk) !important;}.has-pale-ocean-gradient-background{background: var(--wp--preset--gradient--pale-ocean) !important;}.has-electric-grass-gradient-background{background: var(--wp--preset--gradient--electric-grass) !important;}.has-midnight-gradient-background{background: var(--wp--preset--gradient--midnight) !important;}.has-small-font-size{font-size: var(--wp--preset--font-size--small) !important;}.has-medium-font-size{font-size: var(--wp--preset--font-size--medium) !important;}.has-large-font-size{font-size: var(--wp--preset--font-size--large) !important;}.has-x-large-font-size{font-size: var(--wp--preset--font-size--x-large) !important;}
+</style>
+<!-- <link rel='stylesheet' id='hero-style-css'  href='https://www.scrapehero.com/wp/wp-content/themes/superhero-2019/style.css?ver=5.9.3' type='text/css' media='all' /> -->
+<!-- <link rel='stylesheet' id='elementor-icons-css'  href='https://www.scrapehero.com/wp/wp-content/plugins/elementor/assets/lib/eicons/css/elementor-icons.min.css?ver=5.15.0' type='text/css' media='all' /> -->
+<!-- <link rel='stylesheet' id='elementor-frontend-legacy-css'  href='https://www.scrapehero.com/wp/wp-content/plugins/elementor/assets/css/frontend-legacy.min.css?ver=3.6.5' type='text/css' media='all' /> -->
+<!-- <link rel='stylesheet' id='elementor-frontend-css'  href='https://www.scrapehero.com/wp/wp-content/plugins/elementor/assets/css/frontend.min.css?ver=3.6.5' type='text/css' media='all' /> -->
+<link rel="stylesheet" type="text/css" href="//www.scrapehero.com/wp/wp-content/cache/wpfc-minified/4dpisxt/dmsc9.css" media="all"/>
+<link rel='stylesheet' id='elementor-post-19460-css'  href='https://www.scrapehero.com/wp/wp-content/uploads/elementor/css/post-19460.css?ver=1652717403' type='text/css' media='all' />
+<!-- <link rel='stylesheet' id='elementor-pro-css'  href='https://www.scrapehero.com/wp/wp-content/plugins/elementor-pro/assets/css/frontend.min.css?ver=3.7.1' type='text/css' media='all' /> -->
+<!-- <link rel='stylesheet' id='font-awesome-5-all-css'  href='https://www.scrapehero.com/wp/wp-content/plugins/elementor/assets/lib/font-awesome/css/all.min.css?ver=3.6.5' type='text/css' media='all' /> -->
+<!-- <link rel='stylesheet' id='font-awesome-4-shim-css'  href='https://www.scrapehero.com/wp/wp-content/plugins/elementor/assets/lib/font-awesome/css/v4-shims.min.css?ver=3.6.5' type='text/css' media='all' /> -->
+<!-- <link rel='stylesheet' id='elementor-global-css'  href='https://www.scrapehero.com/wp/wp-content/uploads/elementor/css/global.css?ver=1652717403' type='text/css' media='all' /> -->
+<link rel="stylesheet" type="text/css" href="//www.scrapehero.com/wp/wp-content/cache/wpfc-minified/78k73i6k/dmsc9.css" media="all"/>
+<link rel='stylesheet' id='elementor-post-14316-css'  href='https://www.scrapehero.com/wp/wp-content/uploads/elementor/css/post-14316.css?ver=1652718549' type='text/css' media='all' />
+<!-- <link rel='stylesheet' id='elementor-icons-shared-0-css'  href='https://www.scrapehero.com/wp/wp-content/plugins/elementor/assets/lib/font-awesome/css/fontawesome.min.css?ver=5.15.3' type='text/css' media='all' /> -->
+<!-- <link rel='stylesheet' id='elementor-icons-fa-solid-css'  href='https://www.scrapehero.com/wp/wp-content/plugins/elementor/assets/lib/font-awesome/css/solid.min.css?ver=5.15.3' type='text/css' media='all' /> -->
+<link rel="stylesheet" type="text/css" href="//www.scrapehero.com/wp/wp-content/cache/wpfc-minified/8m603lps/dmsc9.css" media="all"/>
+<script type='text/javascript' src='https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js?ver=3.5.1' id='jquery-core-js'></script>
+<script src='//www.scrapehero.com/wp/wp-content/cache/wpfc-minified/kmqocaek/dmsc7.js' type="text/javascript"></script>
+<!-- <script type='text/javascript' src='https://www.scrapehero.com/wp/wp-content/themes/superhero-2019/js/jquery-migrate-3.3.2.min.js?ver=3.3.2' id='jquery-migrate-js'></script> -->
+<script type='text/javascript' id='ct_public_functions-js-extra'>
+/* <![CDATA[ */
+var ctPublicFunctions = {"_ajax_nonce":"402b6a80a6","_rest_nonce":"d3a002a5da","_ajax_url":"\/wp\/wp-admin\/admin-ajax.php","_rest_url":"https:\/\/www.scrapehero.com\/wp-json\/","data__cookies_type":"native","data__ajax_type":"rest","text__wait_for_decoding":"Wait for decoding..."};
+/* ]]> */
+</script>
+<script src='//www.scrapehero.com/wp/wp-content/cache/wpfc-minified/e77b9gvt/dmsc7.js' type="text/javascript"></script>
+<!-- <script type='text/javascript' src='https://www.scrapehero.com/wp/wp-content/plugins/cleantalk-spam-protect/js/apbct-public--functions.min.js?ver=5.177.1' id='ct_public_functions-js'></script> -->
+<script type='text/javascript' id='ct_public-js-extra'>
+/* <![CDATA[ */
+var ctPublic = {"pixel__setting":"0","pixel__enabled":"","pixel__url":null,"data__email_check_before_post":"1","data__cookies_type":"native","data__visible_fields_required":"1"};
+/* ]]> */
+</script>
+<script src='//www.scrapehero.com/wp/wp-content/cache/wpfc-minified/97qf5n31/dmsc9.js' type="text/javascript"></script>
+<!-- <script type='text/javascript' src='https://www.scrapehero.com/wp/wp-content/plugins/cleantalk-spam-protect/js/apbct-public.min.js?ver=5.177.1' id='ct_public-js'></script> -->
+<!-- <script type='text/javascript' src='https://www.scrapehero.com/wp/wp-content/plugins/cleantalk-spam-protect/js/cleantalk-modal.min.js?ver=5.177.1' id='cleantalk-modal-js'></script> -->
+<!-- <script type='text/javascript' src='https://www.scrapehero.com/wp/wp-content/plugins/elementor/assets/lib/font-awesome/js/v4-shims.min.js?ver=3.6.5' id='font-awesome-4-shim-js'></script> -->
+<!-- <script type='text/javascript' src='https://www.scrapehero.com/wp/wp-content/plugins/google-analyticator/external-tracking.min.js?ver=6.5.4' id='ga-external-tracking-js'></script> -->
+<link rel="https://api.w.org/" href="https://www.scrapehero.com/wp-json/" /><link rel="alternate" type="application/json" href="https://www.scrapehero.com/wp-json/wp/v2/posts/4803" /><link rel="EditURI" type="application/rsd+xml" title="RSD" href="https://www.scrapehero.com/wp/xmlrpc.php?rsd" />
+<link rel="wlwmanifest" type="application/wlwmanifest+xml" href="https://www.scrapehero.com/wp/wp-includes/wlwmanifest.xml" /> 
+<meta name="generator" content="WordPress 5.9.3" />
+<link rel='shortlink' href='https://www.scrapehero.com/?p=4803' />
+<link rel="alternate" type="application/json+oembed" href="https://www.scrapehero.com/wp-json/oembed/1.0/embed?url=https%3A%2F%2Fwww.scrapehero.com%2Fscrape-nasdaq-stock-market-data%2F" />
+<link rel="alternate" type="text/xml+oembed" href="https://www.scrapehero.com/wp-json/oembed/1.0/embed?url=https%3A%2F%2Fwww.scrapehero.com%2Fscrape-nasdaq-stock-market-data%2F&#038;format=xml" />
+<style type='text/css'>.rp4wp-related-posts ul{width:100%;padding:0;margin:0;float:left;}
+.rp4wp-related-posts ul>li{margin-bottom: 1em;list-style: none;background: #f9f9f9;padding: 32px;list-style:none;clear:both;}
+.rp4wp-related-posts ul>li>p{margin:0;padding:0;}
+.rp4wp-related-post-image{width:35%;padding-right:25px;-moz-box-sizing:border-box;-webkit-box-sizing:border-box;box-sizing:border-box;float:left;}</style>
+<link rel="pingback" href="https://www.scrapehero.com/wp/xmlrpc.php">	<style type="text/css">
+.site-title a,
+.site-description {
+color: #ffffff;
+}
+</style>
+<link rel="icon" href="https://www.scrapehero.com/wp/wp-content/uploads/2017/12/cropped-logo-800-32x32.png" sizes="32x32" />
+<link rel="icon" href="https://www.scrapehero.com/wp/wp-content/uploads/2017/12/cropped-logo-800-192x192.png" sizes="192x192" />
+<link rel="apple-touch-icon" href="https://www.scrapehero.com/wp/wp-content/uploads/2017/12/cropped-logo-800-180x180.png" />
+<meta name="msapplication-TileImage" content="https://www.scrapehero.com/wp/wp-content/uploads/2017/12/cropped-logo-800-270x270.png" />
+<!-- Google Analytics Tracking by Google Analyticator 6.5.4: http://www.videousermanuals.com/google-analyticator/ -->
+<script type="text/javascript">
+var analyticsFileTypes = [''];
+var analyticsSnippet = 'disabled';
+var analyticsEventTracking = 'enabled';
+</script>
+<script type="text/javascript">
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+ga('create', 'UA-51631508-5', 'auto');
+ga('require', 'displayfeatures');
+ga('set', 'anonymizeIp', true);
+ga('send', 'pageview');
+</script>
+<style type="text/css" id="wp-custom-css">
+#jp-relatedposts .jp-relatedposts-items-visual h4.jp-relatedposts-post-title {
+font-size: 18px;
+line-height: 25px;
+}
+#jp-relatedposts .jp-relatedposts-items p {
+font-size: 15px;
+}
+@media only screen and (max-width: 498px) {
+#jp-relatedposts .jp-relatedposts-items .jp-relatedposts-post {
+width: 100%;
+}
+#jp-relatedposts .jp-relatedposts-items-visual .jp-relatedposts-post img.jp-relatedposts-post-img {
+width: 100%;
+height: 150px;
+object-fit: cover;
+}
+#jp-relatedposts .jp-relatedposts-items-visual .jp-relatedposts-post {
+padding-right: 0px;
+}
+#jp-relatedposts .jp-relatedposts-items-visual {
+margin-right: -5px;
+}
+}
+#ez-toc-container{
+padding:3em;
+}
+.store-menu-blog{
+font-variant-caps:small-caps;
+}
+</style>
+<style type="text/css">.widget .stock_quote{margin:0;padding:0}.stock_quote.sqitem.error{font-weight:bold}.stock_quote.sqitem.minus::before,.stock_quote.sqitem.plus::before{display:inline-block;margin-right:2px;content:"";width:10px;height:14px;background:url(data:image/gif;base64,R0lGODlhFAAKAKIHAMwzAACZAABmAJkAAMyIcsz/zDOZM////yH5BAEAAAcALAAAAAAUAAoAQAM3eHol+2TIp0oIjhIAxrJXGBjZsXUUOJbK6aUXe3LcW62UWT/qRUI7GGYxowUZMY3RVhE4cyZmAgA7) no-repeat}.stock_quote.sqitem.minus::before{background-position:-10px 4px}.stock_quote.sqitem.plus::before{background-position:0 4px}.stock_quote.sqitem.zero,.stock_quote.sqitem.zero:hover{color:#454545}.stock_quote.sqitem.minus,.stock_quote.sqitem.minus:hover{color:#D8442F}.stock_quote.sqitem.plus,.stock_quote.sqitem.plus:hover{color:#009D59}</style></head>
+<body class="post-template post-template-Tutorial post-template-Tutorial-php single single-post postid-4803 single-format-standard group-blog elementor-default elementor-kit-19460">
+<nav id="siteNavigation" class="navbar has-shadow is-spaced is-fixed-top " aria-label="main navigation">
+<div class="container is-fluid">
+<div class="navbar-brand">
+<a class="navbar-item" href="https://www.scrapehero.com/">
+<img src="https://www.scrapehero.com/wp/wp-content/themes/superhero-2019/img/logo/herologo.png" alt="ScrapeHero">&nbsp;
+<span class="sub-text has-text-grey-light"> a <strong>data</strong> company </span> 
+</a>
+<span class="navbar-burger burger" data-target="navbarMenuHeroA">
+<span></span>
+<span></span>
+<span></span>
+</span>
+</div>
+<div id="navbarMenuHeroA" class="navbar-menu">
+<div class="navbar-start nav-menu">
+<!-- has-text-weight-semibold for 600fw -->
+</div>
+<div class="navbar-end nav-menu">
+<a class="navbar-item" href="https://www.scrapehero.com/">
+Home
+</a><a class="navbar-item" href="https://www.scrapehero.com/services/">
+Services
+</a><a class="navbar-item" href="https://www.scrapehero.com/insights/">
+Insights
+</a><a class="navbar-item" href="https://www.scrapehero.com/store/?utm_source=blog&utm_medium=menu&utm_campaign=blogmenu_to_store">
+Data Store
+</a><a class="navbar-item" href="https://www.scrapehero.com/login/">
+Login
+</a><a class="navbar-item" href="https://www.scrapehero.com/marketplace/apis/?utm_source=blog&utm_medium=menu&utm_campaign=blogmenu_to_api">
+API
+</a><a class="navbar-item" href="https://www.scrapehero.com/marketplace/crawlers/?utm_source=blog&utm_medium=menu&utm_campaign=blogmenu_to_crawlers">
+Signup Free
+</a>                                <div class="navbar-item">
+<a class="button is-white is-rounded has-text-weight-medium" href="tel:+1 617 297 8737">
+<div class="icon is-large has-text-info">
+<figure class="image is-16x16">
+<img src="https://www.scrapehero.com/wp/wp-content/themes/superhero-2019/img/icons/phone.png" alt="Call ScrapeHero"
+width="20" height="20">
+</figure>
+</div>&nbsp;&nbsp;
++1 617 297 8737                    </a>
+</div>
+<div class="navbar-item">
+<a class="button is-info is-rounded contact-us">
+Contact Sales
+</a>
+</div>
+</div>
+</div>
+</div>
+</nav>
+<section class="hero is-info margin-clear-header" style="background:#2b5e96;">
+<div class="hero-body">
+<div class="container has-text-centered	">
+<h1 class="title is-2">
+How to scrape Nasdaq and extract Stock Market data using Python and LXML      </h1>
+</div>
+</div>
+</section>
+<div class="container">
+<div class="columns">   
+<div class="column">
+<div id="sticky-anchor"></div>
+<div class="is-hidden-touch" id="toc" style="margin-top:50px;">
+</div>
+</div>
+<div class="column is-two-thirds">
+<section class="section">
+<article class="article is-size-6">
+<div class="content" id="blog_article">
+<p>NASDAQ is a great source for stock market data. We will demonstrate how to write a scraper that will <a href="https://www.scrapehero.com/web-scraping-financial-data/" target="_blank" rel="noopener">extract some key stock data</a> based on a company&#8217;s ticker symbol.</p>
+<p>In this tutorial, we will extract the summary quote for a public company from Nasdaq.</p>
+<h2>What data are we extracting?</h2>
+<p>Here is the list of fields we will be extracting:</p>
+<ol>
+<li>Best Bid/Ask</li>
+<li>1 Year Target</li>
+<li>Share Volume</li>
+<li>50 Day Avg. Daily Volume</li>
+<li>Previous Close</li>
+<li>52 Week High/Low</li>
+<li>Market Cap</li>
+<li>P/E Ratio</li>
+<li>Forward P/E (1y)</li>
+<li>Earnings Per Share (EPS)</li>
+<li>Annualized Dividend</li>
+<li>Ex-Dividend Date</li>
+<li>Dividend Payment Date</li>
+<li>Current Yield</li>
+<li>Beta</li>
+<li>Open Price</li>
+<li>Open Date</li>
+<li>Close Price</li>
+<li>Close Date</li>
+</ol>
+<div class="notification">
+</p>
+<p><strong>Read More</strong> &#8211; <a href="https://www.scrapehero.com/how-to-scrape-competitor-prices-from-ebay-com-using-python-and-lxml/" target="_blank" rel="noopener noreferrer">Learn to scrape Ebay product data</a></p>
+<p></div>
+<p>Below is a screenshot of the data we will be extracting.</p>
+<p><img class="alignnone size-full wp-image-4808" src="https://www.scrapehero.com/wp/wp-content/uploads/2018/02/nasdaq-key-stock-data.png" alt="extract-nasdaq-key-stock-data-web-scraping-tutorial" width="1171" height="744" srcset="https://www.scrapehero.com/wp/wp-content/uploads/2018/02/nasdaq-key-stock-data.png 1171w, https://www.scrapehero.com/wp/wp-content/uploads/2018/02/nasdaq-key-stock-data-744x473.png 744w, https://www.scrapehero.com/wp/wp-content/uploads/2018/02/nasdaq-key-stock-data-768x488.png 768w, https://www.scrapehero.com/wp/wp-content/uploads/2018/02/nasdaq-key-stock-data-94x60.png 94w" sizes="(max-width: 1171px) 100vw, 1171px" /><img loading="lazy" class="alignnone size-full wp-image-4806" src="https://www.scrapehero.com/wp/wp-content/uploads/2018/02/nasdaq.com-fields-to-extract-1.png" alt="data-to-be-extracted-from-nasdaq.com" width="853" height="232" srcset="https://www.scrapehero.com/wp/wp-content/uploads/2018/02/nasdaq.com-fields-to-extract-1.png 853w, https://www.scrapehero.com/wp/wp-content/uploads/2018/02/nasdaq.com-fields-to-extract-1-744x202.png 744w, https://www.scrapehero.com/wp/wp-content/uploads/2018/02/nasdaq.com-fields-to-extract-1-768x209.png 768w, https://www.scrapehero.com/wp/wp-content/uploads/2018/02/nasdaq.com-fields-to-extract-1-221x60.png 221w" sizes="(max-width: 853px) 100vw, 853px" /></p>
+<h2>Finding the Data</h2>
+<p>Before we start building the scraper, we need to find where the data is present in the web page’s HTML Tags. You need to understand the HTML tags inside the page’s content to do so.</p>
+<p>We assume you already understand HTML and know to code in Python. You don’t need advanced programming skills for the most part of this tutorial,</p>
+<p><b>If you don’t know much about HTML and Python, spend some time reading </b><a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Getting_started" rel="noopener">Getting started with HTML – Mozilla Developer Network</a> and <a href="https://www.programiz.com/python-programming" rel="noopener">https://www.programiz.com/python-programming</a></p>
+<p>Let’s inspect the HTML of the web page and find out where the data is. Here is our logic</p>
+<ol>
+<li>Find the tag that encloses the list of links</li>
+<li>Get links from it and extract data</li>
+</ol>
+<h3>Inspecting the HTML</h3>
+<p>Open a browser (we are using Chrome here) and go to <em>http://www.nasdaq.com/symbol/aapl</em></p>
+<p>Right-click on any link on the page and choose – Inspect Element. The browser will open a toolbar and show the HTML Content of the Web Page, formatted nicely.</p>
+<p><a href="https://www.scrapehero.com/wp/wp-content/uploads/2018/02/2.gif"><img loading="lazy" class="alignnone size-full wp-image-4873" src="https://www.scrapehero.com/wp/wp-content/uploads/2018/02/2.gif" alt="" width="1551" height="974" /></a></p>
+<p>If you look closely at the GIF above, there is DIV tag, with its attribute called ‘class’ as &#8216;table-table&#8217;. This DIV encloses the data we need to extract.</p>
+<p><a href="https://www.scrapehero.com/wp/wp-content/uploads/2018/02/table.png"><img loading="lazy" class="alignnone wp-image-4954 size-full" src="https://www.scrapehero.com/wp/wp-content/uploads/2018/02/table.png" alt="" width="1515" height="975" srcset="https://www.scrapehero.com/wp/wp-content/uploads/2018/02/table.png 1515w, https://www.scrapehero.com/wp/wp-content/uploads/2018/02/table-744x479.png 744w, https://www.scrapehero.com/wp/wp-content/uploads/2018/02/table-768x494.png 768w, https://www.scrapehero.com/wp/wp-content/uploads/2018/02/table-1200x772.png 1200w, https://www.scrapehero.com/wp/wp-content/uploads/2018/02/table-93x60.png 93w" sizes="(max-width: 1515px) 100vw, 1515px" /></a></p>
+<p>Now let’s find the HTML tag(s) which has the links we need to extract. You can right-click on the link title in the browser and do <b>inspect element</b> again. It will open the HTML Content like before, and highlight the tag which holds the data you right clicked on</p>
+<p><a href="https://www.scrapehero.com/wp/wp-content/uploads/2018/02/1.gif"><img loading="lazy" class="alignnone size-full wp-image-4858" src="https://www.scrapehero.com/wp/wp-content/uploads/2018/02/1.gif" alt="" width="1582" height="980" /></a></p>
+<h2>How to set up your computer for web scraper development</h2>
+<p>We will use Python 3 for this tutorial. The code will not run if you are using Python 2.7. To start, you need a computer with Python 3 and PIP installed in it.</p>
+<p>Most UNIX operating systems like Linux and Mac OS comes with Python pre-installed. But, not all the Linux Operating Systems ship with Python 3 by default.</p>
+<p>Let&#8217;s check your python version. Open a terminal ( in Linux and Mac OS ) or Command Prompt ( on Windows ) and type</p>
+<pre class="">python --version</pre>
+<p>and press enter. If the output looks something like Python 3.x.x, you have Python 3 installed. If it says Python 2.x.x you have Python 2. If it prints an error, you don&#8217;t probably have python installed.</p>
+<p>If you don&#8217;t have Python 3, install it first.</p>
+<h3>Install Python 3 and Pip</h3>
+<p><b>Here is a guide to install Python 3 in Linux</b> &#8211; <a href="http://docs.python-guide.org/en/latest/starting/install3/linux/" rel="noopener">http://docs.python-guide.org/en/latest/starting/install3/linux/</a></p>
+<p>Mac Users can follow this guide &#8211; <a href="http://docs.python-guide.org/en/latest/starting/install3/osx/" rel="noopener">http://docs.python-guide.org/en/latest/starting/install3/osx/</a></p>
+<p>Windows Users go here &#8211; <a href="https://www.scrapehero.com/how-to-install-python3-in-windows-10/" rel="noopener">https://www.scrapehero.com/how-to-install-python3-in-windows-10/</a></p>
+<h3>Install Packages</h3>
+<ul>
+<li>Python Requests, to make requests and download the HTML content of the pages ( http://docs.python-requests.org/en/master/user/install/).</li>
+<li>Python LXML, for parsing the HTML Tree Structure using <a href="https://www.scrapehero.com/xpaths-and-their-relevance-in-web-scraping/"><strong>Xpaths</strong></a> (Learn how to install that here – http://lxml.de/installation.html)</li>
+</ul>
+<div class="notification">
+</p>
+<p><strong>Read More</strong> &#8211; <a href="https://www.scrapehero.com/how-to-scrape-yelp-com-business-details-using-python-and-lxml/" target="_blank" rel="noopener noreferrer">Learn to scrape Yelp business data</a></p>
+<p></div>
+<h2>The Code</h2>
+<pre class="tab-size:2 lang:python decode:true" title="nasdaq_finance.py">#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+from lxml import html
+import requests
+from time import sleep
+import json
+import argparse
+from random import randint
+def parse_finance_page(ticker):
+"""
+Grab financial data from NASDAQ page
+Args:
+ticker (str): Stock symbol
+Returns:
+dict: Scraped data
+"""
+key_stock_dict = {}
+headers = {
+"Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+"Accept-Encoding":"gzip, deflate",
+"Accept-Language":"en-GB,en;q=0.9,en-US;q=0.8,ml;q=0.7",
+"Connection":"keep-alive",
+"Host":"www.nasdaq.com",
+"Referer":"http://www.nasdaq.com",
+"Upgrade-Insecure-Requests":"1",
+"User-Agent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"
+}
+# Retrying for failed request
+for retries in range(5):
+try:    
+url = "http://www.nasdaq.com/symbol/%s"%(ticker)
+response = requests.get(url, headers = headers, verify=False)
+if response.status_code!=200:
+raise ValueError("Invalid Response Received From Webserver")
+print("Parsing %s"%(url))
+# Adding random delay
+sleep(randint(1,3))   
+parser = html.fromstring(response.text)
+xpath_head = "//div[@id='qwidget_pageheader']//h1//text()"
+xpath_key_stock_table = '//div[@class="row overview-results relativeP"]//div[contains(@class,"table-table")]/div'
+xpath_open_price = '//b[contains(text(),"Open Price:")]/following-sibling::span/text()'
+xpath_open_date = '//b[contains(text(),"Open Date:")]/following-sibling::span/text()'
+xpath_close_price = '//b[contains(text(),"Close Price:")]/following-sibling::span/text()'
+xpath_close_date = '//b[contains(text(),"Close Date:")]/following-sibling::span/text()'
+xpath_key = './/div[@class="table-cell"]/b/text()'
+xpath_value = './/div[@class="table-cell"]/text()'
+raw_name = parser.xpath(xpath_head)
+key_stock_table =  parser.xpath(xpath_key_stock_table)
+raw_open_price = parser.xpath(xpath_open_price)
+raw_open_date = parser.xpath(xpath_open_date)
+raw_close_price = parser.xpath(xpath_close_price)
+raw_close_date = parser.xpath(xpath_close_date)
+company_name = raw_name[0].replace("Common Stock Quote &amp; Summary Data","").strip() if raw_name else ''
+open_price =raw_open_price[0].strip() if raw_open_price else None
+open_date = raw_open_date[0].strip() if raw_open_date else None
+close_price = raw_close_price[0].strip() if raw_close_price else None
+close_date = raw_close_date[0].strip() if raw_close_date else None
+# Grabbing ans cleaning keystock data
+for i in key_stock_table:
+key = i.xpath(xpath_key)
+value = i.xpath(xpath_value)
+key = ''.join(key).strip() 
+value = ' '.join(''.join(value).split()) 
+key_stock_dict[key] = value
+nasdaq_data = {
+"company_name":company_name,
+"ticker":ticker,
+"url":url,
+"open price":open_price,
+"open_date":open_date,
+"close_price":close_price,
+"close_date":close_date,
+"key_stock_data":key_stock_dict
+}
+return nasdaq_data
+except Exception as e:
+print("Failed to process the request, Exception:%s"%(e))
+if __name__=="__main__":
+argparser = argparse.ArgumentParser()
+argparser.add_argument('ticker',help = 'Company stock symbol')
+args = argparser.parse_args()
+ticker = args.ticker
+print("Fetching data for %s"%(ticker))
+scraped_data = parse_finance_page(ticker)
+print("Writing scraped data to output file")
+with open('%s-summary.json'%(ticker),'w') as fp:
+json.dump(scraped_data,fp,indent = 4,ensure_ascii=False)</pre>
+<p>Execute the full code with the script name followed by the ticker symbol of the company&#8217;s stock data you would like:</p>
+<pre class="">python3 nasdaq_finance.py stock symbol</pre>
+<p>As an example, let&#8217;s find the summary data for Apple Inc. The script would be executed as:</p>
+<pre class="">python3 nasdaq_finance.py aapl</pre>
+<p>You should see a file AAPL-summary.json called in the same folder as the script, with the extracted data. Here is some sample data extracted from Nasdaq.com for the command above.</p>
+<pre class="">{
+"company_name": "Apple Inc.",
+"ticker": "AAPL",
+"url": "http://www.nasdaq.com/symbol/AAPL",
+"open price": "$ 167.24",
+"open_date": "Feb. 1, 2018",
+"close_price": "$ 167.43",
+"close_date": "Jan. 31, 2018",
+"key_stock_data": {
+"Best Bid / Ask": "$ 167.95 / $ 167.96",
+"1 Year Target": "193",
+"Today's High / Low": "$ 168.26 / $ 166.76",
+"Share Volume": "15,654,756",
+"50 Day Avg. Daily Volume": "28,511,634",
+"Previous Close": "$ 167.43",
+"52 Week High / Low": "$ 180.10 / $ 127.01",
+"Market Cap": "854,371,055,200",
+"P/E Ratio": "18.26",
+"Forward P/E (1y)": "15.04",
+"Earnings Per Share (EPS)": "$ 9.20",
+"Annualized Dividend": "$ 2.52",
+"Ex Dividend Date": "11/10/2017",
+"Dividend Payment Date": "11/16/2017",
+"Current Yield": "1.51 %",
+"Beta": "1.27"
+}
+}</pre>
+<p>The data will be saved as a JSON file. Instead of writing the data to a JSON file you can connect it to a MySQL database.</p>
+<p>You can download the code at <a href="https://gist.github.com/scrapehero/c7794d9e4522d9c72ba167496b849228" rel="noopener">https://gist.github.com/scrapehero/c7794d9e4522d9c72ba167496b849228. </a>Let us know in the comments how this scraper worked for you.</p>
+<h2>Known Limitations</h2>
+<p>This code should be capable of scraping the details of most ticker symbols. If you want to scrape the details of thousands of companies you should read  <a href="https://www.scrapehero.com/scalable-do-it-yourself-scraping-how-to-build-and-run-scrapers-on-a-large-scale/">Scalable do-it-yourself scraping – How to build and run scrapers on a large scale</a> and <a href="https://www.scrapehero.com/how-to-prevent-getting-blacklisted-while-scraping/">How to prevent getting blacklisted while scraping</a> .</p>
+<p>If you need some professional help with scraping websites contact us by filling up the form below.</p>
+<div class="leadform">
+<h4 class="title is-3 is-spaced">We can help with your data or automation needs</h4>
+<p class="subtitle is-5">
+Turn the Internet into meaningful, structured and usable data
+</p>
+<br>
+<form action="/form_submit.php" name="contact_us" method="post">
+<div class="field is-horizontal">
+<div class="field-body">
+<div class="field">
+<div class="control is-expanded">
+<input class="input" type="text" name="name" placeholder="Your Name">
+</div>
+</div>
+</div>
+</div>
+<div class="field is-horizontal">
+<div class="field-body">
+<div class="field">
+<div class="control is-expanded">
+<input class="input" name="email" type="email" placeholder="email@company.com">
+</div>
+</div>
+</div>
+</div>
+<div class="field is-horizontal">
+<div class="field-body">
+<div class="field">
+<div class="control">
+<textarea name="note" class="textarea" rows="6" placeholder="Please enter details, data sources, requests - anything relevant"></textarea>
+<span class="helptxt">
+<br>Please DO NOT contact us for any help with our Tutorials and Code using this form or by calling us, instead please add a comment to the bottom of the tutorial page for help
+</span>
+</div>
+</div>
+</div>
+</div>
+<span class="website_url is-hidden">
+<input name="url" />
+</span>
+<input type="hidden" name="refer" value="/scrape-nasdaq-stock-market-data/">
+<input type="hidden" name="piwikid" id="piwikid" value="">
+<input type="hidden" name="jsd" id="jsd" value="0" />
+<div class="field is-horizontal">
+<button class="button is-info is-rounded is-medium is-aligned-right">Contact Sales</button>
+</div>
+</form>
+</div>
+<br>
+<b>Disclaimer:</b> <em>Any code provided in our tutorials is for illustration and learning purposes only. We are not responsible for how it is used and assume no liability for any detrimental usage of the source code. The mere presence of this code on our site does not imply that we encourage scraping or scrape the websites referenced in the code and accompanying tutorial. The tutorials only help illustrate the technique of programming web scrapers for popular internet websites. We are not obligated to provide any support for the code, however, if you add your questions in the comments section, we may periodically address them.</em>
+</div>
+<div class="content" id="related_posts">
+<div class='rp4wp-related-posts'>
+<h3>Continue Reading .. </h3>
+<ul>
+<li><div class='rp4wp-related-post-content'>
+<a href='https://www.scrapehero.com/scrape-yahoo-finance-stock-market-data/'>How to scrape Yahoo Finance and extract stock market data using Python & LXML</a><p>Yahoo Finance is a good source for extracting financial data. Check out this web scraping tutorial and learn how to extract the public summary of companies from Yahoo Finance using Python 3 and LXML.</p></div>
+</li>
+<li><div class='rp4wp-related-post-content'>
+<a href='https://www.scrapehero.com/how-to-scrape-store-locations-from-target-com-using-python/'>How to Scrape Store Locations from Target.com using Python</a><p>You can get a lot of information on store locations. This tutorial will show you how to extract store details such as store timings, address, latitude and longitude and more from Target.com using Python and&hellip;</p></div>
+</li>
+<li><div class='rp4wp-related-post-content'>
+<a href='https://www.scrapehero.com/scrape-movie-details-fandango-com-using-python-lxml/'>How to Scrape Fandango using Python and LXML</a><p>Learn how to scrape movie details from Fandango.com, a movie booking site using Python and LXML in this web scraping tutorial. We will show you how to extract movie details such as movie theatres playing,&hellip;</p></div>
+</li>
+</ul>
+</div>
+</div>
+<div class="meta">
+<p>Posted in: &nbsp; <a href="https://www.scrapehero.com/web-scraping-tutorials/financial-data-gathering-tutorials/" rel="category tag">Financial Data Gathering Tutorials</a>, <a href="https://www.scrapehero.com/web-scraping-tutorials/" rel="category tag">Web Scraping Tutorials</a></p>
+<p class="blog-post__date" itemprop="datePublished">
+Published On: &nbsp; February 14, 2018                        </p>
+</div>
+</article>
+</section>
+<section class="is-size-6 article" id="end">
+<div id="comments" class="margin-bottom-50 comments-area">
+<p class="is-size-4 title">
+Responses 
+</p>
+<div class="comments">
+<article class="media" id="comment-450">
+<figure class="media-left">
+<p class="image is-48x48">
+<img src="https://secure.gravatar.com/avatar/fdd61b09bbbb7b51044c91b891decaba?s=96&d=retro&r=g" class="image is-rounded">
+</p>
+</figure>
+<div class="media-content">
+<div class="content">
+<strong>Stephane Lesieur</strong> <small>February 27, 2018</small>
+<p>well it did not work that well, I tried to run that code on spyder/python3,6 and got the following result  : nasdaq_finance.py: error: the following arguments are required: ticker<br />
+I also have a question  : while you defined a function called &#8220;parse_finance_page(ticker)&#8221; in your code, I could not call it to try and run your code.</p>
+<a rel='nofollow' class='comment-reply-link' href='#comment-450' data-commentid="450" data-postid="4803" data-belowelement="comment-450" data-respondelement="respond" data-replyto="Reply to Stephane Lesieur" aria-label='Reply to Stephane Lesieur'>Reply</a>                        <br>
+</div>
+</div>
+</article>
+<ul class="children">
+<article class="media" id="comment-451">
+<figure class="media-left">
+<p class="image is-48x48">
+<img src="https://secure.gravatar.com/avatar/b23f6671a524f9e711a6809e4f9c608f?s=96&d=retro&r=g" class="image is-rounded">
+</p>
+</figure>
+<div class="media-content">
+<div class="content">
+<strong>ScrapeHero</strong> <small>February 27, 2018</small>
+<p>It seems like you missed putting in the ticker symbol. </p>
+<p>Can you try running it like this ? </p>
+<p><code>python3 nasdaq_finance.py aapl</code></p>
+<a rel='nofollow' class='comment-reply-link' href='#comment-451' data-commentid="451" data-postid="4803" data-belowelement="comment-451" data-respondelement="respond" data-replyto="Reply to ScrapeHero" aria-label='Reply to ScrapeHero'>Reply</a>                        <br>
+</div>
+</div>
+</article>
+</li><!-- #comment-## -->
+</ul><!-- .children -->
+</li><!-- #comment-## -->
+<article class="media" id="comment-644">
+<figure class="media-left">
+<p class="image is-48x48">
+<img src="https://secure.gravatar.com/avatar/9d0926e529c91e39cad40c77a676a4a7?s=96&d=retro&r=g" class="image is-rounded">
+</p>
+</figure>
+<div class="media-content">
+<div class="content">
+<strong>John</strong> <small>June 18, 2018</small>
+<p>What line of code do you enter in aapl, every time I try line 11 it gives me an error for spacing.</p>
+<a rel='nofollow' class='comment-reply-link' href='#comment-644' data-commentid="644" data-postid="4803" data-belowelement="comment-644" data-respondelement="respond" data-replyto="Reply to John" aria-label='Reply to John'>Reply</a>                        <br>
+</div>
+</div>
+</article>
+</li><!-- #comment-## -->
+<article class="media" id="comment-987">
+<figure class="media-left">
+<p class="image is-48x48">
+<img src="https://secure.gravatar.com/avatar/c755a5e3b365e2f256bc28a6963f9c75?s=96&d=retro&r=g" class="image is-rounded">
+</p>
+</figure>
+<div class="media-content">
+<div class="content">
+<strong>eleven</strong> <small>January 29, 2019</small>
+<p>I ran it in python3 , but when I get to write down the json, it goes to anaconda python2.7 and some error occurs.<br />
+json.dump(scraped_data, fp, indent=4, ensure_ascii=False)<br />
+File &#8220;/Users/anaconda/lib/python2.7/json/<strong>init</strong>.py&#8221;, line 190, in dump<br />
+fp.write(chunk)<br />
+UnicodeEncodeError: &#8216;ascii&#8217; codec can&#8217;t encode character u&#8217;\xa0&#8242; in position 2: ordinal not in range(128)</p>
+<a rel='nofollow' class='comment-reply-link' href='#comment-987' data-commentid="987" data-postid="4803" data-belowelement="comment-987" data-respondelement="respond" data-replyto="Reply to eleven" aria-label='Reply to eleven'>Reply</a>                        <br>
+</div>
+</div>
+</article>
+</li><!-- #comment-## -->
+<article class="media" id="comment-1050">
+<figure class="media-left">
+<p class="image is-48x48">
+<img src="https://secure.gravatar.com/avatar/2a345360eca4a18256fc03784bbb6606?s=96&d=retro&r=g" class="image is-rounded">
+</p>
+</figure>
+<div class="media-content">
+<div class="content">
+<strong>Harry</strong> <small>February 18, 2019</small>
+<p>How can I run this code through Spyder? Where can I enter the ticker symbol?</p>
+<a rel='nofollow' class='comment-reply-link' href='#comment-1050' data-commentid="1050" data-postid="4803" data-belowelement="comment-1050" data-respondelement="respond" data-replyto="Reply to Harry" aria-label='Reply to Harry'>Reply</a>                        <br>
+</div>
+</div>
+</article>
+</li><!-- #comment-## -->
+<article class="media" id="comment-1552">
+<figure class="media-left">
+<p class="image is-48x48">
+<img src="https://secure.gravatar.com/avatar/8d903dd9e273c509e953f287a8a73488?s=96&d=retro&r=g" class="image is-rounded">
+</p>
+</figure>
+<div class="media-content">
+<div class="content">
+<strong>Lx</strong> <small>September 29, 2019</small>
+<p>Code returns null values &#8212; Is this due to an API change?<br />
+&#8220;company_name&#8221;: &#8220;&#8221;,<br />
+&#8220;ticker&#8221;: &#8220;aapl&#8221;,<br />
+&#8220;url&#8221;: &#8220;http://www.nasdaq.com/symbol/aapl&#8221;,<br />
+&#8220;open price&#8221;: null,<br />
+&#8220;open_date&#8221;: null,<br />
+&#8220;close_price&#8221;: null,<br />
+&#8220;close_date&#8221;: null,<br />
+&#8220;key_stock_data&#8221;: {}</p>
+<a rel='nofollow' class='comment-reply-link' href='#comment-1552' data-commentid="1552" data-postid="4803" data-belowelement="comment-1552" data-respondelement="respond" data-replyto="Reply to Lx" aria-label='Reply to Lx'>Reply</a>                        <br>
+</div>
+</div>
+</article>
+</li><!-- #comment-## -->
+<article class="media" id="comment-2067">
+<figure class="media-left">
+<p class="image is-48x48">
+<img src="https://secure.gravatar.com/avatar/85e351e4684cfa59fcb412dcf670a876?s=96&d=retro&r=g" class="image is-rounded">
+</p>
+</figure>
+<div class="media-content">
+<div class="content">
+<strong>Mark</strong> <small>September 27, 2020</small>
+<p>Don&#8217;t know if I&#8217;ll ever be able to understand this enough to be able to scrape the data into my Google sheet but, does anyone know if this still works?</p>
+<a rel='nofollow' class='comment-reply-link' href='#comment-2067' data-commentid="2067" data-postid="4803" data-belowelement="comment-2067" data-respondelement="respond" data-replyto="Reply to Mark" aria-label='Reply to Mark'>Reply</a>                        <br>
+</div>
+</div>
+</article>
+</li><!-- #comment-## -->
+<article class="media" id="comment-2097">
+<figure class="media-left">
+<p class="image is-48x48">
+<img src="https://secure.gravatar.com/avatar/ef1e97fd34031523b133509c2800d173?s=96&d=retro&r=g" class="image is-rounded">
+</p>
+</figure>
+<div class="media-content">
+<div class="content">
+<strong>please871</strong> <small>October 14, 2020</small>
+<p>I have the same problem as Lx. Below is the additional warning about security.<br />
+&#8221;<br />
+Fetching data for aapl<br />
+/usr/lib/python3/dist-packages/urllib3/connectionpool.py:999: InsecureRequestWarning: Unverified HTTPS request is being made to host &#8216;www.nasdaq.com&#8217;. Adding certificate verification is strongly advised. See: <a href="https://urllib3.readthedocs.io/en/latest/advanced-usage.html#ssl-warnings" rel="nofollow ugc">https://urllib3.readthedocs.io/en/latest/advanced-usage.html#ssl-warnings</a><br />
+warnings.warn(<br />
+/usr/lib/python3/dist-packages/urllib3/connectionpool.py:999: InsecureRequestWarning: Unverified HTTPS request is being made to host &#8216;www.nasdaq.com&#8217;. Adding certificate verification is strongly advised. See: <a href="https://urllib3.readthedocs.io/en/latest/advanced-usage.html#ssl-warnings" rel="nofollow ugc">https://urllib3.readthedocs.io/en/latest/advanced-usage.html#ssl-warnings</a><br />
+warnings.warn(<br />
+Parsing <a href="http://www.nasdaq.com/symbol/aapl" rel="nofollow ugc">http://www.nasdaq.com/symbol/aapl</a><br />
+Writing scraped data to output file<br />
+&#8220;</p>
+<a rel='nofollow' class='comment-reply-link' href='#comment-2097' data-commentid="2097" data-postid="4803" data-belowelement="comment-2097" data-respondelement="respond" data-replyto="Reply to please871" aria-label='Reply to please871'>Reply</a>                        <br>
+</div>
+</div>
+</article>
+<ul class="children">
+<article class="media" id="comment-2100">
+<figure class="media-left">
+<p class="image is-48x48">
+<img src="https://secure.gravatar.com/avatar/b23f6671a524f9e711a6809e4f9c608f?s=96&d=retro&r=g" class="image is-rounded">
+</p>
+</figure>
+<div class="media-content">
+<div class="content">
+<strong>ScrapeHero</strong> <small>October 15, 2020</small>
+<p>The error message has a link to explain the problem.</p>
+<a rel='nofollow' class='comment-reply-link' href='#comment-2100' data-commentid="2100" data-postid="4803" data-belowelement="comment-2100" data-respondelement="respond" data-replyto="Reply to ScrapeHero" aria-label='Reply to ScrapeHero'>Reply</a>                        <br>
+</div>
+</div>
+</article>
+</li><!-- #comment-## -->
+</ul><!-- .children -->
+</li><!-- #comment-## -->
+<article class="media" id="comment-2156">
+<figure class="media-left">
+<p class="image is-48x48">
+<img src="https://secure.gravatar.com/avatar/ef1e97fd34031523b133509c2800d173?s=96&d=retro&r=g" class="image is-rounded">
+</p>
+</figure>
+<div class="media-content">
+<div class="content">
+<strong>please871</strong> <small>November 13, 2020</small>
+<p>Your example is already out-of-date, and no longer works with Nasdaq website. Please check it again.</p>
+<a rel='nofollow' class='comment-reply-link' href='#comment-2156' data-commentid="2156" data-postid="4803" data-belowelement="comment-2156" data-respondelement="respond" data-replyto="Reply to please871" aria-label='Reply to please871'>Reply</a>                        <br>
+</div>
+</div>
+</article>
+<ul class="children">
+<article class="media" id="comment-2159">
+<figure class="media-left">
+<p class="image is-48x48">
+<img src="https://secure.gravatar.com/avatar/b23f6671a524f9e711a6809e4f9c608f?s=96&d=retro&r=g" class="image is-rounded">
+</p>
+</figure>
+<div class="media-content">
+<div class="content">
+<strong>ScrapeHero</strong> <small>November 17, 2020</small>
+<p>Our code samples are designed to provide a &#8220;how to&#8221; and may not be updated as websites change.<br />
+The sites are bound change over time and the code is bound to break.<br />
+The code is for illustrating how to learn to do this and sometimes with some minor changes the code can work again.</p>
+<a rel='nofollow' class='comment-reply-link' href='#comment-2159' data-commentid="2159" data-postid="4803" data-belowelement="comment-2159" data-respondelement="respond" data-replyto="Reply to ScrapeHero" aria-label='Reply to ScrapeHero'>Reply</a>                        <br>
+</div>
+</div>
+</article>
+</li><!-- #comment-## -->
+</ul><!-- .children -->
+</li><!-- #comment-## -->
+<article class="media" id="comment-2506">
+<figure class="media-left">
+<p class="image is-48x48">
+<img src="https://secure.gravatar.com/avatar/f11559cbd565816c682083d7390a4673?s=96&d=retro&r=g" class="image is-rounded">
+</p>
+</figure>
+<div class="media-content">
+<div class="content">
+<strong>Renat</strong> <small>August 3, 2021</small>
+<p>Really well-done article for Nasdaq. </p>
+<p>I&#8217;ve tried scraping Nasdaq not with python, but with a visual scraper called Bardeen.ai. </p>
+<p>I thought I&#8217;d share the video I&#8217;ve created about scraping Nasdaq.<br />
+<a href="https://www.youtube.com/watch?v=nKlvhUshwEw" rel="nofollow ugc">https://www.youtube.com/watch?v=nKlvhUshwEw</a></p>
+<p>The cool thing about the scraper, is that it can take screenshots of pages too.</p>
+<a rel='nofollow' class='comment-reply-link' href='#comment-2506' data-commentid="2506" data-postid="4803" data-belowelement="comment-2506" data-respondelement="respond" data-replyto="Reply to Renat" aria-label='Reply to Renat'>Reply</a>                        <br>
+</div>
+</div>
+</article>
+</li><!-- #comment-## -->
+</div>
+<!-- .comment-list -->
+<div id="respond" class="comment-respond">
+<h3 id="reply-title" class="comment-reply-title">Leave a Reply <small><a rel="nofollow" id="cancel-comment-reply-link" href="/scrape-nasdaq-stock-market-data/#respond" style="display:none;">Cancel reply</a></small></h3><form action="https://www.scrapehero.com/wp/wp-comments-post.php" method="post" id="commentform" class="comment-form" novalidate><p class="comment-notes"><span id="email-notes">Your email address will not be published.</span> <span class="required-field-message" aria-hidden="true">Required fields are marked <span class="required" aria-hidden="true">*</span></span></p><p class="comment-form-comment"><label for="comment">Comment <span class="required" aria-hidden="true">*</span></label> <textarea id="comment" name="comment" cols="45" rows="8" maxlength="65525" required></textarea></p><p class="comment-form-author"><label for="author">Name <span class="required" aria-hidden="true">*</span></label> <input id="author" name="author" type="text" value="" size="30" maxlength="245" required /></p>
+<p class="comment-form-email"><label for="email">Email <span class="required" aria-hidden="true">*</span></label> <input id="email" name="email" type="email" value="" size="30" maxlength="100" aria-describedby="email-notes" required /></p>
+<p class="comment-form-url"><label for="url">Website</label> <input id="url" name="url" type="url" value="" size="30" maxlength="200" /></p>
+<p class="form-submit"><input name="submit" type="submit" id="submit" class="submit" value="Post Comment" /> <input type='hidden' name='comment_post_ID' value='4803' id='comment_post_ID' />
+<input type='hidden' name='comment_parent' id='comment_parent' value='0' />
+</p><input type="hidden" id="ct_checkjs_a49e9411d64ff53eccfdd09ad10a15b3" name="ct_checkjs" value="0" /></form>	</div><!-- #respond -->
+</div>
+<!-- #comments -->            </section>
+</div>
+<div class="column">
+</div>
+</div>
+</div>
+<section class="hero  bg-geometric blend is-dark">
+<div class="hero-body">
+<div class="container">
+<div class="columns">
+<div class="column is-9">
+<h2 class="subtitle is-4">
+Turn the Internet into meaningful, structured and usable data &nbsp;&nbsp;
+</h2>
+</div>
+<div class="column has-text-left">
+<button class="button is-success is-rounded has-text-weight-semibold is-medium contact-us">
+Contact Us
+</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<footer class="footer has-background-dark">
+<section class="section ">
+<div class="container">
+<div class="">
+<div class="columns">
+<div class="column">
+<span class="footer-title">
+<a href="https://www.scrapehero.com/" class="footer-logo">
+<img src="https://www.scrapehero.com/wp/wp-content/themes/superhero-2019/img/logo/scrapehero_logo.png"
+alt="" width="40" height="40">
+</a>
+</span>
+<p>
+<br>
+</p>
+<span class="footer-social">
+<a href="https://twitter.com/scrapehero" target="_blank" rel="noreferrer" >
+<img class="image is-24x24"
+src="https://www.scrapehero.com/wp/wp-content/themes/superhero-2019/img/icons/Twitter_50px.png" alt=""
+width="20" height="20">
+</a>
+</span>
+<p>
+</p>
+<ul  class="menu">
+<li id="" class="">
+<a title="About Us" href="https://www.scrapehero.com/about/">About Us</a>
+</li>
+<li id="" class="">
+<a title="Media Coverage" href="https://www.scrapehero.com/press/">Press</a>
+</li>
+<li id="" class="">
+<a title="Pricing" href="https://www.scrapehero.com/pricing/">Pricing</a>
+</li>
+<li id="" class="">
+<a title="Careers" href="https://www.scrapehero.com/careers/">Careers</a>
+</li>
+</ul>
+</div>
+<div class="column is-3">
+<div class="menu-footer-menu-container"><ul id="menu-footer-menu" class="menu"><li id="menu-item-6723" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-6723"><a href="https://www.scrapehero.com/alternative-data/">Alternative Data</a></li>
+<li id="menu-item-6259" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-6259"><a href="https://www.scrapehero.com/price-monitoring-service/">Price Monitoring</a></li>
+<li id="menu-item-1391" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1391"><a href="https://www.scrapehero.com/web-crawling-service/">Web Crawling</a></li>
+<li id="menu-item-12245" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-12245"><a href="https://www.scrapehero.com/location-intelligence/">Location Intelligence</a></li>
+<li id="menu-item-1392" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1392"><a href="https://www.scrapehero.com/brand-monitoring/">Brand Monitoring</a></li>
+<li id="menu-item-6722" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-6722"><a href="https://www.scrapehero.com/rpa-robotic-process-automation/">Robotic Process Automation</a></li>
+<li id="menu-item-1416" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1416"><a href="https://www.scrapehero.com/sales-intelligence/">Sales Intelligence</a></li>
+<li id="menu-item-15191" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-15191"><a href="https://www.scrapehero.com/data-for-research-and-journalism/">Research and Journalism</a></li>
+</ul></div>                    </div>
+<div class="column is-3">
+<div class="menu-footer-middle-2-container"><ul id="menu-footer-middle-2" class="menu"><li id="menu-item-6245" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-6245"><a href="https://www.scrapehero.com/web-scraping-api/">API Services</a></li>
+<li id="menu-item-6255" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-6255"><a href="https://www.scrapehero.com/jobs-data/">Job Data Monitoring</a></li>
+<li id="menu-item-6725" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-6725"><a href="https://www.scrapehero.com/web-scraping-service/">Web Scraping Service</a></li>
+<li id="menu-item-12253" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-12253"><a href="https://www.scrapehero.com/retail-store-location-data/">Retail Store Location Data</a></li>
+<li id="menu-item-12249" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-12249"><a href="https://www.scrapehero.com/machine-learning-ai-training-data/">Training Data for Machine Learning</a></li>
+<li id="menu-item-6724" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-6724"><a href="https://www.scrapehero.com/product-distribution-channel-monitoring/">Distribution Channel Monitoring</a></li>
+<li id="menu-item-12707" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-12707"><a href="https://www.scrapehero.com/human-capital-management/">Human Capital Management</a></li>
+<li id="menu-item-15189" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-15189"><a href="https://www.scrapehero.com/real-estate-and-housing-data/">Real Estate and Housing Data</a></li>
+</ul></div>                    </div>
+<div class="column is-3">
+<div class="menu-footer-last-container"><ul id="menu-footer-last" class="menu"><li id="menu-item-3415" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-3415"><a href="https://www.scrapehero.com/store/">Data Store</a></li>
+<li id="menu-item-17867" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-17867"><a href="https://www.scrapehero.com/marketplace/">Self Service Scrapers</a></li>
+<li id="menu-item-19325" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-19325"><a href="https://www.scrapehero.com/location-reports/">Location Intelligence Reports</a></li>
+<li id="menu-item-13455" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-13455"><a href="https://www.scrapehero.com/travel-airline-hotel-data/">Travel Data</a></li>
+<li id="menu-item-13401" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-13401"><a href="https://www.scrapehero.com/sales-leads/">Sales Leads</a></li>
+<li id="menu-item-3416" class="menu-item menu-item-type-taxonomy menu-item-object-category current-post-ancestor current-menu-parent current-post-parent menu-item-3416"><a href="https://www.scrapehero.com/web-scraping-tutorials/">Web Scraping Tutorials</a></li>
+<li id="menu-item-3414" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3414"><a title="Web Scraping Insights" href="https://www.scrapehero.com/insights/">Insights</a></li>
+<li id="menu-item-28153" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-28153"><a href="https://www.scrapehero.com/b2blists/">B2B Data Lists</a></li>
+</ul></div>                    </div>
+</div>
+</div>
+</div>
+</section>
+<div class="content has-text-centered">
+<div class="container">
+<p class="has-text-white subtitle is-7 has-text-justified">
+<b>Legal Disclaimer: </b>ScrapeHero is an equal opportunity data service provider, a conduit, just like
+an ISP. We just gather data for our customers responsibly and sensibly. We do not store or resell data.
+We only provide the technologies and data pipes to scrape publicly available data. The mention of any
+company names, trademarks or data sets on our site does not imply we can or will scrape them. They are
+listed only as an illustration of the types of requests we get. Any code provided in our tutorials is
+for learning only, we are not responsible for how it is used. Access to this website is subject to the <a title="Terms" href="https://www.scrapehero.com/website-terms-of-use/">Website Terms of Use</a>
+</p>
+<p class="has-text-white subtitle is-7">
+Copyright &copy;
+2022            </p>
+</div>
+</div>
+</footer>
+<!-- Contact Form Modal -->
+<div class="modal" id="contact-us-modal">
+<div class="modal-background"></div>
+<div class="modal-card">
+<header class="modal-card-head">
+<p class="modal-card-title">Contact Sales below or call
+<a class="has-text-info" href="tel:+1 617 297 8737">
++1 617 297 8737                </a>
+</p>
+<button class="delete" aria-label="close"></button>
+</header>
+<section class="modal-card-body">
+<!-- Content ... -->
+<p class="subtitle is-5">
+Please let us know how we can help you and we will get back to you within hours
+</p>
+<form action="/form_submit.php" name="requestdata" method="post">
+<div class="field is-horizontal">
+<div class="field-body">
+<div class="field">
+<p class="control is-expanded">
+<input class="input is-medium" type="text" name="name" id="firstname"
+placeholder="Your Name *">
+</p>
+</div>
+<div class="field">
+<p class="control is-expanded">
+<input class="input is-medium" name="email" type="email" id="email"
+placeholder="email@company.com *">
+</p>
+</div>
+</div>
+</div>
+<div class="field is-horizontal">
+<div class="field-body">
+<div class="field">
+<div class="control">
+<textarea name="note" class="textarea is-medium" id="websites" rows="6"
+placeholder="Please enter details, data sources, requests - anything relevant *"></textarea>
+<span class="helptxt">
+<br>Please DO NOT contact us for any help with our Tutorials and Code using this form or
+by calling us, instead please add a comment to the bottom of the tutorial page for
+help
+</span>
+</div>
+</div>
+</div>
+</div>
+<span class="website_url is-hidden">
+<input name="url" />
+</span>
+<input type="hidden" name="refer" value="/scrape-nasdaq-stock-market-data/">
+<input type="hidden" name="piwikid" id="piwikid" value="">
+<input type="hidden" name="jsd" id="jsd" value="0" />
+<div class="field is-horizontal">
+<button type="submit" class="button is-info is-rounded is-medium is-aligned-center">Contact
+Sales</button>
+</div>
+</form>
+</section>
+</div>
+</div>
+<!-- START INCLUDING JAVASCRIPT --> 
+<!-- <script src="https://www.scrapehero.com/wp/wp-content/themes/superhero-2019/js/jquery.js"></script> -->
+<!-- <script>
+(function(d) {
+var config = {
+kitId: 'wwb5nbm',
+scriptTimeout: 3000,
+async: true
+},
+h=d.documentElement,t=setTimeout(function(){h.className=h.className.replace(/\bwf-loading\b/g,"")+" wf-inactive";},config.scriptTimeout),tk=d.createElement("script"),f=false,s=d.getElementsByTagName("script")[0],a;h.className+=" wf-loading";tk.src='https://use.typekit.net/'+config.kitId+'.js';tk.async=true;tk.onload=tk.onreadystatechange=function(){a=this.readyState;if(f||a&&a!="complete"&&a!="loaded")return;f=true;clearTimeout(t);try{Typekit.load(config)}catch(e){}};s.parentNode.insertBefore(tk,s)
+})(document);
+</script> -->
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js?ver=3.5.1"></script>
+<script type="text/javascript" src="https://www.scrapehero.com/wp/wp-content/themes/superhero-2019/js/jquery-migrate-3.3.2.min.js"></script>
+<script>
+$(document).ready(function () {
+// Check for click events on the navbar burger icon
+$(".navbar-burger , .navbar-menu").click(function () {
+// Toggle the "is-active" class on both the "navbar-burger" and the "navbar-menu"
+$(".navbar-burger").toggleClass("is-active");
+$(".navbar-menu").toggleClass("is-active");
+});
+$("section").click(function () {
+$(".navbar-burger, .navbar-menu").removeClass("is-active");
+});
+// contact us modal
+$(".contact-us,.contact_pop").click(function () {
+$("#contact-us-modal").addClass("is-active");
+ga('send', 'event', { eventCategory: 'SH Events', eventAction: 'Contact_Form_Pop', eventLabel: 'Contact Form Popup'});
+})
+$(".delete, .modal-background").on("click", function () {
+$("#contact-us-modal").removeClass("is-active");
+});
+});
+</script>
+<script>
+$(document).ready(function () {
+ga('set', 'contentGroup1', 'Financial Data Gathering Tutorials');
+ga('set', 'contentGroup1', 'Web Scraping Tutorials');
+});
+</script>
+<!-- Font Awesome Icon Pack for god knows what -->
+<!-- <script defer src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"></script> -->
+<!-- End Font Awesome --> 
+<!-- Anju C's cool Script which removes empty tags --> 
+<script>
+$(document).ready(function () {
+$('p , :header , li ').each(function () {
+var $this = $(this);
+if ($this.html().replace(/\s|&nbsp;/g, '').length == 0)
+$this.remove();
+});
+});
+</script>
+<!-- Script for Smooth Scrolling --> 
+<script>
+$(document).ready(function () {
+$('a[href^="#"]').on('click', function (e) {
+e.preventDefault();
+var target = this.hash;
+var $target = $(target);
+$('html, body').stop().animate({
+'scrollTop': $target.offset().top-70
+}, 900);
+});
+});
+</script>
+<!-- For Form Validation --> 
+<script src="https://www.scrapehero.com/wp/wp-content/themes/superhero-2019/js/jquery.validate.min.js"></script>
+<script>
+// Wait for the DOM to be ready
+$(function() {
+// set the hidden field jsd to the year to check for JS support
+var datefield = new Date(); $('input[name=jsd]').attr('value',datefield.getFullYear());
+// Initialize form validation on the registration form.
+// It has the name attribute "registration"
+$("form[name='requestdata']").validate({
+// Specify validation rules
+rules: {
+// The key name on the left side is the name attribute
+// of an input field. Validation rules are defined
+// on the right side
+name: "required",
+lastname: "required",
+note: "required",
+email: {
+required: true,
+// Specify that email should be validated
+// by the built-in "email" rule
+email: true
+},
+password: {
+required: true,
+minlength: 5
+}
+},
+// Specify validation error messages
+messages: {
+name: "Did you forget to enter your name?",
+note: "Did you forget to enter your message?",
+email: {
+required: "Your work email address please",
+email: "Please enter a valid email address"
+}
+},
+// Make sure the form is submitted to the destination defined
+// in the "action" attribute of the form when valid
+submitHandler: function(form) {
+form.submit();
+}
+});
+$("form[name='contact_us']").validate({
+// Specify validation rules
+rules: {
+// The key name on the left side is the name attribute
+// of an input field. Validation rules are defined
+// on the right side
+name: "required",
+lastname: "required",
+note: "required",
+email: {
+required: true,
+// Specify that email should be validated
+// by the built-in "email" rule
+email: true
+},
+password: {
+required: true,
+minlength: 5
+}
+},
+// Specify validation error messages
+messages: {
+name: "Did you forget to enter your name?",
+note: "Did you forget to enter your message?",
+email: {
+required: "Your work email address please",
+email: "Please enter a valid email address"
+}
+},
+// Make sure the form is submitted to the destination defined
+// in the "action" attribute of the form when valid
+submitHandler: function(form) {
+form.submit();
+}
+});
+});
+</script>
+<!-- End Form Validation --> 
+<!-- Lucky Orange Tracking Code -->
+<script type='text/javascript'>
+window.__lo_site_id = 110030;
+(function () {
+var wa = document.createElement('script');
+wa.type = 'text/javascript';
+wa.async = true;
+wa.src = 'https://d10lpsik1i8c69.cloudfront.net/w.js';
+var s = document.getElementsByTagName('script')[0];
+s.parentNode.insertBefore(wa, s);
+})();
+</script>
+<!-- end Lucky Orange Tracking Code -->
+<!-- For Jquery Table of Contents only in Tutorial Page --> 
+<!-- For Table of Contents --> 
+<script src="https://www.scrapehero.com/wp/wp-content/themes/superhero-2019/js/jquery-ui.min.js"></script>
+<script src="https://www.scrapehero.com/wp/wp-content/themes/superhero-2019/js/jquery.tocify.min.js"></script>
+<!-- High light JS --> 
+<script src="https://www.scrapehero.com/wp/wp-content/themes/superhero-2019/libraries/highlight/highlight.pack.js"></script>
+<script>
+$(function() {
+// Add Table of Contents 
+$("#toc").tocify(
+{
+context:'#blog_article',
+selectors:'h2,h3',
+highlightOnScroll:true,
+scrollTo:100,
+extendPage:false,
+history:false,
+hideEffect:'slideUp',
+}
+);
+//Highlight Code 
+// hljs.configure({useBR: true});
+$('#blog_article pre').each(function(i, block) {
+hljs.highlightBlock(block);
+});
+});
+function sticky_relocate() {
+var window_top = $(window).scrollTop();
+var footer_top = $("#end").offset().top-100;
+var div_top = $('#sticky-anchor').offset().top;
+var div_height = $("#toc").height();
+if (window_top + div_height > footer_top)
+$('#toc').hide(); 
+else if (window_top > div_top) {
+$('#toc').show(); 
+}
+}
+$(function () {
+$(window).scroll(sticky_relocate);
+sticky_relocate();
+});
+</script>
+<!-- End Jquery Toc --> 
+<!-- For Marketplace  -->
+<script type="text/javascript" >				
+window.addEventListener('DOMContentLoaded', function () {
+setTimeout(function(){
+if( document.querySelectorAll('[name^=ct_checkjs]').length > 0 ) {
+apbct_public_sendREST(
+'js_keys__get',
+{ callback: apbct_js_keys__set_input_value }
+)
+} 
+},0)					   
+});								
+</script>		<div data-elementor-type="popup" data-elementor-id="14316" class="elementor elementor-14316 elementor-location-popup" data-elementor-settings="{&quot;entrance_animation&quot;:&quot;slideInUp&quot;,&quot;avoid_multiple_popups&quot;:&quot;yes&quot;,&quot;entrance_animation_duration&quot;:{&quot;unit&quot;:&quot;px&quot;,&quot;size&quot;:1.2,&quot;sizes&quot;:[]},&quot;triggers&quot;:{&quot;scrolling&quot;:&quot;yes&quot;,&quot;scrolling_direction&quot;:&quot;down&quot;,&quot;scrolling_offset&quot;:50},&quot;timing&quot;:{&quot;times&quot;:&quot;yes&quot;,&quot;devices_devices&quot;:[&quot;desktop&quot;],&quot;devices&quot;:&quot;yes&quot;,&quot;times_times&quot;:2,&quot;page_views_views&quot;:2,&quot;page_views&quot;:&quot;yes&quot;,&quot;logged_in&quot;:&quot;yes&quot;,&quot;logged_in_users&quot;:&quot;all&quot;}}">
+<div class="elementor-section-wrap">
+<section class="elementor-section elementor-top-section elementor-element elementor-element-dda475a elementor-section-content-middle elementor-section-stretched elementor-section-full_width elementor-section-height-default elementor-section-height-default" data-id="dda475a" data-element_type="section" data-settings="{&quot;stretch_section&quot;:&quot;section-stretched&quot;}">
+<div class="elementor-container elementor-column-gap-default">
+<div class="elementor-row">
+<div class="elementor-column elementor-col-33 elementor-top-column elementor-element elementor-element-3f92c71b elementor-hidden-phone" data-id="3f92c71b" data-element_type="column">
+<div class="elementor-column-wrap elementor-element-populated">
+<div class="elementor-widget-wrap">
+<div class="elementor-element elementor-element-e67475b elementor-widget elementor-widget-image" data-id="e67475b" data-element_type="widget" data-widget_type="image.default">
+<div class="elementor-widget-container">
+<div class="elementor-image">
+<img src="https://www.scrapehero.com/wp/wp-content/uploads/elementor/thumbs/logo-800-nj0kiddakt8b8mqrp1hxabzbg6eji00har6h0rk8dw.png" title="ScrapeHero Logo" alt="ScrapeHero Logo" />														</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="elementor-column elementor-col-33 elementor-top-column elementor-element elementor-element-1400ac93" data-id="1400ac93" data-element_type="column">
+<div class="elementor-column-wrap elementor-element-populated">
+<div class="elementor-widget-wrap">
+<section class="elementor-section elementor-inner-section elementor-element elementor-element-5d53da05 elementor-section-boxed elementor-section-height-default elementor-section-height-default" data-id="5d53da05" data-element_type="section">
+<div class="elementor-container elementor-column-gap-default">
+<div class="elementor-row">
+<div class="elementor-column elementor-col-100 elementor-inner-column elementor-element elementor-element-1ea89b55" data-id="1ea89b55" data-element_type="column">
+<div class="elementor-column-wrap elementor-element-populated">
+<div class="elementor-widget-wrap">
+<div class="elementor-element elementor-element-2872300a elementor-widget elementor-widget-text-editor" data-id="2872300a" data-element_type="widget" data-widget_type="text-editor.default">
+<div class="elementor-widget-container">
+<div class="elementor-text-editor elementor-clearfix">
+<p><strong>Can we help you get some data?</strong></p>					</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+</div>
+</div>
+<div class="elementor-column elementor-col-33 elementor-top-column elementor-element elementor-element-6e5224b9" data-id="6e5224b9" data-element_type="column">
+<div class="elementor-column-wrap elementor-element-populated">
+<div class="elementor-widget-wrap">
+<div class="elementor-element elementor-element-105e4ea9 elementor-align-left elementor-widget elementor-widget-button" data-id="105e4ea9" data-element_type="widget" data-widget_type="button.default">
+<div class="elementor-widget-container">
+<div class="elementor-button-wrapper">
+<a href="https://www.scrapehero.com/contact/?utm_source=web&#038;utm_medium=button_popup&#038;utm_campaign=sales" class="elementor-button-link elementor-button elementor-size-sm" role="button">
+<span class="elementor-button-content-wrapper">
+<span class="elementor-button-icon elementor-align-icon-right">
+<i aria-hidden="true" class="fas fa-chevron-right"></i>			</span>
+<span class="elementor-button-text">Contact Sales</span>
+</span>
+</a>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+</div>
+<!-- <link rel='stylesheet' id='e-animations-css'  href='https://www.scrapehero.com/wp/wp-content/plugins/elementor/assets/lib/animations/animations.min.css?ver=3.6.5' type='text/css' media='all' /> -->
+<link rel="stylesheet" type="text/css" href="//www.scrapehero.com/wp/wp-content/cache/wpfc-minified/d5ye17mu/dmsc9.css" media="all"/>
+<script type='text/javascript' src='https://www.scrapehero.com/wp/wp-includes/js/comment-reply.min.js?ver=5.9.3' id='comment-reply-js'></script>
+<script type='text/javascript' src='https://www.scrapehero.com/wp/wp-content/plugins/elementor-pro/assets/js/webpack-pro.runtime.min.js?ver=3.7.1' id='elementor-pro-webpack-runtime-js'></script>
+<script type='text/javascript' src='https://www.scrapehero.com/wp/wp-content/plugins/elementor/assets/js/webpack.runtime.min.js?ver=3.6.5' id='elementor-webpack-runtime-js'></script>
+<script type='text/javascript' src='https://www.scrapehero.com/wp/wp-content/plugins/elementor/assets/js/frontend-modules.min.js?ver=3.6.5' id='elementor-frontend-modules-js'></script>
+<script type='text/javascript' src='https://www.scrapehero.com/wp/wp-includes/js/dist/vendor/regenerator-runtime.min.js?ver=0.13.9' id='regenerator-runtime-js'></script>
+<script type='text/javascript' src='https://www.scrapehero.com/wp/wp-includes/js/dist/vendor/wp-polyfill.min.js?ver=3.15.0' id='wp-polyfill-js'></script>
+<script type='text/javascript' src='https://www.scrapehero.com/wp/wp-includes/js/dist/hooks.min.js?ver=1e58c8c5a32b2e97491080c5b10dc71c' id='wp-hooks-js'></script>
+<script type='text/javascript' src='https://www.scrapehero.com/wp/wp-includes/js/dist/i18n.min.js?ver=30fcecb428a0e8383d3776bcdd3a7834' id='wp-i18n-js'></script>
+<script type='text/javascript' id='wp-i18n-js-after'>
+wp.i18n.setLocaleData( { 'text direction\u0004ltr': [ 'ltr' ] } );
+</script>
+<script type='text/javascript' id='elementor-pro-frontend-js-translations'>
+( function( domain, translations ) {
+var localeData = translations.locale_data[ domain ] || translations.locale_data.messages;
+localeData[""].domain = domain;
+wp.i18n.setLocaleData( localeData, domain );
+} )( "elementor-pro", { "locale_data": { "messages": { "": {} } } } );
+</script>
+<script type='text/javascript' id='elementor-pro-frontend-js-before'>
+var ElementorProFrontendConfig = {"ajaxurl":"https:\/\/www.scrapehero.com\/wp\/wp-admin\/admin-ajax.php","nonce":"3cf5a2c91d","urls":{"assets":"https:\/\/www.scrapehero.com\/wp\/wp-content\/plugins\/elementor-pro\/assets\/","rest":"https:\/\/www.scrapehero.com\/wp-json\/"},"shareButtonsNetworks":{"facebook":{"title":"Facebook","has_counter":true},"twitter":{"title":"Twitter"},"linkedin":{"title":"LinkedIn","has_counter":true},"pinterest":{"title":"Pinterest","has_counter":true},"reddit":{"title":"Reddit","has_counter":true},"vk":{"title":"VK","has_counter":true},"odnoklassniki":{"title":"OK","has_counter":true},"tumblr":{"title":"Tumblr"},"digg":{"title":"Digg"},"skype":{"title":"Skype"},"stumbleupon":{"title":"StumbleUpon","has_counter":true},"mix":{"title":"Mix"},"telegram":{"title":"Telegram"},"pocket":{"title":"Pocket","has_counter":true},"xing":{"title":"XING","has_counter":true},"whatsapp":{"title":"WhatsApp"},"email":{"title":"Email"},"print":{"title":"Print"}},"facebook_sdk":{"lang":"en_US","app_id":""},"lottie":{"defaultAnimationUrl":"https:\/\/www.scrapehero.com\/wp\/wp-content\/plugins\/elementor-pro\/modules\/lottie\/assets\/animations\/default.json"}};
+</script>
+<script type='text/javascript' src='https://www.scrapehero.com/wp/wp-content/plugins/elementor-pro/assets/js/frontend.min.js?ver=3.7.1' id='elementor-pro-frontend-js'></script>
+<script type='text/javascript' src='https://www.scrapehero.com/wp/wp-content/plugins/elementor/assets/lib/waypoints/waypoints.min.js?ver=4.0.2' id='elementor-waypoints-js'></script>
+<script type='text/javascript' src='https://www.scrapehero.com/wp/wp-includes/js/jquery/ui/core.min.js?ver=1.13.1' id='jquery-ui-core-js'></script>
+<script type='text/javascript' src='https://www.scrapehero.com/wp/wp-content/plugins/elementor/assets/lib/swiper/swiper.min.js?ver=5.3.6' id='swiper-js'></script>
+<script type='text/javascript' src='https://www.scrapehero.com/wp/wp-content/plugins/elementor/assets/lib/share-link/share-link.min.js?ver=3.6.5' id='share-link-js'></script>
+<script type='text/javascript' src='https://www.scrapehero.com/wp/wp-content/plugins/elementor/assets/lib/dialog/dialog.min.js?ver=4.9.0' id='elementor-dialog-js'></script>
+<script type='text/javascript' id='elementor-frontend-js-before'>
+var elementorFrontendConfig = {"environmentMode":{"edit":false,"wpPreview":false,"isScriptDebug":false},"i18n":{"shareOnFacebook":"Share on Facebook","shareOnTwitter":"Share on Twitter","pinIt":"Pin it","download":"Download","downloadImage":"Download image","fullscreen":"Fullscreen","zoom":"Zoom","share":"Share","playVideo":"Play Video","previous":"Previous","next":"Next","close":"Close"},"is_rtl":false,"breakpoints":{"xs":0,"sm":480,"md":768,"lg":1025,"xl":1440,"xxl":1600},"responsive":{"breakpoints":{"mobile":{"label":"Mobile","value":767,"default_value":767,"direction":"max","is_enabled":true},"mobile_extra":{"label":"Mobile Extra","value":880,"default_value":880,"direction":"max","is_enabled":false},"tablet":{"label":"Tablet","value":1024,"default_value":1024,"direction":"max","is_enabled":true},"tablet_extra":{"label":"Tablet Extra","value":1200,"default_value":1200,"direction":"max","is_enabled":false},"laptop":{"label":"Laptop","value":1366,"default_value":1366,"direction":"max","is_enabled":false},"widescreen":{"label":"Widescreen","value":2400,"default_value":2400,"direction":"min","is_enabled":false}}},"version":"3.6.5","is_static":false,"experimentalFeatures":{"e_import_export":true,"e_hidden_wordpress_widgets":true,"theme_builder_v2":true,"landing-pages":true,"elements-color-picker":true,"favorite-widgets":true,"admin-top-bar":true,"page-transitions":true,"notes":true,"form-submissions":true,"e_scroll_snap":true},"urls":{"assets":"https:\/\/www.scrapehero.com\/wp\/wp-content\/plugins\/elementor\/assets\/"},"settings":{"page":[],"editorPreferences":[]},"kit":{"global_image_lightbox":"yes","active_breakpoints":["viewport_mobile","viewport_tablet"],"lightbox_enable_counter":"yes","lightbox_enable_fullscreen":"yes","lightbox_enable_zoom":"yes","lightbox_enable_share":"yes","lightbox_title_src":"title","lightbox_description_src":"description"},"post":{"id":4803,"title":"How%20to%20scrape%20Nasdaq%20and%20extract%20Stock%20Market%20data%20using%20Python%20and%20LXML","excerpt":"Learn how to scrape financial and stock market data from Nasdaq.com, using Python and LXML in this web scraping tutorial. We will show you how to extract the key stock data such as best bid, market cap, earnings per share and more of a company using its ticker symbol.","featuredImage":"https:\/\/www.scrapehero.com\/wp\/wp-content\/uploads\/2018\/02\/featured-image-nasdaq-tutorial-2-1200x675.png"}};
+</script>
+<script type='text/javascript' src='https://www.scrapehero.com/wp/wp-content/plugins/elementor/assets/js/frontend.min.js?ver=3.6.5' id='elementor-frontend-js'></script>
+<script type='text/javascript' src='https://www.scrapehero.com/wp/wp-content/plugins/elementor-pro/assets/js/preloaded-elements-handlers.min.js?ver=3.7.1' id='pro-preloaded-elements-handlers-js'></script>
+<script type='text/javascript' src='https://www.scrapehero.com/wp/wp-content/plugins/elementor/assets/js/preloaded-modules.min.js?ver=3.6.5' id='preloaded-modules-js'></script>
+<script type='text/javascript' src='https://www.scrapehero.com/wp/wp-content/plugins/elementor-pro/assets/lib/sticky/jquery.sticky.min.js?ver=3.7.1' id='e-sticky-js'></script>
+<!-- TESTING GA4 before we migrate it all over Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TJ11RHTJ68"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-TJ11RHTJ68');
+</script>
+</body>
+</html><!-- WP Fastest Cache file was created in 0.20470213890076 seconds, on 19-05-22 20:47:37 --><!-- via php -->
