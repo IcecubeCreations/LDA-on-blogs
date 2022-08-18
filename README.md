@@ -40,7 +40,7 @@ Will perform language testing for english language in the txtfiles folder. Any f
 Manual checking and removal is required due to false positives.
   
 ### preprocess.py
-Copy the contents of the "txtfiles" folder into "category_1_folder" subfolder. This 2 folder hierarchy is required by the LDA and "txtfiles" folder works as a backup for preprocess.py
+Copy the contents of the "txtfiles" folder into "category_1_folder" subfolder. You may want to remove old files first. This 2 folder hierarchy is required by the LDA and "txtfiles" folder works as a backup for preprocess.py
 To modify results of the preprocessing modify any of the sheets in the "preprocessing" folder to add compound words, ontology keywords etc.
   
 ### LDA.py
