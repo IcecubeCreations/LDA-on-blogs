@@ -94,6 +94,9 @@ def main():
     sheet_path = os.path.join("preprocessing", "ontology_sheet.xlsx")
     simp_sheet_path = os.path.join("preprocessing", "simplify_ontology.xlsx")
     ontology_set = load_replacement_list(sheet_path)
+    # github won't allow empty directories
+    if not os.path.exists("debug_results"):
+        os.mkdir("debug_results")
     replaced_path = os.path.join("debug_results", "replaced.txt")
     replaced_words_file = open(replaced_path, 'w+')
     simplify_set = load_replacement_list(simp_sheet_path)
