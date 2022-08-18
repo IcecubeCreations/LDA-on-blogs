@@ -1,24 +1,25 @@
 # LDA-on-blogs
 Contains the data and code necessary to run the LDA topic analysis on AK blogs.
-Disclaimer. Any change to the parameters or to the source data may create different results.
+Disclaimer. Any change to the parameters or to the source data may create different results, even if that is merely a different numbering of the same topics.
+backup and backup_large contain txt files that can be copied directly to the "txtfiles\category_1_folder" but require preprocessing.py before LDA.py
 
 ## Requirements
 - Python 3.10
 ### Python libraries
-Following libraries were installed using "pip install <name>".
+Following libraries were installed using:
+
+* `pip install -r requirements.txt`.
+
 Some of the libraries have dependencies of their own. However, they should be automatically installed.
 If that is not the case, just install the required packages mentioned by the interpreter.
 
-- requests
-- beautifulsoup4
-- openpyxl
-- nltk
-  - run following command in python interpreter: import nltk; nltk.download('popular')
-- sklearn
-- pyenchant
-- pandas
-- matplotlib
-- scipy
+For the NLTK library we need to install the data:
+Run the collowing code in the python interpreter.
+
+```python
+import nltk
+nltk.download('popular')
+```
 
 ## Running the program
 
