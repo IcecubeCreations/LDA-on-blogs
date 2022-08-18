@@ -1,0 +1,634 @@
+
+
+
+
+
+
+Json Java parsers / generators microbenchmark - Myšlenky dne otce Fura
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Myšlenky dne otce Fura
+Dává je jen zřídka, obvykle jim není moc rozumět a často vám ani k ničemu nejsou.
+
+
+
+
+
+
+
+
+Menu
+
+
+Kafemlejnek.TV
+jOpenSpace
+FG Forrest
+O autorovi
+
+
+
+
+
+
+
+
+
+Json Java parsers / generators microbenchmark
+
+
+5. 2. 2012
+
+
+ A month ago I had an incident in production that was caused, as I found out later, by poor performance of used JSON parser library. I've optimalized the code and managed to solve it but decided to look for another library with better performance characteristics. I searched for some existing benchmarks and found two of them - one is for JSON manipulation on Android and the second one is thorough serialization test focused on different use-cases than I had. So I decided to write my own microbenchmark copying the use-case I had in the production.
+There are many differencies among JSON libraries regarding their features and resulting performance. So if you want to know my findings continue reading ...
+
+Benchmarks (2012-03-18)
+Tested use case is a serialization of a rich POJO with collection of inner POJOs referencing another POJO (see PhotoAlbum model object). Tested JSON parser must have direct POJO to JSON serialization and deserialization support in order to get into the suite. I've used all libraries by same naive approach - grab it and use it the simpliest way possible. No tweaking, no optimalizing whatsoever (that's the way they are usually used). Average size of generated JSON data is 160KB, so it is rather big. The problem in production was caused by data of 33KB size in my case.
+Disclaimer microbenchmarking results may be misleading - if you want to be sure write your own tests, with your custom data on your hardware to be really sure.
+Update 2012-03-18
+I've added new tests for Staxon - with three different serialization factories - internal, GSon and Jackson. New section added. I've re-run all the tests and updated the numbers.
+Setup
+Hardware: Intel® Core™2 Duo CPU T7500 @ 2.20GHz × 2, SSD disk (but File IO time is not counted)
+Software: Java(TM) SE Runtime Environment (build 1.6.0_23-b05), Java HotSpot(TM) Server VM on Ubuntu Linux 11.10 32-bit
+JVM options: -Xmx32m -server
+Data value being tested: PhotoAlbum.
+Methodology:
+Before taking measurements I warmed things up by running the task 250 times, next 3000 loops are counted. No other operations except the serialization or deserialization is measured. Finally average execution time is taken for each operation and library. I ran tests as a full suite and separately by each library - but the results didn't differ much.
+Tested libraries and their versions:
+
+FlexJson (2.1)
+GSon (2.1)
+Jackson (2.0.4)
+JsonLib (2.4)
+JsonMarshaller (0.21)
+JsonSmart (2.0-beta2)
+Protostuff JSON (1.0.4)
+XStream (1.4.2)
+Staxon (1.0)
+
+Testing code is placed on GitHub: https://github.com/novoj/JavaJsonPerformanceTest
+Results and comments
+FlexJson
+There are a few catches when using this library. In order to serialize POJO right you have to exclude serialization of a class property deep-wise and include serialization of collections as they are not serialized by default. Library has neither problems with Date handling nor with using generated Groovy classes. I haven't noticed any support for resolution of circular references. Library is easily reachable in maven repos. Main advantage of this library according authors is ability to pick and choose specific properties and structures that should be converted to/from JSON.
+Serialization: 5.978ms / 1 PhotoAlbum, JSON file size 165KB
+Deserialization: 14.314ms / 1 PhotoAlbum
+GSon
+It's very sophisticated and configurable library - it supports versioning, custom handlers and instantiation factories, exclusion of certain properties, custom naming. Library is super easy to use with good documentation. I haven't noticed any support for resolution of circular references, handling Groovy classes or Date objects. Library is easily reachable in maven repos.
+Serialization: 5.11ms / 1 PhotoAlbum, JSON file size 169KB
+Deserialization: 9.396667ms / 1 PhotoAlbum
+Jackson
+It claims to be a fastest Java JSON library among all - and according to my statistics - they are quite right. Even then it has very rich feature set that exceeds what is provided by GSon (but no versioning support out of the box). It is super easy to use, it has native support for Dates (and JodaTime too!).
+Serialization: 1.291ms / 1 PhotoAlbum, JSON file size 165KB
+Deserialization: 1.588ms / 1 PhotoAlbum
+JSON-Lib
+This library is very configurable but has some glitches - for example deserializing of Date objects doesn't work out of the box and you have to provide type handlers. It has several strategies how to cope with circular referencies. Very good documentation is provided and it has integration with Groovy. It is easily reachable from maven repos (but beware you have to provide classifier=jdk15). This library burned me at the production - as you can see it has really bad performance stats.
+Serialization: 17.592ms / 1 PhotoAlbum, JSON file size 168KB
+Deserialization: 92.248ms / 1 PhotoAlbum
+JsonMarshaller
+It has problems with serialization / deserialization of Groovy objects (throws exception regarding ASM). It has no Date support built-in. It requires you to place annotations into your model (or DTO) classes that might be rather uncomfortable (and maybe unacceptable) in some cases. Documentation is quite poor. It is not placed in Maven repos.
+Serialization: 3.8146667ms / 1 PhotoAlbum, JSON file size 165KB
+Deserialization: 6.125ms / 1 PhotoAlbum
+Json Smart
+This library is very simplistic and small - POJO deserialization comes first in version 2, which is currently in beta. Almost nothing is configurable, documentation is poor. Library is not reachable in Maven repos. It's not currently possible to deserialize Date objects, more than that there is no configurable option to add custom type handler, so that deserialization of object containing date is not possible at all.
+Serialization: 4.026ms / 1 PhotoAlbum, JSON file size 172KB
+Deserialization: -
+Protostuff - JSON
+Powerful library requiring rather complicated setup when not using RuntimeSchema generator. In standard setup I believe library is used to do much more stuff than I've used it for. JSON transformations are just piece of work it can do (it can convert to YAML, XML and more). It had no problems with Date objects and Groovy classes. Library is accessible in Maven repos.
+Serialization: 1.9116666ms / 1 PhotoAlbum, JSON file size 165KB
+Deserialization: 1.2213334ms / 1 PhotoAlbum
+XStream
+Library formerly used to serialize and deserialize to / from XML internally using Jettison to transfrom data to / from JSON. It is easy to use, highly customizable and supports resolution of circular references. Library handles Date objects out of the box, it has no problem with Groovy classes and is placed in Maven repos.
+Serialization: 76.84967ms / 1 PhotoAlbum, JSON file size 171KB
+Deserialization: 26.361ms / 1 PhotoAlbum
+Staxon
+Staxon aims primarily on the streaming API and presented use-case is not its primary kind of targeted usage. Nevertheless I was asked in the commentaries section to add some tests for this library so I did so. Staxon seems very easy to use, very well documented. It handles Date objects out of the box and is placed in Maven repos. It's performance is not one of the best - seems rather average for the use-case tested, but remember - when using streaming style or reading / writing results might be different.
+Staxon over GSon
+Serialization: 7.510667ms / 1 PhotoAlbum, JSON file size 176KB
+Deserialization: 12.171ms / 1 PhotoAlbum
+Staxon over Jackson
+Serialization: 4.8446665ms / 1 PhotoAlbum, JSON file size 176KB
+Deserialization: 11.099ms / 1 PhotoAlbum
+Staxon default implementation
+Serialization: 6.3436666ms / 1 PhotoAlbum, JSON file size 176KB
+Deserialization: 15.087ms / 1 PhotoAlbum
+Fastjson
+Young library (since mid 2011) that performs really fast. It dynamically creates specific serializer / deserializer class using ASM for each custom POJO type. It has considerable amount of processing features though not very well documented. Documentation as a whole is very poor but as long as it works you are safe to go. Library handles Date objects out of the box, it has no problem with Groovy classes and is placed in Maven repos.
+Serialization: 1.88ms / 1 PhotoAlbum, JSON file size 165KB
+Deserialization: 1.02ms / 1 PhotoAlbum
+Summary
+All stats are clearly comparable on the following graph:
+
+My conclusion is that when you need easily serialize / deserialize Java POJOs without sacrificing performance and have some backup in terms of extensibility and configurability you should choose Jackson, Fastjson or GSon library. Jackson is my winner and I am going to migrate all of my code to this one. Any comments and thoughts are appreciated (and remember this is only microbenchmark so make tests for your own use-cases if you want to be 100% sure)!
+Update 8/2012 Fastjson tests was added - it placed itself among the best performing libraries. Serialization is slightly worse than Jackson but in deserialization it is the clear winner.
+
+
+
+
+
+
+
+
+O autorovi: Jan Novotný
+
+
+		Alias Novoj. Vývojář v FG Forrest, autor Kafemlejnek.TV, spoluorganizátor jOpenSpace ne-konference.
+	
+
+
+Komentáře
+
+Comment j&rsquo;ai battu CORBA | OCTO talks !
+
+
+22.12.2014 19:20
+
+[…] une sérialisation rapide :  Faisant confiance à la communauté, ainsi qu’à quelques benchmarks , je choisis de prendre Jackson comme parseur JSON. (Par la suite des essais avec boon ou […]
+
+
+JSON y Java: Introducción a Gson | danielme.com
+
+
+11.7.2013 19:12
+
+[…] si necesitamos optimizar al máximo los procesos que impliquen estas coversiones entre Java y JSON. Aquí hay un benchmark muy interesante sobre varias librerias de parseo en las que Gson no sale mal […]
+
+
+JSON Parser &laquo; Peace be with you
+
+
+31.10.2012 23:03
+
+[…] http://blog.novoj.net/2012/02/05/json-java-parsers-generators-microbenchmark/ […]
+
+
+ryu
+
+
+20.9.2012 15:40
+
+Try this solution in very easy way, copy and paste service or website URL and then click go
+http://www.maya-wizard.com/services/json2java.php
+
+
+
+Cowtowncoder
+
+
+8.8.2012 01:11
+
+Good to see FastJSON included too – it is definitely fast, as name implies (which is not always the case with new libs).
+One other thing that’d be nice to test if you happen to have time is Jackson Afterburner module from:
+https://github.com/FasterXML/jackson-module-afterburner
+which speeds up Jackson serialization and deserialization a bit, by using dynamic byte code generation.
+
+
+
+Otec Fura
+
+
+4.8.2012 20:53
+
+Update 8/2012: Fastjson tests was added – it placed itself among the best performing libraries. Serialization is slightly worse than Jackson but in deserialization it is the clear winner.
+
+
+wenshao
+
+
+3.8.2012 01:30
+
+fastjson support POJO, it’s api very simple:
+serialize API : JSON.toJSONString(obj);
+deserialize API : VO vo = JSON.parseObject("…", VO.class);
+
+
+
+Otec Fura
+
+
+2.8.2012 17:06
+
+If it supports POJO serialization and deserialization I would add it when have some spare time. According to docs it is supposed to work with POJOs.
+Or you can make benchmark test on your own and create a pull request. Thanks for suggestion.
+
+
+
+wenshao
+
+
+2.8.2012 13:28
+
+fastjson hosting in github: 
+https://github.com/AlibabaTech/fastjson
+
+
+wenshao
+
+
+2.8.2012 13:27
+
+why not include fastjson?
+https://github.com/eishay/jvm-serializers/wiki/Staging-Results
+fastjson faster than jackson, it’s fast!
+
+
+
+Cowtowncoder
+
+
+27.3.2012 23:42
+
+Your findings are odd, because using POJOs should be faster than HashMaps, not slower. HashMaps have higher overhead than basic Java objects (due to key/value lookups), use up more memory, so their use does not make much sense to me for high-performance use cases.
+POJO binding is definitely faster than Maps with Jackson, at any rate. I have not found json-smart particularly fast – it appears to be medium speed (see [https://github.com/eishay/jvm-serializers/wiki]), which is good enough for many use cases.
+
+
+Otec Fura
+
+
+18.3.2012 09:36
+
+Staxon tests were finally added. I had some issues with switching serialization/deserialization factory in runtime. It seems library is optimized for choosing one factory at the start of the application and never change it (what is rather common usage I suppose).
+
+
+Kazuaki Maeda
+
+
+22.2.2012 02:36
+
+I have read your source code in groovy. Thank you.
+In org/novoj/json/transformer/protostuff/ProtostuffIO.groovy, you wrote
+JsonIOUtil.writeTo(out, photoAlbum, schema, true)
+This statement serializes attribute names in numeric, for example,
+{
+“1”:1,
+“2”:“John Doe”,
+“3”:“Speed kills!”,
+“4”:1
+}
+If you changed it to
+JsonIOUtil.writeTo(out, photoAlbum, schema, false)
+, the code serializes them in alphabetic,
+{
+“id”:1,
+“name”:“John Doe”,
+“motto”:“Speed kills!”,
+“gender”:1
+}
+This is a small thing, but I prefer the latter(false) to the former(true).
+And I would like to know about your information in English.
+I can not read your mother language :-<
+When I write technical documents, I would like to your name in acknowledgements.
+I wrote my contact information in my web page,
+http://www.rugson.org/
+Could you send email to me, please.
+Thank you very much.
+
+
+
+Otec Fura
+
+
+16.2.2012 08:20
+
+Some more detail benchmarks are located at https://github.com/eishay/jvm-serializers/wiki/ (that I referenced in the article perex). But there are many approaches that could be tested - I took only one of them (POJO related).
+Of course you can use my source codes and use it for you own experimenting. Everything at this blog is Creative Commons licensed, so do with it what you will. Sources are at GitHub so you can fork easily if you like.
+Sharing your results will be highly appreciated.
+
+
+
+Kazuaki Maeda
+
+
+16.2.2012 07:17
+
+I’m very interested in your work.
+I tried serialization benchmark last year.
+But the formats to serialize were XML and binary based.
+I would like to compare many approaches of object serialization from qualitative and quantitative aspects.
+Can I use your testing programs and the results in my benchmark?
+After finishing the experiments, I can open the results on my web site.
+Thank you.
+
+
+
+sreenath v
+
+
+12.2.2012 20:41
+
+Jackson for mobile device you can use minified jar which is ~134kb.
+Jackson mini doesn’t support annotations and which off-course is fine for mobile devices.
+
+
+jesse wilson
+
+
+12.2.2012 04:43
+
+Source code? My measurements showed a closer race between Gson and Jackson.
+Don’t forget that gson’s jar is way smaller than Jackson’s: The gson-2.1.jar is 176 Kib; this includes both streaming and binding. To do both 
+with Jackson you’ll need 874 Kib in .jar files.
+
+
+
+Otec Fura
+
+
+10.2.2012 09:35
+
+Staxon is focused on SAX like reading / writing and therefore I didn’t include it into the test suite in the first time. Test suite measures direct POJO serialization / deserialization and this is not main aim of the Staxon as I get it.
+After reading some docs I found out, that with combination with JaxB tags Staxson could be used for POJO serialization / deserialization so I’ll try to prepare a test for it. Check updates of this article please.
+
+
+
+Pratik Parikh
+
+
+9.2.2012 18:23
+
+Can you also put https://github.com/beckchr/staxon/ in equation to tell us how it performs.  It seems like you have a set test that you running against all the api. It would really help to see how this new api performances in compare to Jackson.  I am personally a fan of Jackson and their implementation but like the concept being staxon  and the conversion capability in place between xml and json.
+Thanks for sharing
+
+
+
+Otec Fura
+
+
+6.2.2012 20:08
+
+Oh well, that’s nasty. I haven’t run at this issue yet. Thanks for sharing!
+
+
+Steve Loughran
+
+
+6.2.2012 18:20
+
+I had to rip all of jsonlib out last week as it seems to auto-parse strings beginning with “[” or “{” as json whenever you insert them into the object model, or attach a parent to another node.
+
+http://steveloughran.blogspot.com/2012/02/just-because-you-can-rewrite-your.html
+
+Try testing what the libs do with multiple entries of the same name; json-lib assumes you wanted an array of that name and aggregates them. similarly, see what rejects illegal JSON, such as unquoted keys: {illegal:true} or trailing commas. The authors think they are being helpful, but they are encouraging you to create invalid JSON.
+
+
+
+Otec Fura
+
+
+6.2.2012 16:28
+
+Yes, I focused on POJO serialization / deserialization which is quite common in web space (IMHO). Though according to this stats:
+https://github.com/eishay/jvm-serializers/wiki/
+Json-Smart places itself in the middle of the performance chart. Maybe in some specific use-case it jumps up?
+If you have your tests somewhere public it might be interesting to other readers to study your use-case it they give different results.
+
+
+
+Leo
+
+
+6.2.2012 15:58
+
+I did extensive testing of json parsers with really large json data sets (parsing alone) and we never use POJO because it is simply a speed bump. In my tests, no other parser matched the speed of smart-json which is available in maven in it’s 1.0.9 version.
+Our use-case is slightly different though, we have to parse the json as fast as possible into managable hash maps to stay real-time.
+
+
+
+geemang
+
+
+6.2.2012 14:09
+
+It’d be interesting to see how the JSON support in Groovy 1.8 measures up.
+
+
+Otec Fura
+
+
+6.2.2012 12:41
+
+Yes, you’re right - in terms of performance Protostuff seems to be one of the best. But as I said in the beginning of the article:
+“I’ve used all libraries by same naive approach – grab it and use it the simpliest way possible. No tweaking, no optimalizing whatsoever (that’s the way they are usually used).”
+This library took me most time to integrate among all tested libraries, so I would recommend it for more serious work when you have time to study and try. For quick usage I wouldn’t go that way because Jackson or GSon are performant enough and much easier to use.
+
+
+
+Tomek Kaczanowski
+
+
+6.2.2012 11:46
+
+So you do not recommend Protostuff JSON because it is harder to use than the competition, right?
+
+
+
+
+
+
+
+
+
+
+
+
+
+Poslední články
+
+
+Proxycian
+Zkušenosti MonkeyTracker projektu a jeho ukončení
+Forresti publikují Open source software
+Logical operations over matrices of sorted numbers
+What lies on background of e-commerce site
+Precalculated modified preorder tree traversal
+Kafemlejnek.TV 42 – NETIO, chytré zásuvky pro průmysl (soutěž!)
+Kafemlejnek.TV 41 – Techniky a nástroje, kterými po Vás hackeři půjdou
+Zamyšlení nad procesy
+Kafemlejnek.TV 40 – Hacktrophy, bug bounty as a service
+
+
+
+
+Kategorie
+
+
+
+Android
+
+Bezpečnost
+
+Databáze
+
+DevFest
+
+English
+
+GeeCON
+
+Groovy
+
+Hackathon
+
+iBatis
+
+IntelliJ Idea
+
+Java
+
+Java, Softwarové nástroje, Programování, Programming
+
+JavaScript
+
+jOpenSpace
+
+Linux
+
+Management
+
+Management, Úvahy
+
+Maven
+
+MongoDB
+
+MonkeyTracker
+
+Nezařazené
+
+Podcast
+
+Programming
+
+Programování
+
+Reportáže
+
+Selenium
+
+Softwarové nástroje
+
+Spring Framework
+
+Stripes
+
+TeamCity
+
+Testování
+
+User Experience
+
+Web
+
+WebExpo
+
+Úvahy
+
+
+
+
+
+
+
+
+
+
+Toto dílo podléhá licenci Creative Commons Uveďte
+	původ - Zachovejte licenci 4.0 Mezinárodní License.
+
+
+Štítky
+
+ajax
+asus infinity pad
+Běžné problémy
+C3P0
+CgLib
+count
+DBCP
+download
+E-commerce
+Eclipse
+games
+geecon
+generiky
+GPars
+GroovyServ
+hacking
+hardware
+HttpClient
+HttpServer
+IDE
+Java
+JDK 1.6
+jelly bean
+jOpenSpace
+jQuery
+jUnit
+jwplayer
+kafemlejnektv
+konference
+LetsEncrypt
+manual upgrade
+measure
+mock
+monitor video plays
+MonkeyTracker
+motion capture
+mysql
+Open-Source
+Proxy
+reflection
+reflexe
+REST
+reuse
+security
+selenium
+simulate
+SpringFramework
+SpringOne
+Testování
+tomcat
+turris omnia
+unit testing
+vimeo
+warhorse
+webexpo
+youtube
+Základy
+Školení
+
+
+
+
+
+
+
+			© 2022 Myšlenky dne otce Fura.
+			Generated with Hugo and Mainroad theme.
+
+
+
+
+
+

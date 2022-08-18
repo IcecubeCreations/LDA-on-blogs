@@ -1,0 +1,650 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Apache Camel with Spring Boot | Baeldung
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Start HereCourses ▼▲
+
+
+
+
+
+
+
+
+
+REST with Spring
+
+
+The canonical reference for building a production grade API with Spring
+
+
+
+
+
+
+
+
+
+
+
+Learn Spring Security ▼▲
+
+
+THE unique Spring Security education if you’re working with Java today
+
+
+
+
+
+
+
+
+
+
+
+
+Learn Spring Security Core
+
+
+Focus on the Core of Spring Security 5
+
+
+
+
+
+
+
+
+
+
+
+Learn Spring Security OAuth
+
+
+Focus on the new OAuth2 stack in Spring Security 5
+
+
+
+
+
+
+
+
+
+
+
+
+Learn Spring
+
+
+From no experience to actually building stuff​
+
+
+
+
+
+
+
+
+
+
+
+Learn Spring Data JPA
+
+
+The full guide to persistence with Spring Data JPA
+
+
+
+
+Guides ▼▲
+
+
+
+
+
+
+
+
+
+Persistence
+
+
+The Persistence with Spring guides
+
+
+
+
+
+
+
+
+
+
+
+REST
+
+
+The guides on building REST APIs with Spring
+
+
+
+
+
+
+
+
+
+
+
+Security
+
+
+The Spring Security guides
+
+
+
+
+About ▼▲
+
+
+
+
+
+
+
+
+
+Full Archive
+
+
+The high level overview of all the articles on the site.
+
+
+
+
+
+
+
+
+
+
+
+Baeldung Ebooks
+
+
+Discover all of our eBooks
+
+
+
+
+
+
+
+
+
+
+
+About Baeldung
+
+
+About Baeldung.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Apache Camel with Spring Boot
+Last modified: February 23, 2022
+
+
+ by 
+
+baeldung 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Spring Boot 
+
+Apache Camel
+
+
+
+
+
+Generic Top 
+Get started with Spring 5 and Spring Boot 2, through the Learn Spring course:
+>> CHECK OUT THE COURSE
+
+ 
+
+1. Overview
+
+At its core, Apache Camel is an integration engine, which – simply put – can be used to facilitate interactions between a wide and varied array of technologies.
+These bridges between services and technologies are called routes. Routes are implemented on an engine (the CamelContext), and they communicate with so-called “exchange messages”.
+2. Maven Dependencies
+
+To start off, we'll need to include dependencies for Spring Boot, Camel, Rest API with Swagger and JSON:
+<dependencies>
+    <dependency>
+        <groupId>org.apache.camel.springboot</groupId>
+        <artifactId>camel-servlet-starter</artifactId>
+        <version>3.15.0</version>
+    </dependency>
+    <dependency>
+        <groupId>org.apache.camel.springboot</groupId>
+        <artifactId>camel-jackson-starter</artifactId>
+        <version>3.15.0</version>
+    </dependency>
+    <dependency>
+        <groupId>org.apache.camel.springboot</groupId>
+        <artifactId>camel-swagger-java-starter</artifactId>
+        <version>3.15.0</version>
+    </dependency>
+    <dependency>
+        <groupId>org.apache.camel.springboot</groupId>
+        <artifactId>camel-spring-boot-starter</artifactId>
+        <version>3.15.0</version>
+    </dependency>    
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+</dependencies>
+The latest versions of Apache Camel dependencies can be found here.
+3. The Main Class
+
+Let's first create a Spring Boot Application:
+
+
+
+@SpringBootApplication
+@ComponentScan(basePackages="com.baeldung.camel")
+public class Application {
+    public static void main(String[] args) {
+        SpringApplication.run(Application.class, args);
+    }
+}
+4. Camel Configurations for Spring Boot 
+
+Let's now configure our application with Spring, starting with the configuration files (properties).
+For instance, let's configure a log for our application on an application.properties file in src/main/resources:
+logging.config=classpath:logback.xml
+camel.springboot.name=MyCamel
+server.address=0.0.0.0
+management.address=0.0.0.0
+management.port=8081
+endpoints.enabled = true
+endpoints.health.enabled = true
+This example shows an application.properties file that also sets the path to a Logback configuration. By setting the IP to “0.0.0.0”, we fully restrict admin and management access on the web server provided by Spring Boot. Also, we enable the needed network access to our application endpoints as well as the health-check endpoints.
+Another configuration file is the application.yml. In it, we'll add some properties to helps us inject values into our application routes:
+server:
+  port: 8080
+camel:
+  springboot:
+    name: ServicesRest
+management:
+  port: 8081
+endpoints:
+  enabled: false
+  health:
+    enabled: true
+quickstart:
+  generateOrderPeriod: 10s
+  processOrderPeriod: 30s
+5. Setting up the Camel Servlet
+
+One way to start using Camel is to register it as a servlet, so it can intercept the HTTP requests and redirect them to our application.
+
+
+
+As mentioned before, staring with Camel's version 2.18 and below we can take advantage of our application.yml – by creating a parameter for our final URL. Later it will be injected into our Java code:
+baeldung:
+  api:
+    path: '/camel'
+Back to our Application class, we need to register the Camel servlet at the root of our context path, which is going to be injected from the reference baeldung.api.path in the application.yml when the application starts:
+@Value("${baeldung.api.path}")
+String contextPath;
+
+@Bean
+ServletRegistrationBean servletRegistrationBean() {
+    ServletRegistrationBean servlet = new ServletRegistrationBean
+      (new CamelHttpTransportServlet(), contextPath+"/*");
+    servlet.setName("CamelServlet");
+    return servlet;
+}
+As of Camel's version 2.19, this configuration has been dropped as the CamelServlet is by default set to “/camel”.
+6. Building a Route
+
+Let's start making a route by extending the RouteBuilder class from Camel, and setting it as a @Component so the component scan routine can locate it during web server initialization:
+@Component
+class RestApi extends RouteBuilder {
+    @Override
+    public void configure() {
+        CamelContext context = new DefaultCamelContext();
+        
+        restConfiguration()...
+        rest("/api/")... 
+        from("direct:remoteService")...
+    }
+}
+In this class, we override the configure() method from Camel's RouteBuilder class.
+
+
+
+Camel always needs a CamelContext instance – the core component where the incoming and outgoing messages are kept.
+In this simple example, DefaultCamelContext suffices as it just binds messages and routes into it, like the REST service that we are going to create.
+6.1. The restConfiguration() Route
+
+Next, we create a REST declaration for the endpoints we plan to create in the restConfiguration() method:
+restConfiguration()
+  .contextPath(contextPath) 
+  .port(serverPort)
+  .enableCORS(true)
+  .apiContextPath("/api-doc")
+  .apiProperty("api.title", "Test REST API")
+  .apiProperty("api.version", "v1")
+  .apiContextRouteId("doc-api")
+  .component("servlet")
+  .bindingMode(RestBindingMode.json)
+Here, we register the context path with our injected attribute from the YAML file. The same logic was applied to the port of our application. CORS is enabled, allowing for cross-site use of this web service. The binding mode allows and converts arguments to our API.
+Next, we add Swagger documentation to the URI, title, and version we previously set. As we create methods/endpoints for our REST web service, the Swagger documentation will be automatically updated.
+This Swagger context is itself a Camel route, and we can see some technical information about it in the server log during the startup process. Our example documentation is by default served at http://localhost:8080/camel/api-doc.
+6.2. The rest() Route
+
+Now, let's implement the rest() method call from the configure() method listed above:
+rest("/api/")
+  .id("api-route")
+  .consumes("application/json")
+  .post("/bean")
+  .bindingMode(RestBindingMode.json_xml)
+  .type(MyBean.class)
+  .to("direct:remoteService");
+This method is pretty straightforward for those familiar with APIs. The id is the identification of the route inside the CamelContext. The next line defines the MIME type. The binding mode is defined here to show that we can set a mode on the restConfiguration().
+
+
+
+The post() method adds an operation to the API, generating a “POST /bean” endpoint, while the MyBean (a regular Java bean with an Integer id and String name) defines the expected parameters.
+Similarly, HTTP actions such as GET, PUT and DELETE are all available as well in the form of get(), put(), delete().
+Finally, the to() method creates a bridge to another route. Here it tells Camel to search inside its context/engine to another route that we're going to create – which is named and detected by the value/id “direct: …“, matching the route defined in the from() method.
+6.3. The from() Route With transform()
+
+When working with Camel, a route receives parameters and then converts, transforms and process these parameters. After that, it sends these parameters to another route that forwards the result to the desired output (a file, a database, an SMTP server or a REST API response).
+In this article, we only create another route inside the configure() method that we are overriding. It will be the destination route for our last to() route:
+from("direct:remoteService")
+  .routeId("direct-route")
+  .tracing()
+  .log(">>> ${body.id}")
+  .log(">>> ${body.name}")
+  .transform().simple("Hello ${in.body.name}")
+  .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(200));
+The from() method follows the same principles and has many of the same methods as the rest() method, except that it consumes from the Camel context messages. This is the reason for the parameter “direct-route“, that creates a link to the aforementioned method rest().to().
+Many other conversions are available, including extraction as Java primitives (or objects) and sending it down to a persistence layer. Notice that the routes always read from incoming messages, so that chained routes will ignore outgoing messages.
+Our example is ready, and we can try it:
+
+
+
+
+Run the prompt command: mvn spring-boot:run
+Do a POST request to http://localhost:8080/camel/api/bean with header parameters: Content-Type: application/json, and a payload {“id”: 1,”name”: “World”}
+We should receive a return code of 201 and the response: Hello, World
+
+6.4. The SIMPLE Scripting Language
+
+The example outputs logging using the tracing() method. Notice that we've used the ${} placeholders; these are part of a scripting language that belongs to Camel called SIMPLE. It is applied to messages that are exchanged over the route, like the body of the in-message.
+In our example, we are using SIMPLE to output to the log the bean attributes that are inside the Camel message body.
+We can also use it to do simple transformations as well, as was shown with the transform() method.
+6.5. The from() Route With process()
+
+Let's do something more meaningful, such as calling a service layer to return processed data. SIMPLE isn't meant for heavy data processing, so let's replace the transform() with a process() method:
+from("direct:remoteService")
+  .routeId("direct-route")
+  .tracing()
+  .log(">>> ${body.id}")
+  .log(">>> ${body.name}")
+  .process(new Processor() {
+      @Override
+      public void process(Exchange exchange) throws Exception {
+          MyBean bodyIn = (MyBean) exchange.getIn().getBody();
+          ExampleServices.example(bodyIn);
+          exchange.getIn().setBody(bodyIn);
+      }
+  })
+  .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(200));
+This allows us to extract the data into a bean, the same one previously defined on the type() method, and process it in our ExampleServices layer.
+Since we set the bindingMode() to JSON previously, the response already is in a proper JSON format, generated based on our POJO. This implies that for an ExampleServices class:
+public class ExampleServices {
+    public static void example(MyBean bodyIn) {
+        bodyIn.setName( "Hello, " + bodyIn.getName() );
+        bodyIn.setId(bodyIn.getId() * 10);
+    }
+}
+The same HTTP request now returns with a response code 201 and body: {“id”: 10,”name”: “Hello, World”}.
+7. Conclusion
+
+With a few lines of code, we managed to create a relatively complete application. All dependencies are built, managed and run automatically with a single command. Moreover, we can create APIs that tie together all sorts of technologies.
+
+
+
+This approach is also very container friendly, resulting in a very lean server environment that can be easily replicated on demand. The extra configuration possibilities can easily be incorporated into a container template configuration file.
+This REST example can be found over on GitHub.
+Finally, beyond the filter(), process(), transform(), and marshall() APIs, many other integration patterns and data manipulations are available in Camel:
+
+Camel Integration Patterns
+Camel User Guide
+Camel SIMPLE Language
+
+Generic bottom 
+Get started with Spring 5 and Spring Boot 2, through the Learn Spring course:
+>> CHECK OUT THE COURSE
+
+Generic footer banner
+
+
+
+
+
+
+Learning to build your APIwith Spring?
+Download the E-book
+
+
+
+
+
+Comments are closed on this article!
+
+
+
+
+
+
+
+Generic sidebar banner
+
+
+
+Building a REST API with Spring 5?
+Download the E-book
+ 
+ 
+ 
+ 
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+CoursesAll Courses
+All Bulk Courses
+The Courses Platform
+SeriesJava “Back to Basics” Tutorial
+Jackson JSON Tutorial
+Apache HttpClient Tutorial
+REST with Spring Tutorial
+Spring Persistence Tutorial
+Security with Spring
+Spring Reactive Tutorials
+AboutAbout Baeldung
+The Full Archive
+Editors
+Jobs
+Our Partners
+Partner with Baeldung
+ 
+
+Terms of Service
+Privacy Policy
+Company Info
+Contact
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup
 import re
 import openpyxl
 import os
+from tqdm import tqdm
 
 HTML_FOLDER = "htmlfiles"
 HEADERS = ""
@@ -73,8 +74,7 @@ def write_page(page, url):
         name = title.text
     else:
         name = url.rsplit('/', 1)[-1]
-    file_name = url_to_name(name)         
-    print(name)
+    file_name = url_to_name(name)    
 
     # Create a local copy of the html file
     html_path = os.path.join(HTML_FOLDER, file_name, "_full.html")
@@ -97,6 +97,7 @@ def cleanup_existing(file_name):
     file = open(html_path, 'r', encoding='utf-8')
     data = file.read()
     soup = BeautifulSoup(data, "html.parser")
+    #new_name = file_name.replace(".html", ".txt") # Original solution, doesn't work with .htm 
     new_name = os.path.splitext(file_name)[0] + '.txt'    
     txt_path = os.path.join(DOCUMENTS_FOLDER, new_name)
     with open(txt_path, "w+", encoding="utf-8") as f:
@@ -122,6 +123,6 @@ if __name__ == "__main__":
 
     # parse existing local copies
     else:
-        for file_name in os.listdir("htmlfiles"):
+        for file_name in tqdm(os.listdir("htmlfiles")):
             if file_name.endswith(".html") or file_name.endswith(".htm"):
                 cleanup_existing(file_name)

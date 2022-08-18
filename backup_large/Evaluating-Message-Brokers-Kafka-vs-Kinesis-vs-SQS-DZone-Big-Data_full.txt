@@ -1,0 +1,540 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Evaluating Message Brokers: Kafka vs. Kinesis vs. SQS - DZone Big Data
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Big Data Zone
+
+
+
+Thanks for visiting DZone today,
+
+
+
+
+
+
+
+
+Edit Profile
+
+
+Manage Email Subscriptions
+
+
+                          How to Post to DZone
+                        
+
+
+
+                          Article Submission Guidelines
+                        
+
+
+
+Sign Out
+View Profile
+
+
+
+
+
+Post
+
+
+
+
+
+
+
+Post an Article
+
+
+Manage My Drafts
+
+
+
+
+
+
+
+Over 2 million developers have joined DZone.
+
+Log In
+/
+Join
+
+
+
+
+
+
+
+
+
+
+
+
+
+Refcardz
+
+
+
+
+Trend Reports
+
+
+
+
+Webinars
+
+
+
+
+
+                  Zones
+                  
+
+
+
+
+
+
+|
+
+
+
+Agile
+
+
+AI
+
+
+Big Data
+
+
+Cloud
+
+
+Database
+
+
+DevOps
+
+
+Integration
+
+
+IoT
+
+
+Java
+
+
+Microservices
+
+
+Open Source
+
+
+Performance
+
+
+Security
+
+
+Web Dev
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+DZone
+                    >
+                      Big Data Zone
+                      >
+                      Evaluating Message Brokers: Kafka vs. Kinesis vs. SQS
+
+
+
+Evaluating Message Brokers: Kafka vs. Kinesis vs. SQS
+
+
+A comparison of the best message brokers for big data applications between SQS, Kinesis, and Kafka.
+
+
+
+
+                          by
+
+                          
+
+Swaroop Ramachandra
+
+
+
+
+
+
+
+                          ·
+                        
+
+                        May. 14, 16
+                      
+                      ·
+                        
+Big Data Zone
+
+                      ·
+                      Opinion
+
+
+
+
+
+
+
+Like
+
+
+(20)
+
+
+
+
+
+
+                      Comment
+                      
+
+
+
+
+Save
+
+
+
+
+
+Tweet
+
+
+
+
+ 59.21K
+                      Views
+
+
+
+
+Join the DZone community and get the full member experience.
+Join For Free
+
+
+
+
+In the last couple of years, we have observed evolution of several message brokers and queuing services which are all fast, reliable, and scalable. While the list is long, in this blog, I will limit the discussion to SQS, Kinesis, and Kafka. Simple Queuing Service (SQS) is a fully managed and scalable queuing service on AWS. Kinesis is another service offered by AWS that makes it easy to load and analyze streaming data, and also provides the ability to build custom streaming data applications for special requirements. Apache Kafka is a fast, scalable, durable, and fault-tolerant publish-subscribe messaging system, which is often used in place of traditional message brokers like JMS and AMQP because of its characteristics like higher throughput, reliability, and replication.While making decisions about which messaging system is right for you, it is important to understand not only the technical differences but also the implications of operational costs both in terms of running them at scale as well as monitoring them. In this blog, I will touch upon our experiences and learning at OpsClarity, based on our evaluation of messaging systems and our migration from  SQS to Kafka. Simplicity of SQSAt OpsClarity, our real-time pipeline ingests machine and metric data from thousands of agents running across our customers’ infrastructure. Since OpsClarity is a real-time monitoring solution, the collected data has to be processed in real-time so we can alert our customers about impending issues in their application and data infrastructure. Since incoming data can have spikes, we need to smoothen out the ingest rate, which is typically solved by keeping an intermediate queuing layer that holds the data until we are ready to process it. When we started out back in 2014, we wanted a solution that was simple to use, quick to build upon and scalable. We primarily wanted to achieve two goals:Keep customer A’s data separate from customer B’s data throughout the pipeline. This is crucial since our pipeline ingests custom metrics from customers that should never show up on another customer’s dashboard.Guarantee availability of our monitoring solution all the time by guarding our data pipeline resources against a big surge of data from “misbehaving” hosts from one customer. At first look, SQS seemed to get us up and running quickly. With that, we decided to create separate queues for every customer that came onboard, which would also help us control which queues we wanted to process on a priority basis, in case of a data surge. This model worked fine when we had a single producer and a single consumer computing dimensional aggregations from raw metrics. That’s straightforward and every monitoring company does that. Running Into Limitations With SQSData Science is the cornerstone  of OpsClarity. A huge value we provide to our customers at OpsClarity is the wealth of valuable insights that can be gained from metrics through anomaly detection. Our anomaly detection models are custom-tailored and context-based, resulting in a material impact on the health, stability, and performance of operations of the system. The models are applied in real-time to the set of streaming metrics. The models require the same raw metric data as well as the aggregated data to detect anomalies. So the next challenges for us was to figure out how to send the same data to the anomaly detection component. SQS destroys the message once it is processed from it’s queue. This forced us to create a separate queue, there-by duplicating our metrics as below. That seemed like a small trade-off for the ease of use and operational flexibility provided by SQS. Soon enough, there was a new, powerful feature we wanted to build – Health of every service discovered by our topology engine. Our health model uses a roll-up mechanism, where health of a sub component rolls up into host health and finally health of the service clusters itself. The health component needs the same data as our aggregation pipelines or anomaly detection models. Soon enough, we had 3 SQS queues per customer having the same data.As we added more and more customers, it became evident that we needed to have a way to debug our pipelines by pulling data off of the queues. Also, the smart folks building our anomaly detection engine figured they wanted to run some modeling off of real time data streaming through our pipeline – basically a replay mode for data that had already been read. Duplicating more queues was not an option anymore. We also realized that a few components we had developed didn’t like the out of order delivery that SQS provided. This gave rise to our new set of requirements:Produce once, consume multiple times. A centralized feed for all operational dataHave fairly strong order guaranteeMaintain fast, durable and scalable nature of SQSEase of use and maintenanceEvaluating Kinesis and KafkaAWS Kinesis was shining on our AWS console waiting to be picked up. We decided to do some due diligence against a 3 node Kafka cluster that we setup on m1.large instances. We evaluated them on throughput performance and both performed really well for our needs. Some specifics that we observed on the technical side were:Writes to Kinesis were a few ms slower compared to our Kafka setup. Kinesis replicates across 3 availability zones, which could explain the slight delay1MB/sec max input rate into a Kinesis shard vs tens of megabytes on KafkaKinesis has a limit of 5 reads per second from a shard. So, if we built 5 components that would need to read the same data and process from a shard, we would have already maxed out with Kinesis. This seemed like an unnecessary limitation on scaling out consumers. Of course, there are work arounds by increasing the number of shards, but then, you end up paying more too.Next, some cost calculations. Kinesis uses shards to scale out and every shard has set limits. For example, 1MB/sec data in and 2MB/sec data out per shard. Also, max of 5 reads per shard per second.For the sake of this calculation, let’s simply have one shard per customer – although for some larger customers with 1000+ node installations, we’d have to have more shards. Also, Kinesis by default holds data for just 24 hours. You need to pay more for retaining data over a longer period (7 days). This data retention is important since there are times when you’d have to replay data from a day or two ago to catchup.Kinesis: One-click setup since it is a managed service ComponentPer hr costPer month costOne Shard$0.018$14Extended Data Retention / Shard$0.02$15PUT requests$8Per customer cost (1 shard)$3750 customers (@ just 1 shard per customer)$1850Kafka: Kafka is a distributed message log that provides a publish-subscribe messaging model. It claims to be fast, durable, scalable and easy to operate. We’ve seen Kafka work well with about 8GB of RAM and a good amount of disk space to store data longer. For that reason, let’s say we pick m1.large instances that have 7.5G of RAM and 840G of disk space per instance. Let’s consider 30 broker nodes, setup with a replication factor of 3, which gives us about 25TB of disk space. ComponentPer hr costPer month costOne m1.large instance$0.017$13Total (30 instances)$0.51$380 As you can see, the cost difference is significant. Even if you use machines that were slightly beefier, you’d end up with cost savings. The above calculation assumes we’re just using 1 shard per customer. In reality, you’d have to have multiple shards to parallelize and handle the load gracefully, which increases the costs further with Kinesis.  At the end, the choice was obvious – Kafka.Kafka at OpsClarityWe deployed Kafka on AWS instances and we have been extremely satisfied with our choice. Kafka has helped accelerate development of new components at OpsClarity. Specifically, we’ve gained from the following:Ease of setup, maintenance and use: Our Kafka cluster was setup in less than a day. As soon as we deployed OpsClarity agents on our Kafka cluster, the entire topology from producers to brokers to consumers was auto discovered and auto configured.Blazing fast performance on the producer side. Our Kafka setup can ingest billions of metric points per day without any reduction in performance.Durable logs that allow us to replay messages.Controlled execution on the consumer side with ability to scale consumers if the size of log starts building up. This keeps the end to end latency low, thereby keeping the entire pipeline truly real-time.Rapid development of newer analytics components: We can simply create new consumer groups and start consuming from the same set of topics and partitions without worrying about affecting other components.Easy to scale by adding new brokersProvides ordering guarantee that keeps us from spending time on anomalies due to out of order messages.Kafka has been performing well for our use case to serve as the centralized metric stream system. It has Java and Python connectors which fit our needs well. OpsClarity provides end to end visibility of our data pipeline and we are happy with the technical decisions we’ve made to get here. In a future post, we will exclusively talk about how we monitor our Kafka cluster; including the producers, brokers and the consumers. We will also discuss how our anomaly detection models monitor consumer lag and identify potential issues before they can happen.
+
+
+
+kafka
+Data science
+Shard (database architecture)
+Anomaly detection
+Pipeline (software)
+Metric (unit)
+cluster
+Health (Apple)
+
+
+Published at DZone with permission of Swaroop Ramachandra, DZone MVB.
+                        
+See the original article here.
+                            
+
+
+
+Opinions expressed by DZone contributors are their own.
+
+
+Popular on DZone
+
+
+Functional vs. Non-Functional Requirements: The Full Guide, Definitions, and Technical Examples
+
+
+How to Optimize MySQL Queries for Speed and Performance
+
+
+Usage of Java Streams and Lambdas in Selenium WebDriver
+
+
+A Simple Guide to Heaps, Stacks, References, and Values in JavaScript
+
+
+
+
+
+
+
+
+
+
+
+
+
+ Comments
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+                      Big Data Partner Resources
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                X
+              
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ABOUT US
+
+About DZone
+Send feedback
+Careers
+Sitemap
+
+
+
+ADVERTISE
+
+Advertise with DZone
+
+
+
+
+
+CONTRIBUTE ON DZONE
+
+Article Submission Guidelines
+MVB Program
+Become a Contributor
+Visit the Writers' Zone
+
+LEGAL
+
+Terms of Service
+Privacy Policy
+
+
+
+CONTACT US
+
+600 Park Offices Drive
+Suite 300
+Durham, NC 27709
+support@dzone.com
++1 (919) 678-0300
+
+
+
+
+
+Let's be friends:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+DZone.com is powered by 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

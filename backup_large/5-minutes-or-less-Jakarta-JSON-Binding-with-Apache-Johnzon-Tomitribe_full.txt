@@ -1,0 +1,767 @@
+
+
+
+
+
+
+5 minutes or less: Jakarta JSON Binding with Apache Johnzon - Tomitribe
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Skip to main content 
+
+
+
+
+
+
+
+
+Hit enter to search or ESC to close
+
+
+
+
+Close Search
+    
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+ 
+Menu    
+
+
+
+
+Home
+Services
+
+Apache TomEE Support
+Apache ActiveMQ Support
+Apache Tomcat Support
+Tomcat 7 Support
+CVE Patching
+Enterprise Support
+Tomitribe Community Partnership Program
+
+
+Community
+Resources
+
+Case Studies & Reports
+Tribe’s Videos
+
+
+Company
+Blog
+Contact Us
+Login
+Get A Quote
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+Jakarta EEJava EEOpen SourceTomEE
+5 minutes or less: Jakarta JSON Binding with Apache Johnzon
+
+By Richard Monson-HaefelJuly 31, 2019November 18th, 2019No Comments 
+
+
+
+
+
+
+
+
+
+
+
+
+
+This tutorial shows how to use Jakarta JSON Binding to deserialize JSON data into Java POJOs and to serialize Java POJOs into JSON data.  The Jakarta JSON Binding provider used is Apache Johnzon
+To get started you will need to clone the jsonb-basic-tutorial project on GitHub.  Create a directory on your Desktop or somewhere and execute the following Git command.
+git clone https://github.com/tomitribe/jsonb-basic-tutorial.git
+Assuming you have Maven installed your next step is to go into the new jsonb-basic-tutorial directory and execute the Maven install command
+mvn install
+The jsonb-basic-tutorial uses mock JSON data from Mockaroo.com. The JSON data is stored in a file named  MOCK_DATA.json located in the jsonb-basic-tutorial directory. It’s a JSON array containing one thousand objects that are structured like the example below.  
+[{
+
+  "id": 1,
+
+  "first_name": "Darill",
+
+  "last_name": "Kilroy",
+
+  "email": "[email protected]",
+
+  "gender": "Male",
+
+  "ip_address": "68.191.75.95"
+
+}, {
+
+  "id": 2,
+
+  "first_name": "Enrico",
+
+  "last_name": "Yorston",
+
+  "email": "[email protected]",
+
+  "gender": "Male",
+
+  "ip_address": "242.186.201.127"
+
+}]
+
+
+I created a simple Person POJO with the correct mappings to enable marshalling between JSON data and Java POJOs. In this case, all I had to do is make sure the Java field names match the JSON field names as shown below and then add Java bean getters and setters.
+package example;
+
+
+
+public class Person {
+
+  // BINDING FIELDS
+
+  private int id;
+
+  private String first_name;
+
+  private String last_name;
+
+  private String email;
+
+  private String gender;
+
+  private String ip_address;
+
+  
+
+  public int getId() {
+
+    return id;
+
+  }
+
+  public void setId(int id) {
+
+    this.id = id;
+
+  }
+
+  public String getFirst_name() {
+
+    return first_name;
+
+  }
+
+  public void setFirst_name(String first_name) {
+
+    this.first_name = first_name;
+
+  }
+
+
+
+  /** and so on for all of the fields */
+
+}
+
+
+Using Jakarta JSON Binding, you can read JSON data into Java objects easily. All you need to do is create a javax.json.bind.Jsonb instance using the JohnzonBuilder and pass it a properly-defined type – in this case we are using a List<Person> type.
+// Read the JSON file into a java.lang.String
+
+String data = new String(Files.readAllBytes(Paths.get("MOCK_DATA.json")));
+
+
+
+// You need an instance of the Johnzon Jsonb class to marshal JSON to POJOs.
+
+Jsonb jsonb = new JohnzonBuilder().build();
+
+
+
+// Convert a java.lang.String of JSON data into an List of Person type
+
+List persons = jsonb.fromJson(data, new ArrayList() {
+
+}.getClass().getGenericSuperclass());
+
+
+Serializing the Java POJOs back into JSON data is just as simple.
+// Marshal the Person POJOs back into JSON
+
+String myData = jsonb.toJson(persons);
+
+
+
+// Create a print writer for the file MY_DATA.json
+
+PrintWriter writer = new PrintWriter("MY_DATA.json", "UTF-8");
+
+
+
+// write JSON data to MY_DATA.json
+
+writer.print(myData);
+
+
+To see the example in action, run the JsonbBasicTutorial with the following command from a terminal or console (PC users adjust path if necessary).
+java -cp target/jsonb-basic-example-1.0-SNAPSHOT.jar example.JsonbBasicTutorial
+
+
+To check that it worked look at the MY_DATA.json file under the jsonb-basic-tutorial directory and you’ll see that it is a syntactic duplicate of the original. This demonstrates that Apache Johnzon successfully deserialized and serialized the JSON data.
+Feel free to explore both the limitations and benefits of using Jakarta JSON Binding with Apache Johnzon and have fun!
+Here is the full program used to serialize and deserialize the JSON data used in this example.
+package example;
+
+
+
+import java.io.IOException;
+
+import java.io.PrintWriter;
+
+import java.lang.reflect.Type;
+
+import java.nio.file.Files;
+
+import java.nio.file.Paths;
+
+import java.util.ArrayList;
+
+import java.util.Arrays;
+
+import java.util.List;
+
+
+
+import javax.json.bind.Jsonb;
+
+
+
+import org.apache.johnzon.jsonb.JohnzonBuilder;
+
+
+
+public class JsonbBasicTutorial {
+
+
+
+  public static void main(String[] args) throws IOException {
+
+
+
+    PrintWriter writer = null;
+
+
+
+    try {
+
+      // Read the JSON file into a java.lang.String
+
+      String data = new String(Files.readAllBytes(Paths.get("MOCK_DATA.json")));
+
+
+
+      // You need an instance of the Johnzon Jsonb class to marshal JSON to POJOs.
+
+      Jsonb jsonb = new JohnzonBuilder().build();
+
+
+
+      // Convert a java.lang.String of JSON data into an List of Person type
+
+      List persons = jsonb.fromJson(data, new ArrayList() {
+
+      }.getClass().getGenericSuperclass());
+
+
+
+      // Marshal the Person POJOs back into JSON
+
+      String myData = jsonb.toJson(persons);
+
+      
+
+      // Create a print writer for the file MY_DATA.json
+
+      writer = new PrintWriter("MY_DATA.json", "UTF-8");
+
+      
+
+      // write JSON data to MY_DATA.json
+
+      writer.print(myData);
+
+
+
+    } finally {
+
+      if (writer != null) {
+
+        writer.close();
+
+      }
+
+    }
+
+  }
+
+}
+
+
+
+
+
+
+
+ 
+
+
+ 
+
+Richard Monson-Haefel
+Richard has more the 24 years of experience as a professional software developer and architect. He has written five books on enterprise Java including EJB, JMS, web services, and software architecture. He has served on the JCP executive committee and multiple expert groups, is the co-founder of OpenEJB and Apache Geronimo, was a Sr. Analyst for Burton Group (aka Gartner), and is a celebrated public speaker.                          					
+rmonson
+
+
+
+
+
+
+
+
+
+     Apache ActiveMQ Failover with a SQL Database May 5, 2022     CVE-2021-44228 – Log4Shell Vulnerability December 13, 2021     How to use Tibco EMS in TomEE? November 18, 2021     7 recomendaciones para migrar tus aplicaciones a Jakarta EE utilizando Apache TomEE – JakartaOne Spanish October 19, 2021     Custom Identity Store with Jakarta Security in TomEE September 30, 2021 
+ Categories
+
+ActiveMQ
+
+Apache TomEE
+
+Arquillian
+
+Blog
+
+Community
+
+CVEs
+
+Docker
+
+Eclipse Foundation
+
+ES
+
+Food for thought
+
+Hazelcast
+
+Interview
+
+Jakarta EE
+
+Jakarta JMS
+
+JakartaONE
+
+JakartaONE Brazil
+
+JakartaONE Español
+
+Java Community Processes
+
+Java EE
+
+Maven
+
+MicroProfile
+
+Open Source
+
+Spanish
+
+Tomcat
+
+TomEE
+
+Tomitribe
+
+Tribers Tour
+
+Tribers vTour
+
+Tutorials
+
+Video
+
+
+ 
+
+
+
+Previous PostMicroservices Metrics targets with MicroProfile
+						 Next PostMicroProfile: How it has evolved and where it’s headed?
+						 
+
+  Related Posts
+
+
+CVEsTomcatTomEE
+
+
+
+
+										 December 13, 2021									 
+CVE-2021-44228 – Log4Shell Vulnerability
+
+
+
+   Jonathan Gallimore 
+ 
+ 0
+
+
+
+
+
+
+TomEE
+
+
+
+
+										 November 18, 2021									 
+How to use Tibco EMS in TomEE?
+
+
+
+   Jonathan Gallimore 
+ 
+ 0
+
+
+
+
+
+
+
+Jakarta EETomEE
+
+
+
+
+										 September 30, 2021									 
+Custom Identity Store with Jakarta Security in TomEE
+
+
+
+   Jean-Louis Monteiro 
+ 
+ 0
+
+
+
+
+
+
+
+
+
+Leave a Reply Cancel Reply Name * 
+Email *
+Website
+Save my name, email, and website in this browser for the next time I comment.
+ 
+
+Δ 
+ 
+
+
+
+
+
+
+
+
+
+ 
+
+TomitribeServices
+Community
+Resources
+Company
+Blog
+Legal
+Subscription Guide
+Policies and Lifecycle
+Contact Us
+
+
+
+ServicesTomEE Support
+Tomcat Support
+ActiveMQ Support
+CVE Patching
+
+
+
+TribestreamAPI Gateway
+
+
+
+
+
+
+
+
+
+
+All Rights Reserved. Copyright © 2022 Tomitribe.  Community Terms of Service | Terms of Service | Privacy Policy
+
+
+
+twitterfacebooklinkedinyoutubegithub 
+
+
+
+
+
+
+
+
+
+Close Menu
+    
+
+
+Home
+Services
+
+Apache TomEE Support
+Apache ActiveMQ Support
+Apache Tomcat Support
+Tomcat 7 Support
+CVE Patching
+Enterprise Support
+Tomitribe Community Partnership Program
+
+
+Community
+Resources
+
+Case Studies & Reports
+Tribe’s Videos
+
+
+Company
+Blog
+Contact Us
+Login
+Get A Quote
+
+
+
+
+
+ 
+
+ 
+
+We use cookies on our website to give you the most relevant experience by remembering your preferences and repeat visits. By clicking “Accept”, you consent to the use of ALL the cookies. Do not sell my personal information.SettingsAcceptPrivacy & Cookies Policy
+
+
+
+
+Close
+
+
+
+
+
+
+Privacy Overview 
+This website uses cookies to improve your experience while you navigate through the website. Out of these, the cookies that are categorized as necessary are stored on your browser as they are essential for the working of basic functionalities of the website. We also use third-party cookies that help us analyze and understand how you use this website. These cookies will be stored in your browser only with your consent. You also have the option to opt-out of these cookies. But opting out of some of these cookies may affect your browsing experience.
+
+ 
+
+
+
+
+
+								Necessary							
+
+
+Necessary
+
+Always Enabled
+
+
+
+
+									Necessary cookies are absolutely essential for the website to function properly. This category only includes cookies that ensures basic functionalities and security features of the website. These cookies do not store any personal information.								
+
+
+
+
+
+
+								Non-necessary							
+
+
+Non-necessary
+
+
+
+
+
+									Any cookies that may not be particularly necessary for the website to function and is used specifically to collect user personal data via analytics, ads, other embedded contents are termed as non-necessary cookies. It is mandatory to procure user consent prior to running these cookies on your website.								
+
+
+
+
+
+
+
+
+
+
+
+
+SAVE & ACCEPT
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

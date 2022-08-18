@@ -1,0 +1,99 @@
+Parse A JSON File With JavaToggle navigation    The Polyglot DeveloperAboutBlogCoursesResourcesOur website is made possible by displaying online advertisements to our visitors. Please consider supporting us by disabling your ad blocker.Parse A JSON File With JavaMarch 7, 2015 Nic RaboyGeneral DevelopmentRecently I was tasked with reading a JavaScript Object Notation (JSON) file using Java. In my project, the JSON file contained properties information to be used inside the application.There are many libraries available for reading or parsing JSON data in Java, but in particular we are going to be using the library found on json.org.Let’s take a JSON file called properties.json that contains the following data:{
+    "name": "JSONParser",
+    "version": "1.0.0",
+    "description": "Parse some JSON data",
+    "keywords": [
+        "json",
+        "parse",
+        "request"
+    ]
+}
+This file contains a JSON object that also contains a JSON array. To keep things simple in this example, we are only going to print it out.It is now time to create our Java project. If you keep up with my other tutorials, you’ll know we aren’t going to be using an IDE such as Eclipse. Instead we are going to be using a text editor and a command prompt. Our project structure is going to look like the following:JSONParser
+    src
+        org
+            json
+                [ JSON Library Files Here ]
+        jsonparser
+            MainDriver.java
+    lib
+    build.xml
+    properties.json
+If you’re a Java veteran, you’ll know right away after seeing build.xml that we’ll be using Apache Ant to build our project. Feel free to change it to your preference.First we want to download the JSON library files, and place them all in the src/org/json directory. With this done, open your MainDriver.java file and add the following two functions:package jsonparser;
+
+import java.io.*;
+import org.json.*;
+
+public class MainDriver {
+
+    public static void main(String[] args) {
+
+    }
+
+
+    public static String readFile(String filename) {
+
+    }
+
+}
+The readFile(String filename) function will read a text file and return it as a single string. The main(String[] args) function will be where we fiddle with all the JSON data.Using this as a reference, make your readFile(String filename) function look like the following:public static String readFile(String filename) {
+    String result = "";
+    try {
+        BufferedReader br = new BufferedReader(new FileReader(filename));
+        StringBuilder sb = new StringBuilder();
+        String line = br.readLine();
+        while (line != null) {
+            sb.append(line);
+            line = br.readLine();
+        }
+        result = sb.toString();
+    } catch(Exception e) {
+        e.printStackTrace();
+    }
+    return result;
+}
+Again, the above code will only read a text file and return it as string data.Now take a look at the main(String[] args) function which will take care of various JSON work:public static void main(String[] args) {
+    String jsonData = readFile("properties.json");
+    JSONObject jobj = new JSONObject(jsonData);
+    JSONArray jarr = new JSONArray(jobj.getJSONArray("keywords").toString());
+    System.out.println("Name: " + jobj.getString("name"));
+    for(int i = 0; i < jarr.length(); i++) {
+        System.out.println("Keyword: " + jarr.getString(i));
+    }
+}
+In the above code you can see that we’ve gotten our JSON string, converted the string into a JSONObject and then extracted the keywords array. Finally the data we obtain is printed out. There are many other great JSON functions to make use of, all of which can be found in the Javadocs for the library.If you’re not sure how to make an Apache Ant build file, just use the following for our project:<project>
+
+    <property name="lib.dir" value="libs" />
+    <property name="jar.dir" value="build/jar" />
+    <property name="jar.name" value="JSONParser.jar" />
+
+    <path id="classpath">
+        <fileset dir="${lib.dir}" includes="**/*.jar"/>
+    </path>
+
+    <target name="clean">
+        <delete dir="build"/>
+    </target>
+
+    <target name="compile" depends="clean">
+        <mkdir dir="build/classes"/>
+        <javac srcdir="src" destdir="build/classes" classpathref="classpath"/>
+    </target>
+
+    <target name="build" depends="compile">
+        <mkdir dir="build/jar"/>
+        <jar destfile="${jar.dir}/${jar.name}" basedir="build/classes">
+            <zipgroupfileset dir="libs" includes="*.jar"/>
+            <manifest>
+                <attribute name="Main-Class" value="jsonparser.MainDriver"/>
+            </manifest>
+        </jar>
+    </target>
+
+    <target name="run">
+        <java jar="${jar.dir}/${jar.name}" fork="true"/>
+    </target>
+
+    <target name="buildandrun" depends="build, run" />
+
+</project>
+To test everything out, just run ant buildandrun from the command line or terminal. It will build a Java Archive (JAR) file and run it.ConclusionThis is just one of many ways to parse JSON data using Java. I chose to use this library set because it closely resembles how you would parse JSON in native Android. Another common way which I might explain in a later tutorial is with JSON Simple.javaNic RaboyNic Raboy is an advocate of modern web and mobile development technologies. He has experience in Java, JavaScript, Golang and a variety of frameworks such as Angular, NativeScript, and Apache Cordova. Nic writes about his development experiences related to making web and mobile development easier to understand.Please enable JavaScript to view the comments powered by Disqus.Search Follow UsSubscribeSubscribe to the newsletter for monthly tips and tricks on subjects such as mobile, web, and game development.Recent PostsUsing LINQ to Query MongoDB in a .NET Core ApplicationAdd a Comments Section to an Eleventy Website with MongoDB and NetlifyJoining Collections in MongoDB with .NET Core and an Aggregation PipelineCreate a RESTful API with .NET Core and MongoDBExtract the Version Information of a Game with Unity and C#Support This SiteIf you found this developer resource helpful, please consider supporting it through the following options:Privacy PolicyNewsletterSponsorHire MeCopyright © The Polyglot Developer 2022

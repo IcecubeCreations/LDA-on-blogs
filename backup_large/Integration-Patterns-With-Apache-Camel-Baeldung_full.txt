@@ -1,0 +1,640 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Integration Patterns With Apache Camel | Baeldung
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Start HereCourses ▼▲
+
+
+
+
+
+
+
+
+
+REST with Spring
+
+
+The canonical reference for building a production grade API with Spring
+
+
+
+
+
+
+
+
+
+
+
+Learn Spring Security ▼▲
+
+
+THE unique Spring Security education if you’re working with Java today
+
+
+
+
+
+
+
+
+
+
+
+
+Learn Spring Security Core
+
+
+Focus on the Core of Spring Security 5
+
+
+
+
+
+
+
+
+
+
+
+Learn Spring Security OAuth
+
+
+Focus on the new OAuth2 stack in Spring Security 5
+
+
+
+
+
+
+
+
+
+
+
+
+Learn Spring
+
+
+From no experience to actually building stuff​
+
+
+
+
+
+
+
+
+
+
+
+Learn Spring Data JPA
+
+
+The full guide to persistence with Spring Data JPA
+
+
+
+
+Guides ▼▲
+
+
+
+
+
+
+
+
+
+Persistence
+
+
+The Persistence with Spring guides
+
+
+
+
+
+
+
+
+
+
+
+REST
+
+
+The guides on building REST APIs with Spring
+
+
+
+
+
+
+
+
+
+
+
+Security
+
+
+The Spring Security guides
+
+
+
+
+About ▼▲
+
+
+
+
+
+
+
+
+
+Full Archive
+
+
+The high level overview of all the articles on the site.
+
+
+
+
+
+
+
+
+
+
+
+Baeldung Ebooks
+
+
+Discover all of our eBooks
+
+
+
+
+
+
+
+
+
+
+
+About Baeldung
+
+
+About Baeldung.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Integration Patterns With Apache Camel
+Last modified: March 31, 2022
+
+
+ by 
+
+baeldung 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ArchitectureData 
+
+Apache CamelPattern
+
+
+
+
+
+Generic Top 
+Get started with Spring 5 and Spring Boot 2, through the Learn Spring course:
+>> CHECK OUT THE COURSE
+
+ 
+
+1. Overview
+
+This article will cover some essential enterprise integration patterns (EIPs) supported by Apache Camel. Integration patterns help by providing solutions for standardized ways of integrating systems.
+If you need to first go over the basics of Apache Camel, definitely visit this article to brush up on the basics.
+2. About EIPs 
+
+Enterprise integration patterns are design patterns that aim to provide solutions for integration challenges. Camel provides implementations for many of these patterns. To see the full list of supported patterns, visit this link.
+In this article, we'll cover Content Based Router, Message Translator, Multicast, Splitter and Dead Letter Channel integration patterns.
+
+2. Content Based Router 
+
+Content Based Router is a message router which routes a message to its destination based on a message header, part of payload or basically anything from message exchange which we consider as content.
+
+
+
+It starts with choice() DSL statement followed by one or more when() DSL statements. Each when() contains a predicate expression which, if satisfied, will result in the execution of contained processing steps.
+Let's illustrate this EIP by defining a route which consumes files from one folder and moves them into two different folders depending on file extension. Our route is referenced in Spring XML file using custom XML syntax for Camel:
+
+
+<bean id="contentBasedFileRouter" 
+  class="com.baeldung.camel.file.ContentBasedFileRouter" />
+
+<camelContext xmlns="http://camel.apache.org/schema/spring">
+    <routeBuilder ref="contentBasedFileRouter" />
+</camelContext>
+
+Route definition is contained in ContentBasedFileRouter class where files are routed from the source folder into two different destination folders depending on their extension.
+Alternatively, we could use Spring Java config approach here as opposed to using Spring XML file. To do that, we need to add an additional dependency to our project:
+<dependency>
+    <groupId>org.apache.camel</groupId>
+    <artifactId>camel-spring-javaconfig</artifactId>
+    <version>2.18.1</version>
+</dependency>
+The latest version of the artifact can be found here.
+
+
+
+After that, we need to extend CamelConfiguration class and override routes() method which will reference ContentBasedFileRouter:
+@Configuration
+public class ContentBasedFileRouterConfig extends CamelConfiguration {
+
+    @Bean
+    ContentBasedFileRouter getContentBasedFileRouter() {
+        return new ContentBasedFileRouter();
+    }
+
+    @Override
+    public List<RouteBuilder> routes() {
+        return Arrays.asList(getContentBasedFileRouter());
+    }
+}
+The extension is evaluated using Simple Expression Language via simple() DSL statement which was intended to be used for evaluating Expressions and Predicates:
+
+public class ContentBasedFileRouter extends RouteBuilder {
+
+    private static final String SOURCE_FOLDER 
+      = "src/test/source-folder";
+    private static final String DESTINATION_FOLDER_TXT 
+      = "src/test/destination-folder-txt";
+    private static final String DESTINATION_FOLDER_OTHER 
+      = "src/test/destination-folder-other";
+
+    @Override
+    public void configure() throws Exception {
+        from("file://" + SOURCE_FOLDER + "?delete=true").choice()
+          .when(simple("${file:ext} == 'txt'"))
+          .to("file://" + DESTINATION_FOLDER_TXT).otherwise()
+          .to("file://" + DESTINATION_FOLDER_OTHER);
+    }
+}
+
+Here we are additionally using otherwise() DSL statement in order to route all messages which don't satisfy predicates given with when() statements.
+3. Message Translator
+
+Since every system uses it's own data format, it is frequently required to translate the message coming from another system into the data format supported by the destination system.
+Camel supports MessageTranslator router which allows us to transform messages using either custom processor in the routing logic, using a specific bean to perform the transformation or by using transform() DSL statement.
+
+
+
+Example with using a custom processor can be found in the previous article where we defined a processor which prepends a timestamp to each incoming file's filename.
+Let's now demonstrate how to use Message Translator using transform() statement:
+public class MessageTranslatorFileRouter extends RouteBuilder {
+    private static final String SOURCE_FOLDER 
+      = "src/test/source-folder";
+    private static final String DESTINATION_FOLDER 
+      = "src/test/destination-folder";
+
+    @Override
+    public void configure() throws Exception {
+        from("file://" + SOURCE_FOLDER + "?delete=true")
+          .transform(body().append(header(Exchange.FILE_NAME)))
+          .to("file://" + DESTINATION_FOLDER);
+    }
+}
+In this example, we are appending the filename to file content via transform() statement for each file from the source folder and moving transformed files to a destination folder.
+4. Multicast
+
+Multicast allows us to route the same message to a set of different endpoints and process them in a different way.
+This is possible by using multicast() DSL statement and then by listing the endpoints and processing steps within them.
+By default, processing on different endpoints is not done in parallel, but this can be changed by using parallelProcessing() DSL statement.
+Camel will use the last reply as the outgoing message after the multicasts by default. However, it is possible to define a different aggregation strategy to be used for assembling the replies from the multicasts.
+Let's see how Multicast EIP looks like on an example. We'll multicast files from source folder onto two different routes where we'll transform their content and send them to different destination folders. Here we use direct: component which allows us to link two routes together:
+
+
+
+public class MulticastFileRouter extends RouteBuilder {
+    private static final String SOURCE_FOLDER 
+      = "src/test/source-folder";
+    private static final String DESTINATION_FOLDER_WORLD 
+      = "src/test/destination-folder-world";
+    private static final String DESTINATION_FOLDER_HELLO 
+      = "src/test/destination-folder-hello";
+
+    @Override
+    public void configure() throws Exception {
+        from("file://" + SOURCE_FOLDER + "?delete=true")
+          .multicast()
+          .to("direct:append", "direct:prepend").end();
+
+        from("direct:append")
+          .transform(body().append("World"))
+          .to("file://" + DESTINATION_FOLDER_WORLD);
+
+        from("direct:prepend")
+           .transform(body().prepend("Hello"))
+           .to("file://" + DESTINATION_FOLDER_HELLO);
+    }
+}
+5. Splitter
+
+The splitter allows us to split the incoming message into a number of pieces and processing each of them individually. This is possible by using split() DSL statement.
+As opposed to Multicast, Splitter will change the incoming message, while Multicast will leave it as it is.
+To demonstrate this on an example, we'll define a route where each line from a file is split and transformed into an individual file which is then moved to a different destination folder. Each new file will be created with file name equal to file content:
+public class SplitterFileRouter extends RouteBuilder {
+    private static final String SOURCE_FOLDER 
+      = "src/test/source-folder";
+    private static final String DESTINATION_FOLDER  
+      = "src/test/destination-folder";
+
+    @Override
+    public void configure() throws Exception {
+        from("file://" + SOURCE_FOLDER + "?delete=true")
+          .split(body().convertToString().tokenize("\n"))
+          .setHeader(Exchange.FILE_NAME, body())
+          .to("file://" + DESTINATION_FOLDER);
+    }
+}
+6. Dead Letter Channel
+
+It is common and it should be expected that sometimes problems can happen, for example, database deadlocks, which can cause a message not to be delivered as expected. However, in certain cases, trying again with a certain delay will help and a message will get processed.
+Dead Letter Channel allows us to control what happens with a message once it fails to be delivered. Using Dead Letter Channel we can specify whether to propagate the thrown Exception to the caller and where to route the failed Exchange.
+When a message fails to be delivered, Dead Letter Channel (if used) will move the message to the dead letter endpoint.
+Let's demonstrate this on an example by throwing an exception on the route:
+public class DeadLetterChannelFileRouter extends RouteBuilder {
+    private static final String SOURCE_FOLDER 
+      = "src/test/source-folder";
+
+    @Override
+    public void configure() throws Exception {
+        errorHandler(deadLetterChannel("log:dead?level=ERROR")
+          .maximumRedeliveries(3).redeliveryDelay(1000)
+          .retryAttemptedLogLevel(LoggingLevel.ERROR));
+
+        from("file://" + SOURCE_FOLDER + "?delete=true")
+          .process(exchange -> {
+            throw new IllegalArgumentException("Exception thrown!");
+        });
+    }
+}
+Here we defined an errorHandler which logs failed deliveries and defines redelivery strategy. By setting retryAttemptedLogLevel(), each redelivery attempt will be logged with specified log level.
+
+
+
+In order for this to be fully functional, we additionally need to configure a logger.
+After running this test, following log statements are visible in a console:
+ERROR DeadLetterChannel:156 - Failed delivery for 
+(MessageId: ID-ZAG0025-50922-1481340325657-0-1 on 
+ExchangeId: ID-ZAG0025-50922-1481340325657-0-2). 
+On delivery attempt: 0 caught: java.lang.IllegalArgumentException: 
+Exception thrown!
+ERROR DeadLetterChannel:156 - Failed delivery for 
+(MessageId: ID-ZAG0025-50922-1481340325657-0-1 on 
+ExchangeId: ID-ZAG0025-50922-1481340325657-0-2). 
+On delivery attempt: 1 caught: java.lang.IllegalArgumentException: 
+Exception thrown!
+ERROR DeadLetterChannel:156 - Failed delivery for 
+(MessageId: ID-ZAG0025-50922-1481340325657-0-1 on 
+ExchangeId: ID-ZAG0025-50922-1481340325657-0-2). 
+On delivery attempt: 2 caught: java.lang.IllegalArgumentException: 
+Exception thrown!
+ERROR DeadLetterChannel:156 - Failed delivery for 
+(MessageId: ID-ZAG0025-50922-1481340325657-0-1 on 
+ExchangeId: ID-ZAG0025-50922-1481340325657-0-2). 
+On delivery attempt: 3 caught: java.lang.IllegalArgumentException: 
+Exception thrown!
+ERROR dead:156 - Exchange[ExchangePattern: InOnly, 
+BodyType: org.apache.camel.component.file.GenericFile, 
+Body: [Body is file based: GenericFile[File.txt]]]
+As you can notice, each redelivery attempt is being logged displaying Exchange for which delivery was not successful.
+7. Conclusion 
+
+In this article, we presented an introduction to integration patterns using Apache Camel and demonstrated them on few examples.
+We demonstrated how to use these integration patterns and why they are beneficial for solving integration challenges.
+Code from this article can be found over on GitHub.
+Generic bottom 
+Get started with Spring 5 and Spring Boot 2, through the Learn Spring course:
+>> CHECK OUT THE COURSE
+
+Generic footer banner
+
+
+
+
+
+
+Learning to build your APIwith Spring?
+Download the E-book
+
+
+
+
+
+Comments are closed on this article!
+
+
+
+
+
+
+
+Generic sidebar banner
+
+
+
+Building a REST API with Spring 5?
+Download the E-book
+ 
+ 
+ 
+ 
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+CoursesAll Courses
+All Bulk Courses
+The Courses Platform
+SeriesJava “Back to Basics” Tutorial
+Jackson JSON Tutorial
+Apache HttpClient Tutorial
+REST with Spring Tutorial
+Spring Persistence Tutorial
+Security with Spring
+Spring Reactive Tutorials
+AboutAbout Baeldung
+The Full Archive
+Editors
+Jobs
+Our Partners
+Partner with Baeldung
+ 
+
+Terms of Service
+Privacy Policy
+Company Info
+Contact
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

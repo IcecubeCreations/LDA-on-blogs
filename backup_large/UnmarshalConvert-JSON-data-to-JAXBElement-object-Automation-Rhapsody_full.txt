@@ -1,0 +1,305 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Unmarshal/Convert JSON data to JAXBElement object – Automation Rhapsody
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Automation Rhapsody
+Automate with enthusiasm
+
+
+
+
+
+
+
+Unmarshal/Convert JSON data to JAXBElement object
+
+Last Updated on 18.01.2022  by  Lyudmil Latinov 
+
+
+Post summary: How to marshal and unmarshal JAXBElement to JSON with Jackson.
+This post gives solution for following usecase
+Usecase
+XML document -> POJO containing JAXBElement -> JSON -> POJO containing JAXBElement.
+For some reason, there is a POJO which has some JAXBElement. This usually happens when mixing SOAP and REST services with XML and JSON. This POJO is easily converted to JSON data. Then from this JSON data, a POJO containing JAXBElement has to be unmarshalled.
+Problem
+By default Jackson’s ObjectMapper is unable to unmarshal JSON data into a JAXBElement object. An exception is thrown:
+No suitable constructor found for type [simple type, class javax.xml.bind.JAXBElement]: cannot instantiate from JSON object (missing default constructor or creator, or perhaps need to add/enable type information?)
+Solution
+Although somewhere it is recommended to use com.fasterxml.jackson.module.jaxb.JaxbAnnotationModule it might not work. The solution is to create custom MixIn and register it with ObjectMapper. MixIn class is:
+import javax.xml.bind.JAXBElement;
+import javax.xml.namespace.QName;
+
+@JsonIgnoreProperties(value = {"globalScope", "typeSubstituted", "nil"})
+public abstract class JAXBElementMixIn<T> {
+
+	@JsonCreator
+	public JAXBElementMixIn(@JsonProperty("name") QName name,
+			@JsonProperty("declaredType") Class<T> declaredType,
+			@JsonProperty("scope") Class scope,
+			@JsonProperty("value") T value) {
+	}
+}
+
+ObjectMapper is instantiated with following code:
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+ObjectMapper objectMapper = new ObjectMapper();
+objectMapper.addMixIn(JAXBElement.class, JAXBElementMixIn.class);
+
+Conclusion
+Jackson’s ObjectMapper does not support JSON to JAXBElement conversion by default. This is solved by creating a custom MixIn as described in the current post and register it with ObjectMapper.
+Related PostsREST performance problems with Dropwizard and Jersey JAXB provider
+
+
+
+			 Category: Java | Tags: JAXB, REST, SOAP 
+
+
+
+
+← Previous
+Next →
+
+
+
+
+Partners 
+Search
+
+
+
+
+Archives 
+
+
+
+2021 (9)					
+January (1)
+March (1)
+October (4)
+November (3)
+
+
+2020 (12)					
+February (5)
+March (7)
+
+
+2019 (13)					
+June (6)
+July (1)
+December (6)
+
+
+2018 (8)					
+January (5)
+April (1)
+May (1)
+June (1)
+
+
+2017 (26)					
+January (1)
+April (2)
+May (6)
+June (12)
+September (3)
+December (2)
+
+
+2016 (23)					
+January (3)
+June (7)
+July (3)
+October (5)
+November (5)
+
+
+2015 (48)					
+January (3)
+February (14)
+March (12)
+April (2)
+July (2)
+August (5)
+September (3)
+November (7)
+
+
+
+
+report this adCategories
+
+API Automation (17)
+
+C# (53)
+
+Desktop Automation (24)
+
+Java (55)
+
+JavaScript (13)
+
+Non-functional (15)
+
+Tutorials (70)
+
+Unit testing (18)
+
+Web Automation (30)
+
+
+report this adTags.NET Core
+AWS
+AWS API Gateway
+AWS DynamoDB
+AWS ECS
+AWS Lambda
+AWS SQS
+Code coverage
+Cucumber
+Cypress
+Design Patterns
+Docker
+Dropwizard
+Gatling
+Git
+Gradle
+IntelliJ IDEA
+JaCoCo
+Java 8
+JAXB
+Jersey
+jQuery
+JUnit
+Linux
+Mockito
+Newtonsoft.Json
+Node.js
+NTestsRunner
+NUnit
+OpenCover
+OpenTelemetry
+Performance
+Postman
+PowerMock
+React
+REST
+Scala
+Selenium WebDriver
+SOAP
+Telerik Testing Framework
+TestStack White
+Vagrant
+WinForms
+WireMock
+WPF
+ 
+
+
+
+
+
+
+
+© 2022 - Automation Rhapsody
+
+
+
+
+Scroll to top
+
+
+
+
+
+
+
+
+
+
+xx
+
+
+
+
+
+
+
+
+
+
+
+
+
+

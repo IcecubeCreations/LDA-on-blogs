@@ -1,0 +1,582 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Stan's Robot Shop: A Sample Microservice Application - DZone Microservices
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Microservices Zone
+
+
+
+Thanks for visiting DZone today,
+
+
+
+
+
+
+
+
+Edit Profile
+
+
+Manage Email Subscriptions
+
+
+                          How to Post to DZone
+                        
+
+
+
+                          Article Submission Guidelines
+                        
+
+
+
+Sign Out
+View Profile
+
+
+
+
+
+Post
+
+
+
+
+
+
+
+Post an Article
+
+
+Manage My Drafts
+
+
+
+
+
+
+
+Over 2 million developers have joined DZone.
+
+Log In
+/
+Join
+
+
+
+
+
+
+
+
+
+
+
+
+
+Refcardz
+
+
+
+
+Trend Reports
+
+
+
+
+Webinars
+
+
+
+
+
+                  Zones
+                  
+
+
+
+
+
+
+|
+
+
+
+Agile
+
+
+AI
+
+
+Big Data
+
+
+Cloud
+
+
+Database
+
+
+DevOps
+
+
+Integration
+
+
+IoT
+
+
+Java
+
+
+Microservices
+
+
+Open Source
+
+
+Performance
+
+
+Security
+
+
+Web Dev
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+DZone
+                    >
+                      Microservices Zone
+                      >
+                      Stan's Robot Shop: A Sample Microservice Application
+
+
+
+Stan's Robot Shop: A Sample Microservice Application
+
+
+Take a look into this open source microservices project that demonstrates microservices architecture, end user monitoring, and more.
+
+
+
+
+                          by
+
+                          
+
+Steve Waterworth
+
+
+
+
+
+
+
+
+
+
+                          ·
+                        
+
+                        Mar. 30, 18
+                      
+                      ·
+                        
+Microservices Zone
+
+                      ·
+                      Tutorial
+
+
+
+
+
+
+
+Like
+
+
+(2)
+
+
+
+
+
+
+                      Comment
+                      
+
+
+
+
+Save
+
+
+
+
+
+Tweet
+
+
+
+
+ 8.54K
+                      Views
+
+
+
+
+Join the DZone community and get the full member experience.
+Join For Free
+
+
+
+
+Instana is an active supporter of Open Source - we are members and contributors to a number of projects including Open Tracing, Cloud Native Computing Foundation, and Byte Buddy. Additionally, the language sensors that the Instana agent uses are all Open Source on GitHub. Continuing with our commitment to Open Source, we have just released Stan's Robot Shop, also on GitHub.
+This is a simple example microservices application for use as a sandbox to play with orchestration and/or monitoring/observability. As the name implies it is a simple ecommerce storefront featuring some of Stan's friends, it includes: a product catalogue, user repository, shopping cart and order pipeline. These technologies have been used in creating the application:
+The key design consideration was to be small enough to run on a developer's laptop but still have enough complexity to be interesting and not just a "Hello World" example. Just 2GB of memory is required to run this using docker-compose or minikube/minishift. Of course you can also deploy it to a cloud service that supports containers such as: Google Compute, AWS ECS/EKS and OpenShift. Future articles will cover these deployment scenarios in more detail.
+Architecture
+
+The web page is a Single Page Application written using AngularJS (1.x), its resources are served by Nginx which also acts as a reverse proxy for the backend microservices. Those microservices are written in different languages using various frameworks, providing a wide range of example scenarios. MongoDB is used as the data store for the product catalogue and the registered users. MySQL is used for the look up of the shipping information. Redis is used to hold the active shopping carts. The order pipeline is processed via RabbitMQ.
+
+The code already has any required Instana components installed, making it very easy to start monitoring the application with Instana, you just have to install the agent on the platform. Instana End User Monitoring is also preconfigured, you just need to add your unique key to the environment of the Nginx container.
+Installation
+For more detailed instructions see the README in the Git repository. You will need to have Docker installed. First of all clone the Git repository.
+$ git clone https://github.com/instana/robot-shop
+Now change directory to the one just created by the clone. If you want to build from the source:
+$ docker-compose build
+The latest images are available ready built on Docker Hub so you could just run the application locally and pull the images:
+$ docker-compose up
+The application will take a little while to download the images and start all the services. Once it is running you can access the web application on http://localhost:8080/
+
+There is an existing registered user with the credentials "user/password," you can register additional ones, the shop also supports anonymous shopping; order history is not kept for anonymous users.
+Monitoring With Instana
+To see the application discovered and monitored with Instana, you just have to install the agent. At the moment the agent is not supported on Mac if you are running the application locally via docker-compose. Future articles will cover deployment to other environments such as Kubernetes, OpenShift, Mesosphere, etc. From the Instana dashboard select Management Portal from the drop-down menu at the top right.
+
+From the Management Portal select Install Agent, then copy and paste the Docker command line from the right of the screen. It will be already filled in with all the correct details, an example is below.
+docker run \
+--detach \
+--name instana-agent \
+--volume /var/run/docker.sock:/var/run/docker.sock \
+--volume /dev:/dev \
+--volume /sys:/sys \
+--volume /var/log:/var/log \
+--privileged \
+--net=host \
+--pid=host \
+--ipc=host \
+--env="INSTANA_AGENT_KEY=<your key here>" \
+--env="INSTANA_AGENT_ENDPOINT=<geo end point>" \
+--env="INSTANA_AGENT_ENDPOINT_PORT=443" \
+--env="INSTANA_AGENT_ZONE=Robot-Shop" \
+instana/agent
+
+Tip: Add the environment variable INSTANA_AGENT_ZONE to have the discovered infrastructure show up in the dashboard in its own group.
+End User Monitoring
+The required Javascript fragment will be automatically added to the page if you supply an EUM key for the web container. In the Instana dashboard select Websites from the main top navigation, then Add Website from the top right. This will show you the Javascript fragment with your key included. Copy the key and paste it into the docker-compose.yaml file, you will see there is already a placeholder there for it. Restart the application.
+Load Generation
+Load generation for the application is not started automatically, by navigating around the shop with your browser you can generate load and see how quickly those clicks are captured and become available in the Instana dashboard. There is not any load generation facility for the web application but there is included a load generation utility for the microservices. Under the load-gen directory edit the load-gen.sh script and change the value of HOST to point to where Stan's Robot Shop is running.
+Have Some Fun
+What are you waiting for? Go and have fun with Stan's Robot Shop and keep checking back here for new articles and tutorials all about microservices featuring Stan's retail empire.
+
+
+
+application
+microservice
+
+
+Published at DZone with permission of Steve Waterworth, DZone MVB.
+                        
+See the original article here.
+                            
+
+
+
+Opinions expressed by DZone contributors are their own.
+
+
+Popular on DZone
+
+
+Implementing One and Two Way SSL (Mutual Authentication) for MuleSoft Application
+
+
+Augmented Analytics: The Future of Business Intelligence
+
+
+CSS Position: Relative vs Position Absolute
+
+
+What Are Cookies in Servlets?
+
+
+
+
+
+
+
+
+
+
+
+
+
+ Comments
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+                      Microservices Partner Resources
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                X
+              
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ABOUT US
+
+About DZone
+Send feedback
+Careers
+Sitemap
+
+
+
+ADVERTISE
+
+Advertise with DZone
+
+
+
+
+
+CONTRIBUTE ON DZONE
+
+Article Submission Guidelines
+MVB Program
+Become a Contributor
+Visit the Writers' Zone
+
+LEGAL
+
+Terms of Service
+Privacy Policy
+
+
+
+CONTACT US
+
+600 Park Offices Drive
+Suite 300
+Durham, NC 27709
+support@dzone.com
++1 (919) 678-0300
+
+
+
+
+
+Let's be friends:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+DZone.com is powered by 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

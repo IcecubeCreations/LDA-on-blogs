@@ -1,0 +1,603 @@
+
+
+
+
+
+
+
+Apache Camel – Throughput or Performance Improvement while writing into files – onegoodexample
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+Skip to content
+
+
+
+
+
+
+Search
+
+
+About
+ 
+
+
+
+
+
+ onegoodexample
+
+
+Menu
+Web Services
+Core Java
+Apache Camel
+ 
+
+
+
+
+
+
+
+
+Apache Camel – Throughput or Performance Improvement while writing into files 
+
+Hi,
+ 
+I bet that the example that i am going to share with you in this article is going to help you a lot.
+ 
+A very common use case for a process would be to read from a file or to write into a file. If you are using a camel route for this purpose, you would notice that the file reading works perfectly fine but the file writing will take longer than what you’ve expected. Well that’s because when using the file component the IO operation is very expensive and in a production environment this means your application is expensive for the admin. A simple file writing process to generate a file with 0.1 million records would easily take around 10-15 mins.
+In this example, i will try to explain the performance improvement of file writing by comparison technique. The comparison is between camel file component v/s camel aggregator v/s camel stream and finally we will which one is a best fit for performance improvement.
+Let’s put these three options into our routes:
+
+
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xmlns:camel="http://camel.apache.org/schema/spring"
+xsi:schemaLocation="
+http://www.springframework.org/schema/beans
+http://www.springframework.org/schema/beans/spring-beans.xsd
+http://camel.apache.org/schema/spring
+http://camel.apache.org/schema/spring/camel-spring.xsd">
+
+<bean id="shutdownInitiator" class="foo.beans.ShutdownInitiator" />
+<bean id="counter" class="foo.beans.CounterIncrementer" />
+<bean id="fileAggregationStrategy" class="foo.aggregator.FileAggregationStrategy" />
+
+<camelContext xmlns="http://camel.apache.org/schema/spring">
+
+<!-- Camel file writing using regular file component -->
+<camel:route id="routeUsingFileComponent" autoStartup="false">
+<camel:from uri="file:src/txt?fileName=LongFile1.txt&amp;noop=true" />
+<camel:convertBodyTo type="java.lang.String" />
+<camel:log message="${date:now:yyyy-MM-dd HH:mm:ss} File writing started..." />
+<camel:split>
+<camel:tokenize token="\r\n" />
+<camel:bean ref="counter" />
+<camel:to uri="file:src/txt1?fileName=ProcessedRecs.txt&amp;autoCreate=true&amp;fileExist=Append" />
+</camel:split>
+<camel:log message="${date:now:yyyy-MM-dd HH:mm:ss} File writing finished..." />
+<camel:bean ref="shutdownInitiator" />
+</camel:route>
+
+<!-- camel route using aggregator -->
+<camel:route id="routeUsingAggregator" autoStartup="false">
+<camel:from uri="file:src/txt?fileName=LongFile1.txt&amp;noop=true" />
+<camel:convertBodyTo type="java.lang.String" />
+<camel:log message="${date:now:yyyy-MM-dd HH:mm:ss} File writing started..." />
+<camel:split>
+<camel:tokenize token="\r\n" />
+<camel:bean ref="counter" />
+<camel:aggregate strategyRef="fileAggregationStrategy" completionInterval="3000">
+<camel:correlationExpression>
+<camel:simple>${header.CamelFileName}</camel:simple>
+</camel:correlationExpression>
+<camel:to uri="file:src/txt1?fileName=ProcessedRecs.txt&amp;autoCreate=true&amp;fileExist=Append" />
+</camel:aggregate>
+</camel:split>
+<camel:log message="${date:now:yyyy-MM-dd HH:mm:ss} File writing finished..." />
+<camel:bean ref="shutdownInitiator" />
+</camel:route>
+
+<!-- camel route using camel stream -->
+<camel:route id="routeUsingStream" autoStartup="false">
+<camel:from uri="file:src/txt?fileName=LongFile1.txt&amp;noop=true" />
+<camel:convertBodyTo type="java.lang.String" />
+<camel:log message="${date:now:yyyy-MM-dd HH:mm:ss} File writing started..." />
+<camel:split>
+<camel:tokenize token="\r\n" />
+<camel:bean ref="counter" />
+<camel:to uri="stream:file?fileName=src/txt1/ProcessedRecs.txt" />
+</camel:split>
+<camel:log message="${date:now:yyyy-MM-dd HH:mm:ss} File writing finished..." />
+<camel:bean ref="shutdownInitiator" />
+</camel:route>
+</camelContext>
+</beans>
+
+
+The logic inside bean “counter”is simple. For every single record sent by the splitter EIP, it will prepend the date time to the string.
+The File aggregation strategy simply combines the old and new exchange.
+Finally the bean “shutdownInitiator” is a fancy way to tell my main class that the camel route execution is completed.
+
+And the main class is a stand alone java code that will load my camel context and start the route i want to.
+
+
+package foo;
+
+import org.apache.camel.CamelContext;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+import foo.util.AppConstants;
+
+public class MainApp {
+
+public static void main(String[] args) throws Exception {
+ ApplicationContext springContext = new ClassPathXmlApplicationContext("META-INF/spring/camel-context.xml");
+ CamelContext context = springContext.getBean(CamelContext.class);
+
+ context.start();
+context.startRoute("routeUsingFileComponent");
+
+ while(!AppConstants.shutdown) 
+ Thread.sleep(1000);
+
+ System.out.println("shutting down camel...");
+ context.stop();
+
+}
+
+}
+
+
+I have loaded all the routes but instructed the container not to start them. I will be executing the main class 3 times and each time i will starting a different route. The input file (LongFile1.txt) contains the 0.1 million lines.
+ 
+So, here are the results from the log messages:
+When the route “routeUsingFileComponent” is started, it took  28 mins (whoa..)
+routeUsingFileComponent INFO 2016-07-10 02:09:50 File writing started…
+routeUsingFileComponent INFO 2016-07-10 02:37:08 File writing finished…
+shutting down camel…
+Using the route “routeUsingAggregator”,  it took 46 seconds.
+routeUsingAggregator INFO 2016-07-10 02:02:59 File writing started…
+routeUsingAggregator INFO 2016-07-10 02:03:45 File writing finished…
+shutting down camel…
+And finally using the route “routeUsingStream”, it took 17 seconds.
+routeUsingStream INFO 2016-07-10 02:07:01 File writing started…
+routeUsingStream INFO 2016-07-10 02:07:18 File writing finished…
+shutting down camel…
+ 
+Finally the winner is: camel stream component which took around 17 seconds.
+ 
+By fine tuning the completion interval for the aggregator in “routeUsingAggreator” we can still improve the performance but the point here is camel stream would do just fine without the need for an aggregator (you will have to provide an aggregation strategy, correlation expression, completion predicate)
+Sure camel stream component is the winner but there are few disadvantages with this. Camel file component provides you a lot of options when writing into the files like force writing, setting permission on the file, etc which are not handy when it comes to the stream component. Finally it boils down to performance v/s integrity and of course the decision is always business driven.
+ 
+References:
+http://camel.apache.org/file2.html
+http://camel.apache.org/stream.html
+http://fabian-kostadinov.github.io/2016/01/10/reading-from-and-writing-to-files-in-apache-camel/
+http://www.catify.com/2012/07/09/parsing-large-files-with-apache-camel/
+ 
+Thanks,
+Kalyan
+ 
+
+
+ 
+Share this:TwitterFacebookLike this:Like Loading...
+
+Related
+ Apache CamelJava Frameworks 
+
+onegoodexampleJuly 10, 2016July 10, 2016 
+Apache CamelCamel fileCamelContext 
+
+Post navigation
+Apache Camel Interview Questions – Basics Part2Apache Camel Interview Questions – Part3
+ 
+
+
+
+Leave a Reply Cancel reply
+
+
+Enter your comment here...
+
+
+
+
+Fill in your details below or click an icon to log in:
+
+
+
+
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+
+
+
+ 
+ 
+
+
+Email (required) (Address never made public)
+
+
+
+Name (required)
+
+
+
+Website
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+			You are commenting using your WordPress.com account.			
+				( Log Out / 
+				Change )
+			
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+			You are commenting using your Twitter account.			
+				( Log Out / 
+				Change )
+			
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+			You are commenting using your Facebook account.			
+				( Log Out / 
+				Change )
+			
+
+
+
+
+
+
+Cancel
+Connecting to %s
+
+
+
+
+ Notify me of new comments via email. Notify me of new posts via email.
+ 
+
+
+
+Δ 
+
+
+
+
+
+Archives
+
+November 2018
+July 2016
+June 2016
+July 2015
+April 2015
+March 2015
+June 2014
+May 2013
+April 2013
+
+TagsAjax
+ajaxComplete
+ajaxError
+ajaxSend
+ajaxStart
+ajaxStop
+ajaxSuccess
+Apache Camel
+beforeSend
+bind()
+CamelContext
+camel cxfrs
+Camel file
+camel route
+Checked exception
+classcastexception
+Core Java
+CSS
+cxfrs
+DefaultCamelContext
+delegate()
+endpoint
+Event handling
+exception handling
+exceptions
+GET
+global ajax event handlers
+HelloWorld
+HTML
+incovertible types
+Java
+jaxrs
+jetty
+jQuery
+jQuery plug-in
+live()
+masked slider
+on()
+PathParam
+POST
+QueryParam
+REST Web service
+rsClient
+rsServer
+sliced image slider
+Syntax and Semantics
+unchecked exceptions
+variable casting 
+
+
+
+
+
+
+About
+ 
+
+Create a free website or blog at WordPress.com.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+Follow
+
+
+Following
+
+
+
+
+
+
+
+				onegoodexample			
+
+
+
+
+
+
+
+
+
+ 
+
+												Sign me up											
+
+
+
+
+											Already have a WordPress.com account? Log in now. 
+
+
+
+
+
+
+ 
+
+
+
+
+
+				onegoodexample			
+
+
+
+ Customize
+
+
+
+
+Follow
+
+
+Following
+
+
+Sign up
+Log in
+Copy shortlink
+Report this content
+
+
+											View post in Reader										
+
+
+Manage subscriptions
+
+Collapse this bar
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+%d bloggers like this:		
+
+
+ 
+
+
+

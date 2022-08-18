@@ -1,0 +1,869 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Jackson vs Gson | Baeldung
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Start HereCourses ▼▲
+
+
+
+
+
+
+
+
+
+REST with Spring
+
+
+The canonical reference for building a production grade API with Spring
+
+
+
+
+
+
+
+
+
+
+
+Learn Spring Security ▼▲
+
+
+THE unique Spring Security education if you’re working with Java today
+
+
+
+
+
+
+
+
+
+
+
+
+Learn Spring Security Core
+
+
+Focus on the Core of Spring Security 5
+
+
+
+
+
+
+
+
+
+
+
+Learn Spring Security OAuth
+
+
+Focus on the new OAuth2 stack in Spring Security 5
+
+
+
+
+
+
+
+
+
+
+
+
+Learn Spring
+
+
+From no experience to actually building stuff​
+
+
+
+
+
+
+
+
+
+
+
+Learn Spring Data JPA
+
+
+The full guide to persistence with Spring Data JPA
+
+
+
+
+Guides ▼▲
+
+
+
+
+
+
+
+
+
+Persistence
+
+
+The Persistence with Spring guides
+
+
+
+
+
+
+
+
+
+
+
+REST
+
+
+The guides on building REST APIs with Spring
+
+
+
+
+
+
+
+
+
+
+
+Security
+
+
+The Spring Security guides
+
+
+
+
+About ▼▲
+
+
+
+
+
+
+
+
+
+Full Archive
+
+
+The high level overview of all the articles on the site.
+
+
+
+
+
+
+
+
+
+
+
+Baeldung Ebooks
+
+
+Discover all of our eBooks
+
+
+
+
+
+
+
+
+
+
+
+About Baeldung
+
+
+About Baeldung.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Jackson vs Gson
+Last modified: December 23, 2019
+
+
+ by 
+
+baeldung 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+DataJacksonJSON 
+
+Gson
+
+
+
+
+
+Jackson Top 
+Get started with Spring 5 and Spring Boot 2, through the Learn Spring course:
+>> CHECK OUT THE COURSE
+
+ 
+
+1. Introduction
+
+In this article, we'll compare the Gson and Jackson APIs for serializing and deserializing JSON data to Java objects and vice-versa.
+Gson and Jackson are complete libraries offering JSON data-binding support for Java. Each are actively developed open-source projects which offer to handle of complex data types and support for Java Generics.
+And in most cases, both libraries can deserialize to an entity without modifying an entity class, which is important in cases where a developer doesn't have access to the entity source code.
+2. Gson Maven Dependency 
+
+<dependency>
+    <groupId>com.google.code.gson</groupId>
+    <artifactId>gson</artifactId>
+    <version>${gson.version}</version>
+</dependency>
+You can get the latest version of Gson here.
+3. Gson Serialization
+
+Serialization converts Java objects to JSON output. Consider the following entities:
+
+
+
+public class ActorGson {
+    private String imdbId;
+    private Date dateOfBirth;
+    private List<String> filmography;
+    
+    // getters and setters, default constructor and field constructor omitted
+}
+
+public class Movie {
+    private String imdbId;
+    private String director;
+    private List<ActorGson> actors;
+    
+    // getters and setters, default constructor and field constructor omitted
+}
+3.1. Simple Serialization
+
+Let's start with an example of Java to JSON serialization:
+SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy");
+
+ActorGson rudyYoungblood = new ActorGson(
+  "nm2199632",
+  sdf.parse("21-09-1982"), 
+  Arrays.asList("Apocalypto",
+  "Beatdown", "Wind Walkers")
+);
+Movie movie = new Movie(
+  "tt0472043", 
+  "Mel Gibson",
+  Arrays.asList(rudyYoungblood));
+
+String serializedMovie = new Gson().toJson(movie);
+This will result in:
+{
+    "imdbId": "tt0472043",
+    "director": "Mel Gibson",
+    "actors": [{
+        "imdbId": "nm2199632",
+        "dateOfBirth": "Sep 21, 1982 12:00:00 AM",
+        "filmography": ["Apocalypto", "Beatdown", "Wind Walkers"]
+    }]
+}
+By default:
+
+All properties are serialized because they have no null values
+dateOfBirth field was translated with the default Gson date pattern
+Output is not formatted and JSON property names correspond to the Java entities
+
+3.2. Custom Serialization
+
+Using a custom serializer allows us to modify the standard behavior. We can introduce an output formatter with HTML, handle null values, exclude properties from output, or add a new output.
+ActorGsonSerializer modifies generation of JSON code for the ActorGson element:
+
+
+
+public class ActorGsonSerializer implements JsonSerializer<ActorGson> {
+    private SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy");
+     
+    @Override
+    public JsonElement serialize(ActorGson actor, Type type,
+        JsonSerializationContext jsonSerializationContext) {
+        
+        JsonObject actorJsonObj = new JsonObject();
+        
+        actorJsonObj.addProperty("<strong>IMDB Code</strong>", actor.getImdbId());
+        
+        actorJsonObj.addProperty("<strong>Date Of Birth</strong>", 
+          actor.getDateOfBirth() != null ? 
+          sdf.format(actor.getDateOfBirth()) : null);
+        
+        actorJsonObj.addProperty("<strong>N° Film:</strong> ",  
+          actor.getFilmography()  != null ?  
+          actor.getFilmography().size() : null);
+       
+        actorJsonObj.addProperty("filmography", actor.getFilmography() != null ? 
+          convertFilmography(actor.getFilmography()) : null);
+        
+        return actorJsonObj;
+    }
+ 
+    private String convertFilmography(List<String> filmography) {
+        return filmography.stream()
+          .collect(Collectors.joining("-"));
+    }
+}
+In order to exclude the director property, the @Expose annotation is used for properties we want to consider:
+public class MovieWithNullValue {
+    
+    @Expose
+    private String imdbId;
+    private String director;
+    
+    @Expose
+    private List<ActorGson> actors;
+}
+Now we can proceed with Gson object creation using the GsonBuilder class:
+Gson gson = new GsonBuilder()
+  .setPrettyPrinting()
+  .excludeFieldsWithoutExposeAnnotation()
+  .serializeNulls()
+  .disableHtmlEscaping()
+  .registerTypeAdapter(ActorGson.class, new ActorGsonSerializer())
+  .create();
+ 
+SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy");
+ 
+ActorGson rudyYoungblood = new ActorGson("nm2199632",
+  sdf.parse("21-09-1982"), Arrays.asList("Apocalypto","Beatdown", "Wind Walkers"));
+
+MovieWithNullValue movieWithNullValue = new MovieWithNullValue(null,
+  "Mel Gibson", Arrays.asList(rudyYoungblood));
+ 
+String serializedMovie = gson.toJson(movieWithNullValue);
+The result is the following:
+{
+  "imdbId": null,
+  "actors": [
+    {
+      "<strong>IMDB Code</strong>": "nm2199632",
+      "<strong>Date Of Birth</strong>": "21-09-1982",
+      "<strong>N° Film:</strong> ": 3,
+      "filmography": "Apocalypto-Beatdown-Wind Walkers"
+    }
+  ]
+}
+Notice that:
+
+the output is formatted
+some property names are changed and contain HTML
+null values are included, and the director field is omitted
+Date is now in the dd-MM-yyyy format
+a new property is present – N° Film
+filmography is a formatted property, not the default JSON list
+
+4. Gson Deserialization
+
+4.1. Simple Deserialization
+
+Deserialization converts JSON input into Java objects. To illustrate the output, we implement the toString() method in both entity classes:
+
+
+
+public class Movie {
+    @Override
+    public String toString() {
+      return "Movie [imdbId=" + imdbId + ", director=" + director + ",actors=" + actors + "]";
+    }
+    ...
+}
+
+public class ActorGson {
+    @Override
+    public String toString() {
+        return "ActorGson [imdbId=" + imdbId + ", dateOfBirth=" + dateOfBirth +
+          ",filmography=" + filmography + "]";
+    }
+    ...
+}
+Then we utilize the serialized JSON and run it through standard Gson deserialization:
+String jsonInput = "{\"imdbId\":\"tt0472043\",\"actors\":" +
+  "[{\"imdbId\":\"nm2199632\",\"dateOfBirth\":\"1982-09-21T12:00:00+01:00\"," +
+  "\"filmography\":[\"Apocalypto\",\"Beatdown\",\"Wind Walkers\"]}]}";
+        
+Movie outputMovie = new Gson().fromJson(jsonInput, Movie.class);
+outputMovie.toString();
+The output is us our entities, populated with the data from our JSON input:
+Movie [imdbId=tt0472043, director=null, actors=[ActorGson 
+  [imdbId=nm2199632, dateOfBirth=Tue Sep 21 04:00:00 PDT 1982, 
+  filmography=[Apocalypto, Beatdown, Wind Walkers]]]]
+As was the case with the simple serializer:
+
+the JSON input names must correspond with the Java entity names, or they are set to null.
+dateOfBirth field was translated with the default Gson date pattern, ignoring the time zone.
+
+4.2. Custom Deserialization
+
+Using a custom deserializer allows us to modify the standard deserializer behavior. In this case, we want the date to reflect the correct time zone for dateOfBirth. We use a custom ActorGsonDeserializer on the ActorGson entity to achieve this:
+public class ActorGsonDeserializer implements JsonDeserializer<ActorGson> {
+
+    private SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+
+    @Override
+    public ActorGson deserialize(JsonElement json, Type type,
+      JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
+        
+        JsonObject jsonObject = json.getAsJsonObject();
+
+        JsonElement jsonImdbId = jsonObject.get("imdbId");
+        JsonElement jsonDateOfBirth = jsonObject.get("dateOfBirth");
+        JsonArray jsonFilmography = jsonObject.getAsJsonArray("filmography");
+
+        ArrayList<String> filmList = new ArrayList<String>();
+        if (jsonFilmography != null) {
+            for (int i = 0; i < jsonFilmography.size(); i++) {
+                filmList.add(jsonFilmography.get(i).getAsString());
+            }
+        }
+
+    ActorGson actorGson = new ActorGson(jsonImdbId.getAsString(),
+      sdf.parse(jsonDateOfBirth.getAsString()), filmList);
+        return actorGson;
+    }
+}
+We employed a SimpleDateFormat parser to parse the input date, accounting for the time zone.
+Note that we could have decided to simply write a custom deserializer for only the Date, but the ActorGsonDeserializer offers a more detailed view of the deserialization process.
+Also note that the Gson approach does not require modifying the ActorGson entity, which is ideal as we may not always have access to the input entity. We use the custom deserializer here:
+String jsonInput = "{\"imdbId\":\"tt0472043\",\"actors\":"
+  + "[{\"imdbId\":\"nm2199632\",\"dateOfBirth\":\"1982-09-21T12:00:00+01:00\",
+  + \"filmography\":[\"Apocalypto\",\"Beatdown\",\"Wind Walkers\"]}]}";
+
+Gson gson = new GsonBuilder()
+  .registerTypeAdapter(ActorGson.class,new ActorGsonDeserializer())
+  .create();
+
+Movie outputMovie = gson.fromJson(jsonInput, Movie.class);
+outputMovie.toString();
+The output is similar to the simple deserializer result, except the date uses correct time zone:
+
+
+
+Movie [imdbId=tt0472043, director=null, actors=[ActorGson
+  [imdbId=nm2199632, dateOfBirth=Tue Sep 21 12:00:00 PDT 1982, 
+  filmography=[Apocalypto, Beatdown, Wind Walkers]]]]
+5. Jackson Maven Dependency
+
+<dependency> 
+    <groupId>com.fasterxml.jackson.core</groupId> 
+    <artifactId>jackson-databind</artifactId>   
+    <version>${jackson.version}</version> 
+</dependency>
+You can get the latest version of Jackson here.
+6. Jackson Serialization
+
+6.1. Simple Serialization
+
+Here we will use Jackson to obtain the same serialized content we had with Gson using the following entities. Note that the entity's getters/setters must be public:
+public class ActorJackson {
+    private String imdbId;
+    private Date dateOfBirth;
+    private List<String> filmography;
+    
+    // required getters and setters, default constructor 
+    // and field constructor details omitted
+}
+
+public class Movie {
+    private String imdbId;
+    private String director;
+    private List<ActorJackson> actors;
+    
+    // required getters and setters, default constructor 
+    // and field constructor details omitted
+}
+SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy"); 
+ActorJackson rudyYoungblood = new ActorJackson("nm2199632",sdf.parse("21-09-1982"),
+  Arrays.asList("Apocalypto","Beatdown","Wind Walkers") ); 
+Movie movie = new Movie("tt0472043","Mel Gibson", Arrays.asList(rudyYoungblood)); 
+ObjectMapper mapper = new ObjectMapper(); 
+String jsonResult = mapper.writeValueAsString(movie);
+The output is as follows:
+{"imdbId":"tt0472043","director":"Mel Gibson","actors":
+[{"imdbId":"nm2199632","dateOfBirth":401439600000,
+"filmography":["Apocalypto","Beatdown","Wind Walkers"]}]}
+Some notes of interest:
+
+ObjectMapper is our Jackson serializer/deserializer
+The output JSON is not formatted
+By default, Java Date is translated to long value
+
+6.2. Custom Serialization
+
+We can create a Jackson serializer for ActorJackson element generation by extending StdSerializer for our entity. Again note that the entity getters/setters must be public:
+public class ActorJacksonSerializer extends StdSerializer<ActorJackson> {
+
+    private SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy");
+
+    public ActorJacksonSerializer(Class t) {
+        super(t);
+    }
+
+    @Override
+    public void serialize(ActorJackson actor, JsonGenerator jsonGenerator,
+      SerializerProvider serializerProvider) throws IOException {
+
+        jsonGenerator.writeStartObject();
+        jsonGenerator.writeStringField("imdbId", actor.getImdbId());
+        jsonGenerator.writeObjectField("dateOfBirth",
+          actor.getDateOfBirth() != null ?
+          sdf.format(actor.getDateOfBirth()) : null);
+    
+        jsonGenerator.writeNumberField("N° Film: ", 
+          actor.getFilmography() != null ? actor.getFilmography().size() : null);
+    jsonGenerator.writeStringField("filmography", actor.getFilmography()
+          .stream().collect(Collectors.joining("-")));
+
+        jsonGenerator.writeEndObject();
+    }
+}
+We create a Movie entity to allow ignoring of the director field:
+public class MovieWithNullValue {
+    
+    private String imdbId;
+    
+    @JsonIgnore
+    private String director;
+    
+    private List<ActorJackson> actors;
+    
+    // required getters and setters, default constructor
+    // and field constructor details omitted
+}
+Now we can proceed with a custom ObjectMapper creation and setup:
+SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy");
+
+ActorJackson rudyYoungblood = new ActorJackson(
+  "nm2199632", 
+  sdf.parse("21-09-1982"), 
+  Arrays.asList("Apocalypto", "Beatdown","Wind Walkers"));
+MovieWithNullValue movieWithNullValue = 
+  new MovieWithNullValue(null,"Mel Gibson", Arrays.asList(rudyYoungblood));
+
+SimpleModule module = new SimpleModule();
+module.addSerializer(new ActorJacksonSerializer(ActorJackson.class));
+ObjectMapper mapper = new ObjectMapper();
+String jsonResult = mapper.registerModule(module)
+  .writer(new DefaultPrettyPrinter())
+  .writeValueAsString(movieWithNullValue);
+The output is formatted JSON that handles null values, formats the date, excludes the director field and shows new output of N°:
+
+
+
+{
+  "actors" : [ {
+    "imdbId" : "nm2199632",
+    "dateOfBirth" : "21-09-1982",
+    "N° Film: " : 3,
+    "filmography" : "Apocalypto-Beatdown-Wind Walkers"
+  } ],
+  "imdbID" : null
+}
+7. Jackson Deserialization
+
+7.1. Simple Deserialization
+
+To illustrate the output, we implement the toString() method in both Jackson entity classes:
+public class Movie {
+    @Override
+    public String toString() {
+        return "Movie [imdbId=" + imdbId + ", director=" + director
+          + ", actors=" + actors + "]";
+    }
+    ...
+}
+
+public class ActorJackson {
+    @Override
+    public String toString() {
+        return "ActorJackson [imdbId=" + imdbId + ", dateOfBirth=" + dateOfBirth
+          + ", filmography=" + filmography + "]";
+    }
+    ...
+}
+Then we utilize the serialized JSON and run it through Jackson deserialization:
+String jsonInput = "{\"imdbId\":\"tt0472043\",\"actors\":
+  [{\"imdbId\":\"nm2199632\",\"dateOfBirth\":\"1982-09-21T12:00:00+01:00\",
+  \"filmography\":[\"Apocalypto\",\"Beatdown\",\"Wind Walkers\"]}]}";
+ObjectMapper mapper = new ObjectMapper();
+Movie movie = mapper.readValue(jsonInput, Movie.class);
+The output is us our entities, populated with the data from our JSON input:
+Movie [imdbId=tt0472043, director=null, actors=[ActorJackson 
+  [imdbId=nm2199632, dateOfBirth=Tue Sep 21 04:00:00 PDT 1982, 
+  filmography=[Apocalypto, Beatdown, Wind Walkers]]]]
+As was the case with the simple serializer:
+
+the JSON input names must correspond with the Java entity names, or they are set to null,
+dateOfBirth field was translated with the default Jackson date pattern, ignoring the time zone.
+
+7.2. Custom Deserialization
+
+Using a custom deserializer allows us to modify the standard deserializer behavior.
+In this case, we want the date to reflect the correct time zone for dateOfBirth, so we add a DateFormatter to our Jackson ObjectMapper:
+String jsonInput = "{\"imdbId\":\"tt0472043\",\"director\":\"Mel Gibson\",
+  \"actors\":[{\"imdbId\":\"nm2199632\",\"dateOfBirth\":\"1982-09-21T12:00:00+01:00\",
+  \"filmography\":[\"Apocalypto\",\"Beatdown\",\"Wind Walkers\"]}]}";
+
+ObjectMapper mapper = new ObjectMapper();
+DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+mapper.setDateFormat(df);
+        
+Movie movie = mapper.readValue(jsonInput, Movie.class);
+movie.toString();
+The output reflects the correct time zone with the date:
+Movie [imdbId=tt0472043, director=Mel Gibson, actors=[ActorJackson 
+  [imdbId=nm2199632, dateOfBirth=Tue Sep 21 12:00:00 PDT 1982, 
+  filmography=[Apocalypto, Beatdown, Wind Walkers]]]]
+This solution is clean and simple.
+
+
+
+Alternatively, we could have created a custom deserializer for the ActorJackson class, registered this module with our ObjectMapper, and deserialized the date using the @JsonDeserialize annotation on the ActorJackson entity.
+The disadvantage of that approach is the need to modify the entity, which may not be ideal for cases when we don't have access to the input entity classes.
+8. Conclusion
+
+Both Gson and Jackson are good options for serializing/deserializing JSON data, simple to use and well documented.
+Advantages of Gson:
+
+Simplicity of toJson/fromJson in the simple cases
+For deserialization, do not need access to the Java entities
+
+Advantages of Jackson:
+
+Built into all JAX-RS (Jersey, Apache CXF, RESTEasy, Restlet), and Spring framework
+Extensive annotation support
+
+You can find the code for Gson and Jackson on GitHub.
+Jackson bottom 
+Get started with Spring 5 and Spring Boot 2, through the Learn Spring course:
+>> CHECK OUT THE COURSE
+
+Jackson footer banner
+
+
+
+
+
+
+Do JSON right with Jackson
+Download the E-book
+
+
+
+
+
+Comments are closed on this article!
+
+
+
+
+
+
+
+Jackson sidebar banner
+
+
+
+Do JSON right with Jackson
+Download the E-book
+ 
+ 
+ 
+ 
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+CoursesAll Courses
+All Bulk Courses
+The Courses Platform
+SeriesJava “Back to Basics” Tutorial
+Jackson JSON Tutorial
+Apache HttpClient Tutorial
+REST with Spring Tutorial
+Spring Persistence Tutorial
+Security with Spring
+Spring Reactive Tutorials
+AboutAbout Baeldung
+The Full Archive
+Editors
+Jobs
+Our Partners
+Partner with Baeldung
+ 
+
+Terms of Service
+Privacy Policy
+Company Info
+Contact
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

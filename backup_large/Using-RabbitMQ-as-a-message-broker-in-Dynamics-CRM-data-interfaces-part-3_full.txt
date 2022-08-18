@@ -1,0 +1,208 @@
+
+
+
+
+
+Using RabbitMQ as a message broker in Dynamics CRM data interfaces – part 3
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Home
+Subscribe
+
+
+
+
+
+Using RabbitMQ as a message broker in Dynamics CRM data interfaces – part 3
+
+                January 20, 2015  in Microsoft Dynamics CRM, JSON, C#, Node.js, RabbitMQ, CRM 2015, integration
+
+
+
+This is the third post of a five-part series on creating loosely coupled data interfaces for Dynamics CRM using RabbitMQ.
+Last time I showed how to install and configure a RabbitMQ server to support passing messages to and from Dynamics CRM. Today I will show how to build a Dynamics CRM plug-in that publishes notification messages to a RabbitMQ exchange using the official RabbitMQ .Net client library. The code for this plug-in is available on GitHub in the MessageQueuePlugin project under the LucasCrmMessageQueueTools solution.
+Before going any further, let’s get some bad news out of the way. Plug-ins that execute in the Dynamics CRM sandbox cannot use RabbitMQ .Net client library to publish messages to a RabbitMQ server, so you can’t use today’s plug-in approach from a CRM Online organization. In my next post, I will be showing an alternate mechanism for publishing messages that you can use from a sandboxed plug-in, but today I want to focus on the most direct integration method. Now that we’re clear on the limitations of this approach, let’s get started!
+The approach
+Last month I wrote a series of blog posts about how to create a near real-time streaming API using plug-ins and Node.js. For this plug-in I’m going to basically copy the logic I used for the plug-in in that series.
+This post outlines the approach in detail, but if you don’t want to read the entire thing, the basic idea was to create a plug-in that is registered for an operation (create, update, delete, etc.) with a FetchXML query in its unsecure configuration. When the plug-in step is triggered, its associated FetchXML query is executed, and then the resulting fields are serialized into a JSON object, which is then sent to the Node.js application via an HTTP POST request. Today’s plug-in operates in the exact same way, except instead of sending the JSON object to a Node.js endpoint, the JSON object will be published as a message to a RabbitMQ exchange.
+Configuring the plug-in
+To make the plug-in easily useable in any organization without needing to be recompiled, all the RabbitMQ connection parameters are stored in the unsecure configuration along with the FetchXML query for the data to retrieve. Here’s the configuration XML fragment to enable case notifications:
+<config>
+<endpoint>lucas-ajax.cloudapp.net</endpoint>
+<exchange>CRM</exchange>
+<routingkey>Case</routingkey>
+<user>rabbituser</user>
+<password>PASSWORDHERE</password>
+<query><![CDATA[
+<fetch mapping='logical'>
+<entity name='incident'>
+ <attribute name='ownerid'/>
+ <attribute name='modifiedby'/>
+ <attribute name='createdby'/>
+ <attribute name='title'/>
+ <attribute name='incidentid'/>
+ <attribute name='ticketnumber'/>
+ <attribute name='createdon'/>
+ <attribute name='modifiedon'/>
+ <filter type='and'>
+  <condition attribute='incidentid' operator='eq' value='{0}' />
+ </filter>
+</entity>
+</fetch>
+]]>
+</query>
+</config>
+Generating the notification message
+Just like in my Node.js plug-in, the FetchXML is extracted from the configuration XML, and the query is executed against Dynamics CRM. The results are then serialized to JSON using Json.NET.
+Publishing the message
+The endpoint, exchange name, RabbitMQ user, RabbitMQ password and routing key values from the configuration XML are then used to establish a connection to RabbitMQ and publish the notification message to the exchange like so:
+try
+{
+     //connect to rabbitmq
+     var factory = new ConnectionFactory();
+     factory.UserName = \_brokerUser;
+     factory.Password = \_brokerPassword;
+     factory.VirtualHost = "/";
+     factory.Protocol = Protocols.DefaultProtocol;
+     factory.HostName = \_brokerEndpoint;
+     factory.Port = AmqpTcpEndpoint.UseDefaultPort;
+     IConnection conn = factory.CreateConnection();
+     using (var connection = factory.CreateConnection())
+     {
+         using (var channel = connection.CreateModel())
+         {
+             //tell rabbitmq to send confirmation when messages are successfully published
+             channel.ConfirmSelect();
+             channel.WaitForConfirmsOrDie();
+            
+             //prepare message to write to queue
+             var body = Encoding.UTF8.GetBytes(jsonMsg);
+ 
+             var properties = channel.CreateBasicProperties();
+             properties.SetPersistent(true);
+            
+             //publish the message to the exchange with the supplied routing key
+             channel.BasicPublish(_exchange, _routingKey, properties, body);
+         }
+     }
+}
+catch (Exception e)
+{
+     tracingService.Trace("Exception: {0}", e.ToString());
+     throw;
+}
+If any errors are encountered, the message is captured via the tracing service, and then an exception is thrown.
+Because this plug-in uses both the RabbitMQ .Net and Json.NET client libraries, they have to be merged with the plug-in assembly before registering it in Dynamics CRM. I’ve included a batch script called ilmerge.bat in the project directory on GitHub.
+Wrapping up
+After you register the plugin and register a step to publish a notification message to RabbitMQ, you can verify everything is working as expected either by looking at the Queues tab in the RabbitMQ management web UI or running the CliConsumer sample application I showed in
+part 2.
+A version of this post was originally published on the HP Enterprise Services Application Services blog.
+
+
+
+
+Lucas Alexander's Picture
+
+
+Lucas Alexander
+Husband, father, Auburn man, dog owner, coder, coffee drinker.
+
+Auburn, Ala., USA
+
+
+
+Share this post
+
+Twitter
+
+
+Facebook
+
+
+Google+
+
+
+
+
+
+Please enable JavaScript to view the comments powered by Disqus.
+comments powered by Disqus
+
+
+
+
+ABOUT   LINKS
+
+
+
+
+
+
+
+
+
+
+
+
+
+Lucas Alexander © 2022
+
+
+
+
+
+
+
+
+
+
+
+

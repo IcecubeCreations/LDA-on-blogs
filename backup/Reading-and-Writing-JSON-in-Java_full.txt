@@ -1,0 +1,263 @@
+
+
+Reading and Writing JSON in JavaSA LogotypeArticlesLearnWrite with UsSign inSign upPythonJavaScriptJavaHomeArticlesReading and Writing JSON in JavaVasyl LagutinWhat is JSON?
+JavaScript Object Notation or in short JSON is a data-interchange format that was introduced in 1999 and became widely adopted in the mid-2000s. Currently, it is the de-facto standard format for the communication between web services and their clients (browsers, mobile applications, etc.). Knowing how to read and write it is an essential skill for any software developer.
+Even though JSON was derived from JavaScript, it is a platform-independent format. You can work with it in multiple programming languages including Java, Python, Ruby, and many more. Really, any language that can parse a string can handle JSON.
+The popularity of JSON resulted in its native support by many databases, the latest versions of PostgreSQL and MySQL contain the native support for querying the data stored in JSON fields. NoSQL databases like MongoDB were built upon this format and use JSON documents to store records, just as tables and rows store records in a relational database.
+One of the main JSON advantages, when compared to the XML data format, is the size of the document. As JSON is schemaless, there's no need to carry around massive structural overhead like namespaces and wrappers.
+JSON is a generic data format that has six data types:
+
+Strings
+Numbers
+Booleans
+Arrays
+Objects
+null
+
+Let's take a look at a simple JSON document:
+{
+  "name": "Benjamin Watson",
+  "age": 31,
+  "isMarried": true,
+  "hobbies": ["Football", "Swimming"],
+  "kids": [
+    {
+      "name": "Billy",
+      "age": 5
+    }, 
+   {
+      "name": "Milly",
+      "age": 3
+    }
+  ]
+}
+
+This structure defines an object that represents a person named "Benjamin Watson". We can see his details here, such as his age, family status, and hobbies.
+In essence - JSON object is nothing more than a string. A string which represents an object, which is why JSON objects are often called JSON Strings or JSON documents.
+json-simple
+As there is no native support for JSON in Java, first of all, we should add a new dependency that would provide it for us. To begin with, we'll use the json-simple module, adding it as a Maven dependency.
+<dependency>
+    <groupId>com.googlecode.json-simple</groupId>
+    <artifactId>json-simple</artifactId>
+    <version>{version}</version>
+</dependency>
+
+This module is fully compliant with the JSON specification RFC4627 and provides core functionality such as encoding and decoding JSON objects and doesn't have any dependencies on external modules.
+Let's create a simple method that will take in a filename as a parameter and write some hardcoded JSON data:
+public static void writeJsonSimpleDemo(String filename) throws Exception {
+    JSONObject sampleObject = new JSONObject();
+    sampleObject.put("name", "Stackabuser");
+    sampleObject.put("age", 35);
+
+    JSONArray messages = new JSONArray();
+    messages.add("Hey!");
+    messages.add("What's up?!");
+
+    sampleObject.put("messages", messages);
+    Files.write(Paths.get(filename), sampleObject.toJSONString().getBytes());
+}
+
+Here, we're creating an instance of the JSONObject class, putting in a name and age as properties. Then we're creating an instance of the class JSONArray adding up two string items and putting it in as a third property of our sampleObject. Ultimately, we're transforming sampleObject to a JSON document calling the toJSONString() method and writing it down to a file.
+To run this code, we should create an entry point to our application that could look like this:
+public class Solution {
+    public static void main(String[] args) throws Exception {
+        writeJsonSimpleDemo("example.json");
+    }
+}
+
+As a result of running this code, we will get a file named example.json in the root of our package. The content of the file will be a JSON document, with all the properties that we've put in:
+{"name":"Stackabuser","messages":["Hey!","What's up?!"],"age":35}
+
+Great! We just had our first experience with the JSON format and we have successfully serialized a Java object to it and written it down to the file.
+Now, with a slight modification of our source code, we can read the JSON object from the file and print it to the console either completely or print out selected individual properties:
+public static void main(String[] args) throws Exception {
+    JSONObject jsonObject = (JSONObject) readJsonSimpleDemo("example.json");
+    System.out.println(jsonObject);
+    System.out.println(jsonObject.get("age"));
+}
+    
+public static Object readJsonSimpleDemo(String filename) throws Exception {
+    FileReader reader = new FileReader(filename);
+    JSONParser jsonParser = new JSONParser();
+    return jsonParser.parse(reader);
+}
+
+It's important to note that the parse() method returns an Object and we have to explicitly cast it to JSONObject.
+If you have a malformed or corrupted JSON document, you'll get an exception similar to this one:
+Exception in thread "main" Unexpected token END OF FILE at position 64.
+
+To simulate it, try deleting the last closing bracket }.
+Digging Deeper
+Even though json-simple is useful, it doesn't allow us to use custom classes without writing additional code. Let's assume we have a class that represents a person from our initial example:
+class Person {
+    Person(String name, int age, boolean isMarried, List<String> hobbies,
+            List<Person> kids) {
+        this.name = name;
+        this.age = age;
+        this.isMarried = isMarried;
+        this.hobbies = hobbies;
+        this.kids = kids;
+    }
+
+    Person(String name, int age) {
+        this(name, age, false, null, null);
+    }
+
+    private String name;
+    private Integer age;
+    private Boolean isMarried;
+    private List<String> hobbies;
+    private List<Person> kids;
+
+    // getters and setters
+
+    @Override
+    public String toString() {
+        return "Person{" +
+                "name='" + name + '\'' +
+                ", age=" + age +
+                ", isMarried=" + isMarried +
+                ", hobbies=" + hobbies +
+                ", kids=" + kids +
+                '}';
+    }
+}
+
+Let's take the JSON document that we used as an example in the beginning and put it in the example.json file:
+{
+  "name": "Benjamin Watson",
+  "age": 31,
+  "isMarried": true,
+  "hobbies": ["Football", "Swimming"],
+  "kids": [
+    {
+      "name": "Billy",
+      "age": 5
+    }, 
+   {
+      "name": "Milly",
+      "age": 3
+    }
+  ]
+}
+
+Our task would be to deserialize this object from a file to an instance of the Person class. Let's try to do this using simple-json first.
+Modifying our main() method, reusing the static readSimpleJsonDemo() and adding necessary imports we will get to:
+public static void main(String[] args) throws Exception {
+    JSONObject jsonObject = (JSONObject) readJsonSimpleDemo("example.json");
+    Person ben = new Person(
+                (String) jsonObject.get("name"),
+                Integer.valueOf(jsonObject.get("age").toString()),
+                (Boolean) jsonObject.get("isMarried"),
+                (List<String>) jsonObject.get("hobbies"),
+                (List<Person>) jsonObject.get("kids"));
+
+    System.out.println(ben);
+}
+
+It doesn't look great, we have a lot of weird typecasts, but it seems to do the job, right?
+Free eBook: Git EssentialsCheck out our hands-on, practical guide to learning Git, with best-practices, industry-accepted standards, and included cheat sheet. Stop Googling Git commands and actually learn it!Download the eBook  Well, not really...
+Let's try to print out to the console the kids array of our Person and then the age of the first kid.
+System.out.println(ben.getKids());
+System.out.println(ben.getKids().get(0).getAge());
+
+As we see the first console output shows a seemingly good result of:
+[{"name":"Billy","age":5},{"name":"Milly","age":3}]
+
+but the second one throws an Exception:
+Exception in thread "main" java.lang.ClassCastException: org.json.simple.JSONObject cannot be cast to com.stackabuse.json.Person
+
+The problem here is that our typecast to a List<Person> didn't create two new Person objects, it just stuffed in whatever was there - a JSONObject in our current case. When we tried to dig deeper and get the actual age of the first kid, we ran into a ClassCastException.
+This is a big issue that I'm sure you'll be able to overcome writing a bunch of very clever code that you might be proud of, but there is a straightforward way to get it done right from the very beginning.
+Jackson
+A library that will allow us to do all this in a very efficient manner is called Jackson. It's super common and used in big enterprise projects like Hibernate.
+Let's add it as a new Maven dependency:
+<dependency> 
+    <groupId>com.fasterxml.jackson.core</groupId>
+    <artifactId>jackson-databind</artifactId>
+    <version>{version}</version>
+</dependency>
+
+The core class we'll use is called ObjectMapper, it has a method readValue() that takes two arguments: a source to read from and a class to cast the result to.
+ObjectMapper could be configured with a number of different options passed into the constructor:
+
+
+
+FAIL_ON_SELF_REFERENCES 
+A feature that determines what happens when a direct self-reference is detected by a POJO (and no Object Id handling is enabled for it): either a JsonMappingException is thrown (if true), or reference is normally processed (false).
+
+
+INDENT_OUTPUT
+A feature that allows enabling (or disabling) indentation for the underlying generator, using the default pretty printer configured for ObjectMapper (and ObjectWriters created from mapper).
+
+
+ORDER_MAP_ENTRIES_BY_KEYES
+Feature that determines whether Map entries are first sorted by key before serialization or not: if enabled, additional sorting step is performed if necessary (not necessary for SortedMaps), if disabled, no additional sorting is needed.
+
+
+USE_EQUALITY_FOR_OBJECT_ID
+Feature that determines whether Object Identity is compared using true JVM-level identity of Object (false); or, equals() method.
+
+
+
+A feature that determines how type char[] is serialized: when enabled, will be serialized as an explicit JSON array (with single-character Strings as values); when disabled, defaults to serializing them as Strings (which is more compact).
+
+
+WRITE_DATE_KEYS_AS_TIMESTAMPS
+A feature that determines whether Dates (and sub-types) used as Map keys are serialized as timestamps or not (if not, will be serialized as textual values).
+
+
+WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS
+A feature that controls whether numeric timestamp values are to be written using nanosecond timestamps (enabled) or not (disabled); if and only if datatype supports such resolution.
+
+
+WRITE_DATES_AS_TIMESTAMPS
+A feature that determines whether Date (and date/time) values (and Date-based things like Calendars) are to be serialized as numeric timestamps (true; the default), or as something else (usually textual representation).
+
+
+WRITE_DATES_WITH_ZONE_ID
+A feature that determines whether date/date-time values should be serialized so that they include timezone id, in cases where type itself contains timezone information.
+
+
+
+A full list of the SerializationFeature enum is available here.
+public static void main(String[] args) throws Exception {
+    ObjectMapper objectMapper = new ObjectMapper();
+    Person ben = objectMapper.readValue(new File("example.json"), Person.class);
+    System.out.println(ben);
+    System.out.println(ben.getKids());
+    System.out.println(ben.getKids().get(0).getAge());
+}
+
+Unfortunately, after running this piece of code, we'll get an exception:
+Exception in thread "main" com.fasterxml.jackson.databind.JsonMappingException: No suitable constructor found for type [simple type, class com.stackabuse.json.Person]: can not instantiate from JSON object (missing default constructor or creator, or perhaps need to add/enable type information?)
+
+By the looks of it, we have to add the default constructor to the Person class:
+public Person() {}
+
+Rerunning the code, we will see yet another exception popping up:
+Exception in thread "main" com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException: Unrecognized field "isMarried" (class com.stackabuse.json.Person), not marked as ignorable (5 known properties: "hobbies", "name", "married", "kids", "age"])
+
+This one is a bit tougher to resolve as the error message doesn't tell us what to do to achieve the desired result. Ignoring the property isn't a viable option as we clearly have it in the JSON document and want it to be translated to the resulting Java object.
+The issue here is related to the inner structure of Jackson library. It derives property names from getters, removing the first parts of them. In the case of getAge() and getName() it works perfectly, but with isMarried() it doesn't and assumes the field must be called married instead of isMarried.
+A brutish, but working option - we can resolve this issue simply by renaming the getter to isIsMarried. Let's go ahead and try to do this.
+No more exceptions are popping up, and we see the desired result!
+Person{name='Benjamin Watson', age=31, isMarried=true, hobbies=[Football, Swimming], kids=[Person{name='Billy', age=5, isMarried=null, hobbies=null, kids=null}, Person{name='Milly', age=3, isMarried=null, hobbies=null, kids=null}]}
+
+[Person{name='Billy', age=5, isMarried=null, hobbies=null, kids=null}, Person{name='Milly', age=3, isMarried=null, hobbies=null, kids=null}]
+
+5
+
+Although the result is satisfying, there's a better way around this than adding another is to each of your boolean getters.
+We can achieve the same result by adding an annotation to the isMarried() method:
+@JsonProperty(value="isMarried")
+public boolean isMarried() {
+    return isMarried;
+}
+
+This way we're explicitly telling Jackson the name of the field and it doesn't have to guess. It could be especially useful in cases where the field is named totally different from getters.
+Conclusion
+JSON is a lightweight text-based format that allows us to represent objects and transfer them across the web or store in the database.
+There is no native support for JSON manipulation in Java, however, there are multiple modules that provide this functionality. In this tutorial, we have covered the json-simple and Jackson modules, showing the strengths and weaknesses of each one of them.
+Working with JSON, you should keep in mind the nuances of the modules you're working with and debug the exceptions that could be popping up carefully.
+# java# jsonLast Updated: September 6th, 2018Was this article helpful?You might also like...Convert Java Object (POJO) To and From JSON with GsonConvert JSON String to Java Map with JacksonDefinitive Guide to Jackson ObjectMapper - Serialize and Deserialize Java ObjectsHow to Convert JSON Object to Java Object with JacksonConvert JSON Array to a Java Array or List with JacksonImprove your dev skills!Get tutorials, guides, and dev jobs in your inbox.Email addressSign UpNo spam ever. Unsubscribe at any time. Read our Privacy Policy.Vasyl LagutinAuthorIn this articleWhat is JSON?json-simpleDigging DeeperJacksonConclusionMake Clarity from Data - Quickly Learn Data Visualization with PythonLearn the landscape of Data Visualization tools in Python - work with Seaborn, Plotly, and Bokeh, and excel in Matplotlib!From simple plot types to ridge plots, surface plots and spectrograms - understand your data and learn to draw conclusions from it.Learn more  Want a remote job?  More JobsJobs byHireRemote.ioTwitterGitHubFacebook© 2013-2022 Stack Abuse. All rights reserved.DisclosurePrivacyTerms

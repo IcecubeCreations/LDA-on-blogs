@@ -1,0 +1,893 @@
+
+
+
+
+
+
+
+Forget Express.js — opt for these alternatives instead - LogRocket Blog
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+BlogPodcastMeetups
+
+
+
+Sign In
+Start monitoring for free
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+Share 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Reply 
+
+
+10
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+Standard Liv Follow
+I'm a software engineer living in the Bay Area. she/her
+
+
+Forget Express.js — opt for these alternatives instead
+
+
+
+July 11, 2019 
+
+6 min read
+1778
+
+
+ 
+Node.js offers some powerful primitives when it comes to building HTTP servers. By default, you get a function that runs every time an HTTP request has been received by the server. The proverbial server example that parses an incoming POST request containing a JSON body looks a bit like this:
+const http = require('http');
+
+const server = http.createServer((req, res) => {
+  // This function is called once the headers have been received
+  res.setHeader('Content-Type', 'application/json');
+
+  if (req.method !== 'POST' || req.url !== '/user') {
+    res.statusCode = 405;
+    res.end('{"error":"METHOD_NOT_ALLOWED"}');
+    return;
+  }
+
+  let body = '';
+
+  req.on('data', (data) => {
+    // This function is called as chunks of body are received
+    body += data;
+  });
+
+  req.on('end', () => {
+    // This function is called once the body has been fully received
+    let parsed;
+
+    try {
+      parsed = JSON.parse(body);
+    } catch (e) {
+      res.statusCode = 400;
+      res.end('{"error":"CANNOT_PARSE"}');
+    }
+
+    res.end(JSON.stringify({
+      error: false,
+      username: parsed.username
+    }));
+  });
+});
+
+server.listen(3000, () => {
+  console.log('Server running at http://localhost:3000/');
+});
+By default, Node.js allows us to run a function whenever any request is received. There is no built-in router based on paths. Node.js does perform some basic parsing — for example, parsing the incoming HTTP message and extracting different components like the path, header pairs, encoding (Gzip and SSL), etc.
+However, the need for higher-level functionality means that we usually have to reach for a web framework. For example, if a multipart/form-data or application/x-www-form-urlencoded request is received, we need to use a module to handle decoding the content for us. If we want to simply route requests based on pattern matching and HTTP methods, we’ll need either a module — or, often, a full web framework — to handle this for us.
+That’s where tools like Express.js come into play.
+Meet Express.js
+Express.js fairly early became the go-to framework for building web applications using Node.js. It scratched an itch that many developers had: it provided a nice syntax for routing HTTP requests, it provided a standardized interface for building out middleware, and it did so using the familiar callback pattern embraced by the core Node.js APIs and most of the npm ecosystem.
+Express.js became so popular that it’s almost ubiquitously associated with Node.js — much like when we read about the language Ruby, we’re already conjuring up thoughts of the framework Rails. In fact, Express.js and Node.js are members of the popular MEAN and MERN stack acronyms.
+Let’s take a look at what our previous example might look like when we bring Express.js into the picture:
+const express = require('express');
+const app = express();
+
+app.post('/user', (req, res) => {
+  // This function is called once the headers have been received
+
+  let body = '';
+
+  req.on('data', (data) => {
+    // This function is called as chunks of body are received
+    body += data;
+  });
+
+  req.on('end', () => {
+    // This function is called once the body has been fully received
+    let parsed;
+
+    try {
+      parsed = JSON.parse(body);
+    } catch (e) {
+      res.statusCode = 400;
+      res.json({
+        error: 'CANNOT_PARSE'
+      });
+    }
+
+    res.json({
+      error: false,
+      username: parsed.username
+    });
+  });
+
+});
+
+app.listen(3000, () => {
+  console.log('Server running at http://localhost:3000/');
+});
+In this example, we see that things get a little nicer. We’re able to specifically state the method and path we want to match by using app.post('/user'). This is much simpler than writing a big branching statement within the handler.
+We’re also given some other niceties. Consider the res.json({}) method: this not only serializes an object into its JSON equivalent, but it also sets the appropriate Content-Type header for us!
+However, Express.js still gives us the same paradigm that we get when using the built-in http module; we’re still calling methods on req and res objects, for example.
+
+
+We made a custom demo for .No really. Click here to check it out.
+
+Click here to see the full demo with network requests
+
+
+
+An ideal example
+Let’s take a step back and look at what an ideal example of an HTTP server might look like. Routing is desirable, and Express.js has a powerful routing syntax (it supports dynamic routing patterns, for instance). However, the code that runs within the controller function is where we really want to clean things up.
+In the above example, we’re doing a lot of work with asynchronous code. The request object is an Event Emitter that emits two events we care about, namely data and end. But, really, we often just want the ability to convert an HTTP request into a JSON object that we can easily extract values from.
+Also, we’re given both a request (req) and a response (res) object. The req object makes sense — it contains information about the request we’re receiving. But does the res really make all that much sense? We only want to provide a result from our controller function as a reply.
+With synchronous functions, it’s simple to receive a result from a function call: just return the value. We can do the same thing if we make use of async functions. By returning a call to an async function, the controller function can resolve a value that ultimately represents the response we intend for the consumer to receive.
+Let’s look at an example of this:
+const server = someCoolFramework();
+
+server.post('/user', async (req) => {
+  let parsed;
+
+  try {
+    parsed = await req.requestBodyJson();
+  } catch (e) {
+    return [400, {
+      error: 'CANNOT_PARSE'
+    }];
+  }
+
+  return {
+    error: false,
+    username: parsed.username
+  };
+});
+
+server.listen(3000, () => {
+  console.log('Server running at http://localhost:3000/');
+});
+There are a few concepts going on in this idealized example of ours. First, we’re maintaining the existing router syntax used by Express.js because it’s pretty solid. Second, our req object provides a helper for converting an incoming request into JSON.
+The third feature is that we’re able to provide a representation of the response by simply returning a result. Since JavaScript doesn’t support tuples, we’re essentially recreating one by using an array. So with this fictional example, a returned string could be sent directly to the client as a body, a returned array can be used to represent the status code and the body (and perhaps a third parameter for metadata like headers), and a returned object can be converted into its JSON representation.
+Adapting Express.js
+Now, it actually is possible to recreate some of this behavior with Express.js using a set of middleware.
+The express-async-handler npm module provides a wrapper function that can interpose and allow an async controller function to interact nicely with the Express.js app.use API. Unfortunately, this requires the developer to manually wrap each controller function:
+const asyncHandler = require('express-async-handler')
+
+app.post('/user', asyncHandler(async (req, res, next) => {
+  const bar = await foo.findAll();
+  res.send(bar);
+}))
+The response tuple unwrapping can also be handled by middleware. Such a middleware would need to run after the controller code has run and would replace the array with a representation Express.js is expecting.
+The ability to promisify the request body stream parsing can also be built in a generic manner:
+app.use((req, res, next) => {
+  req.bodyToJson = requestBodyJson(req);
+  next();
+});
+
+function requestBodyJson(req) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+
+    req.on('data', (data) => {
+      // This function is called as chunks of body are received
+      body += data;
+    });
+
+    req.on('end', () => {
+      // This function is called once the body has been fully received
+      let parsed;
+
+      try {
+        parsed = JSON.parse(body);
+      } catch (e) {
+        reject(e);
+        return;
+      }
+
+      resolve(parsed);
+    });
+  });
+}
+With the above code, we can then await the parsing using Express.js (and really any other situation where we’re given an instance of an HTTP Request object):
+// When using the Express.js middleware:
+const parsed = await req.bodyToJson();
+
+// Using the function generically:
+const parsed = await requestBodyJson(req);
+Using another framework
+It is true that we can reproduce some of these desired patterns using Express.js, but there are frameworks that have been built from the ground up with support for promises and the async/await paradigm. Let’s see what our example controller might look like when written using different web server frameworks.
+Fastify
+Fastify, as its name implies, was built with the intention of being a very fast Node.js web framework. Despite its main goal of speed, it actually does a very nice job of achieving our ideal controller syntax.
+This example is so terse that it almost feels like cheating:
+const fastify = require('fastify');
+const app = fastify();
+
+app.post('/user', async (req, reply) => {
+  return {
+    error: false,
+    username: req.body.username
+  };
+});
+
+app.listen(3000).then(() => {
+  console.log('Server running at http://localhost:3000/');
+});
+Fastify not only supports async functions for use as controller code, but it also automatically parses incoming requests into JSON if the Content-Type header suggests the body is JSON. This is why the example code ends up being so tiny.
+This also means that we can rely on Fastify to respond with a sane error when parsing fails. For example, when the client sends invalid JSON to Fastify, the response will look something like this:
+{
+  "statusCode": 400,
+  "error": "Bad Request",
+  "message": "Unexpected string in JSON at position 19"
+}
+Koa
+Koa is a sort of spiritual successor to Express.js, having been written by some of the original Express.js authors. It does support async functions out the door, but it doesn’t come with a router of its own. We can make use of koa-router to provide routing.
+Here’s what our example controller might look like with Koa:
+const Koa = require('koa');
+const Router = require('koa-router');
+const app = new Koa();
+const router = new Router();
+
+router.post('/user', async (ctx) => {
+  try {
+    const parsed = await requestBodyJson(ctx.req);
+    ctx.body = {
+      error: false,
+      username: parsed.username
+    };
+  } catch (e) {
+    ctx.status = 400;
+    ctx.body = {
+      error: 'CANNOT_PARSE'
+    };
+  }
+});
+
+app.use(router.routes());
+app.listen(3000);
+This Koa example isn’t as succinct as the Fastify version. It doesn’t perform the automatic JSON parsing, but we’re able to reuse the requestBodyJson() method we created earlier. It also doesn’t use the returned/resolved value from our controller but instead works by consuming data attached to the ctx argument.
+Takeaways
+When Node.js was still in its infancy, Express.js became the obvious choice for building web applications. Express.js had the goal of being a convenient web server that followed the callback paradigm. It achieved that goal, and the product is now essentially complete.
+However, as the JavaScript ecosystem has matured, we’ve gained new language tools and syntax. Dozens if not hundreds of frameworks have arisen since then, many of which have embraced these new language features.
+If you find yourself working on a new project written in Node.js that acts as a web server, I encourage you to consider newer contenders such as Koa and Fastify instead of defaulting to the familiar Express.js.
+200’s only  Monitor failed and slow network requests in production Deploying a Node-based web app or website is the easy part. Making sure your Node instance continues to serve resources to your app is where things get tougher. If you’re interested in ensuring requests to the backend or third party services are successful, try LogRocket. https://logrocket.com/signup/LogRocket is like a DVR for web and mobile apps, recording literally everything that happens while a user interacts with your app. Instead of guessing why problems happen, you can aggregate and report on problematic network requests to quickly understand the root cause. LogRocket instruments your app to record baseline performance timings such as page load time, time to first byte, slow network requests, and also logs Redux, NgRx, and Vuex actions/state. Start monitoring for free. 
+
+Share this:TwitterRedditLinkedInFacebook
+
+
+
+
+
+ 
+
+
+Standard Liv Follow
+I'm a software engineer living in the Bay Area. she/her
+
+
+
+
+Uncategorized 
+#node 
+
+
+« An overview of the top 10 React UI kits in 2019
+The complete best practices for minifying CSS »
+
+
+
+
+
+
+
+
+
+
+
+
+Redux Toolkit’s new listener middleware vs. Redux-Saga
+
+
+
+
+
+ 
+
+
+
+Joseph Mawa
+May 26, 2022
+
+9 min read
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+How to style React Router links with styled-components
+
+
+
+
+
+ 
+
+
+
+Temitope Oyedele
+May 25, 2022
+
+6 min read
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+NestJS serverless application on AWS with DynamoDB
+
+
+
+
+
+ 
+
+
+
+Ekekenta Odionyenfe
+May 25, 2022
+
+5 min read
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+10 Replies to “Forget Express.js — opt for these alternatives instead” 
+
+
+
+
+
+ Stas says: 
+
+July 11, 2019 at 11:08 am 
+
+
+Nahh.. Sails.js is much better than those new complecated libs.
+
+ 
+
+
+
+
+
+ Joe Bartels says: 
+
+July 11, 2019 at 2:03 pm 
+
+
+Fastify is on to something. Having request/response validation built in is such a nice thing to have standardized.
+However Express middleware can be an async function out of the box. No idea why an asyncHandler method even exists.
+
+ 
+
+
+
+
+
+ Radu B says: 
+
+July 11, 2019 at 2:36 pm 
+
+
+I recommend NestJS for an Enterprise level node framework. It is the most fun I’ve had developing a node backend. Moreover it supports either express or fastify as middleware out of the box.
+
+ 
+
+
+
+
+
+ Paulo Coghi says: 
+
+July 11, 2019 at 5:39 pm 
+
+
+Excellent article!
+
+ 
+
+
+
+
+
+ Arvind Ravikumar says: 
+
+July 11, 2019 at 7:11 pm 
+
+
+Sails is waaaay better. Almost as good as rails in terms of code brevity, but much faster performance of node.
+
+ 
+
+
+
+
+
+ Omar Muhammad says: 
+
+July 12, 2019 at 3:43 am 
+
+
+Just a quick note, express does work well with async/await out of the box! The wrapper you are using (express-async-handler) is just a workaround to abstract away error handling. Otherwise, you can just use try/catch just as you other examples, without any need for this extra dependency.
+
+ 
+
+
+
+
+
+ Vit Mark says: 
+
+July 13, 2019 at 1:56 am 
+
+
+As Omar said above, express works with async middleware…and your express-async-handler is just exception wrapper…
+Read here https://medium.com/@Abazhenov/using-async-await-in-express-with-node-8-b8af872c0016
+
+ 
+
+
+
+
+
+ Toni Tienda says: 
+
+July 15, 2019 at 9:30 am 
+
+
+You can use body-parser quite easily to avoid some of the complications describe in the post.
+
+ 
+
+
+
+
+
+ Fred Yang says: 
+
+May 3, 2020 at 10:26 pm 
+
+
+You don’t have to use express-async-handler to use async function as the middleware. Try it for yourself by removing it. As far as I see, it does not provide much value.
+
+ 
+
+
+
+
+
+ tranthithuydhnn says: 
+
+September 11, 2020 at 7:24 pm 
+
+
+@fred yang
+I recommend the middleware-async package instead.
+https://www.npmjs.com/package/middleware-async
+If you are going to use async function as a middleware. I highly recommend you wrap it by a helper function, such as middleware-async. (It is well tested and I use it in many production projects). There are also handy helper functions combineMiddlewares, middlewareToPromise, combineToAsync, which are very useful in testing.
+Code 1: no async, error caught.
+Code 2: async, error not caught. The connection hangs until the client stops it.
+Code 3: async, wrapped with middleware-async. Error caught
+Code 3: no async, wrapped with middleware-async. Error caught
+Code 1:
+const app = require(‘express’)()
+app.get(‘/’, (req, res, next) => {
+throw new Error(‘xx’)
+res.send(‘hi’)
+})
+app.use((err, req, res, next) => {
+console.error(err)
+res.send(‘error’)
+})
+app.listen(3000)
+Code 2:
+const app = require(‘express’)()
+app.get(‘/’, async (req, res, next) => {
+throw new Error(‘xx’)
+res.send(‘hi’)
+})
+app.use((err, req, res, next) => {
+console.error(err)
+res.send(‘error’)
+})
+app.listen(3000)
+Code 3:
+const app = require(‘express’)()
+const {asyncMiddleware} = require(‘middleware-async’)
+app.get(‘/’, asyncMiddleware(async (req, res, next) => {
+throw new Error(‘xx’)
+res.send(‘hi’)
+}))
+app.use((err, req, res, next) => {
+console.error(err)
+res.send(‘error’)
+})
+app.listen(3000)
+Code 4:
+const app = require(‘express’)()
+const {asyncMiddleware} = require(‘middleware-async’)
+app.get(‘/’, asyncMiddleware((req, res, next) => {
+throw new Error(‘xx’)
+res.send(‘hi’)
+}))
+app.use((err, req, res, next) => {
+console.error(err)
+res.send(‘error’)
+})
+app.listen(3000)
+
+ 
+
+
+
+Leave a Reply Cancel reply
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+Have you listened to our podcast? Check it out:
+
+
+
+
+
+
+
+PodRocket|Ep. 30
+
+Rocket Surgery: Kaelan and Chris Coyier compare notes
+
+Are you up to speed on all of this new CSS stuff? Chris Coyier and Kaelan compare notes on CSS and frontend development (they also discuss MDN plus).
+Listen now
+
+
+
+
+
+
+
+PodRocket|Ep. 29
+
+Continuing education with Eve Porcello
+
+In this episode, we talk to Eve Porcello about her experience teaching web development and Moon Highway, a training and curriculum development company she runs.
+Listen now
+
+
+
+
+
+
+
+PodRocket|Ep. 34
+
+Rome and Rome Tools, Inc. with Sebastian McKenzie and Jamie Kyle
+
+In this episode, Ben and Kaelan talk to Sebastian McKenzie and Jamie Kyle about Rome Tools, Inc., the roadmap for Rome, and the experience of getting funding as an open-source tool.
+Listen now
+
+
+
+
+
+
+
+PodRocket|Ep. 26
+
+Redux is alive and well with Mark Erikson
+
+What is modern Redux? What is it with the obsession of declaring Redux dead? In this episode, Ben and Brian interview Mark Erikson to talk about all things Redux.
+Listen now
+
+
+
+
+
+ 
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,570 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Introduction To Apache Camel | Baeldung
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Start HereCourses ▼▲
+
+
+
+
+
+
+
+
+
+REST with Spring
+
+
+The canonical reference for building a production grade API with Spring
+
+
+
+
+
+
+
+
+
+
+
+Learn Spring Security ▼▲
+
+
+THE unique Spring Security education if you’re working with Java today
+
+
+
+
+
+
+
+
+
+
+
+
+Learn Spring Security Core
+
+
+Focus on the Core of Spring Security 5
+
+
+
+
+
+
+
+
+
+
+
+Learn Spring Security OAuth
+
+
+Focus on the new OAuth2 stack in Spring Security 5
+
+
+
+
+
+
+
+
+
+
+
+
+Learn Spring
+
+
+From no experience to actually building stuff​
+
+
+
+
+
+
+
+
+
+
+
+Learn Spring Data JPA
+
+
+The full guide to persistence with Spring Data JPA
+
+
+
+
+Guides ▼▲
+
+
+
+
+
+
+
+
+
+Persistence
+
+
+The Persistence with Spring guides
+
+
+
+
+
+
+
+
+
+
+
+REST
+
+
+The guides on building REST APIs with Spring
+
+
+
+
+
+
+
+
+
+
+
+Security
+
+
+The Spring Security guides
+
+
+
+
+About ▼▲
+
+
+
+
+
+
+
+
+
+Full Archive
+
+
+The high level overview of all the articles on the site.
+
+
+
+
+
+
+
+
+
+
+
+Baeldung Ebooks
+
+
+Discover all of our eBooks
+
+
+
+
+
+
+
+
+
+
+
+About Baeldung
+
+
+About Baeldung.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Introduction To Apache Camel
+Last modified: March 25, 2020
+
+
+ by 
+
+baeldung 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Data 
+
+Apache Camel
+
+
+
+
+
+Generic Top 
+Get started with Spring 5 and Spring Boot 2, through the Learn Spring course:
+>> CHECK OUT THE COURSE
+
+ 
+
+1. Overview
+
+In this article, we'll introduce Camel and explore one of its core concepts – message routing.
+We'll start by covering these foundational concepts and terminology and we'll then present two main options for defining routes – Java DSL and Spring DSL.
+We'll also demonstrate these on an example – by defining a route which consumes files from one folder and moves them to another while prepending a timestamp to each file name.
+2. About Apache Camel 
+
+Apache Camel is an open source integration framework designed to make integrating systems simple and easy.
+It allows end users to integrate various systems using the same API, providing support for multiple protocols and data types, while being extensible and allowing the introduction of custom protocols.
+
+
+
+3. Maven Dependencies
+
+In order to use Camel, we need to first add the Maven dependency:
+<dependency>
+    <groupId>org.apache.camel</groupId>
+    <artifactId>camel-core</artifactId>
+    <version>2.18.0</version>
+</dependency>
+The latest version of the Camel artifact can be found here.
+3. Domain-Specific Language 
+
+Routes and routing engine are the central part of Camel. Routes contain the flow and logic of integration between different systems.
+In order to define routes more easy and clean, Camel offers several different domain-specific languages (DSL) for programming languages like Java or Groovy. On the other hand, it also provides defining routes in XML with Spring DSL.
+Using either Java DSL or Spring DSL is mostly user preference, as most of the features are available in both.
+
+
+
+Java DSL offers a bit more features which are not supported in Spring DSL. However, Spring DSL is sometimes more beneficial as XML can be changed without the need to recompile the code.
+4. Terminology and Architecture 
+
+Let's now discuss the basic Camel terminology and architecture.
+First, we'll have a look at the core Camel concepts here:
+
+Message contains data which is being transferred to a route. Each message has a unique identifier and it's constructed out of a body, headers, and attachments
+Exchange is the container of a message and it is created when a message is received by a consumer during the routing process. Exchange allows different types of interaction between systems – it can define a one-way message or a request-response message
+Endpoint is a channel through which system can receive or send a message. It can refer to a web service URI, queue URI, file, email address, etc
+Component acts as an endpoint factory. To put it simply, components offer an interface to different technologies using the same approach and syntax. Camel already supports a lot of components in its DSLs for almost every possible technology, but it also gives the ability for writing custom components
+Processor is a simple Java interface which is used to add custom integration logic to a route. It contains a single process method used to preform custom business logic on a message received by a consumer
+
+At a high level, the architecture of Camel is simple. CamelContext represents the Camel runtime system and it wires different concepts such as routes, components or endpoints.
+And below that, processors handle routing and transformations between endpoints, while endpoints integrate different systems.
+
+
+
+5. Defining a Route 
+
+Routes can be defined with Java DSL or Spring DSL.
+We'll illustrate both styles by defining a route which consumes files from one folder and moves them into another folder while prepending a timestamp to each file name.
+5.1. Routing With Java DSL 
+
+To define a route with Java DSL we will first need to create a DefaultCamelContext instance. After that, we need to extend RouteBuilder class and implement the configure method which will contain route flow:
+private static final long DURATION_MILIS = 10000;
+private static final String SOURCE_FOLDER = "src/test/source-folder";
+private static final String DESTINATION_FOLDER 
+  = "src/test/destination-folder";
+
+@Test
+public void moveFolderContentJavaDSLTest() throws Exception {
+    CamelContext camelContext = new DefaultCamelContext();
+    camelContext.addRoutes(new RouteBuilder() {
+      @Override
+      public void configure() throws Exception {
+        from("file://" + SOURCE_FOLDER + "?delete=true").process(
+          new FileProcessor()).to("file://" + DESTINATION_FOLDER);
+      }
+    });
+    camelContext.start();
+    Thread.sleep(DURATION_MILIS);
+    camelContext.stop();
+}
+The configure method can be read like this: read files from the source folder, processes them with FileProcessor and send the result to a destination folder. Setting delete=true means the file will be deleted from source folder after it is processed successfully.
+In order to start Camel, we need to call start method on CamelContext. Thread.sleep is invoked in order to allow Camel the time necessary to move the files from one folder to another.
+FileProcessor implements Processor interface and contains single process method which contains logic for modifying file names:
+public class FileProcessor implements Processor {
+    public void process(Exchange exchange) throws Exception {
+        String originalFileName = (String) exchange.getIn().getHeader(
+          Exchange.FILE_NAME, String.class);
+
+        Date date = new Date();
+        SimpleDateFormat dateFormat = new SimpleDateFormat(
+          "yyyy-MM-dd HH-mm-ss");
+        String changedFileName = dateFormat.format(date) + originalFileName;
+        exchange.getIn().setHeader(Exchange.FILE_NAME, changedFileName);
+    }
+}
+In order to retrieve file name, we have to retrieve an incoming message from an exchange and access its header. Similar to that, to modify file name, we have to update message header.
+5.2. Routing With Spring DSL 
+
+When defining a route with Spring DSL, we use an XML file to set up our routes and processors. This allows us to configure routes using no code by using Spring and ultimately, gives us the benefit of total inversion of control.
+
+
+
+This was already covered in existing article, so we will focus on using both Spring DSL along with Java DSL, which is commonly a preferred way of defining routes.
+In this arrangement, CamelContext is defined in Spring XML file using custom XML syntax for Camel, but without the route definition like in the case of “pure” Spring DSL using XML:
+<bean id="fileRouter" class="com.baeldung.camel.file.FileRouter" />
+<bean id="fileProcessor" 
+  class="com.baeldung.camel.file.FileProcessor" />
+
+<camelContext xmlns="http://camel.apache.org/schema/spring">
+    <routeBuilder ref="fileRouter" />
+</camelContext>
+
+This way we tell Camel to use FileRouter class which holds the definition of our route in Java DSL:
+public class FileRouter extends RouteBuilder {
+
+    private static final String SOURCE_FOLDER = 
+      "src/test/source-folder";
+    private static final String DESTINATION_FOLDER = 
+      "src/test/destination-folder";
+
+    @Override
+    public void configure() throws Exception {
+        from("file://" + SOURCE_FOLDER + "?delete=true").process(
+          new FileProcessor()).to("file://" + DESTINATION_FOLDER);
+    }
+}
+In order to test this, we have to create an instance of ClassPathXmlApplicationContext which will load up our CamelContext in Spring:
+@Test
+public void moveFolderContentSpringDSLTest() throws InterruptedException {
+    ClassPathXmlApplicationContext applicationContext = 
+      new ClassPathXmlApplicationContext("camel-context.xml");
+    Thread.sleep(DURATION_MILIS);
+    applicationContext.close();
+}
+By using this approach, we get additional flexibility and benefits provided by Spring, as well as all the possibilities of Java language by using Java DSL.
+6. Conclusion 
+
+In this quick article, we presented an introduction to Apache Camel and demonstrated benefits of using Camel for integration tasks such as routing files from one folder to another.
+In our example, we saw that Camel lets you focus on business logic and reduces the amount of boilerplate code.
+Code from this article can be found over on GitHub.
+
+
+
+Generic bottom 
+Get started with Spring 5 and Spring Boot 2, through the Learn Spring course:
+>> CHECK OUT THE COURSE
+
+Generic footer banner
+
+
+
+
+
+
+Learning to build your APIwith Spring?
+Download the E-book
+
+
+
+
+
+Comments are closed on this article!
+
+
+
+
+
+
+
+Generic sidebar banner
+
+
+
+Building a REST API with Spring 5?
+Download the E-book
+ 
+ 
+ 
+ 
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+CoursesAll Courses
+All Bulk Courses
+The Courses Platform
+SeriesJava “Back to Basics” Tutorial
+Jackson JSON Tutorial
+Apache HttpClient Tutorial
+REST with Spring Tutorial
+Spring Persistence Tutorial
+Security with Spring
+Spring Reactive Tutorials
+AboutAbout Baeldung
+The Full Archive
+Editors
+Jobs
+Our Partners
+Partner with Baeldung
+ 
+
+Terms of Service
+Privacy Policy
+Company Info
+Contact
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

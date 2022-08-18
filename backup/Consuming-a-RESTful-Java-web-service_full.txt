@@ -1,0 +1,2426 @@
+
+
+
+
+
+
+Consuming a RESTful Java web service
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Get Started
+
+
+Guides
+
+
+Docs
+
+
+Support
+
+
+Blog
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Contents
+
+What youâll learn
+
+Getting started
+
+Try what youâll build
+
+
+Starting the service
+Creating POJOs
+
+Introducing JSON-B and JSON-P
+
+Using JSON-B
+
+
+
+Consuming the REST resource
+
+Processing JSON using JSON-B
+Processing JSON using JSON-P
+
+
+Creating additional REST resources
+Running the application
+
+Testing deserialization
+
+Testing the binding process
+Processing with JSON-B test
+Processing with JSON-P test
+Running the tests
+
+
+Building the application
+Great work! Youâre done!
+Guide Attribution
+
+
+Tags
+
+
+
+
+
+
+
+
+
+
+
+
+Consuming a RESTful web service
+
+
+25 minutes
+
+
+
+
+
+
+
+
+Prerequisites:
+
+
+
+
+
+
+
+
+
+
+Toggle navigation
+
+
+
+
+
+Table of contents
+
+
+
+
+
+
+
+
+
+
+
+
+This repository contains the guide documentation source. To view the guide in published form, view it on the Open Liberty website.
+
+
+
+
+
+Explore how to access a simple RESTful web service and consume its resources in Java using JSON-B and JSON-P.
+
+
+
+
+What youâll learn
+
+
+artists.json
+
+
+
+ 1[
+ 2    {
+ 3        "name" : "foo",
+ 4        "albums" : [
+ 5            {
+ 6                "title" : "album_one",
+ 7                "artist" : "foo",
+ 8                "ntracks" : 12
+ 9            },
+10            {
+11                "title" : "album_two",
+12                "artist" : "foo",
+13                "ntracks" : 15
+14            }
+15        ]
+16    }, 
+17    {
+18        "name" : "bar",
+19        "albums" : [
+20            {
+21                "title" : "foo walks into a bar",
+22                "artist" : "bar",
+23                "ntracks" : 12
+24            }
+25        ]
+26    }, 
+27    {
+28        "name" : "dj",
+29        "albums" : [
+30        ]
+31    }
+32]
+
+
+
+You will learn how to access a REST service, serialize a Java object that contains a list of artists and their albums, and use two different approaches to deserialize the returned JSON resources. The first approach consists of using the Java API for JSON Binding (JSON-B) to directly convert JSON messages into Java objects. The second approach consists of using the Java API for JSON Processing (JSON-P) to process the JSON.
+
+
+The REST service that provides the artists and albums resources is already written for you. When the server is running, this service is accessible at the http://localhost:9080/artists endpoint, which responds with the artists.json file.
+
+
+You will implement the following two endpoints using the two deserialization approaches:
+
+
+
+
+â¦â/artists/total to return the total number of artists in the JSON
+
+
+â¦â/artists/total/<artist> to return the total number of albums in the JSON
+for the particular artist
+
+
+
+
+If you are interested in learning more about REST services and how you can write them, read Creating a RESTful web service.
+
+
+
+
+Getting started
+
+
+The fastest way to work through this guide is to clone the Git repository and use the projects that are provided inside:
+
+
+
+git clone https://github.com/openliberty/guide-rest-client-java.git
+cd guide-rest-client-java
+
+
+
+The start directory contains the starting project that you will build upon.
+
+
+The finish directory contains the finished project that you will build.
+
+
+Before you begin, make sure you have all the necessary prerequisites.
+
+
+Try what youâll build
+
+The finish directory in the root of this guide contains the finished application. Give it a try before you proceed.
+
+
+To try out the application, first go to the finish directory and run the following Maven goal to build the application and deploy it to Open Liberty:
+
+
+
+cd finish
+mvn liberty:run
+
+
+
+After you see the following message, your application server is ready:
+
+
+
+The defaultServer server is ready to run a smarter planet.
+
+
+
+You can find your service at the http://localhost:9080/artists endpoint.
+
+
+Now, you can access the endpoint at http://localhost:9080/artists/total to see the total number of artists, and you can access the endpoint at http://localhost:9080/artists/total/<artist> to see a particular artistâs total number of albums.
+
+
+After you are finished checking out the application, stop the Open Liberty server by pressing CTRL+C in the command-line session where you ran the server. Alternatively, you can run the liberty:stop goal from the finish directory in another shell session:
+
+
+
+mvn liberty:stop
+
+
+
+
+
+
+Starting the service
+
+
+Navigate to the start directory to begin.
+
+
+When you run Open Liberty in development mode, known as dev mode, the server listens for file changes and automatically recompiles and deploys your updates whenever you save a new change. Run the following goal to start Open Liberty in dev mode:
+
+
+
+mvn liberty:dev
+
+
+
+After you see the following message, your application server in dev mode is ready:
+
+
+
+**************************************************************
+*    Liberty is running in dev mode.
+
+
+
+Dev mode holds your command-line session to listen for file changes. Open another command-line session to continue, or open the project in your editor.
+
+
+The application that youâll build upon was created for you. After your server is ready, you can access the service at the http://localhost:9080/artists URL.
+
+
+
+
+Creating POJOs
+
+
+Artist.java
+
+
+
+ 1// tag::copyright[]
+ 2/*******************************************************************************
+ 3 * Copyright (c) 2018, 2022 IBM Corporation and others.
+ 4 * All rights reserved. This program and the accompanying materials
+ 5 * are made available under the terms of the Eclipse Public License v1.0
+ 6 * which accompanies this distribution, and is available at
+ 7 * http://www.eclipse.org/legal/epl-v10.html
+ 8 *
+ 9 * Contributors:
+10 *     IBM Corporation - Initial implementation
+11 *******************************************************************************/
+12// end::copyright[]
+13package io.openliberty.guides.consumingrest.model;
+14
+15import jakarta.json.bind.annotation.JsonbCreator;
+16import jakarta.json.bind.annotation.JsonbProperty;
+17import jakarta.json.bind.annotation.JsonbTransient;
+18
+19// tag::Artist[]
+20public class Artist {
+21    // tag::name[]
+22    public String name;
+23    // end::name[]
+24    // tag::Albums[]
+25    public Album[] albums;
+26    // end::Albums[]
+27    // Object property that does not map to a JSON
+28    // tag::JsonbTransient[]
+29    @JsonbTransient
+30    // end::JsonbTransient[]
+31    public boolean legendary = true;
+32
+33    public Artist() {
+34
+35    }
+36
+37    // tag::JsonbCreator[]
+38    @JsonbCreator
+39    // end::JsonbCreator[]
+40    public Artist(
+41      // tag::JsonbProperty[]
+42      @JsonbProperty("name") String name,
+43      @JsonbProperty("albums") Album[] albums) {
+44      // end::JsonbProperty[]
+45
+46      this.name = name;
+47      this.albums = albums;
+48    }
+49
+50    @Override
+51    public String toString() {
+52      return name + " wrote " + albums.length + " albums";
+53    }
+54}
+55// end::Artist[]
+
+
+
+Album.java
+
+
+
+ 1// tag::copyright[]
+ 2/*******************************************************************************
+ 3 * Copyright (c) 2018, 2022 IBM Corporation and others.
+ 4 * All rights reserved. This program and the accompanying materials
+ 5 * are made available under the terms of the Eclipse Public License v1.0
+ 6 * which accompanies this distribution, and is available at
+ 7 * http://www.eclipse.org/legal/epl-v10.html
+ 8 *
+ 9 * Contributors:
+10 *     IBM Corporation - Initial implementation
+11 *******************************************************************************/
+12// end::copyright[]
+13package io.openliberty.guides.consumingrest.model;
+14
+15import jakarta.json.bind.annotation.JsonbCreator;
+16import jakarta.json.bind.annotation.JsonbProperty;
+17
+18// tag::Album[]
+19public class Album {
+20    // tag::title[]
+21    public String title;
+22    // end::title[]
+23
+24    @JsonbProperty("artist")
+25    // tag::artistName[]
+26    public String artistName;
+27    // end::artistName[]
+28
+29    @JsonbProperty("ntracks")
+30    // tag::totalTracks[]
+31    public int totalTracks;
+32    // end::totalTracks[]
+33
+34    public Album() {
+35    }
+36
+37    @JsonbCreator
+38    public Album(
+39      @JsonbProperty("title") String title,
+40      @JsonbProperty("artist") String artistName,
+41      @JsonbProperty("ntracks") int totalTracks) {
+42
+43      this.title = title;
+44      this.artistName = artistName;
+45      this.totalTracks = totalTracks;
+46    }
+47
+48    @Override
+49    public String toString() {
+50      return "Album titled " + title + " by " + artistName
+51                             + " contains " + totalTracks + " tracks";
+52    }
+53}
+54// end::Album[]
+
+
+
+To deserialize a JSON message, start with creating Plain Old Java Objects (POJOs) that represent what is in the JSON and whose instance members map to the keys in the JSON.
+
+
+For the purpose of this guide, you are given two POJOs. The Artist object has two instance members name and albums, which map to the artist name and the collection of the albums they have written. The Album object represents a single object within the album collection, and contains three instance members title, artistName, and totalTracks, which map to the album title, the artist who wrote the album, and the number of tracks the album contains.
+
+
+
+
+Introducing JSON-B and JSON-P
+
+
+JSON-B is a feature introduced with Java EE 8 and strengthens Java support for JSON. With JSON-B you directly serialize and deserialize POJOs. This API gives you a variety of options for working with JSON resources.
+
+
+In contrast, you need to use helper methods with JSON-P to process a JSON response. This tactic is more straightforward, but it can be cumbersome with more complex classes.
+
+
+JSON-B is built on top of the existing JSON-P API. JSON-B can do everything that JSON-P can do and allows for more customization for serializing and deserializing.
+
+
+Using JSON-B
+
+Artist.java
+
+
+
+ 1// tag::copyright[]
+ 2/*******************************************************************************
+ 3 * Copyright (c) 2018, 2022 IBM Corporation and others.
+ 4 * All rights reserved. This program and the accompanying materials
+ 5 * are made available under the terms of the Eclipse Public License v1.0
+ 6 * which accompanies this distribution, and is available at
+ 7 * http://www.eclipse.org/legal/epl-v10.html
+ 8 *
+ 9 * Contributors:
+10 *     IBM Corporation - Initial implementation
+11 *******************************************************************************/
+12// end::copyright[]
+13package io.openliberty.guides.consumingrest.model;
+14
+15import jakarta.json.bind.annotation.JsonbCreator;
+16import jakarta.json.bind.annotation.JsonbProperty;
+17import jakarta.json.bind.annotation.JsonbTransient;
+18
+19// tag::Artist[]
+20public class Artist {
+21    // tag::name[]
+22    public String name;
+23    // end::name[]
+24    // tag::Albums[]
+25    public Album[] albums;
+26    // end::Albums[]
+27    // Object property that does not map to a JSON
+28    // tag::JsonbTransient[]
+29    @JsonbTransient
+30    // end::JsonbTransient[]
+31    public boolean legendary = true;
+32
+33    public Artist() {
+34
+35    }
+36
+37    // tag::JsonbCreator[]
+38    @JsonbCreator
+39    // end::JsonbCreator[]
+40    public Artist(
+41      // tag::JsonbProperty[]
+42      @JsonbProperty("name") String name,
+43      @JsonbProperty("albums") Album[] albums) {
+44      // end::JsonbProperty[]
+45
+46      this.name = name;
+47      this.albums = albums;
+48    }
+49
+50    @Override
+51    public String toString() {
+52      return name + " wrote " + albums.length + " albums";
+53    }
+54}
+55// end::Artist[]
+
+
+
+JSON-B requires a POJO to have a public default no-argument constructor for deserialization and binding to work properly.
+
+
+The JSON-B engine includes a set of default mapping rules, which can be run without any customization annotations or custom configuration. In some instances, you might find it useful to deserialize a JSON message with only certain fields, specific field names, or classes with custom constructors. In these cases, annotations are necessary and recommended:
+
+
+
+
+The @JsonbProperty annotation to map JSON keys to class instance members and vice versa. Without the use of this annotation, JSON-B will attempt to do POJO mapping, matching the keys in the JSON to the class instance members by name. JSON-B will attempt to match the JSON key with a Java field or method annotated with @JsonbProperty where the value in the annotation exactly matches the JSON key. If no annotation exists with the given JSON key, JSON-B will attempt to find a matching field with the same name. If no match is found, JSON-B attempts to find a matching getter method for serialization or a matching setter method for de-serialization. A match occurs when the property name of the method matches the JSON key. If no matching getter or setter method is found, serialization or de-serialization, respectively, fails with an exception. The Artist POJO does not require this annotation because all instance members match the JSON keys by name.
+
+
+The @JsonbCreator and @JsonbProperty annotations to annotate a custom constructor. These annotations are required for proper parameter substitution when a custom constructor is used.
+
+
+The @JsonbTransient annotation to define an object property that does not map to a JSON property. While the use of this annotation is good practice, it is only necessary for serialization.
+
+
+
+
+For more information on customization with JSON-B, see the official JSON-B site.
+
+
+
+
+
+Consuming the REST resource
+
+
+Artist.java
+
+
+
+ 1// tag::copyright[]
+ 2/*******************************************************************************
+ 3 * Copyright (c) 2018, 2022 IBM Corporation and others.
+ 4 * All rights reserved. This program and the accompanying materials
+ 5 * are made available under the terms of the Eclipse Public License v1.0
+ 6 * which accompanies this distribution, and is available at
+ 7 * http://www.eclipse.org/legal/epl-v10.html
+ 8 *
+ 9 * Contributors:
+10 *     IBM Corporation - Initial implementation
+11 *******************************************************************************/
+12// end::copyright[]
+13package io.openliberty.guides.consumingrest.model;
+14
+15import jakarta.json.bind.annotation.JsonbCreator;
+16import jakarta.json.bind.annotation.JsonbProperty;
+17import jakarta.json.bind.annotation.JsonbTransient;
+18
+19// tag::Artist[]
+20public class Artist {
+21    // tag::name[]
+22    public String name;
+23    // end::name[]
+24    // tag::Albums[]
+25    public Album[] albums;
+26    // end::Albums[]
+27    // Object property that does not map to a JSON
+28    // tag::JsonbTransient[]
+29    @JsonbTransient
+30    // end::JsonbTransient[]
+31    public boolean legendary = true;
+32
+33    public Artist() {
+34
+35    }
+36
+37    // tag::JsonbCreator[]
+38    @JsonbCreator
+39    // end::JsonbCreator[]
+40    public Artist(
+41      // tag::JsonbProperty[]
+42      @JsonbProperty("name") String name,
+43      @JsonbProperty("albums") Album[] albums) {
+44      // end::JsonbProperty[]
+45
+46      this.name = name;
+47      this.albums = albums;
+48    }
+49
+50    @Override
+51    public String toString() {
+52      return name + " wrote " + albums.length + " albums";
+53    }
+54}
+55// end::Artist[]
+
+
+
+Album.java
+
+
+
+ 1// tag::copyright[]
+ 2/*******************************************************************************
+ 3 * Copyright (c) 2018, 2022 IBM Corporation and others.
+ 4 * All rights reserved. This program and the accompanying materials
+ 5 * are made available under the terms of the Eclipse Public License v1.0
+ 6 * which accompanies this distribution, and is available at
+ 7 * http://www.eclipse.org/legal/epl-v10.html
+ 8 *
+ 9 * Contributors:
+10 *     IBM Corporation - Initial implementation
+11 *******************************************************************************/
+12// end::copyright[]
+13package io.openliberty.guides.consumingrest.model;
+14
+15import jakarta.json.bind.annotation.JsonbCreator;
+16import jakarta.json.bind.annotation.JsonbProperty;
+17
+18// tag::Album[]
+19public class Album {
+20    // tag::title[]
+21    public String title;
+22    // end::title[]
+23
+24    @JsonbProperty("artist")
+25    // tag::artistName[]
+26    public String artistName;
+27    // end::artistName[]
+28
+29    @JsonbProperty("ntracks")
+30    // tag::totalTracks[]
+31    public int totalTracks;
+32    // end::totalTracks[]
+33
+34    public Album() {
+35    }
+36
+37    @JsonbCreator
+38    public Album(
+39      @JsonbProperty("title") String title,
+40      @JsonbProperty("artist") String artistName,
+41      @JsonbProperty("ntracks") int totalTracks) {
+42
+43      this.title = title;
+44      this.artistName = artistName;
+45      this.totalTracks = totalTracks;
+46    }
+47
+48    @Override
+49    public String toString() {
+50      return "Album titled " + title + " by " + artistName
+51                             + " contains " + totalTracks + " tracks";
+52    }
+53}
+54// end::Album[]
+
+
+
+The Artist and Album POJOs are ready for deserialization.
+Next, weâll learn to consume the JSON response from your REST service.
+
+
+
+Create the Consumer class.
+src/main/java/io/openliberty/guides/consumingrest/Consumer.java
+
+
+
+Consumer.java
+
+
+
+ 1// tag::copyright[]
+ 2/*******************************************************************************
+ 3 * Copyright (c) 2017, 2022 IBM Corporation and others.
+ 4 * All rights reserved. This program and the accompanying materials
+ 5 * are made available under the terms of the Eclipse Public License v1.0
+ 6 * which accompanies this distribution, and is available at
+ 7 * http://www.eclipse.org/legal/epl-v10.html
+ 8 *
+ 9 * Contributors:
+10 *     IBM Corporation - Initial implementation
+11 *******************************************************************************/
+12// end::copyright[]
+13package io.openliberty.guides.consumingrest;
+14
+15import java.util.List;
+16import java.util.stream.Collectors;
+17
+18import jakarta.json.JsonArray;
+19import jakarta.json.JsonObject;
+20import jakarta.ws.rs.client.Client;
+21import jakarta.ws.rs.client.ClientBuilder;
+22import jakarta.ws.rs.core.Response;
+23
+24import io.openliberty.guides.consumingrest.model.Album;
+25import io.openliberty.guides.consumingrest.model.Artist;
+26
+27// tag::Consumer[]
+28public class Consumer {
+29    // tag::consumeWithJsonb[]
+30    public static Artist[] consumeWithJsonb(String targetUrl) {
+31      Client client = ClientBuilder.newClient();
+32      // tag::get-1[]
+33      Response response = client.target(targetUrl).request().get();
+34      // end::get-1[]
+35      // tag::readEntity[]
+36      Artist[] artists = response.readEntity(Artist[].class);
+37      // end::readEntity[]
+38
+39      response.close();
+40      client.close();
+41
+42      return artists;
+43    }
+44    // end::consumeWithJsonb[]
+45
+46    // tag::consumeWithJsonp[]
+47    public static Artist[] consumeWithJsonp(String targetUrl) {
+48      Client client = ClientBuilder.newClient();
+49      // tag::get-2[]
+50      Response response = client.target(targetUrl).request().get();
+51      // end::get-2[]
+52      JsonArray arr = response.readEntity(JsonArray.class);
+53
+54      response.close();
+55      client.close();
+56
+57      return Consumer.collectArtists(arr);
+58    }
+59    // end::consumeWithJsonp[]
+60
+61    // tag::collectArtists[]
+62    private static Artist[] collectArtists(JsonArray artistArr) {
+63      List<Artist> artists = artistArr.stream().map(artistJson -> {
+64        JsonArray albumArr = ((JsonObject) artistJson).getJsonArray("albums");
+65        Artist artist = new Artist(
+66          ((JsonObject) artistJson).getString("name"),
+67          Consumer.collectAlbums(albumArr));
+68        return artist;
+69      }).collect(Collectors.toList());
+70
+71      return artists.toArray(new Artist[artists.size()]);
+72    }
+73    // end::collectArtists[]
+74
+75    // tag::collectAlbums[]
+76    private static Album[] collectAlbums(JsonArray albumArr) {
+77      List<Album> albums = albumArr.stream().map(albumJson -> {
+78        Album album = new Album(
+79          ((JsonObject) albumJson).getString("title"),
+80          ((JsonObject) albumJson).getString("artist"),
+81          ((JsonObject) albumJson).getInt("ntracks"));
+82        return album;
+83      }).collect(Collectors.toList());
+84
+85      return albums.toArray(new Album[albums.size()]);
+86    }
+87    // end::collectAlbums[]
+88}
+89// end::Consumer[]
+
+
+
+Processing JSON using JSON-B
+
+Consumer.java
+
+
+
+ 1// tag::copyright[]
+ 2/*******************************************************************************
+ 3 * Copyright (c) 2017, 2022 IBM Corporation and others.
+ 4 * All rights reserved. This program and the accompanying materials
+ 5 * are made available under the terms of the Eclipse Public License v1.0
+ 6 * which accompanies this distribution, and is available at
+ 7 * http://www.eclipse.org/legal/epl-v10.html
+ 8 *
+ 9 * Contributors:
+10 *     IBM Corporation - Initial implementation
+11 *******************************************************************************/
+12// end::copyright[]
+13package io.openliberty.guides.consumingrest;
+14
+15import java.util.List;
+16import java.util.stream.Collectors;
+17
+18import jakarta.json.JsonArray;
+19import jakarta.json.JsonObject;
+20import jakarta.ws.rs.client.Client;
+21import jakarta.ws.rs.client.ClientBuilder;
+22import jakarta.ws.rs.core.Response;
+23
+24import io.openliberty.guides.consumingrest.model.Album;
+25import io.openliberty.guides.consumingrest.model.Artist;
+26
+27// tag::Consumer[]
+28public class Consumer {
+29    // tag::consumeWithJsonb[]
+30    public static Artist[] consumeWithJsonb(String targetUrl) {
+31      Client client = ClientBuilder.newClient();
+32      // tag::get-1[]
+33      Response response = client.target(targetUrl).request().get();
+34      // end::get-1[]
+35      // tag::readEntity[]
+36      Artist[] artists = response.readEntity(Artist[].class);
+37      // end::readEntity[]
+38
+39      response.close();
+40      client.close();
+41
+42      return artists;
+43    }
+44    // end::consumeWithJsonb[]
+45
+46    // tag::consumeWithJsonp[]
+47    public static Artist[] consumeWithJsonp(String targetUrl) {
+48      Client client = ClientBuilder.newClient();
+49      // tag::get-2[]
+50      Response response = client.target(targetUrl).request().get();
+51      // end::get-2[]
+52      JsonArray arr = response.readEntity(JsonArray.class);
+53
+54      response.close();
+55      client.close();
+56
+57      return Consumer.collectArtists(arr);
+58    }
+59    // end::consumeWithJsonp[]
+60
+61    // tag::collectArtists[]
+62    private static Artist[] collectArtists(JsonArray artistArr) {
+63      List<Artist> artists = artistArr.stream().map(artistJson -> {
+64        JsonArray albumArr = ((JsonObject) artistJson).getJsonArray("albums");
+65        Artist artist = new Artist(
+66          ((JsonObject) artistJson).getString("name"),
+67          Consumer.collectAlbums(albumArr));
+68        return artist;
+69      }).collect(Collectors.toList());
+70
+71      return artists.toArray(new Artist[artists.size()]);
+72    }
+73    // end::collectArtists[]
+74
+75    // tag::collectAlbums[]
+76    private static Album[] collectAlbums(JsonArray albumArr) {
+77      List<Album> albums = albumArr.stream().map(albumJson -> {
+78        Album album = new Album(
+79          ((JsonObject) albumJson).getString("title"),
+80          ((JsonObject) albumJson).getString("artist"),
+81          ((JsonObject) albumJson).getInt("ntracks"));
+82        return album;
+83      }).collect(Collectors.toList());
+84
+85      return albums.toArray(new Album[albums.size()]);
+86    }
+87    // end::collectAlbums[]
+88}
+89// end::Consumer[]
+
+
+
+pom.xml
+
+
+
+  1<?xml version='1.0' encoding='utf-8'?>
+  2<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  3
+  4    <modelVersion>4.0.0</modelVersion>
+  5
+  6    <groupId>io.openliberty.guides</groupId>
+  7    <artifactId>guide-rest-client-java</artifactId>
+  8    <version>1.0-SNAPSHOT</version>
+  9    <packaging>war</packaging>
+ 10
+ 11    <properties>
+ 12        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+ 13        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+ 14        <maven.compiler.source>1.8</maven.compiler.source>
+ 15        <maven.compiler.target>1.8</maven.compiler.target>
+ 16        <!-- Liberty configuration -->
+ 17        <liberty.var.default.http.port>9080</liberty.var.default.http.port>
+ 18        <liberty.var.default.https.port>9443</liberty.var.default.https.port>
+ 19    </properties>
+ 20
+ 21    <dependencies>
+ 22        <!-- Provided dependencies -->
+ 23        <dependency>
+ 24            <groupId>jakarta.platform</groupId>
+ 25            <artifactId>jakarta.jakartaee-api</artifactId>
+ 26            <version>9.1.0</version>
+ 27            <scope>provided</scope>
+ 28        </dependency>
+ 29        <!-- tag::microprofile[] -->
+ 30        <dependency>
+ 31            <groupId>org.eclipse.microprofile</groupId>
+ 32            <artifactId>microprofile</artifactId>
+ 33            <version>5.0</version>
+ 34            <type>pom</type>
+ 35            <scope>provided</scope>
+ 36        </dependency>
+ 37        <!-- end::microprofile[] -->
+ 38        <!-- For tests -->
+ 39        <dependency>
+ 40            <groupId>org.junit.jupiter</groupId>
+ 41            <artifactId>junit-jupiter</artifactId>
+ 42            <version>5.8.2</version>
+ 43            <scope>test</scope>
+ 44        </dependency>
+ 45        <dependency>
+ 46            <groupId>org.jboss.resteasy</groupId>
+ 47            <artifactId>resteasy-client</artifactId>
+ 48            <version>6.0.0.Final</version>
+ 49            <scope>test</scope>
+ 50        </dependency>
+ 51        <!-- JSON-P RI -->
+ 52        <dependency>
+ 53            <groupId>org.glassfish</groupId>
+ 54            <artifactId>jakarta.json</artifactId>
+ 55            <version>2.0.1</version>
+ 56            <scope>test</scope>
+ 57        </dependency>
+ 58        <!-- JSON-B API -->
+ 59        <!-- tag::Yasson[] -->
+ 60        <dependency>
+ 61            <groupId>org.eclipse</groupId>
+ 62            <artifactId>yasson</artifactId>
+ 63            <version>2.0.4</version>
+ 64            <scope>test</scope>
+ 65        </dependency>
+ 66        <!-- end::Yasson[] -->
+ 67    </dependencies>
+ 68
+ 69    <build>
+ 70        <finalName>${project.artifactId}</finalName>
+ 71        <plugins>
+ 72            <plugin>
+ 73                <groupId>org.apache.maven.plugins</groupId>
+ 74                <artifactId>maven-war-plugin</artifactId>
+ 75                <version>3.3.2</version>
+ 76            </plugin>
+ 77            <!-- Plugin to run unit tests -->
+ 78            <plugin>
+ 79                <groupId>org.apache.maven.plugins</groupId>
+ 80                <artifactId>maven-surefire-plugin</artifactId>
+ 81                <version>2.22.2</version>
+ 82            </plugin>
+ 83            <!-- Enable liberty-maven plugin -->
+ 84            <plugin>
+ 85                <groupId>io.openliberty.tools</groupId>
+ 86                <artifactId>liberty-maven-plugin</artifactId>
+ 87                <version>3.5.1</version>
+ 88            </plugin>
+ 89            <!-- Plugin to run functional tests -->
+ 90            <plugin>
+ 91                <groupId>org.apache.maven.plugins</groupId>
+ 92                <artifactId>maven-failsafe-plugin</artifactId>
+ 93                <version>2.22.2</version>
+ 94                <configuration>
+ 95                    <systemPropertyVariables>
+ 96                        <http.port>${liberty.var.default.http.port}</http.port>
+ 97                    </systemPropertyVariables>
+ 98                </configuration>
+ 99            </plugin>
+100        </plugins>
+101    </build>
+102</project>
+
+
+
+JSON-B is a Java API that is used to serialize Java objects to JSON messages and vice versa.
+
+
+Open Libertyâs JSON-B feature on Maven Central includes the JSON-B provider through transitive dependencies. The JSON-B APIs are provided by the MicroProfile dependency in your pom.xml file. Look for the dependency with the microprofile artifact ID.
+
+
+The consumeWithJsonb() method in the Consumer class makes a GET request to the running artist service and retrieves the JSON. To bind the JSON into an Artist array, use the Artist[] entity type in the readEntity call.
+
+
+
+Processing JSON using JSON-P
+
+Consumer.java
+
+
+
+ 1// tag::copyright[]
+ 2/*******************************************************************************
+ 3 * Copyright (c) 2017, 2022 IBM Corporation and others.
+ 4 * All rights reserved. This program and the accompanying materials
+ 5 * are made available under the terms of the Eclipse Public License v1.0
+ 6 * which accompanies this distribution, and is available at
+ 7 * http://www.eclipse.org/legal/epl-v10.html
+ 8 *
+ 9 * Contributors:
+10 *     IBM Corporation - Initial implementation
+11 *******************************************************************************/
+12// end::copyright[]
+13package io.openliberty.guides.consumingrest;
+14
+15import java.util.List;
+16import java.util.stream.Collectors;
+17
+18import jakarta.json.JsonArray;
+19import jakarta.json.JsonObject;
+20import jakarta.ws.rs.client.Client;
+21import jakarta.ws.rs.client.ClientBuilder;
+22import jakarta.ws.rs.core.Response;
+23
+24import io.openliberty.guides.consumingrest.model.Album;
+25import io.openliberty.guides.consumingrest.model.Artist;
+26
+27// tag::Consumer[]
+28public class Consumer {
+29    // tag::consumeWithJsonb[]
+30    public static Artist[] consumeWithJsonb(String targetUrl) {
+31      Client client = ClientBuilder.newClient();
+32      // tag::get-1[]
+33      Response response = client.target(targetUrl).request().get();
+34      // end::get-1[]
+35      // tag::readEntity[]
+36      Artist[] artists = response.readEntity(Artist[].class);
+37      // end::readEntity[]
+38
+39      response.close();
+40      client.close();
+41
+42      return artists;
+43    }
+44    // end::consumeWithJsonb[]
+45
+46    // tag::consumeWithJsonp[]
+47    public static Artist[] consumeWithJsonp(String targetUrl) {
+48      Client client = ClientBuilder.newClient();
+49      // tag::get-2[]
+50      Response response = client.target(targetUrl).request().get();
+51      // end::get-2[]
+52      JsonArray arr = response.readEntity(JsonArray.class);
+53
+54      response.close();
+55      client.close();
+56
+57      return Consumer.collectArtists(arr);
+58    }
+59    // end::consumeWithJsonp[]
+60
+61    // tag::collectArtists[]
+62    private static Artist[] collectArtists(JsonArray artistArr) {
+63      List<Artist> artists = artistArr.stream().map(artistJson -> {
+64        JsonArray albumArr = ((JsonObject) artistJson).getJsonArray("albums");
+65        Artist artist = new Artist(
+66          ((JsonObject) artistJson).getString("name"),
+67          Consumer.collectAlbums(albumArr));
+68        return artist;
+69      }).collect(Collectors.toList());
+70
+71      return artists.toArray(new Artist[artists.size()]);
+72    }
+73    // end::collectArtists[]
+74
+75    // tag::collectAlbums[]
+76    private static Album[] collectAlbums(JsonArray albumArr) {
+77      List<Album> albums = albumArr.stream().map(albumJson -> {
+78        Album album = new Album(
+79          ((JsonObject) albumJson).getString("title"),
+80          ((JsonObject) albumJson).getString("artist"),
+81          ((JsonObject) albumJson).getInt("ntracks"));
+82        return album;
+83      }).collect(Collectors.toList());
+84
+85      return albums.toArray(new Album[albums.size()]);
+86    }
+87    // end::collectAlbums[]
+88}
+89// end::Consumer[]
+
+
+
+The consumeWithJsonp() method in the Consumer class makes a GET request to the running artist service and retrieves the JSON. This method then uses the collectArtists and collectAlbums helper methods. These helper methods will parse the JSON and collect its objects into individual POJOs. Notice that you can use the custom constructors to create instances of Artist and Album.
+
+
+
+
+
+Creating additional REST resources
+
+
+Consumer.java
+
+
+
+ 1// tag::copyright[]
+ 2/*******************************************************************************
+ 3 * Copyright (c) 2017, 2022 IBM Corporation and others.
+ 4 * All rights reserved. This program and the accompanying materials
+ 5 * are made available under the terms of the Eclipse Public License v1.0
+ 6 * which accompanies this distribution, and is available at
+ 7 * http://www.eclipse.org/legal/epl-v10.html
+ 8 *
+ 9 * Contributors:
+10 *     IBM Corporation - Initial implementation
+11 *******************************************************************************/
+12// end::copyright[]
+13package io.openliberty.guides.consumingrest;
+14
+15import java.util.List;
+16import java.util.stream.Collectors;
+17
+18import jakarta.json.JsonArray;
+19import jakarta.json.JsonObject;
+20import jakarta.ws.rs.client.Client;
+21import jakarta.ws.rs.client.ClientBuilder;
+22import jakarta.ws.rs.core.Response;
+23
+24import io.openliberty.guides.consumingrest.model.Album;
+25import io.openliberty.guides.consumingrest.model.Artist;
+26
+27// tag::Consumer[]
+28public class Consumer {
+29    // tag::consumeWithJsonb[]
+30    public static Artist[] consumeWithJsonb(String targetUrl) {
+31      Client client = ClientBuilder.newClient();
+32      // tag::get-1[]
+33      Response response = client.target(targetUrl).request().get();
+34      // end::get-1[]
+35      // tag::readEntity[]
+36      Artist[] artists = response.readEntity(Artist[].class);
+37      // end::readEntity[]
+38
+39      response.close();
+40      client.close();
+41
+42      return artists;
+43    }
+44    // end::consumeWithJsonb[]
+45
+46    // tag::consumeWithJsonp[]
+47    public static Artist[] consumeWithJsonp(String targetUrl) {
+48      Client client = ClientBuilder.newClient();
+49      // tag::get-2[]
+50      Response response = client.target(targetUrl).request().get();
+51      // end::get-2[]
+52      JsonArray arr = response.readEntity(JsonArray.class);
+53
+54      response.close();
+55      client.close();
+56
+57      return Consumer.collectArtists(arr);
+58    }
+59    // end::consumeWithJsonp[]
+60
+61    // tag::collectArtists[]
+62    private static Artist[] collectArtists(JsonArray artistArr) {
+63      List<Artist> artists = artistArr.stream().map(artistJson -> {
+64        JsonArray albumArr = ((JsonObject) artistJson).getJsonArray("albums");
+65        Artist artist = new Artist(
+66          ((JsonObject) artistJson).getString("name"),
+67          Consumer.collectAlbums(albumArr));
+68        return artist;
+69      }).collect(Collectors.toList());
+70
+71      return artists.toArray(new Artist[artists.size()]);
+72    }
+73    // end::collectArtists[]
+74
+75    // tag::collectAlbums[]
+76    private static Album[] collectAlbums(JsonArray albumArr) {
+77      List<Album> albums = albumArr.stream().map(albumJson -> {
+78        Album album = new Album(
+79          ((JsonObject) albumJson).getString("title"),
+80          ((JsonObject) albumJson).getString("artist"),
+81          ((JsonObject) albumJson).getInt("ntracks"));
+82        return album;
+83      }).collect(Collectors.toList());
+84
+85      return albums.toArray(new Album[albums.size()]);
+86    }
+87    // end::collectAlbums[]
+88}
+89// end::Consumer[]
+
+
+
+Now that you can consume a JSON resource you can put that data to use.
+
+
+
+Replace the ArtistResource class.
+src/main/java/io/openliberty/guides/consumingrest/service/ArtistResource.java
+
+
+
+ArtistResource.java
+
+
+
+ 1// tag::copyright[]
+ 2/*******************************************************************************
+ 3 * Copyright (c) 2018, 2022 IBM Corporation and others.
+ 4 * All rights reserved. This program and the accompanying materials
+ 5 * are made available under the terms of the Eclipse Public License v1.0
+ 6 * which accompanies this distribution, and is available at
+ 7 * http://www.eclipse.org/legal/epl-v10.html
+ 8 *
+ 9 * Contributors:
+10 *     IBM Corporation - Initial implementation
+11 *******************************************************************************/
+12// end::copyright[]
+13package io.openliberty.guides.consumingrest.service;
+14
+15import jakarta.json.JsonArray;
+16import jakarta.json.bind.Jsonb;
+17import jakarta.json.bind.JsonbBuilder;
+18import jakarta.ws.rs.GET;
+19import jakarta.ws.rs.Path;
+20import jakarta.ws.rs.PathParam;
+21import jakarta.ws.rs.Produces;
+22import jakarta.ws.rs.core.Context;
+23import jakarta.ws.rs.core.MediaType;
+24import jakarta.ws.rs.core.UriInfo;
+25
+26import io.openliberty.guides.consumingrest.model.Artist;
+27import io.openliberty.guides.consumingrest.Consumer;
+28
+29@Path("artists")
+30// tag::ArtistResource[]
+31public class ArtistResource {
+32
+33    @Context
+34    UriInfo uriInfo;
+35
+36    @GET
+37    @Produces(MediaType.APPLICATION_JSON)
+38    // tag::getArtists[]
+39    public JsonArray getArtists() {
+40      return Reader.getArtists();
+41    }
+42    // end::getArtists[]
+43
+44    @GET
+45    @Path("jsonString")
+46    @Produces(MediaType.TEXT_PLAIN)
+47    // tag::getJsonString[]
+48    public String getJsonString() {
+49      Jsonb jsonb = JsonbBuilder.create();
+50
+51      Artist[] artists = Consumer.consumeWithJsonb(uriInfo.getBaseUri().toString()
+52                                                   + "artists");
+53      String result = jsonb.toJson(artists);
+54
+55      return result;
+56    }
+57    // end::getJsonString[]
+58
+59    @GET
+60    @Path("total/{artist}")
+61    @Produces(MediaType.TEXT_PLAIN)
+62    // tag::getTotalAlbums[]
+63    public int getTotalAlbums(@PathParam("artist") String artist) {
+64      Artist[] artists = Consumer.consumeWithJsonb(uriInfo.getBaseUri().toString()
+65        + "artists");
+66
+67      for (int i = 0; i < artists.length; i++) {
+68        if (artists[i].name.equals(artist)) {
+69          return artists[i].albums.length;
+70        }
+71      }
+72      return -1;
+73    }
+74    // end::getTotalAlbums[]
+75
+76    @GET
+77    @Path("total")
+78    @Produces(MediaType.TEXT_PLAIN)
+79    // tag::getTotalArtists[]
+80    public int getTotalArtists() {
+81      return Consumer.consumeWithJsonp(uriInfo.getBaseUri().toString()
+82                                       + "artists").length;
+83    }
+84    // end::getTotalArtists[]
+85}
+86// end::ArtistResource[]
+
+
+
+
+
+The getArtists() method provides the raw JSON data service that you accessed at the beginning of this guide.
+
+
+The getJsonString() method uses JSON-B to return the JSON as a string that will be used later for testing.
+
+
+The getTotalAlbums() method uses JSON-B to return the total number of albums present in the JSON for a particular artist. The method returns -1 if this artist does not exist.
+
+
+The getTotalArtists() method uses JSON-P to return the total number of artists present in the JSON.
+
+
+
+
+The methods that you wrote in the Consumer class could be written directly in the ArtistResource class. However, if you are consuming a REST resource from a third party service, you should separate your GET/POST requests from your data consumption.
+
+
+
+
+Running the application
+
+
+The Open Liberty server was started in development mode at the beginning of the guide and all the changes were automatically picked up.
+
+
+You can find your service at http://localhost:9080/artists.
+
+
+Now, you can access the endpoint at http://localhost:9080/artists/total to see the total number of artists, and you can access the endpoint at http://localhost:9080/artists/total/<artist> to see a particular artistâs total number of albums.
+
+
+
+
+Testing deserialization
+
+
+
+Create the ConsumingRestIT class.
+src/test/java/it/io/openliberty/guides/consumingrest/ConsumingRestIT.java
+
+
+
+ConsumingRestIT.java
+
+
+
+  1// tag::copyright[]
+  2/*******************************************************************************
+  3 * Copyright (c) 2018, 2022 IBM Corporation and others.
+  4 * All rights reserved. This program and the accompanying materials
+  5 * are made available under the terms of the Eclipse Public License v1.0
+  6 * which accompanies this distribution, and is available at
+  7 * http://www.eclipse.org/legal/epl-v10.html
+  8 *
+  9 * Contributors:
+ 10 *     IBM Corporation - Initial implementation
+ 11 *******************************************************************************/
+ 12// end::copyright[]
+ 13package it.io.openliberty.guides.consumingrest;
+ 14
+ 15import static org.junit.jupiter.api.Assertions.assertEquals;
+ 16
+ 17import jakarta.json.bind.Jsonb;
+ 18import jakarta.json.bind.JsonbBuilder;
+ 19import jakarta.ws.rs.client.Client;
+ 20import jakarta.ws.rs.client.ClientBuilder;
+ 21import jakarta.ws.rs.core.Response;
+ 22
+ 23import org.junit.jupiter.api.AfterEach;
+ 24import org.junit.jupiter.api.BeforeEach;
+ 25import org.junit.jupiter.api.BeforeAll;
+ 26import org.junit.jupiter.api.Test;
+ 27
+ 28import io.openliberty.guides.consumingrest.model.Artist;
+ 29
+ 30public class ConsumingRestIT {
+ 31
+ 32    private static String port;
+ 33    private static String baseUrl;
+ 34    private static String targetUrl;
+ 35
+ 36    private Client client;
+ 37    private Response response;
+ 38
+ 39    // tag::BeforeAll[]
+ 40    @BeforeAll
+ 41    // end::BeforeAll[]
+ 42    public static void oneTimeSetup() {
+ 43      port = System.getProperty("http.port");
+ 44      baseUrl = "http://localhost:" + port + "/artists/";
+ 45      targetUrl = baseUrl + "total/";
+ 46    }
+ 47
+ 48    // tag::BeforeEach[]
+ 49    @BeforeEach
+ 50    // end::BeforeEach[]
+ 51    public void setup() {
+ 52      client = ClientBuilder.newClient();
+ 53    }
+ 54
+ 55    // tag::AfterEach[]
+ 56    @AfterEach
+ 57    // end::AfterEach[]
+ 58    public void teardown() {
+ 59      client.close();
+ 60    }
+ 61
+ 62    // tag::test-1[]
+ 63    @Test
+ 64    // end::test-1[]
+ 65    // tag::testArtistDeserialization[]
+ 66    public void testArtistDeserialization() {
+ 67      response = client.target(baseUrl + "jsonString").request().get();
+ 68      this.assertResponse(baseUrl + "jsonString", response);
+ 69
+ 70      Jsonb jsonb = JsonbBuilder.create();
+ 71
+ 72      String expectedString = "{\"name\":\"foo\",\"albums\":"
+ 73        + "[{\"title\":\"album_one\",\"artist\":\"foo\",\"ntracks\":12}]}";
+ 74      Artist expected = jsonb.fromJson(expectedString, Artist.class);
+ 75
+ 76      String actualString = response.readEntity(String.class);
+ 77      Artist[] actual = jsonb.fromJson(actualString, Artist[].class);
+ 78
+ 79      assertEquals(expected.name, actual[0].name,
+ 80        "Expected names of artists does not match");
+ 81
+ 82      response.close();
+ 83    }
+ 84    // end::testArtistDeserialization[]
+ 85
+ 86    // tag::test-2[]
+ 87    @Test
+ 88    // end::test-2[]
+ 89    // tag::testJsonBAlbumCount[]
+ 90    public void testJsonBAlbumCount() {
+ 91      String[] artists = {"dj", "bar", "foo"};
+ 92      for (int i = 0; i < artists.length; i++) {
+ 93        response = client.target(targetUrl + artists[i]).request().get();
+ 94        this.assertResponse(targetUrl + artists[i], response);
+ 95
+ 96        int expected = i;
+ 97        int actual = response.readEntity(int.class);
+ 98        assertEquals(expected, actual, "Album count for "
+ 99                      + artists[i] + " does not match");
+100
+101        response.close();
+102      }
+103    }
+104    // end::testJsonBAlbumCount[]
+105
+106    // tag::testAlbumCountForUnknownArtist[]
+107    // tag::test-3[]
+108    @Test
+109    // end::test-3[]
+110    // tag::testJsonBAlbumCountForUnknownArtist[]
+111    public void testJsonBAlbumCountForUnknownArtist() {
+112      response = client.target(targetUrl + "unknown-artist").request().get();
+113
+114      int expected = -1;
+115      int actual = response.readEntity(int.class);
+116      assertEquals(expected, actual, "Unknown artist must have -1 albums");
+117
+118      response.close();
+119    }
+120    // end::testJsonBAlbumCountForUnknownArtist[]
+121
+122    // tag::test-4[]
+123    @Test
+124    // end::test-4[]
+125    // tag::testJsonPArtistCount[]
+126    public void testJsonPArtistCount() {
+127      response = client.target(targetUrl).request().get();
+128      this.assertResponse(targetUrl, response);
+129
+130      int expected = 3;
+131      int actual = response.readEntity(int.class);
+132      assertEquals(expected, actual, "Expected number of artists does not match");
+133
+134      response.close();
+135    }
+136    // end::testJsonPArtistCount[]
+137
+138    /**
+139     * Asserts that the given URL has the correct (200) response code.
+140     */
+141    // tag::assertResponse[]
+142    private void assertResponse(String url, Response response) {
+143      assertEquals(200, response.getStatus(), "Incorrect response code from " + url);
+144    }
+145    // end::assertResponse[]
+146    // end::tests[]
+147}
+
+
+
+Maven finds and executes all tests under the src/test/java/it/ directory, and each test method must be marked with the @Test annotation.
+
+
+You can use the @BeforeAll and @AfterAll annotations to perform any one-time setup and teardown tasks before and after all of your tests run. You can also use the @BeforeEach and @AfterEach annotations to perform setup and teardown tasks for individual test cases.
+
+
+Testing the binding process
+
+ConsumingRestIT.java
+
+
+
+  1// tag::copyright[]
+  2/*******************************************************************************
+  3 * Copyright (c) 2018, 2022 IBM Corporation and others.
+  4 * All rights reserved. This program and the accompanying materials
+  5 * are made available under the terms of the Eclipse Public License v1.0
+  6 * which accompanies this distribution, and is available at
+  7 * http://www.eclipse.org/legal/epl-v10.html
+  8 *
+  9 * Contributors:
+ 10 *     IBM Corporation - Initial implementation
+ 11 *******************************************************************************/
+ 12// end::copyright[]
+ 13package it.io.openliberty.guides.consumingrest;
+ 14
+ 15import static org.junit.jupiter.api.Assertions.assertEquals;
+ 16
+ 17import jakarta.json.bind.Jsonb;
+ 18import jakarta.json.bind.JsonbBuilder;
+ 19import jakarta.ws.rs.client.Client;
+ 20import jakarta.ws.rs.client.ClientBuilder;
+ 21import jakarta.ws.rs.core.Response;
+ 22
+ 23import org.junit.jupiter.api.AfterEach;
+ 24import org.junit.jupiter.api.BeforeEach;
+ 25import org.junit.jupiter.api.BeforeAll;
+ 26import org.junit.jupiter.api.Test;
+ 27
+ 28import io.openliberty.guides.consumingrest.model.Artist;
+ 29
+ 30public class ConsumingRestIT {
+ 31
+ 32    private static String port;
+ 33    private static String baseUrl;
+ 34    private static String targetUrl;
+ 35
+ 36    private Client client;
+ 37    private Response response;
+ 38
+ 39    // tag::BeforeAll[]
+ 40    @BeforeAll
+ 41    // end::BeforeAll[]
+ 42    public static void oneTimeSetup() {
+ 43      port = System.getProperty("http.port");
+ 44      baseUrl = "http://localhost:" + port + "/artists/";
+ 45      targetUrl = baseUrl + "total/";
+ 46    }
+ 47
+ 48    // tag::BeforeEach[]
+ 49    @BeforeEach
+ 50    // end::BeforeEach[]
+ 51    public void setup() {
+ 52      client = ClientBuilder.newClient();
+ 53    }
+ 54
+ 55    // tag::AfterEach[]
+ 56    @AfterEach
+ 57    // end::AfterEach[]
+ 58    public void teardown() {
+ 59      client.close();
+ 60    }
+ 61
+ 62    // tag::test-1[]
+ 63    @Test
+ 64    // end::test-1[]
+ 65    // tag::testArtistDeserialization[]
+ 66    public void testArtistDeserialization() {
+ 67      response = client.target(baseUrl + "jsonString").request().get();
+ 68      this.assertResponse(baseUrl + "jsonString", response);
+ 69
+ 70      Jsonb jsonb = JsonbBuilder.create();
+ 71
+ 72      String expectedString = "{\"name\":\"foo\",\"albums\":"
+ 73        + "[{\"title\":\"album_one\",\"artist\":\"foo\",\"ntracks\":12}]}";
+ 74      Artist expected = jsonb.fromJson(expectedString, Artist.class);
+ 75
+ 76      String actualString = response.readEntity(String.class);
+ 77      Artist[] actual = jsonb.fromJson(actualString, Artist[].class);
+ 78
+ 79      assertEquals(expected.name, actual[0].name,
+ 80        "Expected names of artists does not match");
+ 81
+ 82      response.close();
+ 83    }
+ 84    // end::testArtistDeserialization[]
+ 85
+ 86    // tag::test-2[]
+ 87    @Test
+ 88    // end::test-2[]
+ 89    // tag::testJsonBAlbumCount[]
+ 90    public void testJsonBAlbumCount() {
+ 91      String[] artists = {"dj", "bar", "foo"};
+ 92      for (int i = 0; i < artists.length; i++) {
+ 93        response = client.target(targetUrl + artists[i]).request().get();
+ 94        this.assertResponse(targetUrl + artists[i], response);
+ 95
+ 96        int expected = i;
+ 97        int actual = response.readEntity(int.class);
+ 98        assertEquals(expected, actual, "Album count for "
+ 99                      + artists[i] + " does not match");
+100
+101        response.close();
+102      }
+103    }
+104    // end::testJsonBAlbumCount[]
+105
+106    // tag::testAlbumCountForUnknownArtist[]
+107    // tag::test-3[]
+108    @Test
+109    // end::test-3[]
+110    // tag::testJsonBAlbumCountForUnknownArtist[]
+111    public void testJsonBAlbumCountForUnknownArtist() {
+112      response = client.target(targetUrl + "unknown-artist").request().get();
+113
+114      int expected = -1;
+115      int actual = response.readEntity(int.class);
+116      assertEquals(expected, actual, "Unknown artist must have -1 albums");
+117
+118      response.close();
+119    }
+120    // end::testJsonBAlbumCountForUnknownArtist[]
+121
+122    // tag::test-4[]
+123    @Test
+124    // end::test-4[]
+125    // tag::testJsonPArtistCount[]
+126    public void testJsonPArtistCount() {
+127      response = client.target(targetUrl).request().get();
+128      this.assertResponse(targetUrl, response);
+129
+130      int expected = 3;
+131      int actual = response.readEntity(int.class);
+132      assertEquals(expected, actual, "Expected number of artists does not match");
+133
+134      response.close();
+135    }
+136    // end::testJsonPArtistCount[]
+137
+138    /**
+139     * Asserts that the given URL has the correct (200) response code.
+140     */
+141    // tag::assertResponse[]
+142    private void assertResponse(String url, Response response) {
+143      assertEquals(200, response.getStatus(), "Incorrect response code from " + url);
+144    }
+145    // end::assertResponse[]
+146    // end::tests[]
+147}
+
+
+
+pom.xml
+
+
+
+  1<?xml version='1.0' encoding='utf-8'?>
+  2<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  3
+  4    <modelVersion>4.0.0</modelVersion>
+  5
+  6    <groupId>io.openliberty.guides</groupId>
+  7    <artifactId>guide-rest-client-java</artifactId>
+  8    <version>1.0-SNAPSHOT</version>
+  9    <packaging>war</packaging>
+ 10
+ 11    <properties>
+ 12        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+ 13        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+ 14        <maven.compiler.source>1.8</maven.compiler.source>
+ 15        <maven.compiler.target>1.8</maven.compiler.target>
+ 16        <!-- Liberty configuration -->
+ 17        <liberty.var.default.http.port>9080</liberty.var.default.http.port>
+ 18        <liberty.var.default.https.port>9443</liberty.var.default.https.port>
+ 19    </properties>
+ 20
+ 21    <dependencies>
+ 22        <!-- Provided dependencies -->
+ 23        <dependency>
+ 24            <groupId>jakarta.platform</groupId>
+ 25            <artifactId>jakarta.jakartaee-api</artifactId>
+ 26            <version>9.1.0</version>
+ 27            <scope>provided</scope>
+ 28        </dependency>
+ 29        <!-- tag::microprofile[] -->
+ 30        <dependency>
+ 31            <groupId>org.eclipse.microprofile</groupId>
+ 32            <artifactId>microprofile</artifactId>
+ 33            <version>5.0</version>
+ 34            <type>pom</type>
+ 35            <scope>provided</scope>
+ 36        </dependency>
+ 37        <!-- end::microprofile[] -->
+ 38        <!-- For tests -->
+ 39        <dependency>
+ 40            <groupId>org.junit.jupiter</groupId>
+ 41            <artifactId>junit-jupiter</artifactId>
+ 42            <version>5.8.2</version>
+ 43            <scope>test</scope>
+ 44        </dependency>
+ 45        <dependency>
+ 46            <groupId>org.jboss.resteasy</groupId>
+ 47            <artifactId>resteasy-client</artifactId>
+ 48            <version>6.0.0.Final</version>
+ 49            <scope>test</scope>
+ 50        </dependency>
+ 51        <!-- JSON-P RI -->
+ 52        <dependency>
+ 53            <groupId>org.glassfish</groupId>
+ 54            <artifactId>jakarta.json</artifactId>
+ 55            <version>2.0.1</version>
+ 56            <scope>test</scope>
+ 57        </dependency>
+ 58        <!-- JSON-B API -->
+ 59        <!-- tag::Yasson[] -->
+ 60        <dependency>
+ 61            <groupId>org.eclipse</groupId>
+ 62            <artifactId>yasson</artifactId>
+ 63            <version>2.0.4</version>
+ 64            <scope>test</scope>
+ 65        </dependency>
+ 66        <!-- end::Yasson[] -->
+ 67    </dependencies>
+ 68
+ 69    <build>
+ 70        <finalName>${project.artifactId}</finalName>
+ 71        <plugins>
+ 72            <plugin>
+ 73                <groupId>org.apache.maven.plugins</groupId>
+ 74                <artifactId>maven-war-plugin</artifactId>
+ 75                <version>3.3.2</version>
+ 76            </plugin>
+ 77            <!-- Plugin to run unit tests -->
+ 78            <plugin>
+ 79                <groupId>org.apache.maven.plugins</groupId>
+ 80                <artifactId>maven-surefire-plugin</artifactId>
+ 81                <version>2.22.2</version>
+ 82            </plugin>
+ 83            <!-- Enable liberty-maven plugin -->
+ 84            <plugin>
+ 85                <groupId>io.openliberty.tools</groupId>
+ 86                <artifactId>liberty-maven-plugin</artifactId>
+ 87                <version>3.5.1</version>
+ 88            </plugin>
+ 89            <!-- Plugin to run functional tests -->
+ 90            <plugin>
+ 91                <groupId>org.apache.maven.plugins</groupId>
+ 92                <artifactId>maven-failsafe-plugin</artifactId>
+ 93                <version>2.22.2</version>
+ 94                <configuration>
+ 95                    <systemPropertyVariables>
+ 96                        <http.port>${liberty.var.default.http.port}</http.port>
+ 97                    </systemPropertyVariables>
+ 98                </configuration>
+ 99            </plugin>
+100        </plugins>
+101    </build>
+102</project>
+
+
+
+The yasson dependency was added in your pom.xml file so that your test classes have access to JSON-B.
+
+
+The testArtistDeserialization test case checks that Artist instances created from the REST data and those that are hardcoded perform the same.
+
+
+The assertResponse helper method ensures that the response code you receive is valid (200).
+
+
+
+Processing with JSON-B test
+
+ConsumingRestIT.java
+
+
+
+  1// tag::copyright[]
+  2/*******************************************************************************
+  3 * Copyright (c) 2018, 2022 IBM Corporation and others.
+  4 * All rights reserved. This program and the accompanying materials
+  5 * are made available under the terms of the Eclipse Public License v1.0
+  6 * which accompanies this distribution, and is available at
+  7 * http://www.eclipse.org/legal/epl-v10.html
+  8 *
+  9 * Contributors:
+ 10 *     IBM Corporation - Initial implementation
+ 11 *******************************************************************************/
+ 12// end::copyright[]
+ 13package it.io.openliberty.guides.consumingrest;
+ 14
+ 15import static org.junit.jupiter.api.Assertions.assertEquals;
+ 16
+ 17import jakarta.json.bind.Jsonb;
+ 18import jakarta.json.bind.JsonbBuilder;
+ 19import jakarta.ws.rs.client.Client;
+ 20import jakarta.ws.rs.client.ClientBuilder;
+ 21import jakarta.ws.rs.core.Response;
+ 22
+ 23import org.junit.jupiter.api.AfterEach;
+ 24import org.junit.jupiter.api.BeforeEach;
+ 25import org.junit.jupiter.api.BeforeAll;
+ 26import org.junit.jupiter.api.Test;
+ 27
+ 28import io.openliberty.guides.consumingrest.model.Artist;
+ 29
+ 30public class ConsumingRestIT {
+ 31
+ 32    private static String port;
+ 33    private static String baseUrl;
+ 34    private static String targetUrl;
+ 35
+ 36    private Client client;
+ 37    private Response response;
+ 38
+ 39    // tag::BeforeAll[]
+ 40    @BeforeAll
+ 41    // end::BeforeAll[]
+ 42    public static void oneTimeSetup() {
+ 43      port = System.getProperty("http.port");
+ 44      baseUrl = "http://localhost:" + port + "/artists/";
+ 45      targetUrl = baseUrl + "total/";
+ 46    }
+ 47
+ 48    // tag::BeforeEach[]
+ 49    @BeforeEach
+ 50    // end::BeforeEach[]
+ 51    public void setup() {
+ 52      client = ClientBuilder.newClient();
+ 53    }
+ 54
+ 55    // tag::AfterEach[]
+ 56    @AfterEach
+ 57    // end::AfterEach[]
+ 58    public void teardown() {
+ 59      client.close();
+ 60    }
+ 61
+ 62    // tag::test-1[]
+ 63    @Test
+ 64    // end::test-1[]
+ 65    // tag::testArtistDeserialization[]
+ 66    public void testArtistDeserialization() {
+ 67      response = client.target(baseUrl + "jsonString").request().get();
+ 68      this.assertResponse(baseUrl + "jsonString", response);
+ 69
+ 70      Jsonb jsonb = JsonbBuilder.create();
+ 71
+ 72      String expectedString = "{\"name\":\"foo\",\"albums\":"
+ 73        + "[{\"title\":\"album_one\",\"artist\":\"foo\",\"ntracks\":12}]}";
+ 74      Artist expected = jsonb.fromJson(expectedString, Artist.class);
+ 75
+ 76      String actualString = response.readEntity(String.class);
+ 77      Artist[] actual = jsonb.fromJson(actualString, Artist[].class);
+ 78
+ 79      assertEquals(expected.name, actual[0].name,
+ 80        "Expected names of artists does not match");
+ 81
+ 82      response.close();
+ 83    }
+ 84    // end::testArtistDeserialization[]
+ 85
+ 86    // tag::test-2[]
+ 87    @Test
+ 88    // end::test-2[]
+ 89    // tag::testJsonBAlbumCount[]
+ 90    public void testJsonBAlbumCount() {
+ 91      String[] artists = {"dj", "bar", "foo"};
+ 92      for (int i = 0; i < artists.length; i++) {
+ 93        response = client.target(targetUrl + artists[i]).request().get();
+ 94        this.assertResponse(targetUrl + artists[i], response);
+ 95
+ 96        int expected = i;
+ 97        int actual = response.readEntity(int.class);
+ 98        assertEquals(expected, actual, "Album count for "
+ 99                      + artists[i] + " does not match");
+100
+101        response.close();
+102      }
+103    }
+104    // end::testJsonBAlbumCount[]
+105
+106    // tag::testAlbumCountForUnknownArtist[]
+107    // tag::test-3[]
+108    @Test
+109    // end::test-3[]
+110    // tag::testJsonBAlbumCountForUnknownArtist[]
+111    public void testJsonBAlbumCountForUnknownArtist() {
+112      response = client.target(targetUrl + "unknown-artist").request().get();
+113
+114      int expected = -1;
+115      int actual = response.readEntity(int.class);
+116      assertEquals(expected, actual, "Unknown artist must have -1 albums");
+117
+118      response.close();
+119    }
+120    // end::testJsonBAlbumCountForUnknownArtist[]
+121
+122    // tag::test-4[]
+123    @Test
+124    // end::test-4[]
+125    // tag::testJsonPArtistCount[]
+126    public void testJsonPArtistCount() {
+127      response = client.target(targetUrl).request().get();
+128      this.assertResponse(targetUrl, response);
+129
+130      int expected = 3;
+131      int actual = response.readEntity(int.class);
+132      assertEquals(expected, actual, "Expected number of artists does not match");
+133
+134      response.close();
+135    }
+136    // end::testJsonPArtistCount[]
+137
+138    /**
+139     * Asserts that the given URL has the correct (200) response code.
+140     */
+141    // tag::assertResponse[]
+142    private void assertResponse(String url, Response response) {
+143      assertEquals(200, response.getStatus(), "Incorrect response code from " + url);
+144    }
+145    // end::assertResponse[]
+146    // end::tests[]
+147}
+
+
+
+The testJsonBAlbumCount and testJsonBAlbumCountForUnknownArtist tests both use the total/{artist} endpoint which invokes JSON-B.
+
+
+The testJsonBAlbumCount test case checks that deserialization with JSON-B was done correctly and that the correct number of albums is returned for each artist in the JSON.
+
+
+The testJsonBAlbumCountForUnknownArtist test case is similar to testJsonBAlbumCount but instead checks an artist that does not exist in the JSON and ensures that a value of -1 is returned.
+
+
+
+Processing with JSON-P test
+
+ConsumingRestIT.java
+
+
+
+  1// tag::copyright[]
+  2/*******************************************************************************
+  3 * Copyright (c) 2018, 2022 IBM Corporation and others.
+  4 * All rights reserved. This program and the accompanying materials
+  5 * are made available under the terms of the Eclipse Public License v1.0
+  6 * which accompanies this distribution, and is available at
+  7 * http://www.eclipse.org/legal/epl-v10.html
+  8 *
+  9 * Contributors:
+ 10 *     IBM Corporation - Initial implementation
+ 11 *******************************************************************************/
+ 12// end::copyright[]
+ 13package it.io.openliberty.guides.consumingrest;
+ 14
+ 15import static org.junit.jupiter.api.Assertions.assertEquals;
+ 16
+ 17import jakarta.json.bind.Jsonb;
+ 18import jakarta.json.bind.JsonbBuilder;
+ 19import jakarta.ws.rs.client.Client;
+ 20import jakarta.ws.rs.client.ClientBuilder;
+ 21import jakarta.ws.rs.core.Response;
+ 22
+ 23import org.junit.jupiter.api.AfterEach;
+ 24import org.junit.jupiter.api.BeforeEach;
+ 25import org.junit.jupiter.api.BeforeAll;
+ 26import org.junit.jupiter.api.Test;
+ 27
+ 28import io.openliberty.guides.consumingrest.model.Artist;
+ 29
+ 30public class ConsumingRestIT {
+ 31
+ 32    private static String port;
+ 33    private static String baseUrl;
+ 34    private static String targetUrl;
+ 35
+ 36    private Client client;
+ 37    private Response response;
+ 38
+ 39    // tag::BeforeAll[]
+ 40    @BeforeAll
+ 41    // end::BeforeAll[]
+ 42    public static void oneTimeSetup() {
+ 43      port = System.getProperty("http.port");
+ 44      baseUrl = "http://localhost:" + port + "/artists/";
+ 45      targetUrl = baseUrl + "total/";
+ 46    }
+ 47
+ 48    // tag::BeforeEach[]
+ 49    @BeforeEach
+ 50    // end::BeforeEach[]
+ 51    public void setup() {
+ 52      client = ClientBuilder.newClient();
+ 53    }
+ 54
+ 55    // tag::AfterEach[]
+ 56    @AfterEach
+ 57    // end::AfterEach[]
+ 58    public void teardown() {
+ 59      client.close();
+ 60    }
+ 61
+ 62    // tag::test-1[]
+ 63    @Test
+ 64    // end::test-1[]
+ 65    // tag::testArtistDeserialization[]
+ 66    public void testArtistDeserialization() {
+ 67      response = client.target(baseUrl + "jsonString").request().get();
+ 68      this.assertResponse(baseUrl + "jsonString", response);
+ 69
+ 70      Jsonb jsonb = JsonbBuilder.create();
+ 71
+ 72      String expectedString = "{\"name\":\"foo\",\"albums\":"
+ 73        + "[{\"title\":\"album_one\",\"artist\":\"foo\",\"ntracks\":12}]}";
+ 74      Artist expected = jsonb.fromJson(expectedString, Artist.class);
+ 75
+ 76      String actualString = response.readEntity(String.class);
+ 77      Artist[] actual = jsonb.fromJson(actualString, Artist[].class);
+ 78
+ 79      assertEquals(expected.name, actual[0].name,
+ 80        "Expected names of artists does not match");
+ 81
+ 82      response.close();
+ 83    }
+ 84    // end::testArtistDeserialization[]
+ 85
+ 86    // tag::test-2[]
+ 87    @Test
+ 88    // end::test-2[]
+ 89    // tag::testJsonBAlbumCount[]
+ 90    public void testJsonBAlbumCount() {
+ 91      String[] artists = {"dj", "bar", "foo"};
+ 92      for (int i = 0; i < artists.length; i++) {
+ 93        response = client.target(targetUrl + artists[i]).request().get();
+ 94        this.assertResponse(targetUrl + artists[i], response);
+ 95
+ 96        int expected = i;
+ 97        int actual = response.readEntity(int.class);
+ 98        assertEquals(expected, actual, "Album count for "
+ 99                      + artists[i] + " does not match");
+100
+101        response.close();
+102      }
+103    }
+104    // end::testJsonBAlbumCount[]
+105
+106    // tag::testAlbumCountForUnknownArtist[]
+107    // tag::test-3[]
+108    @Test
+109    // end::test-3[]
+110    // tag::testJsonBAlbumCountForUnknownArtist[]
+111    public void testJsonBAlbumCountForUnknownArtist() {
+112      response = client.target(targetUrl + "unknown-artist").request().get();
+113
+114      int expected = -1;
+115      int actual = response.readEntity(int.class);
+116      assertEquals(expected, actual, "Unknown artist must have -1 albums");
+117
+118      response.close();
+119    }
+120    // end::testJsonBAlbumCountForUnknownArtist[]
+121
+122    // tag::test-4[]
+123    @Test
+124    // end::test-4[]
+125    // tag::testJsonPArtistCount[]
+126    public void testJsonPArtistCount() {
+127      response = client.target(targetUrl).request().get();
+128      this.assertResponse(targetUrl, response);
+129
+130      int expected = 3;
+131      int actual = response.readEntity(int.class);
+132      assertEquals(expected, actual, "Expected number of artists does not match");
+133
+134      response.close();
+135    }
+136    // end::testJsonPArtistCount[]
+137
+138    /**
+139     * Asserts that the given URL has the correct (200) response code.
+140     */
+141    // tag::assertResponse[]
+142    private void assertResponse(String url, Response response) {
+143      assertEquals(200, response.getStatus(), "Incorrect response code from " + url);
+144    }
+145    // end::assertResponse[]
+146    // end::tests[]
+147}
+
+
+
+The testJsonPArtistCount test uses the total endpoint which invokes JSON-P. This test checks that deserialization with JSON-P was done correctly and that the correct number of artists is returned.
+
+
+
+Running the tests
+
+Becayse you started Open Liberty in development mode at the start of the guide, press the enter/return key to run the tests.
+
+
+If the tests pass, you see a similar output to the following example:
+
+
+
+-------------------------------------------------------
+ T E S T S
+-------------------------------------------------------
+Running it.io.openliberty.guides.consumingrest.ConsumingRestIT
+Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.59 sec - in it.io.openliberty.guides.consumingrest.ConsumingRestIT
+
+Results :
+
+Tests run: 4, Failures: 0, Errors: 0, Skipped: 0
+
+
+
+When you are done checking out the service, exit development mode by typing q in the command-line session where you ran the server, and then press the enter/return key.
+
+
+
+
+
+Building the application
+
+
+If you are satisfied with your application, run the Maven package goal to build the WAR file in the target directory:
+
+
+
+mvn package
+
+
+
+
+
+Great work! Youâre done!
+
+
+You just accessed a simple RESTful web service and consumed its resources by using JSON-B and JSON-P in Open Liberty.
+
+
+
+
+Guide Attribution
+
+
+Consuming a RESTful web service by Open Liberty is licensed under CC BY-ND 4.0
+
+
+
+
+Copied to clipboard
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Prerequisites:
+
+
+
+
+
+
+      Back to text
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Nice work! Where to next?
+
+
+What did you think of this guide?
+
+
+
+
+
+
+
+
+Thank you for your feedback!
+Close
+
+
+
+
+Thank you for your feedback!
+Would you like to open an issue in GitHub?
+Yes
+No, thank you
+
+
+What could make this guide better?
+Raise an issue to share feedback
+Create a pull request to contribute to this guide
+Need help?
+Ask a question on Stack Overflow
+Like Open Liberty? Star our repo on GitHub.
+Star
+
+
+Where to next?
+
+
+
+
+
+
+
+Creating a RESTful web service
+
+
+30 minutes
+
+
+
+
+
+
+
+
+
+
+
+
+Consuming a RESTful web service with AngularJS
+
+
+20 minutes
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+an IBM open source project
+
+
+
+
+
+
+
+
+
+
+
+
+Â© Copyright IBM Corp. 2017, 2021
+|
+Privacy policy
+|
+License
+|
+Logos
+
+
+Docs
+Blog
+Support
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

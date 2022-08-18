@@ -1,0 +1,698 @@
+
+
+
+
+
+
+
+
+
+JSON Parser with ANTLR4 and Eclipse - Tutorial Academy
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Skip to content
+
+
+
+Thursday, May 26, 2022 
+
+
+                                    Recent posts                                
+
+
+
+
+                                                Dockerized SQLite REST API using uWSGI, Nginx, Flask and Python                                            
+
+
+
+
+                                                Read class restriction or axiom via OWL API 5                                            
+
+
+
+
+                                                Workaround ClientAbortException and IOException                                            
+
+
+
+
+                                                REST chunked video streaming with Jersey2                                            
+
+
+
+
+                                                Jersey2 with Jackson and @JsonIgnoreProperties annotation                                            
+
+
+ 
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+Download
+Java
+REST
+NoSQL
+Reasoning
+ 
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+You are hereHomeANTLRJSON Parser with ANTLR4 and Eclipse 
+
+
+
+JSON Parser with ANTLR4 and Eclipse
+
+June 18, 2015August 6, 2020 maltesander 
+
+
+
+
+ 
+
+
+In this tutorial we will create a JSON Parser using ANTLR4 and Eclipse.
+1. Prerequisites
+
+EclipseEE (for Project Facets settings)
+ANTLR4 IDE Eclipse plugin
+ANTLR4 JAR file which you can download here: antlr-4.4-complete.jar
+
+2. Install ANTLR4 Eclipse plugin
+
+In Eclipse go to Help ⇒ Eclipse Marketplace
+Search for “ANTLR4” and install it (Current version: ANTLR 4 IDE 0.3.5)
+Restart Eclipse
+
+3. Create ANTLR4 Project
+
+Right click in the Project Explorer and select New ⇒ Project
+Search for “ANTLR” and select ANTLR 4 Project
+Name the project e.g. “jsonParser”
+
+4. Adapt the ANTLR4 Project
+The project wizard creates a simple hello.g4 grammar and automatically builds Lexer, Parser etc.
+ANTLR4 project structure
+In order to program we have to adapt the Project Facets and add the generated files to our source folder as well as add the ANTLR4 JAR file to the Java Build Path.
+
+Adapt the Project Facets
+
+Right click your created project and click on properties
+Select Project Facets and click on “Convert to faceted form…”
+Check Java and adapt he version
+Click Apply and OK
+ANTLR4 Project Facets
+
+
+Add ANTLR4 target to the Java source folder
+
+Right click your created project and click on properties
+Select “Java Build Path” and click on “Add Folder” in the Source tab
+Select the “target/generated-sources/antlr4” folder and  press OK
+You will see some errors because you have to add the ANTLR4 JAR file to your project first
+
+
+Recommended (path independent): Add the ANTLR4 JAR to your project (download and copy)
+
+Create a new folder called “lib” in your project root folder
+Copy the antlr-4.4-complete.jar into “lib”
+Right click the JAR file and select Build Path ⇒ Add to Build Path
+The errors should be resolved
+
+
+Optional (path dependent): Add the ANTLR4 JAR to your project (from Eclipse plugin)
+
+Right click your project and select Properties
+Select Java Build Path and click on the tab Libraries
+Click on “Add external JARs”
+The path from the library differs from the OS you are using. Check your console output where the ANTLR4 Tool logs:
+ANTLR Tool v4.4 (C:\Users\BAWARR~1\AppData\Local\Temp\antlr-4.4-complete.jar)
+JSON.g4 -o E:\Developer\Workspace\TutorialAcademy\Java\jsonParser\target\generated-sources\antlr4 -listener -no-visitor -encoding UTF-8
+
+BUILD SUCCESSFUL
+Total time: 430 millisecond(s)
+
+
+
+
+Depending whether you only develop on one computer, you can select option 4. We recommand downloading the JAR though. If you use another version than the ANTLR Tool, you may receive a warning in the console later when running the program.
+5. ANTLR4 JSON Grammar
+We use a predefined grammar created by Terence Parr from json.org. Grammars are usually represented in the Backus-Naur Form (BNF). If you have some basic knowledge about e.g. grammars or compilers, the following grammar should be understandable. Otherwise we give some help and explanation below. Please replace the content of hello.g4 in your root folder with the following grammar and rename the file into JSON.g4.
+/** Source: "The Definitive ANTLR 4 Reference" by Terence Parr from http://json.org */
+
+grammar JSON;
+
+json:   object
+    |   array
+    ;
+
+object
+    :   '{' pair (',' pair)* '}'
+    |   '{' '}' // empty object
+    ;
+    
+pair:   STRING ':' value ;
+
+array
+    :   '[' value (',' value)* ']'
+    |   '[' ']' // empty array
+    ;
+
+value
+    :   STRING
+    |   NUMBER
+    |   object  // recursion
+    |   array   // recursion
+    |   'true'  // keywords
+    |   'false'
+    |   'null'
+    ;
+
+STRING :  '"' (ESC | ~["\\])* '"' ;
+fragment ESC :   '\\' (["\\/bfnrt] | UNICODE) ;
+fragment UNICODE : 'u' HEX HEX HEX HEX ;
+fragment HEX : [0-9a-fA-F] ;
+NUMBER
+    :   '-'? INT '.' [0-9]+ EXP? // 1.35, 1.35E-9, 0.3, -4.5
+    |   '-'? INT EXP             // 1e10 -3e4
+    |   '-'? INT                 // -3, 45
+    ;
+fragment INT :   '0' | [1-9] [0-9]* ; // no leading zeros
+fragment EXP :   [Ee] [+\-]? INT ; // \- since - means "range" inside [...]
+WS  :   [ \t\n\r]+ -> skip ;
+
+ANTLR4 will automatically generate the necessary Lexer, Tokens and Parser. You can remove all files with the “Hello” Prefix from the target folder.
+6. Run a small JSON example
+In order to test the grammar with a JSON file, create a new Java class in the default package. We call it JSONParserTest.
+import java.io.File;
+import java.util.Scanner;
+
+import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.tree.ParseTree;
+
+public class JSONParserTest
+{
+
+	public static void main(String[] args) throws Exception 
+	{
+	    String content = new Scanner(new File("target/generated-sources/antlr4/jsonExample.txt")).useDelimiter("\\Z").next();
+	    System.out.println( "JSON File:\n" + content + "\n\n");
+	    
+		ANTLRInputStream input = new ANTLRInputStream( content );
+		
+		JSONLexer lexer = new JSONLexer(input);
+		
+		CommonTokenStream tokens = new CommonTokenStream(lexer);
+		
+		JSONParser parser = new JSONParser(tokens);
+		
+		ParseTree tree = parser.json();
+		
+		System.out.println( "ParseTree:\n" + tree.toStringTree( parser ) + "\n"); 
+	}
+
+}
+This program reads a JSON file and uses the parser and lexer created from the ANTLR Tool to analyze the JSON file. If you do not want to read a file you can simply skip the first lines from the main method and replace the “content” variable with a JSON string of your own. The jsonExample.txt file looks like the following and should be in the “target/generated-sources/antlr4” folder.
+{
+  "student": 
+  {
+    "id" : "12345678",
+    "prename" : "John",
+    "surname" : "Doe",
+	"address" : 
+	{
+	  "street" : "Johndoestreet",
+	  "postcode" : "99999"
+	},
+    "email"   : "johndoe@doe.com"
+  }
+}
+Now you can right click the main class (in our case JSONParserTest) and select Run As ⇒ Java Application. You should receive a console output like this:
+ParseTree:
+(json (object { (pair "student" : (value (object { (pair "id" : (value "12345678")) , (pair "prename" : (value "John")) , (pair "surname" : (value "Doe")) , (pair "address" : (value (object { (pair "street" : (value "Johndoestreet")) , (pair "postcode" : (value "99999")) }))) , (pair "email" : (value "johndoe@doe.com")) }))) }))
+This represents the parse tree that is created from ANTLR. It may look confusing, but you can compare it to the JSON.g4 grammar and recognize keywords like object, pair, value etc.
+You can now try to add errors to the JSON example file and run the program again. You will see that ANTLR does not recognize the wrong tokens. If the parser does not expect a certain character or sth. like that, you can abort and print out the faulty line.
+7. Improve the output
+You can use a nice Java class from Bart Kiers to improve the output from the parse tree. Use this AST class and add it to the “target/generated-sources/antlr4” folder:
+/*
+ * Copyright (c) 2014 by Bart Kiers
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ */
+import java.util.ArrayList;
+import java.util.List;
+
+import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.tree.ParseTree;
+
+/**
+ * A small class that flattens an ANTLR4 {@code ParseTree}. Given the
+ * {@code ParseTree}:
+ * 
+ * <pre>
+ * <code>
+ * a
+ * '-- b
+ * | |
+ * | '-- d
+ * | |
+ * | '-- e
+ * | |
+ * | '-- f
+ * |
+ * '-- c
+ * </code>
+ * </pre>
+ * 
+ * This class will flatten this structure as follows:
+ * 
+ * <pre>
+ * <code>
+ * a
+ * '-- b
+ * | |
+ * | '-- f
+ * |
+ * '-- c
+ * </code>
+ * </pre>
+ * 
+ * In other word: all inner nodes that have a single child are removed from the
+ * AST.
+ */
+public class AST {
+
+	/**
+	 * The payload will either be the name of the parser rule, or the token of a
+	 * leaf in the tree.
+	 */
+	private final Object payload;
+
+	/**
+	 * All child nodes of this AST.
+	 */
+	private final List<AST> children;
+
+	public AST(ParseTree tree) {
+		this(null, tree);
+	}
+
+	private AST(AST ast, ParseTree tree) {
+		this(ast, tree, new ArrayList<AST>());
+	}
+
+	private AST(AST parent, ParseTree tree, List<AST> children) {
+
+		this.payload = getPayload(tree);
+		this.children = children;
+
+		if (parent == null) {
+			// We're at the root of the AST, traverse down the parse tree to
+			// fill
+			// this AST with nodes.
+			walk(tree, this);
+		} else {
+			parent.children.add(this);
+		}
+	}
+
+	public Object getPayload() 
+	{
+		return payload;
+	}
+
+	public List<AST> getChildren() 
+	{
+		return new ArrayList<>(children);
+	}
+
+	// Determines the payload of this AST: a string in case it's an inner node
+	// (which
+	// is the name of the parser rule), or a Token in case it is a leaf node.
+	private Object getPayload(ParseTree tree) {
+		if (tree.getChildCount() == 0) {
+			// A leaf node: return the tree's payload, which is a Token.
+			return tree.getPayload();
+		} else {
+			// The name for parser rule `foo` will be `FooContext`. Strip
+			// `Context` and
+			// lower case the first character.
+			String ruleName = tree.getClass().getSimpleName()
+					.replace("Context", "");
+			return Character.toLowerCase(ruleName.charAt(0))
+					+ ruleName.substring(1);
+		}
+	}
+
+	// Fills this AST based on the parse tree.
+	private static void walk(ParseTree tree, AST ast) {
+
+		if (tree.getChildCount() == 0) {
+			// We've reached a leaf. We must create a new instance of an AST
+			// because
+			// the constructor will make sure this new instance is added to its
+			// parent's
+			// child nodes.
+			new AST(ast, tree);
+		} else if (tree.getChildCount() == 1) {
+			// We've reached an inner node with a single child: we don't include
+			// this in
+			// our AST.
+			walk(tree.getChild(0), ast);
+		} else if (tree.getChildCount() > 1) {
+
+			for (int i = 0; i < tree.getChildCount(); i++) {
+
+				AST temp = new AST(ast, tree.getChild(i));
+
+				if (!(temp.payload instanceof Token)) {
+					// Only traverse down if the payload is not a Token.
+					walk(tree.getChild(i), temp);
+				}
+			}
+		}
+	}
+	
+	@Override
+	public String toString() {
+
+		StringBuilder builder = new StringBuilder();
+
+		AST ast = this;
+		List<AST> firstStack = new ArrayList<>();
+		firstStack.add(ast);
+
+		List<List<AST>> childListStack = new ArrayList<>();
+		childListStack.add(firstStack);
+
+		while (!childListStack.isEmpty()) {
+
+			List<AST> childStack = childListStack
+					.get(childListStack.size() - 1);
+
+			if (childStack.isEmpty()) {
+				childListStack.remove(childListStack.size() - 1);
+			} else {
+				ast = childStack.remove(0);
+				String caption;
+
+				if (ast.payload instanceof Token) {
+					Token token = (Token) ast.payload;
+					caption = String.format("TOKEN[type: %s, text: %s]",
+							token.getType(),
+							token.getText().replace("\n", "\\n"));
+				} else {
+					caption = String.valueOf(ast.payload);
+				}
+
+				String indent = "";
+
+				for (int i = 0; i < childListStack.size() - 1; i++) {
+					indent += (childListStack.get(i).size() > 0) ? "| " : " ";
+				}
+
+				builder.append(indent)
+						.append(childStack.isEmpty() ? "'- " : "|- ")
+						.append(caption).append("\n");
+
+				if (ast.children.size() > 0) {
+					List<AST> children = new ArrayList<>();
+					for (int i = 0; i < ast.children.size(); i++) {
+						children.add(ast.children.get(i));
+					}
+					childListStack.add(children);
+				}
+			}
+		}
+
+		return builder.toString();
+	}
+	
+}
+Finally add the following code lines at the bottom of your main class:
+AST ast = new AST( tree );
+		
+System.out.println( "Improved ParseTree:\n" + ast.toString() );
+Now you can check the output and see exactly which tokens are recognized and to which type (defined in JSON.tokens) the tokens are assigned.
+8. Conclusion
+ANTLR4 is a very powerful tool and supports you with writing lexers and parsers. Please search for a some easy example grammars and run them with the code above.
+In order to understand how to access the tokens / objects, please study the AST class. Furthermore, this will teach you how to integrate these tools into your own applications.
+If you have questions or problems, feel free to ask or comment.
+ 
+
+
+ANTLR  
+
+
+
+Post navigation
+Jena reasoning with rulesJDBC PostgreSQL Connection
+
+
+
+			3 Thoughts to “JSON Parser with ANTLR4 and Eclipse”        
+
+
+
+
+ Mitali Cyrus 
+
+
+
+
+                December 1, 2017 at 3:46 am            
+
+Hi,
+I have to say this tutorial is amazing. 
+Thanks a ton,
+Mitali
+
+Log in to Reply 
+
+
+
+
+
+ menzellu 
+
+
+
+
+                January 25, 2016 at 9:12 pm            
+
+Hi, thanks for publishing this blog, looks really interesting.  I am learning about ANTLR, would be good to try this out.  I am using eclipse Mars, after creating the ANTLR 4 project, I opened the project properties, but I don’t see a section called “Project Facets” …. please help.
+
+Log in to Reply 
+
+
+
+
+
+ maltesander 
+
+
+
+
+                January 29, 2016 at 12:56 pm            
+
+Hi menzellu,
+do you mean the Project Facets option doesnt appear at all?
+Depending on the project you selected, you probably have to click the “Convert to faceted form” link on the right hand sind of the properties menu.
+I never had that problem (using Mars as well) before.
+Maybe try to recreate the project or even install a fresh copy of eclipse to make sure you didnt mess with any eclipse properties.
+I hope this helps,
+Malte
+
+Log in to Reply 
+
+
+
+
+
+
+ Leave a Comment Cancel replyYou must be logged in to post a comment. 
+This site uses Akismet to reduce spam. Learn how your comment data is processed. 
+
+
+
+
+Recent Posts
+
+
+Dockerized SQLite REST API using uWSGI, Nginx, Flask and Python
+
+
+Read class restriction or axiom via OWL API 5
+
+
+Workaround ClientAbortException and IOException
+
+
+REST chunked video streaming with Jersey2
+
+
+Jersey2 with Jackson and @JsonIgnoreProperties annotation
+
+
+Popular posts:RESTful web service with Jersey and MavenREST Jersey2 JSON JWT Authentication AuthorizationHTTPServlet not found: Add Server Runtime to EclipseInstall Maven on WindowsElasticsearch 6.0: create index, bulk insert and…NAS Samba DLNA RAID server on RaspberryPi 3Jena reasoning with rulesREST chunked video streaming with Jersey2Workaround ClientAbortException and IOExceptionJSON Parser with ANTLR4 and Eclipse 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                                    Copyright 2020 © tutorial-academy.com - All rights reserved.                                            
+
+Privacy Policy
+ | 
+Impressum
+ | 
+Contact
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

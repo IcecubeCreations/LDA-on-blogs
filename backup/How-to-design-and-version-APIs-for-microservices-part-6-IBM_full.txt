@@ -1,0 +1,621 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+How to design and version APIs for microservices (part 6)  | IBM
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Skip to content
+
+
+
+
+
+
+
+Blog
+
+
+
+
+Cloud explained
+
+
+Cloud in business
+
+
+Cloud tutorials
+
+
+Announcements
+
+
+Technologies
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ How to design and version APIs for microservices (part 6)
+
+
+Compute
+DevOps
+
+
+
+ 8 August  2017
+ 5 min read
+
+By: 
+
+
+Kyle Brown, IBM Fellow, CTO Cloud Architecture, IBM Cloud Labs
+
+
+
+
+
+
+
+
+
+Share this page on Twitter
+Share this page on Facebook
+Share this page on LinkedIn
+E-mail this page
+
+
+
+
+
+ How to design and version APIs for microservices (part 6)
+
+In this 6-part series on microservices application development, we provide a context for defining a cloud-based pilot project or minimum viable product that best fits current needs of your team and organization. Along with a guided tour of IBM Cloud, you will be prepared for a longer-term cloud adoption decision.
+Here in part 6, we review best practices for creating and maintaining APIs within an application and between a cloud-deployed application and components that live on premises.
+This is a guide to the overall series:
+
+An overview of microservices (part 1), after providing context for business pressures requiring faster app development and delivery, steps through the process a team went through in transforming a specific monolithic application.
+
+
+Architecting with microservices (part 2) lays out the common capabilities of an architecture for rapidly developing applications based on a microservice.
+
+
+Implementing a microservices application (part 3) provides a method for implementing your own microservices project.
+
+
+Using microservices development patterns (part 4) presents common development patterns available for implementing microservices applications.
+
+
+Using microservices operations patterns for resiliency (part 5) presents common operations patterns for achieving resiliency in your microservices applications.
+
+
+Designing and versioning APIs (this part) offers best practices for managing the interfaces of microservices in your application.
+
+Creating an API for a microservice
+These are basic principles for designing the API exposed by a microservice, the first of which is enforcing strong contracts. A microservice provides a versioned, well-defined contract to its clients, other microservices, and each service must not break it until it’s determined no other microservice relies on it.
+The second is to avoid chatty interfaces requiring you to perform multiple calls to accomplish a task. Communication inefficiencies within a distributed system inevitably impair service performance and availability as a microservices app scales.
+Third is to make a message serialization choice based on performance Who are the users of the format? How much data is being transferred in each request? Can the data be compressed? Though JSON is currently the popular format for microservices APIs, capable of being parsed directly into an object graph, it’s not a compact format. As an API designer, evaluate formats and choose one based on performance requirements.
+Lastly, use desired resiliency as the guide for choosing blocking vs. non-blocking APIs. Non-blocking APIs scale better, but are more complicated to design and use. Blocking APIs allow for retrying when the resource becomes available. This is one of the most important aspects of API design because it affects how resilient the API must be within the application workflow as it scales.
+Using API design patterns
+The API Gateway Pattern is used to abstract the communication between client applications and internal microservices. This allows for the composition of microservices into client-ready services.
+
+
+Microservices Discovery Pattern
+The Microservices Discovery Pattern removes coupling between microservices and client apps. By dynamically registering microservices in an enterprise topology, we allow client apps and other services to dynamically discover microservices and adapt to changes. This pattern also avoids the centralized registry pattern of traditional SOA monoliths.
+
+
+Microservices Description Pattern
+The Microservices Description Pattern expresses features of microservices in a descriptive format that can be understood by client applications. It also offers a means of managing microservices metadata.
+
+
+Versioning an API of a Microservice
+There are two options for versioning the exposed API of a microservice. If you need to provide additional information on a GET or POST operation, then the change is unlikely to be backwards-compatible. In that case, you need to look at ways of handling this problem. The two most common ways of handling this are:
+
+Versioning in the URI
+
+
+Versioning in the header
+
+The REST community is split nearly 50/50 on which is the best approach for this, so we present both.
+URI versioning is when you change the URI of the resource itself to contain version information. A simple example of this from our bank account example might look like:  /accounts/v2.1/{id}
+This approach gives you the ability to version an entire resource hierarchy or branch. It’s also more semantically meaningful to developers—they can see at a glance which version of a service they are referring to. Modeling the version in this way as a resource enables automated navigation or discovery of resources. For this reason, we recommend it for most purposes.
+A disadvantage of this approach is that when you include version information in the URI, you change the resource name and location. This introduces a complex proliferation of URI aliases that make it difficult to identify which version of your API is the currently supported version. What’s more, you can no longer use URIs to compare identity in this approach — the same identical object may be returned by both the version 2.0 and 2.1 URI’s.
+Additionally, this may break existing hypermedia links that do not include version information.
+You can get fancier with this approach, but this makes it troublesome as the examples show:
+versioning at multiple hierarchy nodes – complicated
+/maps/version/2/roadways/version/2
+query parameter – not recommended
+/maps?version=2
+URI service versioning is the best practice for updating the public API of a service, but it doesn’t address any breaking changes to the backend data stores that may need to take place. There are two options for dealing with this, and neither option is great:
+Option 1: Copy your old data into a new “V2” database and keep the two entirely separate. This means that either you live with data drift or you put a data synchronization solution in place.
+Option 2: Update your schema in place and add code to v1 (!) to handle the new schema.
+The following image shows these two options:
+
+
+Header versioning
+Header versioning is another approach to include version information in a special header of each request or response. An example of this header might be: X-Version:2.1
+An advantage of this approach is that the resource name and location remains unchanged throughout your hierarchy, so you won’t have a proliferation of URI aliases. This approach makes it easier for transparent intermediaries to parse the headers for routing in scenarios where you have an ESB in place between service requestors and service providers. Likewise, by keeping the URI the same across versions, the API remains completely semantically meaningful to developers.
+A drawback to this type of versioning is that information can’t be readily encoded into hypermedia links. What’s more, this approach doesn’t discriminate among multiple representations. Additionally, it only works with custom clients that know how to encode the special header, thus introducing coupling into your design.
+What to do next:
+Whether your business is starting fresh or in the midst of cloud native development, there are numerous tools, resources, and services to mold to your exact needs.
+Additional resources:
+
+For details on working with APIs, visit implementing a well-designed API strategy.
+
+
+For modernizing and refactoring a monolithic application, view this detailed architectural progression.
+
+
+For developing a cloud native (‘greenfield’) application, view an interactive architecture diagram of a microservices online store application and access a tutorial on deploying the same app in a Kubernetes cluster.
+
+
+
+
+
+
+
+
+
+Kyle Brown
+IBM Fellow, CTO Cloud Architecture, IBM Cloud Labs
+
+
+
+
+
+
+
+
+
+Follow IBM Cloud
+
+Be the first to hear about news, product updates, and innovation from IBM Cloud.
+Email subscribeRSS
+
+
+
+
+
+IBM Cloud Technologies
+
+
+ Analytics
+
+
+ Artificial intelligence
+
+
+ Automation
+
+
+ Blockchain
+
+
+ Cloud
+
+
+ Compute
+
+
+ Data science
+
+
+ Database
+
+
+ DevOps
+
+
+ Disaster recovery
+
+
+ Hosting
+
+
+ Hybrid cloud
+
+
+ Integration
+
+
+ Internet of things
+
+
+ Management
+
+
+ Migration
+
+
+ Mobile
+
+
+ Networking
+
+
+ Open source
+
+
+ Security
+
+
+ Storage
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Related Articles
+
+
+
+
+
+
+
+
+
+            Cloud
+          
+
+
+
+
+
+          Change3 Builds and Scales its World-Changing Suite of Marketing Technologies on IBM Cloud
+        
+
+By:
+Susan Martens
+
+
+        17 May  2022
+      
+
+
+
+
+
+
+
+
+icons
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            Cloud
+          
+
+
+
+
+
+          RISE with SAP, Premium Supplier Option Now Includes IBM Power
+        
+
+By:
+Satya Sharma and A B Vijay Kumar
+
+
+        11 May  2022
+      
+
+
+
+
+
+
+
+
+icons
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            Cloud
+          
+
+
+
+
+
+          New ICCT Certification: IBM Cloud DevSecOps Specialty
+        
+
+By:
+Natalie Brooks Powell
+
+
+        4 May  2022
+      
+
+
+
+
+
+
+
+
+icons
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            Be the first to hear about news, product updates, and innovation from IBM Cloud
+          
+
+
+
+
+
+Get updates to your inbox.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Products & Solutions
+
+Top products & platforms
+Industries
+Artificial intelligence
+Blockchain
+Business operations
+Cloud computing
+Data & Analytics
+Hybrid cloud
+IT infrastructure
+Security
+Supply chain
+
+
+
+Learn about
+
+What is Hybrid Cloud?
+What is Artificial intelligence?
+What is Cloud Computing?
+What is Kubernetes?
+What are Containers?
+What is DevOps?
+What is Machine Learning?
+
+
+
+Popular links
+
+IBM Consulting
+Communities
+Developer education
+Support - Download fixes, updates & drivers
+IBM Research
+Partner with us - PartnerWorld
+Training - Courses
+Upcoming events & webinars
+
+
+
+About IBM
+
+Annual report
+Career opportunities
+Corporate social responsibility
+Diversity & inclusion
+Industry analyst reports
+Investor relations
+News & announcements
+Thought leadership
+Security, privacy & trust
+About IBM
+
+
+
+
+
+
+
+
+
+
+
+Contact IBM
+
+
+Privacy
+
+
+Terms of use
+
+
+Accessibility
+
+
+Cookie preferences
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

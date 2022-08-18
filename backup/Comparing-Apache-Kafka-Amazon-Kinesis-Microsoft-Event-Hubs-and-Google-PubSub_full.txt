@@ -1,0 +1,666 @@
+
+
+
+
+Comparing Apache Kafka, Amazon Kinesis, Microsoft Event Hubs and Google Pub/Sub
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Menu
+
+
+Home
+What we do
+Our work
+Who we are
+Careers
+Events
+News
+Blog
+Contact Us
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Scott Logic / Altogether Smarter
+
+
+
+
+
+
+Careers
+Events
+News
+Contact
+
+
+
+
+
+
+
+
+What we do
+Our work
+Who we are
+Blog
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
+                    Data Engineering
+                
+            
+
+·
+17 April 2018
+·
+
+
+
+
+
+  9 min read
+
+
+
+
+Comparing Apache Kafka, Amazon Kinesis, Microsoft Event Hubs and Google Pub/Sub
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Andrew Carr
+
+
+
+
+
+
+
+The rise of distributed log technologies
+Distributed log technologies such as Apache Kafka, Amazon Kinesis, Microsoft Event Hubs and Google Pub/Sub have matured in the last few years, and have added some great new types of solutions when moving data around for certain use cases.
+According to IT Jobs Watch, job vacancies for projects with Apache Kafka have increased by 112% since last year, whereas more traditional point to point brokers haven’t faired so well.  Jobs advertised with Active MQ have decreased by 43% compared to this time last year.  Rabbit MQ is a more modern version of the traditional message broker and efficiently implements AMQP but only saw an increase of 22% in terms of job adverts which ask for it.  I suspect in reality a lot of the use cases that were poorly served by traditional message brokers have moved very quickly to distributed log technologies, and a lot of new development that traditionally used technologies such as Active MQ have moved to Rabbit MQ.
+What are they?
+While distributed log technologies may on the surface seem very similar to traditional broker messaging technologies, they differ significantly architecturally and therefore have very different performance and behavioural characteristics.
+
+Traditional message broker systems such as those which are JMS or AMQP compliant tend to have processes which connect direct to brokers, and brokers which connect direct to processes.  Hence for a message to go from one process to another, it can do so routed via a broker.  These solutions tend to be optimised towards flexibility and configurable delivery guarantees.
+Recently technologies such as Apache Kafka and the like, or as they are commonly called the distributed commit log technologies have come along and can play a similar role to the traditional broker message systems.  They are optimised towards different use cases however, instead of concentrating on flexibility and delivery guarantees, they tend to be concentrated on scalability and throughput.
+
+In a distributed commit log architecture the sending and receiving processes are a bit more de-coupled and in some ways the sending process doesn’t care about the receiving processes.  The messages are persisted immediately to the distributed commit log. The delivery guarantees are often viewed in the context that messages in the distributed commit log tend to be persisted only for a period of time.  Once the time has expired, older messages in the distributed commit log disappear regardless of guarantees and therefore usually fit use cases where the data can expire, or will be processed by a certain time.
+Choice of distributed commit log technologies
+In this article we will compare the four most popular distributed log technologies. Here is a high-level summary of each:
+Apache Kafka
+Kafka is a distributed streaming service originally developed by LinkedIn.  APIs allow producers to publish data streams to topics.  A topic is a partitioned log of records with each partition being ordered and immutable.  Consumers can subscribe to topics.  Kafka can run on a cluster of brokers with partitions split across cluster nodes.  As a result, Kafka aims to be highly scalable.  However, Kafka can require extra effort by the user to configure and scale according to requirements.
+Amazon Kinesis
+Kinesis is a cloud based real-time processing service.  Kinesis producers can push data as soon as it is created to the stream.  Kenesis breaks the stream across shards (similar to partitions), determined by your partition key.  Each shard has a hard limit on the number of transactions and data volume per second.  If you exceed this limit, you need to increase your number of shards.  Much of the maintenance and configuration is hidden from the user.  AWS allows ease of scaling with users only paying for what they use.
+Microsoft Azure Event Hubs
+Event Hubs describes itself as an event ingestor capable of receiving and processing millions of events per second.  Producers send events to an event hub via AMQP or HTTPS.  Event Hubs also have the concept of partitions to enable specific consumers to receive a subset of the stream.  Consumers connect via AMQP.  Consumer groups are used to allow consuming applications to have a separate view of the event stream.  Event Hubs is a fully managed service but users must pre-purchase capacity in terms of throughput units.
+Google Pub/Sub
+Pub/Sub offers scalable cloud based messaging.  Publisher applications send messages to a topic with consumers subscribing to a topic.  Messages are persisted in a message store until they are acknowledged.  Publishers and pull-subscribers are applications that can make Google API HTTPS requests.  Scaling is automatic by distributing load across data centres.  Users are charged by data volume.
+It’s not possible in this article to examine each technology in great detail. However, as an example we will explore Apache Kafka more within the following section.
+Kafka Architecture
+The architecture around Kafka is comprised of the following components:
+
+Topics - this is a conceptual division of grouped messages. It could be stock prices, or cars seen, or whatever.
+Partitions - this is how parallelism is easily achieved.  A topic can be split into 1 or more partitions.  Then each message is kept in an ordered queue within that partition (messages are not ordered across partitions).
+Consumers - 0, 1 or more consumers can process any partition of a topic.
+Consumer Groups - these are groups of consumers that are used to load share.  If a consumer group is consuming messages from one partition, each consumer in a consumer group will consume a different message.  Consumer groups are typically used to load share.
+Replication - you can set the replication factor on Kafka on a per topic basis. This will can help reliability if one or more servers fail.
+
+
+What are distributed commit log technologies good for?
+While I won’t compare and contrast all the use cases of traditional message brokers, when compared with distributed log technologies (we’ll save that for another blog) but if for a moment we compare the drivers behind the design of Active MQ and Apache Kafka we can get a feel for what they are good for.  Apache Kafka was built in Scala at LinkedIn to provide a way to scale out their updates and maximise throughput. Scalability was of paramount concern over latency and message delivery guarantees.  Within the scalability requirement was the need to simplify configuration, management and monitoring.
+There are a few use cases that distributed log technologies really excel at, which often have the following characteristics:
+
+The data has a natural expiry time - such as the price of a stock or share.
+The data is of a large volume - therefore throughput and scalability are key considerations.
+The data is a natural stream - there can be value in going back to certain points in the stream or traversing forward to a given point.
+
+So certainly within financial services, Kafka is used for:
+
+Price feeds
+Event Sourcing
+Feeding data into a data lake from OLTP systems
+
+Attributes of distributed log technologies
+There are a number of attributes that should be considered when choosing a distributed log technology, these include:
+
+Messaging guarantee
+Ordering guarantee
+Throughput
+Latency
+Configurable persistence period
+Persisted storage
+Partitioning
+Consumer Groups
+
+Messaging guarantee
+Messaging systems typically provide a specific guarantee when delivering messages. Some guarantees are configurable. The types of guarantees are:
+
+At most once - some messages may be lost, and no message is delivered more than once.
+Precisely once - each message is guaranteed to be delivered once only, not more or less.
+At least once - each message is guaranteed to be delivered, but may in some cases be delivered multiple times.
+
+Ordering guarantee
+For distributed log technologies the following ordering guarantees are possible
+
+None - there is absolutely no guarantee of any messages coming out in any order related to the order they came in.
+Within a partition - within any given partition the order is absolutely guaranteed, but across partitions the messages may be out of order.
+Across partitions - ordering is guaranteed across partitions.  This is very expensive and slows down and makes scaling a lot more complicated.
+
+Throughput
+The volume of messages that can be processed within a set period of time.
+Latency
+The average speed a message is processed after it is put on the queue.  It is worth noting that you can sometimes sacrifice latency to get throughput by batching things together (conversely, improving latency by sending data immediately after it is created can sacrifice throughput).
+Configurable persistence period
+The period of time that messages will be kept for.  Once that time has passed the message is deleted, even if no consumers have consumed that message.
+How to choose which one to use?
+When choosing between the distributed commit log technologies there are a few big questions you can ask yourself (captured in a simple decision flow chart below).  Are you looking for a hosted solution or a managed service solution?  While Kafka is possibly the most flexible of all the technologies, it is also the most complex to operate and manage.  What you save in the cost of the tool, you will probably use up in support and devops running and managing.
+Common to all distributed commit log technologies is that the messaging guarantees tends to be at least once processing.  This means the consumer needs to protect against receiving the message multiple times.  Combining with a stream processing engine such as Apache Spark can give the consumer precisely once processing and remove the need for the user application to handle duplicate messages.
+
+
+
+ 
+Kafka
+Amazon Kinesis
+Microsoft Azure Event Hubs
+Google pub/sub
+
+
+
+
+Messaging guarantees
+At least once per normal connector.Precisely once with Spark direct Connector.
+At least once unless you build deduping or idempotency into the consumers.1
+At least once but allows consumer managed checkpoints for exactly once reads.2
+At least once
+
+
+Ordering guarantees
+Guaranteed within a partition.
+Guaranteed within a shard.
+Guaranteed within partition.
+No ordering guarantees.3
+
+
+Throughput
+No quoted throughput figures. Study22 showed a throughput of ~30,000 messages/sec.
+One shard can support 1 MB/s input, 2 MB/s output or 1000 records per second.14 Study22 showed a throughput of ~20,000 messages/sec.
+Scaled in throughput units. Each supporting 1 MB/s ingress, 2 MB/s egress or 84 GB storage.12 Standard tier allows 20 throughput units.
+Default is 100MB/s in, 200MB/s out but maximum is quoted as unlimited.6
+
+
+Configurable persistence period
+No maximum
+1 to 7 days (default is 24 hours)4
+1 to 7 days (default is 24 hours)5
+7 days (not configurable) or until acknowledged by all subscribers.6
+
+
+Partitioning
+Yes
+Yes (Shards)
+Yes
+Yes - but not under user control
+
+
+Consumer groups
+Yes
+Yes (called auto-scaling groups)
+Yes (up to 20 for the standard pricing tier)
+Yes (called subscriptions)
+
+
+Disaster recovery - with across region replication
+Yes (cluster mirroring)7
+Automatically across 3 zones
+Yes (for the standard tier)
+Yes (automatic)
+
+
+Maximum size of each data blob
+Default 1MB (but can be configured)
+1 MB8
+Default 256 K9 (paid for up to 1MB)
+10 MB6
+
+
+Change partitioning after setup
+Yes (increase only - does not re-partition existing data)10
+Yes by “resharding” (merge or split shards).11
+No12
+No (not under user control)
+
+
+Partition/shard limit
+No limit. Optimal partitions depends on your use case.
+500 (US/EU)8 or 200 (other) although you can apply to Amazon to increase this.
+Between 28 and 329 (can pay for more).
+Not visible to user.
+
+
+Latency
+Milliseconds for some set-ups. Benchmarking23 showed ~2 ms median latency.
+200 ms to 5 seconds13
+No quoted figures.
+No quoted figures.
+
+
+Replication
+Configurable replicas. Acknowledgement of message published can be on send, on receipt or on successful replication (local only)21.
+Hidden (across three zones). Message published acknowledgement is always after replication.
+Configurable (and allowed across regions for the standard tier).
+Hidden. Message published acknowledgement after half the disks on half the clusters have the message.20
+
+
+Push model supported
+Pseudo with Apache Spark or can request data using blocking long polls, so kind of
+Yes (via Kinesis Client Library)15
+Yes (via AMQP 1.0)17
+Yes16
+
+
+Pull model supported
+Yes
+Yes15
+No17
+Yes16
+
+
+Languages supported
+Java, Go, Scala, Clojure, python, C++, .NET, .NET  Core,  Node.js, PHP, Python, Ruby, Spark and many more…24
+Kenesis Client Libraries (recommended)18: Java, Python, Ruby, Node.js, .NET, C++Using AWS SDK: C++30, Go30, .NET Core19, PHP33, Scala34
+Java, .NET, .NET Core, C++,25 GO (Preview)26, Node.js(Preview), Python27, Spark28
+Java, Go, .NET, .NET Core, Node.js, PHP, Python, Ruby, Spark. All the API’s for pub/sub are in currently beta with the exception of the PHP API which is at General Availability stage.19 29
+
+
+
+Decision flow chart
+To help you choose here is a decision flow chart.  It certainly isn’t recommended you stick to it rigidly. It’s more a general guide to which technologies to consider, and a few decision points to help you eliminate some technologies, so you have a more focused pool to evaluate/compare.  Ultimately Kafka is the most flexible, and has great performance characteristics.  But it is also requires the most energy - both in setup and monitoring/maintaining.  If you wish to go more for a fully managed solution - Kinesis, Event Hubs and pub/sub offer alternative options depending on whether ordering and blob size are important to you.
+Hopefully this blog post will help you choose the technology that is right for you, and I am very interested if you have chosen one recently and what reason you chose it over the others.
+
+References
+
+Handling duplicate records with Kinesis
+Event Hubs check-pointing
+Pub/Sub Message Ordering
+Kenesis Changing the Data Retention Period
+Event Hubs Quotas
+Pub Sub Quotas
+Kafka Mirroring data between clusters
+Kinesis Data Streams Limits
+Event Hubs quotas
+Kafka modifying topics
+Kenesis resharding
+Event Hubs FAQ
+Low-Latency Processing
+Kinesis Data Streams Concepts
+Kinesis Developing Data Streams Consumers
+Pub Sub Subscriber Overview
+Event Hubs Event consumers
+Kinesis data streams
+Pub/Sub client libraries
+Pub/Sub The life of a message
+Kafka replication
+Kafka vs Kenesis study
+Benchmarking Apache Kafka
+Kafka clients
+Event Hubs API
+Event Hubs Go Preview
+Event Hubs Python
+Event Hubs Spark
+Pub/Sub Big Data Interoperability
+Kenesis GO API
+Kenesis C++ API
+Kenesis .NET API
+Kenesis PHP API
+Kenesis Scala API
+
+Technology Vacancies Statistics
+The following statistics were taken from IT Jobs Watch, which highlights the changing number of vacancies for each technology between 2016 and 2018.
+
+
+
+ 
+6 months to 2 April 2016
+6 months to 2 April 2017
+6 months to 2 April 2018
+
+
+
+
+Kafka
+499
+819
+1,734
+
+
+ActiveMQ
+675
+554
+314
+
+
+RabbitMQ
+1,048
+1,181
+1,438
+
+
+
+
+
+
+
+
+
+
+Read more
+
+
+
+
+
+
+
+
+
+
+
+
+
+Using Kafka and Grafana to monitor meteorological conditions
+
+
+
+
+
+
+
+
+
+
+
+
+
+            
+            Apache Kafka provides distributed log store used by increasing numbers of companies and often forming the heart of systems processing huge amounts of data. This post shows how to use it for storing meteorological data and displaying this in a graphical dashboard with Graphite and Grafana
+            
+        
+
+
+
+
+Oliver Kenyon
+ ·
+
+
+    
+
+13th 
+
+
+
+
+  Oct 2017
+
+
+  
+·
+
+
+
+
+
+  14 min read
+
+
+
+
+
+
+
+
+
+
+
+
+
+What actually is a Data Mesh? And is it really a thing?
+
+
+
+
+
+
+
+
+
+
+
+
+
+            
+            Organisations across the globe have been on a journey to find the optimal approach for managing and leveraging analytics data. In this post, I’ll set out each of the key milestones on the journey, to arrive at the latest milestone – the Data Mesh paradigm – and ask whether it is really a thing. 
+            
+        
+
+
+
+
+Andrew Carr
+ ·
+
+
+    
+
+28th 
+
+
+
+
+  May 2021
+
+
+  
+·
+
+
+
+
+
+  7 min read
+
+
+
+
+
+
+
+
+
+
+Thinking of joining us?
+        If you enjoyed this blog post and are interested in working with smart Developers on challenging software projects,
+        check out our current vacancies.
+    
+
+
+
+
+
+Andrew Carr
+
+
+I lead the Data Engineering Practice within Scott Logic. I have a strong interest and expertise in low latency Front Office trading systems, software managing very large networks and the technologies involved in processing large volumes of data.
+
+
+Categories
+
+
+
+Latest Articles
+
+
+
+
+Resources
+
+
+
+
+Cloud
+
+
+
+
+Tech
+
+
+
+
+UX Design
+
+
+
+
+Delivery
+
+
+
+
+Testing
+
+
+
+
+Data Engineering
+
+
+
+
+People
+
+
+
+
+Videos
+
+
+
+
+Open Source
+
+
+
+
+Podcast
+
+
+
+
+
+Back to all posts
+
+
+
+
+
+
+Scott Logic
+
+Contact Us
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+© Copyright Scott Logic 2020.
+Privacy
+
+
+
+
+
+
+
+
+

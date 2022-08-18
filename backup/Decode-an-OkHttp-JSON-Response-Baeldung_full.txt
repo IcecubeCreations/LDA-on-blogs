@@ -1,0 +1,526 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Decode an OkHttp JSON Response | Baeldung
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Start HereCourses ▼▲
+
+
+
+
+
+
+
+
+
+REST with Spring
+
+
+The canonical reference for building a production grade API with Spring
+
+
+
+
+
+
+
+
+
+
+
+Learn Spring Security ▼▲
+
+
+THE unique Spring Security education if you’re working with Java today
+
+
+
+
+
+
+
+
+
+
+
+
+Learn Spring Security Core
+
+
+Focus on the Core of Spring Security 5
+
+
+
+
+
+
+
+
+
+
+
+Learn Spring Security OAuth
+
+
+Focus on the new OAuth2 stack in Spring Security 5
+
+
+
+
+
+
+
+
+
+
+
+
+Learn Spring
+
+
+From no experience to actually building stuff​
+
+
+
+
+
+
+
+
+
+
+
+Learn Spring Data JPA
+
+
+The full guide to persistence with Spring Data JPA
+
+
+
+
+Guides ▼▲
+
+
+
+
+
+
+
+
+
+Persistence
+
+
+The Persistence with Spring guides
+
+
+
+
+
+
+
+
+
+
+
+REST
+
+
+The guides on building REST APIs with Spring
+
+
+
+
+
+
+
+
+
+
+
+Security
+
+
+The Spring Security guides
+
+
+
+
+About ▼▲
+
+
+
+
+
+
+
+
+
+Full Archive
+
+
+The high level overview of all the articles on the site.
+
+
+
+
+
+
+
+
+
+
+
+Baeldung Ebooks
+
+
+Discover all of our eBooks
+
+
+
+
+
+
+
+
+
+
+
+About Baeldung
+
+
+About Baeldung.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Decode an OkHttp JSON Response
+Last modified: October 25, 2021
+
+
+ by 
+
+baeldung 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+HTTP Client-SideJSON 
+
+OkHttp
+
+
+
+
+
+Jackson Top 
+Get started with Spring 5 and Spring Boot 2, through the Learn Spring course:
+>> CHECK OUT THE COURSE
+
+HTTP Client Top 
+Get started with Spring 5 and Spring Boot 2, through the Learn Spring course:
+>> CHECK OUT THE COURSE
+
+ 
+
+1. Introduction
+
+In this tutorial, we'll explore several techniques for decoding a JSON response while using OkHttp.
+2. OkHttp Response
+
+OkHttp is an HTTP client for Java and Android with features like transparent handling of GZIP, response caching, and recovery from network problems.
+In spite of these great features, OkHttp doesn't have a built-in encoder/decoder for JSON, XML, and other content types. However, we can implement these with the help of XML/JSON binding libraries, or we can use high-level libraries like Feign or Retrofit.
+To implement our JSON decoder, we need to extract the JSON from the result of the service call. For this, we can access the body via the body() method of the Response object. The ResponseBody class has several options for extracting this data:
+
+byteStream(): exposes the raw bytes of the body as an InputStream; we can use this for all formats, but usually it is used for binaries and files
+
+charStream(): when we have a text response, charStream() wraps its InputStream in a Reader and handles encoding according to the response's content type or “UTF-8” if charset isn't set in the response header; however, when using charStream(), we can't change the Reader‘s encoding
+string(): returns the whole response body as a String; manages the encoding the same as charStream(), but if we need a different encoding, we can use source().readString(charset) instead
+
+In this article, we're going to use string() since our response is small and we don't have memory or performance concerns. The byteStream() and charStream() methods are better choices in production systems when performance and memory matter.
+
+
+
+To start, let' s add okhttp to our pom.xml file:
+<dependency>
+    <groupId>com.squareup.okhttp3</groupId>
+    <artifactId>okhttp</artifactId> 
+    <version>3.14.2</version> 
+</dependency>
+And then, we model the SimpleEntity to test our decoders:
+public class SimpleEntity {
+    protected String name;
+
+    public SimpleEntity(String name) {
+        this.name = name;
+    }
+    
+    // no-arg constructor, getters, and setters
+}
+
+Now, we're going to initiate our test:
+SimpleEntity sampleResponse = new SimpleEntity("Baeldung");
+
+OkHttpClient client = // build an instance;
+MockWebServer server = // build an instance;
+Request request = new Request.Builder().url(server.url("...")).build();
+3. Decode the ResponseBody with Jackson
+
+Jackson is one of the most popular libraries for JSON-Object binding.
+Let's add jackson-databind to our pom.xml:
+
+
+
+<dependency>
+    <groupId>com.fasterxml.jackson.core</groupId>
+    <artifactId>jackson-databind</artifactId>
+    <version>2.13.0</version>
+</dependency>
+Jackson's ObjectMapper lets us convert JSON to an object. Thus, we can decode the response using ObjectMapper.readValue():
+ObjectMapper objectMapper = new ObjectMapper(); 
+ResponseBody responseBody = client.newCall(request).execute().body(); 
+SimpleEntity entity = objectMapper.readValue(responseBody.string(), SimpleEntity.class);
+
+Assert.assertNotNull(entity);
+Assert.assertEquals(sampleResponse.getName(), entity.getName());
+4. Decode the ResponseBody with Gson
+
+Gson is another useful library for mapping JSON to Objects and vice versa.
+Let's add gson to our pom.xml file:
+<dependency>
+    <groupId>com.google.code.gson</groupId>
+    <artifactId>gson</artifactId>
+    <version>2.8.5</version>
+</dependency>
+Let's see how we can use Gson.fromJson() to decode the response body:
+Gson gson = new Gson(); 
+ResponseBody responseBody = client.newCall(request).execute().body();
+SimpleEntity entity = gson.fromJson(responseBody.string(), SimpleEntity.class);
+
+Assert.assertNotNull(entity);
+Assert.assertEquals(sampleResponse.getName(), entity.getName());
+
+5. Conclusion
+
+In this article, we've explored several ways to decode the JSON response of OkHttp with Jackson and Gson.
+
+
+
+The complete sample is available on over on GitHub.
+Jackson bottom 
+Get started with Spring 5 and Spring Boot 2, through the Learn Spring course:
+>> CHECK OUT THE COURSE
+
+HTTP Client bottom 
+Get started with Spring 5 and Spring Boot 2, through the Learn Spring course:
+>> CHECK OUT THE COURSE
+
+HTTPClient footer
+
+
+
+
+
+
+Get the Most out of the Apache HTTP Client
+Download the E-book
+
+
+
+
+
+Comments are closed on this article!
+
+
+
+
+
+
+
+HTTP Client sidebar banner
+
+
+
+Get the Most out of the Apache HTTP Client
+Download the E-book
+ 
+ 
+ 
+ 
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+CoursesAll Courses
+All Bulk Courses
+The Courses Platform
+SeriesJava “Back to Basics” Tutorial
+Jackson JSON Tutorial
+Apache HttpClient Tutorial
+REST with Spring Tutorial
+Spring Persistence Tutorial
+Security with Spring
+Spring Reactive Tutorials
+AboutAbout Baeldung
+The Full Archive
+Editors
+Jobs
+Our Partners
+Partner with Baeldung
+ 
+
+Terms of Service
+Privacy Policy
+Company Info
+Contact
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

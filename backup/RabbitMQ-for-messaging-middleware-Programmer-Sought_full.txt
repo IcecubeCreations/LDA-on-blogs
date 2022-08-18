@@ -1,0 +1,512 @@
+
+
+
+
+
+
+
+
+
+
+RabbitMQ for messaging middleware - Programmer Sought
+
+
+
+
+
+
+
+
+
+
+
+
+
+ProgrammerSought
+
+
+Home
+Contact Us
+Privacy Policy
+
+
+☰ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+RabbitMQ for messaging middleware
+
+tags: Microservice
+
+
+
+
+
+
+
+I. Overview
+1.1 Core concepts
+1.1.1 JMS
+JMS: Java Message Service, Java Message Service, is a standard or specification of a message service, allowing application components to create, send, receive and read messages based on the JavaEE platform. It makes distributed communication less coupled, message services more reliable and asynchronous. JMS is a Java messaging service, and JMS clients can use the JMS service for asynchronous message transmission.
+1.1.2 P2P
+p2p: point-to-point sending, a message can only be consumed once involves: Message queue (Queue) Sender Receiver (Receiver) Each message is sent to a specific queue, and the receiver gets the message from the queue. The queue retains information until they are consumed or time out. Diagram: p2p diagram Features:
+
+No need to be online at the same time
+A message can only be consumed once
+
+1.1.3 Pub/Sub
+Pub/Sub: publish and subscribe, a message can be consumed multiple times Involved roles: Topic Publisher (Publisher) Subscriber (Subscriber) The client sends the message to the topic. Multiple publishers send messages to Topic, and the system delivers these messages to multiple subscribers. Diagram: Pub/Sub diagram Features:
+
+Publisher and subscriber are online at the same time
+A message can be consumed by multiple subscribers
+
+1.1.4 MQ
+MQ: Message Orient middleware (MOM: Message Orient middleware), message queue As a necessary technology for communication between systems, low coupling, reliable transmission, flow control, and final consistency Realize asynchronous message communication
+1.2 Advantages and disadvantages of MQ
+
+Decoupling Reduce the coupling degree of system modules
+Improve system response time
+Asynchronous message
+Overload protection Based on MQ to achieve peak shaving and valley filling
+
+1.3 Mainstream MQ
+1.3.1 ActiveMQ
+Apache Fully supports Java's JMS protocol Message mode: 1, point-to-point 2, publish and subscribe
+1.3.2 RabbitMQ
+Open source MQ middleware implemented in Erlang language, supporting multiple protocols The main communication protocol is AMQP, or Advanced Message Queuing Protocol, which is an open standard for application protocols, designed for message-oriented middleware.
+1.3.3 Kafka
+Open source projects under Apache High-performance distributed message queue, general mass data transmission, used by big data department Single machine throughput: 10w/s
+1.3.4 RocketMQ
+Ali contributed to Apache refers to Kafka's implementation of Java-based messaging middleware
+1.3.5 ZeroMQ
+Fastest message transmission
+Compared
+
+Community activity
+Comparison of persistent messages ZeroMQ does not support, ActiveMQ and RabbitMQ both support. Persistent messages are mainly a mechanism by which our machine hangs under circumstances such as irresistible factors, and the messages will not be lost.
+Comprehensive technology realization Reliability, flexible routing, clusters, highly available queues, message sorting, problem tracking, visual management tools, plug-in systems, etc. RabbitMQ/Kafka is the best, ActiceMQ is second, and ZeroMQ is the worst. Of course ZeroMQ can also do it, but you have to write the code manually. Now, the amount of code is not small. Especially in reliability: durability, delivery confirmation, publisher confirmation, and high availability.
+High concurrency There is no doubt that RabbitMQ is the highest, because its implementation language is the erlang language that is inherently highly concurrency available. Comparison diagram: Comparison of major message middleware
+
+Two, RabbitMQ
+2.1 Introduction
+RabbitMQ is an open source AMQP implementation. The server is written in Erlang language and supports multiple clients, such as: Python, Ruby, .NET, Java, JMS, C, PHP, ActionScript, XMPP, STOMP, etc., and supports AJAX. It is used to store and forward messages in a distributed system, and performs well in terms of ease of use, scalability, and high availability. Message middleware is mainly used for decoupling between components. The sender of the message does not need to know the existence of the message consumer. The main characteristics of AMQP are message-oriented, queue, routing (including point-to-point and publish/subscribe), reliability, and security.
+2.2 Communication module
+
+Sender Send the message to the corresponding switch, you can specify the routing keyword
+MQ server will forward the message obtained by the exchange to the corresponding message queue according to the routing rules
+Consumer side monitor the message queue of the MQ server, if the message changes, it will get the message from the message queue
+
+2.3 Core class description
+
+ConnectionFactory is the manufacturing plant of Connection, you can set the server and port number, account password and other information
+Connection is the socket link of RabbitMQ, which encapsulates some logic related to the socket protocol
+Channel The most important interface to deal with RabbitMQ, most of our business operations are completed in the Channel interface, including defining Queue, defining Exchange, binding Queue and Exchange, publishing messages, etc. .
+Queue The role of RabbitMQ is to store messages, and the characteristic of the queue is first in, first out. That is, the message generated by the producer is sent to the internal object Queue of RabbitMQ, and the consumer is to fetch data from the Queue queue
+Exchange (switch, switch) According to the binding matching rules, the message is matched and processed
+
+Three, RabbitMQ first experience
+Involved roles:
+3.1 MQ server
+You can install RabbitMQ based on Docker, remembering its port: 15672: Web version visualization server data 5672: The port number of the client connection
+3.1.1 Docker install RabbitMQ
+
+search for docker search rabbitmq:management
+download docker pull rabbitmq:management
+create docker create --name rabbitmq -p 15671:15671 -p 15672:15672 -p 5671:5671 -p 5672:5672 rabbitmq:management docker run -d --name rabbitmq -p 15671:15671 -p 15672:15672 -p 5671:5671 -p 5672:5672 rabbitmq:management
+start up docker start rabbitmq
+test Browser input: http://server ip:15672 Username and password: Default: guest Password: guest
+
+
+Remember: open the port, otherwise block
+
+3.2 MQ message sender
+//http://39.105.189.141:15672
+public static void main(String[] args) throws IOException, TimeoutException {
+ // Create a connection factory
+  ConnectionFactory factory=new ConnectionFactory();
+ //Set connection information
+  factory.setHost("39.105.189.141");
+  factory.setPort(5672);
+  factory.setUsername("guest");
+  factory.setPassword("guest");
+ // Get the connection object
+  Connection connection=factory.newConnection();
+ // Obtain the channel object
+  Channel channel=connection.createChannel();
+ // Create a queue
+  /**
+ * Define queue Parameter description
+ * 1. Queue name
+ * 2. Is it persistent? Is the queue message stored to disk?
+ * 3. Whether to exclusive queue
+ * 4. Whether to automatically delete the message after disconnection
+ * 5. Additional data information */
+  channel.queueDeclare("queue1902",false,false,false,null);
+ //5, send a message
+   /*Parameter Description: 
+ * 1. Switch name
+ * 2. Queue name
+ * 3. Attribute parameters
+ * 4. The content of the message sent requires bytes*/
+ Channel.basicPublish("","queue1902",null,"Are you asleep?".getBytes());
+ //6, closed
+  channel.close();
+  connection.close();
+}
+
+3.3 MQ message receiver
+public static void main(String[] args) throws IOException, TimeoutException {
+// Create a connection factory
+  ConnectionFactory factory=new ConnectionFactory();
+ //Set connection information
+  factory.setHost("39.105.189.141");
+  factory.setPort(5672);
+  factory.setUsername("guest");
+  factory.setPassword("guest");
+ // Get the connection object
+  Connection connection=factory.newConnection();
+ // Obtain the channel object
+  Channel channel=connection.createChannel();
+ // Create a queue
+  /**
+ * Define queue Parameter description
+ * 1. Queue name
+ * 2. Is it persistent? Is the queue message stored to disk?
+ * 3. Whether to exclusive queue
+ * 4. Whether to automatically delete the message after disconnection
+ * 5. Additional data information */
+  channel.queueDeclare("queue1902",false,false,false,null);
+ //5, define consumers
+  Consumer consumer=new DefaultConsumer(channel){
+    @Override
+    public void handleDelivery(String consumerTag, Envelope envelope,
+AMQP.BasicProperties properties, byte[] body) throws IOException {
+ System.out.println("Consumer:"+new String(body));
+   }
+ };
+ /6、Binding consumers
+  /**
+   * Parameter Description: 
+ * 1. Queue name
+ * 2. Whether to answer automatically
+ * 3. Consumer objects*/
+  channel.basicConsume("queue1902",true,consumer);
+}
+
+Fourth, the message mode of RabbitMQ
+4.1 General message
+Point-to-point messaging A message can only be consumed once You only need a queue, no switch The message sender and message receiver can not be online at the same time
+4.2 Exchanger messages
+RabbitMQ is characterized by Exchange, which mainly includes the following types: fanout: As long as there is a message, it will be forwarded to the bound queue, and no message routing judgment will be performed direct: The message will be sent to the specified queue according to the routing matching rules. Note that the routing rules do not support special characters topic: The message will be sent to the specified queue according to the routing matching rules. Note that the routing rules support special characters, such as: * #
+Five, usage scenarios
+
+Asynchronous decoupling If a certain method has a lot of logic needs to be processed, but some of the logic processing has nothing to do with the user. Then you can use asynchronous
+Time-consuming operation network request, IO flow, complex business logic
+Peak cut and valley filling
+
+Copyright Complaint      
+Spam Report
+
+
+
+
+
+
+
+
+
+
+Intelligent Recommendation
+
+
+
+
+
+
+Introduction to the messaging middleware RabbitMQ
+
+
+
+message queue Message (Message) refers to the data transmitted between applications, a signal with some kind of information. The three main points of the message mechanism: message queue, message loop...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Messaging middleware-RabbitMQ
+
+
+
+Message queue application scenario Overview of messaging middleware RabbitMQ concepts A client only establishes a link (long connection) with the message middleware, and there are multiple channels in...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+RabbitMQ-2 of messaging middleware
+
+
+
+7. RabbitMQ Advanced 7.1. Expiration time TTL ​ The expiration time TTL indicates that the expected time can be set for the message, within which time it can be received by consumers; the message will...
+
+
+
+
+
+
+
+
+
+
+
+Use rabbitmq messaging middleware
+
+
+
+###rabbitmq introduction: RabbitMQ is a complete and reusable enterprise messaging system based on AMQP. It can be used for efficient communication between various modules of a large software system, ...
+
+
+
+
+
+
+
+
+
+
+
+Distributed messaging middleware -RabbitMQ
+
+
+
+Author：Allen_Huang Version：1.0.0 Distributed messaging middleware -RabbitMQ I. Introduction MQ mainstream products: RabbitMQ、Kafka、RocketMQ Why do I need to learn messaging middleware? Messaging middl...
+
+
+
+
+
+
+
+
+
+
+
+More Recommendation
+
+
+
+
+
+
+
+
+
+
+02-RabbitMQ messaging middleware
+
+
+
+Rabbitmq Docker mounted in a container Docker start Rabbitmq Download the image, rabbitmq: management mirror has been installed management interface docker pull rabbitmq:management Step: rabbit upload...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+RabbitMQ messaging middleware (IV) - way messaging
+
+
+
+Article catalog 1. RabbitMQ works 2. RabbitMQ seven kinds of messaging mode 2.1 code environment 2.2 Messaging 2.2.1 Hello World 2.2.2 Work queues 2.2.3 Publish/Subscribe 2.2.3.1 Direct 2.2.3.2 Fanout...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Getting started with messaging middleware RabbitMQ!
+
+
+
+Students who have studied activemq may understand that the related concepts of RabbitMQ will be faster! Take it easy!   What is RabbitMQ: RabbitMQ is an open source implementation of AMQP develop...
+
+
+
+
+
+
+
+
+
+
+
+Messaging middleware ----- Rabbitmq entry Demo
+
+
+
+Messaging middleware trilogy: Turn on the server Profiles Send and receive 1, Rabbitmq.xml configuration Producers 1.1 configuration files 1.2 Production news 2, consumer news 2.1 configuration files ...
+
+
+
+
+
+
+
+
+
+
+
+SpringBoot use RabbitMQ messaging middleware
+
+
+
+Rabbitmq mounted in the first docker, pull with a web interface 5672 client, web interface port is 15672 A brief overview of three Exchange rabbitmq Fanout (broadcast) when bound queue, without provid...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Related Posts
+RabbitMQ messaging middleware core
+RabbitMQ messaging middleware
+rabbitmq kafka messaging middleware
+Messaging middleware -RabbitMQ
+Messaging middleware: rabbitmq installation
+RabbitMQ of messaging middleware
+Messaging middleware RabbitMQ
+RabbitMQ basics of messaging middleware
+RabbitMQ advanced messaging middleware
+RabbitMQ-messaging middleware
+
+
+
+
+
+
+Popular Posts
+Several ways of eS6 export
+Introduction to Spring's three basic components
+form an encrypted form the background foreground js java
+Spring framework learning three (type data injection)
+spring-datesource.xml configuration, spring integration mybatis
+Leetcode 592. Score Adjusting C ++
+LeetCode2 Add Two Numbers
+Introduction to database integrity [Chapter] mind mapping database system
+ResNet101V2 network structure
+[Minimum path coverage]hdoj 3335: Divisibility
+
+
+
+
+
+
+Recommended Posts
+Solve Selenium.common.Exceptions.webdriveRexception: Message: Unknown Error: Cannot Find Chrome Binary
+JS references text information in the outermost JS
+The realization of Window, WindowManager and floating frame video playback in Android
+Design Mode - Component mode
+Java foundation (20) (thread pool, waiting wake-up mechanism, Voliate keyword, single case design pattern "lazy mode" "Hungry Mode")
+Apache common interview
+leetcode209. The smallest length sub-array/double pointer, prefix sum, dichotomy
+[0CTF 2016]piapiapia
+Java string interview questions and answers
+Mina develops an example of the udp protocol
+
+
+
+
+
+Related Tags
+RabbitMQMessage middlewarerabbitmqOther types of MQmessage queueModule decouplingSMS short message serviceFive queue modesIntegration with Springboot# RabbitMQ
+
+
+
+
+
+
+
+
+ Copyright  DMCA © 2018-2022 - All Rights Reserved - www.programmersought.com  User Notice 
+
+
+Top
+
+
+
+
+
+
+
+
+
+
+
+
+
+

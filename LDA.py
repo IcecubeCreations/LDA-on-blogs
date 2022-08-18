@@ -1,5 +1,6 @@
 import sys
 import os
+from tabnanny import verbose
 
 from sklearn.feature_extraction.text import CountVectorizer
 import sklearn.datasets
@@ -166,7 +167,7 @@ def main():
     args = sys.argv
     MAX_DF = 0.95
     MIN_DF = 0.05
-    ALPHA = None
+    ALPHA = 50/TOPIC_COUNT
     ETA = None
     MAX_ITER = 100
     MAX_FEATURES = None    
@@ -188,9 +189,11 @@ def main():
         TAU_0 = float(args[8])   
 
     # load documents
-    files_location = os.path.join(DOCUMENTS_FOLDER)
+    files_location = os.path.join(DOCUMENTS_FOLDER)   
     documents = sklearn.datasets.load_files(files_location)
+   
     # generate document term matrix
+    print("Generating document term matrix.")
     vectorizer = CountVectorizer(max_df=MAX_DF, min_df=MIN_DF, stop_words='english', max_features=MAX_FEATURES)
     X = vectorizer.fit_transform(documents.data)
     
@@ -200,8 +203,9 @@ def main():
     names = vectorizer.get_feature_names_out()
     
     # perform LDA
+    print("Running LDA")
     lda = LatentDirichletAllocation(n_components=TOPIC_COUNT, doc_topic_prior=ALPHA, topic_word_prior=ETA, max_iter=MAX_ITER, 
-            learning_method='online', learning_offset= TAU_0, random_state=0, n_jobs = -1)
+            learning_method='online', learning_offset= TAU_0, random_state=0, n_jobs = -1, verbose = True)
     results = lda.fit_transform(X)
     
     # list perplexity

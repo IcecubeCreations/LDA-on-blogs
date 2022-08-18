@@ -1,0 +1,435 @@
+
+
+
+
+
+Strategies for Decomposing an Application into Services - Manning
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+ 
+ 
+
+
+
+
+
+
+
+
+
+manning.com
+FCC Home
+Free eBooks
+Articles
+Interviews
+Media
+
+Slideshares
+Animated GIFs
+Videos
+
+
+all content by topic
+
+Data Science
+Game Development
+Java
+Microsoft / .NET
+Mobile Technology
+Programming
+Software Engineering
+Web Development
+
+
+ 
+
+
+ 
+ 
+
+
+manning.com
+FCC Home
+Free eBooks
+Articles
+Interviews
+Media
+
+Slideshares
+Animated GIFs
+Videos
+
+
+all content by topic
+
+Data Science
+Game Development
+Java
+Microsoft / .NET
+Mobile Technology
+Programming
+Software Engineering
+Web Development
+
+
+ 
+ 
+
+
+
+
+
+Strategies for Decomposing an Application into Services
+ 
+
+
+
+
+ 
+From Microservices Patterns by Chris Richardson
+In this article, you will learn about various strategies for breaking up applications into their component services, and the advantages and disadvantages of each approach.
+
+
+
+
+Save 37% on Microservices Patterns. Just enter code fccrichardson into the discount code box at checkout at manning.com.
+
+Identifying an application’s services is an essential step to breaking it into its components. There’s no mechanical process to follow, but there are various decomposition strategies you can use. Each one attacks the problem from a different perspective and uses it’s own terminology. As with all strategies, the end result is the same: an architecture consisting of services which are primarily organized around business rather than technical concepts. Let’s look at the first strategy, which defines services corresponding to business capabilities.
+Decompose by business capability
+One strategy for creating a microservice architecture is to decompose by business capability. A business capability is a concept from business architecture modeling. A business capability is something that a business does in order to generate value. The set of capabilities for a given business depend on the type of business. For example, the capabilities of an insurance company typically include sales, marketing, underwriting, claims processing, billing, compliance, etc. The capabilities of an online store include sales, marketing, order taking, inventory management, and shipping using something like xero inventory management and other inventory management software. it is very important for a business to ensure that they are keeping control of their inventory in order to know what items they need to keep buying because they are selling well, or if any stock happens to go missing and then this needs to be investigated. All businesses should be making sure that they are completing inventory tracking so that these things can be effectively managed and recorded. 
+BUSINESS CAPABILITIES DEFINE WHAT AN ORGANIZATION DOES
+An organization’s business capabilities capture what an organization’s business is. They’re generally stable. In contrast, how an organization conducts its business changes over time, sometimes dramatically. This is particularly true today, with the rapidly growing use of technology to automate many business processes. For example, it wasn’t long ago when you deposited checks at your bank by handing them to a teller. It then became possible to deposit checks using an ATM. And today you can conveniently deposit most checks using your smartphone. As you can see, the Deposit Check business capability has remained stable, but the manner in which this is done has drastically changed. An organization’s business capabilities are identified by analyzing the organization’s purpose, structure, and business processes. Each business capability can be thought of as a service, except it’s business-oriented rather than technical. It’s specification consists of various components including inputs and outputs, and service-level agreements. For example, the input to an Insurance Underwriting capability is the consumer’s application, and the outputs include approval and price. It isn’t difficult to imagine that the business capabilities for FTGO include:
+
+Restaurant order management – enabling restaurants to manage their orders
+Delivery – delivering orders to customers
+Consumer management – managing information about consumers
+Restaurant management – enabling restaurants to sign up, and manage their menus
+Courier management – enabling couriers to sign up and manage their availability to work
+Accounting – charging customers and paying restaurants and couriers
+…
+
+Lets now look at how to use business capabilities to define services.
+FROM SERVICE TO BUSINESS CAPABILITIES
+Once you’ve identified the business capabilities, you then define a service for each capability or group of related capabilities, for some businesses they find that using work order software could be a good way to keep on top of customer and worker orders. A key benefit of organizing services around capabilities, which are stable, is that the resulting architecture will be relatively stable. The individual components of the architecture may evolve as aspects of the business change, but the architecture itself remains unchanged. An architecture for the FTGO application is created by defining a service for each of the capabilities.
+USING SCENARIOS TO DETERMINE HOW THE SERVICEs COLLABORATE
+An application’s architecture consists of both software elements (the services) and the relationships between them (communication mechanisms). Consequently, after having identified the services, we must decide how the services communicate. To do that we must consider how services collaborate during each scenario. The system operations define the scenarios and drive the definition of the architecture. Because a system operation is a request from the external world, the first decision to make is which service initially handles the request. After that we must decide what other services are involved in handling the request and how they communicate.
+ASSIGNING SYSTEM OPERATIONS TO SERVICES
+The first step is to decide which service is the initial entry point for a request. Many system operations neatly map to a service, but sometimes the mapping is less obvious. Consider, for example, the noteUpdatedLocation() operation, which updates the courier location. On the one hand, because it’s related to couriers, this operation should be assigned to the Courier service, be it one focused on general transportation like Plexus Freight or to niche groups. On the other hand, it’s the Delivery service that needs the courier location. In this case, assigning an operation to a service that needs the information provided by the operation is a better choice. In other situations, it might make sense to assign an operation to the service that has the information necessary to handle it.
+Table 1 shows which services in the FTGO application are responsible for which operations.
+Table 1 which services in the FTGO application are responsible for which operations
+
+
+
+Command
+Service
+
+
+Order Taking
+
+
+createOrder()
+findAvailableRestaurants()
+
+
+
+
+Restaurant Order Management
+
+
+acceptOrder()
+noteOrderReadyForPickup()
+
+
+
+
+Delivery
+
+
+noteUpdatedLocation()
+noteOrderPickedUp()
+noteOrderDelivered()
+
+
+
+
+
+After having assigned operations to services, the next step is to decide how the services collaborate in order to handle each system operation.
+DETERMINING HOW SERVICES COLLABORATE
+Some system operations are handled entirely by a single service. Other system operations span multiple services. The knowledge needed to handle one of these requests might, for instance, be scattered around multiple services. For example, in the FTGO application, the service Consumer handles the createConsumer() operation entirely by itself. When handling the createOrder() operation, the Order Taking service must invoke other services including:
+
+Consumer service – to verify that the consumer can place an order and obtain their payment information
+
+
+Restaurant Service – to verify the order line items and that the delivery address/time is within the restaurant’s service area
+
+
+Accounting service – to authorize the consumer’s credit card
+
+Similarly, when the restaurant accepts an order, the Restaurant Order Management service must invoke the Delivery service to schedule a courier to deliver the order. Figure 1 shows these services and the dependencies between them.
+
+
+Figure 1 FTGO services and their dependencies
+
+Each dependency represents some kind of inter-service communication.
+If only it were this easy…
+On the surface, the strategy of creating a microservice architecture by defining services corresponding to business capabilities looks reasonable. Unfortunately there are significant problems that need to be addressed.
+SYNCHRONOUS INTER-PROCESS COMMUNICATION REDUCES AVAILABILITY
+The first problem is how to use inter-service communication in a way that doesn’t reduce availability. For example, the most straightforward way to implement the createOrder() operation is for the Order Service to synchronously invoke the other services using REST. The drawback of using a protocol such as REST is that it reduces the availability of the Order Service. It won’t be able to create an order if any of those services are unavailable. Sometimes using asynchronous messaging is a worthwhile trade-off, because it eliminates tight coupling and improves availability – often making it a better choice.
+THE NEED FOR DISTRIBUTED TRANSACTIONS
+The second problem is that a system operation that spans multiple services must maintain data consistency across those services. For example, when a restaurant accepts an order, the Restaurant Order Management service invokes the Delivery service to schedule delivery of the order. The acceptOrder() operation must reliably update data in the Restaurant Order Management and Delivery services. The traditional solution is to use a two-phase commit-based, distributed transaction management mechanism. Unfortunately, this isn’t a good choice for modern applications, and you must use a different approach to transaction management.
+GOD CLASSES PREVENT DECOMPOSITION
+The third and final problem, is the existence of so-called God classes, which are classes that are used throughout the application, and make it difficult to decompose the business logic. An example of a god class in the FTGO application is the Order class. It has state and behavior for many different aspects of the FTGO application’s business logic including order taking, restaurant order management, and delivery. Consequently, this class makes it extremely difficult to decompose any of the business logic that involves orders into the services described earlier. Fortunately, there’s a way to eliminate god classes. The technique comes from Domain-Driven Design (DDD), which provides an alternative way to decompose an application. As with business capability based decomposition, this strategy takes a domain-oriented approach. The resulting architecture will likely be the same, despite DDD using different terminology and having different motivations. One particularly valuable contribution of DDD is that it provides a way to eliminate the god classes.
+Decompose by sub-domain/bounded context
+DDD is an approach for building complex software applications centered on the development of an object-oriented, domain model. A domain model captures knowledge about a domain in a form that can be used to solve problems within that domain. It defines the vocabulary used by the team – what DDD calls the “Ubiquitous language.” The domain model is closely mirrored in the design and implementation of the application. DDD has two concepts that are incredibly useful when applying the microservice architecture: subdomains and bounded contexts.
+FROM SUBDOMAINS TO SERVICES
+DDD is quite different than the traditional approach to enterprise modeling which creates a single model for the entire enterprise. In such a model, there’d be, for example, a single definition of each business entity such as customer, order, etc. The problem with this kind of modeling is that getting different parts of an organization to agree on a single model is a monumental task. Also, it means that from the perspective of a given part of the organization, the model is overly complex for their needs. Moreover, the domain model can be confusing if different parts of the organization use either the same term for different concepts, or different terms for the same concept. DDD avoids these problems by defining multiple domain models, each one with an explicit scope. DDD defines a separate domain model for each subdomain. A subdomain is a part of the domain, which is DDD’s term for the application’s problem space. Subdomains are identified using the same approach as identifying business capabilities: analyze the business and identify the different areas of expertise. The end result is likely to be subdomains which are similar to the business capabilities. The examples of subdomains in FTGO include order taking, order management, restaurant order management, delivery, and financials. As you can see, these subdomains are similar to the business capabilities described earlier.
+DDD calls the scope of a domain model a “bounded context.” A bounded context includes the code artifacts that implement the model. When using the microservice architecture, each bounded context is a service or possibly a set of services. We can create a microservice architecture by applying DDD and defining a service for each subdomain. Figure 2 shows how the subdomains map to services, each with their own domain model.
+
+
+Figure 2 From subdomains to services
+
+DDD and the microservice architecture are in almost perfect alignment. The DDD concept of subdomains and bounded contexts map nicely to services within a microservice architecture. Also, the microservice architecture’s concept of autonomous teams owning services is completely aligned with DDD’s concept that each domain model is owned and developed by a single team. What’s even better is that the concept of a subdomain with its own domain model is a great way to eliminate God classes and thereby make decomposition easier.
+That’s all for this article.
+
+For more, check out the entire book on liveBook here.
+
+
+ 
+
+
+
+Manning Publications
+Manning's focus is on computing titles at professional levels. We care about the quality of our books. We work with our authors to coax out of them the best writing they can produce. We consult with technical experts on book proposals and manuscripts, and we may use as many as two dozen reviewers in various stages of preparing a manuscript. The abilities of each author are nurtured to encourage him or her to write a first-rate book.
+
+Author archive
+Author website
+[email protected]
+@ManningBooks on Twitter
+ 
+ 
+ 
+
+June 14, 2017
+Articles, Development
+microservice, microservices, microservices-patterns
+
+
+Previous post
+Next post
+
+
+ 
+
+ 
+Comments are closed.
+ 
+ 
+
+
+
+
+TAGS.net
+ai
+algorithms
+amazon
+api
+applications
+Artificial Intelligence
+aws
+aws-lambda
+big data
+cloud
+cloud-computing
+containers
+data
+data science
+deep-learning
+deep learning
+development
+devops
+docker
+functional programming
+java
+javascript
+jvm
+kubernetes
+learning
+machine
+Machine Learning
+microservice
+microservices
+natural-language-processing
+programming
+projects
+python
+react
+scala
+security
+serverless
+six questions
+spark
+spring
+testing
+twitch
+web
+web development
+
+
+
+ 
+ 
+
+
+
+
+
+
+Search form
+
+
+
+
+
+
+
+
+
+
+
+
+
+Latest posts
+
+Using Multiple Dispatch in Julia  A Deep Learning System from an Engineer’s Perspective  Keeping Up with AWS  Robust Machine Learning with ML Pipelines  Types of Robots  
+
+
+ 
+
+
+
+
+Featured Content Animated GIFs
+Podcasts
+Free eBooks
+
+
+ 
+
+
+
+ 
+ 
+
+
+
+
+
+
+			© 2022 Manning — Design Credits
+
+
+
+
+
+subscribe to the manningNewsletter
+
+manning onFacebook
+
+manning onTwitter
+
+
+
+Up ↑
+
+
+ 
+ 
+
+
+
+
+
+
+
+
+
+

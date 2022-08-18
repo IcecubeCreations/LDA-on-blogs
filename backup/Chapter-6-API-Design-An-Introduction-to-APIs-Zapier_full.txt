@@ -1,0 +1,424 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Chapter 6: API Design - An Introduction to APIs | Zapier
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  It looks like you have Javascript disabled. We're big fans of JavaScript here at Zapier. You can enable it by following these instructions.
+
+
+
+
+
+
+
+
+
+
+
+
+Skip to contentProductHow it worksFeaturesCustomer storiesSecurityExplorePopular ways to use ZapierApps that work with ZapierExplore Zapier by job roleResourcesBlogRead the Zapier blog for tips on productivity, automation, and growing your businessExpertsHire a Zapier Expert to help you improve processes and automate workflows.Help CenterGet help with Zapier from our tutorials, FAQs, and troubleshooting articles.CommunityAsk questions, share your knowledge, and get inspired by other Zapier users.Zapier UniversityVideo courses designed to help you become a better Zapier user.WebinarsLearn about automation anytime, anywhere with our on-demand webinar library.Teams & CompaniesPricingSearch apps…Log inSign up
+
+
+
+
+
+
+
+
+Tips & Advice
+
+Guides
+
+An Introduction to APIs
+
+
+
+
+
+                
+                  
+                
+                  
+                
+                  
+                
+                  
+                
+                  
+                
+                  
+                      Chapter 6 of 8
+
+
+
+
+
+
+
+                    
+                    Chapter 1: Introduction
+                  
+
+
+
+                    
+                    Chapter 2: Protocols
+                  
+
+
+
+                    
+                    Chapter 3: Data Formats
+                  
+
+
+
+                    
+                    Chapter 4: Authentication, Part 1
+                  
+
+
+
+                    
+                    Chapter 5: Authentication, Part 2
+                  
+
+
+
+
+                    
+                    Chapter 6: API Design
+                  
+
+
+
+                    
+                    Chapter 7: Real-Time Communication
+                  
+
+
+
+                    
+                    Chapter 8: Implementation
+                  
+
+
+
+Back to Learning Center
+
+
+
+
+
+
+Download eBook
+
+
+
+
+
+
+Chapter 6: API Design
+
+By Brian Cooksey - Published April 22, 2014 -
+
+
+
+
+
+You are reading: Chapter 6 of 8
+Table of Contents
+
+
+
+This chapter marks a turning point in our adventure with APIs. We are finished covering fundamentals and are now ready to see how the previous concepts combine to form an API. In this chapter, we discuss the components of an API by designing one.
+Organizing Data
+National Geographic estimated that in 2011, Americans snapped 80 billion photos 1. With so many photos, you can imagine the different approaches people have to organizing them on their computers. Some people prefer to dump everything into a single folder. Others meticulously arrange their pictures into a hierarchy of folders by year, month, and event.
+Companies give similar thought to organization when building their APIs. As we mentioned in Chapter 1, the purpose of an API is to make it easy for computers to work with the company's data. With ease of use in mind, one company may decide to have a single URL for all the data and make it searchable (sort of like having one folder for all your photos). Another may decide to give each piece of data its own URL, organized in a hierarchy (like having folders and sub-folders for photos). Each company chooses the best way to structure its API for its particular situation, guided by existing industry best practices.
+Start with an Architectural Style
+When discussing APIs, you might hear talk of "soap" and "rest" and wonder whether the software developers are doing work or planning a vacation. The truth is that these are the names of the two most common architectures for web-based APIs. SOAP (formerly an acronym 2) is an XML-based design that has standardized structures for requests and responses. REST, which stands for Representational State Transfer, is a more open approach, providing lots of conventions, but leaving many decisions to the person designing the API.
+Throughout this course, you may have noticed we've had an inclination for REST APIs. The preference is largely due to REST's incredible rate of adoption 3. This is not to say that SOAP is evil; it has its strong points 4. However, the focus of our discussion will stay on REST as this will likely be the kind of API you encounter. In the remaining sections, we walk through the components that make up a REST API.
+Our First Resource
+Back in Chapter 2, we talked a little bit about resources. Recall that resources are the nouns of APIs (customers and pizzas). These are the things we want the world to be able to interact with through our API.
+To get a feel for how a company would design an API, let's try our hand at it with our pizza parlor. We'll start by adding the ability to order a pizza.
+For the client to be able to talk pizzas with us, we need to do several things:
+
+Decide what resource(s) need to be available.
+Assign URLs to those resources.
+Decide what actions the client should be allowed to perform on those resources.
+Figure out what pieces of data are required for each action and what format they should be in.
+
+Picking resources can be a difficult first task. One way to approach the problem is to step through what a typical interaction involves. For our pizza parlor, we probably have a menu. On that menu are pizzas. When a customer wants us to make one of the pizzas for them, they place an order. In this context, menu, pizza, customer, and order all sound like good candidates for resources. Let's start with order.
+The next step is assigning URLs to the resource. There are lots of possibilities, but luckily REST conventions give some guidance. In a typical REST API, a resource will have two URL patterns assigned to it. The first is the plural of the resource name, like /orders. The second is the plural of the resource name plus a unique identifier to specify a single resource, like /orders/<order_id>, where <order_id> is the unique identifier for an order. These two URL patterns make up the first endpoints that our API will support. These are called endpoints simply because they go at the end of the URL, as in http://example.com/<endpoint_goes_here>.
+Now that we picked our resource and assigned it URLs, we need to decide what actions the client can perform. Following REST conventions, we say that the plural endpoint (/orders) is for listing existing orders and creating new ones. The plural with a unique identifier endpoint (/orders/<order_id>), is for retrieving, updating, or cancelling a specific order. The client tells the server which action to perform by passing the appropriate HTTP verb (GET, POST, PUT or DELETE) in the request.
+Altogether, our API now looks like this:
+
+
+HTTP verb
+Endpoint
+Action
+
+
+GET
+/orders
+List existing orders
+
+
+POST
+/orders
+Place a new order
+
+
+GET
+/orders/1
+Get details for order #1
+
+
+GET
+/orders/2
+Get details for order #2
+
+
+PUT
+/orders/1
+Update order #1
+
+
+DELETE
+/orders/1
+Cancel order #1
+
+
+With the actions for our order endpoints fleshed out, the final step is to decide what data needs to be exchanged between the client and the server. Borrowing from our pizza parlor example in Chapter 3, we can say that an order needs a crust and toppings. We also need to select a data format that the client and server can use to pass this information back and forth. XML and JSON are both good choices, but for readability sake, we'll go with JSON.
+At this point, you should pat yourself on the back; we have designed a functional API! Here is what an interaction between the client and server might look like using this API:
+
+
+
+
+
+
+
+
+
+
+
+Figure 1. Example interaction between the client and server using our API.
+
+Linking Resources Together
+Our pizza parlor API is looking sharp. Orders are coming in like never before. Business is so good in fact, we decide we want to start tracking orders by customer to gauge loyalty. An easy way to do this is to add a new customer resource.
+Just like with orders, our customer resource needs some endpoints. Following convention, /customers and /customers/<id> fit nicely. We'll skip the details, but let's say we decide which actions make sense for each endpoint and what data represents a customer. Assuming we do all of that, we come to an interesting question: how do we associate orders with customers?
+REST practitioners are split on how to solve the problem of associating resources. Some say that the hierarchy should continue to grow, giving endpoints like /customers/5/orders for all of customer #5's orders and /customers/5/orders/3 for customer #5's third order. Others argue to keep things flat by including associated details in the data for a resource. Under this paradigm, creating an order requires a customer_id field to be sent with the order details. Both solutions are used by REST APIs in the wild, so it is worth knowing about each.
+
+
+Figure 2. Two ways to handle associated data in API design.
+
+Searching Data
+As data in a system grows, endpoints that list all records become impractical. Imagine if our pizza parlor had three million completed orders and you wanted to find out how many had pepperoni as a topping. Sending a GET request to /orders and receiving all three million orders would not be very helpful. Thankfully, REST has a nifty way for searching through data.
+URLs have another component that we have not mentioned yet, the query string. Query means search and string means text. The query string is a bit of text that goes onto the end of a URL to pass things along to the API. For example, everything after the question mark is the query string in http://example.com/orders?key=value.
+REST APIs use the query string to define details of a search. These details are called query parameters. The API dictates what parameters it will accept, and the exact names of those parameters need to be used for them to effect the search. Our pizza parlor API could allow the client to search for orders by topping by using this URL: http://example.com/orders?topping=pepperoni. The client can include multiple query parameters by listing one after another, separating them by an ampersand ("&"). For example: http://example.com/orders?topping=pepperoni&crust=thin.
+Another use of the query string is to limit the amount of data returned in each request. Often, APIs will split results into sets (say of 100 or 500 records) and return one set at a time. This process of splitting up the data is known as pagination (an analogy to breaking up words into pages for books). To allow the client to page through all the data, the API will support query parameters that allow the client to specify which page of data it wants. In our pizza parlor API, we can support paging by allowing the client to specify two parameters: page and size. If the client makes a request like GET /orders?page=2&size=200, we know they want the second page of results, with 200 results per page, so orders 201-400.
+
+Chapter 6 Recap
+In this chapter, we learned how to design a REST API. We showed the basic functions an API supports and how to organize the data so that it can be easily consumed by a computer.
+The key terms we learned were:
+
+SOAP: API architecture known for standardized message formats
+REST: API architecture that centers around manipulating resources
+Resource: API term for a business noun like customer or order
+Endpoint: A URL that makes up part of an API. In REST, each resource gets its own endpoints
+Query String: A portion of the URL that is used to pass data to the server
+Query Parameters: A key-value pair found in the query string (topping=cheese)
+Pagination: Process of splitting up results into manageable chunks
+
+
+
+Homework
+Your homework for this chapter is an exploration of API design. We'll look at a few examples using two notable APIs to see what's available and how things are structured.
+Example 1: The Facebook API
+Answer the following questions about Facebooks's API design.
+
+What 3 terms does Facebook use to describe what the Graph API is composed of?Open the "Overview" section of the API docs to find the answer. 
+What does 'me' in the /me endpoint translate to as a convenience?Open the "Overview" section of the API docs to find the answer. 
+
+Example 2: The Twitter API
+Answer the following questions about Twitter's API design.
+
+What resources, referred to as "objects", does Twitter make available?Find the answer in the data dictionary section of the Twitter API v2 documentation. 
+What parameter is required to create a new like (formerly known as a "favorite")?Find the answer in the "Tweets > Likes" section of the Twitter API v2 documentation. 
+
+
+
+Next
+In the next chapter, we explore ways to make the client react to changes on the server in real-time.
+Go to Chapter 7!
+
+Published April 22, 2014
+1. Unknown, Image Obsessed. National Geographic. April, 2012.
+2. SOAP stood for Simple Object Access Protocol. It was originally used for a very specific type of API access. As developers found ways to apply it to more situations, the name no longer fit, so in SOAP version 1.2 the acronym was dropped.
+3. Abel Avram, Is REST Successful in the Enterprise?. InfoQ. June 1, 2011.
+4. SOAP provides a very structured architecture. The structure provides system reliability, standard extensions for adding functionality to the protocol, and makes it possible for tools to generate code, saving on development time.
+
+
+
+
+Brought to you by your friends at Zapier.
+
+
+
+
+Previous Chapter
+Chapter 5: Authentication, Part 2
+
+
+Next Chapter
+Chapter 7: Real-Time Communication
+
+
+
+
+
+
+
+
+Build workflows with your apps.
+Try Zapier Free
+
+
+
+
+
+
+
+
+Connect apps. Automate tasks. Get more done.
+Try Zapier Free
+
+
+
+
+
+
+
+
+
+“Zapier helps me build processes and automation into my business like a programmer without having to learn to code.”
+Lawrence Watkins, co-founder of Great Black Speakers
+
+Try Zapier Today
+
+
+
+
+
+
+Take the Work out of Workflow
+Zapier is the easiest way to automate powerful workflows with more than 3,000 apps.
+
+Try Zapier Free
+
+
+
+
+
+
+
+
+
+
+            Email me about new features.
+          
+
+
+By signing up, you agree to Zapier's
+        Terms of Service and Privacy Policy.
+
+
+
+
+
+
+
+
+
+PricingHelpDeveloper PlatformPressJobsZapier for CompaniesTransferFollow usZapier© 2022 Zapier Inc.Manage cookiesLegalPrivacy
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

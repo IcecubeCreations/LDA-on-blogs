@@ -1,0 +1,394 @@
+
+
+
+
+
+
+Remote Procedure Invocation (RPI)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Microservice Architecture
+Supported by Kong
+
+
+
+
+Patterns
+Articles
+Presentations
+Resources
+Adoptnew
+Refactoringnew
+Testingnew
+Other Languages
+
+
+About
+
+
+
+
+
+
+Pattern: Remote Procedure Invocation (RPI)
+Context
+You have applied the Microservice architecture pattern.
+Services must handle requests from the application’s clients.
+Furthermore, services must sometimes collaborate to handle those requests.
+They must use an inter-process communication protocol.
+Forces
+
+Services often need to collaborate
+Synchronous communicate results in tight runtime coupling, both the client and service must be available for the duration of the request
+
+Problem
+How do services in a microservice architecture communicate?
+Solution
+Use RPI for inter-service communication.
+The client uses a request/reply-based protocol to make requests to a service.
+Examples
+There are numerous examples of RPI technologies
+
+REST
+gRPC
+Apache Thrift
+
+RegistrationServiceProxy from the Microservices Example application is an example of a component, which is written in Scala, that makes a REST request using the Spring Framework’s RestTemplate:
+@Component
+class RegistrationServiceProxy @Autowired()(restTemplate: RestTemplate) extends RegistrationService {
+
+  @Value("${user_registration_url}")
+  var userRegistrationUrl: String = _
+
+  @HystrixCommand(commandProperties=Array(new HystrixProperty(name="execution.isolation.thread.timeoutInMilliseconds", value="800")))
+  override def registerUser(emailAddress: String, password: String): Either[RegistrationError, String] = {
+    try {
+      val response = restTemplate.postForEntity(userRegistrationUrl,
+        RegistrationBackendRequest(emailAddress, password),
+        classOf[RegistrationBackendResponse])
+      response.getStatusCode match {
+        case HttpStatus.OK =>
+          Right(response.getBody.id)
+      }
+    } catch {
+      case e: HttpClientErrorException if e.getStatusCode == HttpStatus.CONFLICT =>
+        Left(DuplicateRegistrationError)
+    }
+  }
+}
+
+
+The value of user_registration_url is supplied using Externalized configuration.
+Resulting context
+This pattern has the following benefits:
+
+Simple and familiar
+Request/reply is easy
+Simpler system since there in no intermediate broker
+
+This pattern has the following drawbacks:
+
+Usually only supports request/reply and not other interaction patterns such as notifications, request/async response, publish/subscribe, publish/async response
+Reduced availability since the client and the service must be available for the duration of the interaction
+
+This pattern has the following issues:
+
+Client needs to discover locations of service instances
+
+Related patterns
+
+The Domain-specific protocol is an alternative pattern
+The Messaging is an alternative pattern
+Externalized configuration supplies the (logical) network location, e.g. URL, of the service.
+A client must use either Client-side discovery and Server-side discovery to locate a service instance
+A client will typically use the Circuit Breaker pattern to improve reliability
+
+
+
+
+
+
+About Microservices.io
+
+
+
+Microservices.io is brought to you by Chris Richardson.
+      Experienced software architect, author of POJOs in Action, the creator of the original CloudFoundry.com, and the author of Microservices patterns.
+      
+Chris helps clients around the world adopt the microservice architecture through consulting engagements, and training classes and workshops.
+
+
+
+
+
+Public workshop in Australia/APAC timezone
+
+
+
+        In June, I’ll be teaching a public microservices workshopover Zoom in an APAC-friendly (GMT+9) timezone.
+      
+
+
+
+
+
+Learn how to create a service template and microservice chassis
+
+
+
+        Take a look at my Manning LiveProject that teaches you how to develop a service template and microservice chassis.
+      
+
+
+
+
+
+New virtual bootcamp: Distributed data patterns in a microservice architecture
+
+
+
+My virtual bootcamp, distributed data patterns in a microservice architecture, is now open for enrollment!
+It covers the key distributed data management patterns including Saga, API Composition, and CQRS.
+It consists of video lectures, code labs, and a weekly ask-me-anything video conference repeated in multiple timezones.
+The regular price is $395/person but use coupon YXEERWTJ to sign up for $195 (valid until May 26th, 2022).
+There are deeper discounts for buying multiple seats.
+
+Learn more
+
+
+
+
+Signup for the newsletterFor Email Marketing you can trust.
+
+
+
+LEARN about microservices
+
+
+Chris offers numerous resources for learning the microservice architecture.
+Training classes
+Chris teaches comprehensive workshops, training classes and bootcamps for executives, architects and developers to help your organization use microservices effectively.
+  
+
+  Avoid the pitfalls of adopting microservices and learn essential topics, such as service decomposition and design and how to refactor a monolith to microservices.
+  
+Delivered in-person and remotely.
+
+Get the book: Microservices Patterns
+
+  Read Chris Richardson's book:
+
+  
+
+
+
+
+Example microservices applications
+Want to see an example? Check out Chris Richardson's example applications.
+      See code
+
+
+
+
+BUILD microservices
+
+
+    Ready to start using the microservice architecture?
+
+    Consulting services
+Engage Chris to create a microservices adoption roadmap and help you define your microservice architecture, 
+
+The Eventuate platform
+Use the Eventuate.io platform to tackle distributed data management challenges in your microservices architecture.
+
+Eventuate is Chris's latest startup. It makes it easy to use the Saga pattern to manage transactions and the CQRS pattern to implement queries.
+
+
+
+
+ASSESS your architecture
+
+
+   Assess your application's microservice architecture and identify what needs to be improved.
+
+  Consulting services
+Engage Chris to conduct an architectural assessment.
+
+Self assessment
+Alternatively, conduct a self-assessment using the Microservices Assessment Platform.
+
+
+
+
+Join the microservices google group
+
+
+
+
+The patterns
+
+
+How to apply the patterns
+Application architecture patterns
+
+Monolithic architecture
+Microservice architecture
+
+Decomposition
+
+Decompose by business capability
+Decompose by subdomain
+Self-contained Servicenew
+Service per teamnew
+
+Refactoring to microservicesnew
+
+Strangler Application
+Anti-corruption layer
+
+Data management
+
+Database per Service
+Shared database
+Saga
+API Composition
+CQRS
+Domain event
+Event sourcing
+
+Transactional messaging
+
+Transactional outbox
+Transaction log tailing
+Polling publisher
+
+Testing
+
+Service Component Test
+Consumer-driven contract test
+Consumer-side contract test
+
+Deployment patterns
+
+Multiple service instances per host
+Service instance per host
+Service instance per VM
+Service instance per Container
+Serverless deployment
+Service deployment platform
+
+Cross cutting concerns
+
+Microservice chassis
+Service Template
+Externalized configuration
+
+Communication style
+
+Remote Procedure Invocation
+Messaging
+Domain-specific protocol
+Idempotent Consumer
+
+External API
+
+API gateway
+Backend for front-end
+
+Service discovery
+
+Client-side discovery
+Server-side discovery
+Service registry
+Self registration
+3rd party registration
+
+Reliability
+
+Circuit Breaker
+
+Security
+
+Access Token
+
+Observability
+
+Log aggregation
+Application metrics
+Audit logging
+Distributed tracing
+Exception tracking
+Health check API
+Log deployments and changes
+
+UI patterns
+
+Server-side page fragment composition
+Client-side UI composition
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+Tweet
+
+
+
+
+Follow @MicroSvcArch
+
+
+
+Copyright © 2021 Chris Richardson • All rights reserved • Supported by Kong.
+
+
+
+
+
+
+
+
+
+
+
+
+Please enable JavaScript to view the comments powered by Disqus.
+
+

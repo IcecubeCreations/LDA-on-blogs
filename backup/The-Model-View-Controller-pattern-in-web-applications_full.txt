@@ -1,0 +1,463 @@
+
+
+
+
+The Model View Controller pattern in web applications
+
+
+
+
+
+
+
+
+
+
+
+The Model View Controller pattern in web applications
+
+
+Development Consulting
+
+
+Articles
+
+
+News
+
+
+
+The rambling introduction
+
+
+For centuries people have sought ways to separate style from
+substance, good manners from good science, and user interface from 
+application logic. The Model View Controller (MVC) design pattern is a 
+way of separating the user-interface from the substance of the 
+application.
+
+
+In recent years, MVC has become a popular strategy for building
+websites. There are now  web-MVC frameworks available 
+for many programming languages, for instance Struts 
+for Java, Maypole for Perl and Rails for Ruby.
+
+
+This article introduces the MVC pattern and its use in web 
+development. I will mention some Perl modules, but most
+of it will be applicable to any language supporting object-oriented 
+programming.
+
+
+
+
+Apologies
+
+
+MVC is usually implemented in an object-oriented style, so I’ll 
+mention objects, classes etc here. This text might not make
+very much sense without some experience in OO programming and web
+development. Information about all the patterns mentioned here
+can be found at the C2 Wiki: http://c2.com/cgi/wiki
+
+
+Since MVC was originally invented for traditional GUI applications,
+certain details in original MVC pattern don’t map well to web 
+applications. (L<Note 1|Note 1>)
+Since I’m describing MVC for the web, I will simplify, change, 
+misrepresent and ignore those details here.
+
+
+
+
+So what the heck is it?
+
+
+The idea of the MVC pattern is to divide an application into 3 parts:
+the Model, View and Controller. 
+Let’s take a look at each of them.
+
+
+
+
+Model
+
+
+The Model handles the state of the application. The state is what 
+your application is about.
+If your application is a forum, your Model might contain Class::DBI
+objects 
+representing threads, users and postings. The Model does not know 
+anything about 
+HTML, or web servers or anything like that. It just supplies ways to
+query the state, and ways to change that state.
+
+
+
+
+View
+
+
+The View is the representation of the user interface. Usually there are
+many (possibly nested) Views in a single application. A view can query the
+model, but it is not supposed to change the state.  In web based MVC 
+systems, a view can be implemented using a template that renders
+an HTML page. In our hypothetical forum application, the Views would be the
+templates for rendering a full thread, the login page, the posting page
+etc.
+
+
+
+
+Controller
+
+
+User actions on the View are send to the Controller. In a web environment, 
+this is usually done by having the Controller handle the incoming HTTP 
+requests.
+
+
+The Controller receives user requests, and translates them
+into actions that the Model should take. Then it selects
+the appropriate View to handle the response.
+
+
+It is possible to have more than one Controller, but most web application
+frameworks I’ve used assume you only have one.
+
+
+
+
+Example: a HTTP request.
+
+
+Figure 1. A sequence diagram of a single request/response
+pair. 
+
+
+Browser           View              Controller      Model
+ .                 .                 .               .
+ . HTTP Request    .                 .               .
+ +---------------------------------->+               .
+ |                 .                 | update model  .
+ |                 .                 +-------------->+
+ |                 .                 |               |
+ |                 .                 | return status |
+ |                 .                 +<--------------+
+ |                 .     select view |               .
+ |                 +<----------------+               .
+ |                 |                 .               .
+ |                 | query state     .               .
+ |                 +-------------------------------->+
+ |                 |                 .               |
+ |		      |                 .  return state |
+ |                 +<--------------------------------+
+ |   HTTP Response |                 .               .
+ +<----------------+                 .               .
+ .                 .                 .               .
+
+
+Notice that the Controller does not handle the communication
+between the View and the Model: the Views make direct requests
+to the Model.
+
+
+
+
+What’s so useful about it
+
+
+Separation of requests and pages
+
+
+Since the Controller is in charge of handling the requests and
+selecting an appropriate page (View), there is no immediate coupling
+between the request made by the user and the resulting page.
+
+
+This turns out to be very useful if the page-flow in the application is
+complex, but even for simple applications the Controller is a good 
+place to handle common actions  - authentication and session management
+can be handled in the Controller, for instance.
+
+
+
+
+Views are dumb
+
+
+Since all code that does anything except building a nice page for the
+user is outside the View objects, changing the layout does not involve 
+touching the logic of the application. Since the part of the application
+that changes the most during and after development is the layout,
+this means much less chance of adding bugs.
+
+
+
+
+Shielding of the Model implementation
+
+
+Since all actions on the application state are handled by the Model,
+it is possible to change the Model’s implementation without touching
+the user interface, as long as the Model’s public API doesn’t change.
+(but see L<Coupling between View and Model|Coupling between View and Model>).
+
+
+
+
+Problems and limitations
+
+
+What goes where
+
+
+Sometimes is just hard to figure out where a specific piece of the
+application is supposed to go. Especially dividing the
+Model from the Controller can be hard. As a rule of thumb, the Controller
+should be as minimal as possible - it is only responsible for translating
+HTTP requests into Model actions and selecting the right View - the 
+Model should provide all the behavior
+it can without handling the HTTP requests or output formatting details.
+
+
+
+
+Coupling between View and Model
+
+
+One problem with having the View and Controller querying the Model
+is that changing the Model’s public API means you also have to adapt
+the Controller and Views that act on it (L<Note 2|Note 2>). Adapting the Controller is
+usually not too much work, but changing a large number of Views
+will be annoying.
+
+
+The Model Model View Controller pattern tries to minimize the impact
+of these changes by using two Models: a Domain Model and an Application
+Model - the View only queries the Application Model, and the Application
+model can query the Domain Model. The Application Model usually
+partly generated by the GUI design tools. I haven’t used this pattern at
+all, so I don’t know how useful it is for web applications
+
+
+
+
+Lots of objects
+
+
+Creating an MVC application can result in more classes and objects than 
+a “page-based” system. That means more design up front. On the
+other hand, a well designed MVC system will be easier to adapt and expand,
+because the code will be separated better.
+
+
+
+
+
+
+Should I use it
+
+
+Possibly :-) I think that any web-based application that uses more than 
+a handful of templates, or has a complex interaction between pages would
+be a good candidate for the MVC pattern. There are alternatives, of course.
+See L<Resources - Alternatives|resources__alternatives>.
+
+
+
+
+Available frameworks for Perl
+
+
+/Note: There are more frameworks. These are two examples I picked because
+they were the only two I had tried at the time I wrote this
+article./
+
+
+
+CGI::Application
+
+
+CGI::Application, by Jesse Erlbaum is a relatively simple module 
+that provides a good base-class for a Controller.
+It’s easy to understand and it has some convenient HTML::Template support 
+(though it doesn’t force you to use HTML::Template if you like another
+templating system better).
+
+
+You derive your Controller from the CGI::Application
+class, handling user requests via the run_modes system
+and you can use a templating system to implement the Views.
+
+
+How you implement your Model is entirely up to you. IMO this is a Good 
+Thing; the model is the most specific thing in an application, and a 
+framework should not make unnecessary restrictions on it.
+
+
+
+
+Maypole
+
+
+Maypole, a fairly new project by Simon Cozens is a complete MVC 
+framework that uses lots 
+of other CPAN modules: CGI::Untaint, Class::DBI and extensions, 
+Template::Toolkit etc. 
+It “aims to be the most generic and extensible [ … ] MVC-based web 
+application framework”, and comes bundled with templates
+for building CRUD (Create Update Delete) applications. Maypole runs best
+on mod_perl (mod_perl 2 now supported).
+
+
+While CGI::Application’s approach is to set up a minimal base for
+your Controller, giving the programmer as much
+choice as possible, Maypole’s focus is on rapid development: the
+example BeerDB application requires about 20 lines of Perl and
+a database schema. If you’re building a CRUD application on mod_perl,
+Maypole might be just what you’re looking for.
+
+
+All this convenience comes at a price, of course - Maypole is big,
+slow to load (can be a problem in CGI environment), and if you
+don’t want it to auto-generate a whole CRUD application based on your 
+database schema, it takes a lot more time to figure out than 
+CGI::Application.
+
+
+
+
+
+Resources - Perl
+
+
+Maypole
+
+
+Maypole’s homepage
+
+
+http://maypole.perl.org/
+
+
+
+
+CGI::Application
+
+
+CGI::Application - Best Practices Wiki
+
+
+http://twiki.med.yale.edu/twiki2/bin/view/CGIapp/WebHome
+
+
+
+
+mod_perl - Choosing a Templating System
+
+
+A discussion of many Perl templating systems.
+
+
+http://perl.apache.org/docs/tutorials/tmpl/comparison/comparison.html
+
+
+
+
+POOP
+
+
+Discussion of several Perl Object-Oriented Persistence systems.
+
+
+http://poop.sourceforge.net/
+
+
+
+
+
+Resources - articles on MVC
+
+
+Building Graphical User Interfaces with the MVC Pattern
+
+
+An explanation of the MVC pattern in traditional GUI applications.
+
+
+http://csis.pace.edu/~bergin/mvc/mvcgui.html
+
+
+
+
+C2 wiki - Model View Controller
+
+
+With discussion and links to related topics. Many other design patterns
+are also discussed here.
+
+
+http://c2.com/cgi/wiki?ModelViewController
+
+
+
+
+Web Application Toolkit - MVC
+
+
+A clear explanation of the MVC pattern as used by the PHP based
+Web Application Toolkit.
+
+
+http://wact.sourceforge.net/index.php/ModelViewController
+
+
+
+
+Java BluePrints - MVC
+
+
+Sun’s explanation of the MVC architecture.
+
+
+http://java.sun.com/blueprints/patterns/MVC-detailed.html
+
+
+
+
+
+Resources - Alternatives
+
+
+C2 wiki - Four Layer Architecture
+
+
+An alternative pattern that directly addresses the problems
+in designing a client-server application.
+
+
+http://c2.com/cgi/wiki?FourLayerArchitecture
+
+
+
+
+JavaWorld - Building user interfaces for object-oriented systems
+
+
+A series of articles describing an alternative to MVC, arguing
+that MVC is not object-oriented.
+
+
+http://www.javaworld.com/javaworld/jw-07-1999/jw-07-toolbox.html
+
+
+$Revision: 1.8 $ $Date: 2005/06/28 14:52:41 $
+
+
+
+
+
+
+
+

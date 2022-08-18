@@ -1,0 +1,1593 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Loose-Coupling in a Microservice Architecture
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+LinkedIn and 3rd parties use essential and non-essential cookies to provide, secure, analyze and improve our Services, and to show you relevant ads (including professional and job ads) on and off LinkedIn. Learn more in our Cookie Policy.Select Accept to consent or Reject to decline non-essential cookies for this use. You can update your choices at any time in your settings.
+
+
+
+                Accept
+                
+
+                Reject
+                
+
+
+ 
+
+
+
+
+
+LinkedIn
+
+
+
+
+
+
+              Patrick van Vuuren
+ 
+Expand search
+
+
+
+
+
+
+
+
+
+
+              Jobs
+            
+
+
+
+              People
+            
+
+
+
+              Learning
+            
+
+
+
+
+
+
+
+
+
+
+
+
+Dismiss
+
+
+
+
+
+
+Dismiss
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Dismiss
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+Dismiss
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Dismiss
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+          Join now
+        
+Sign in
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+ 
+
+
+
+
+ 
+
+
+
+
+              Loose-Coupling in a Microservice Architecture
+            
+
+
+
+
+
+
+
+
+
+                  Report this post
+                
+
+
+ 
+
+
+
+
+
+
+
+            
+          
+        Patrick van Vuuren
+      
+      
+          
+
+
+
+
+            
+        Patrick van Vuuren
+      
+          
+
+              
+        Software Engineer Consultant at Info Support
+      
+            
+
+
+              
+        
+          Published Oct 3, 2017
+      
+      
+            
+
+
+
+          + Follow
+        
+
+
+
+
+
+More and more monolithic applications are being refactored or rewritten using the microservice architectural pattern. This article is about how microservices can be decoupled in numerous ways, using techniques such as service discovery and message queues.
+Loose coupling is basically minimizing the dependencies between two or more components (read 'components' in the context of microservices). One of many reasons why companies abandon monolithic applications, is that code in those applications mostly are very tightly coupled. Changing code on one place possibly involves making changes in other places, which increases the development time and effort needed to write that extra feature. Also separating your concerns within a monolith is very difficult to maintain, because the amount of concerns you have to deal with keeps growing.
+With microservices, every service has it's own context and set of code and takes care of (a) specific concern. One microservice can change its entire logic from the inside, but from the outside it still does the same thing (awesome, right?). Therefore the decoupling between microservices is enforced automatically by separating concerns. Whilst this is very good, we can do a better job at decoupling by focusing on the system's communication.
+Communication between microservices
+Designing the communication between microservices is one of the most important things besides separating your concerns. How you implement this communication can be done in several ways for several purposes. I'll dive into two techniques: service discovery and messaging.
+HTTP REST & Service Discovery
+One of the common communication patterns is to use HTTP REST. These are defined endpoints in each microservice to fetch and modify data. One of the downsides of plain HTTP rest, is that you need to give every microservice knowledge about the REST endpoints of other services. This is what I call a shared knowledge in your system wherein a microservice has knowledge about the purpose of an other service and what the service possibly can do. That way, the system becomes a distributed monolith, because the business logic is split up into separate contexts with still a very high reliability between each service. A high reliability between services will create issues, because a microservice that is doing calls to an unavailable REST endpoint (because of a service outage example), cannot function on it's own. This is an undesirable manner of coupling.
+One of the possible solutions, is a technique called service discovery. Each microservice registers its own HTTP REST endpoints into one or multiple registries (depending on how you share context on that infrastructural level). From this registry, each microservice can query available HTTP REST endpoints. These endpoints should be defined in such a way that it is not clear which service it is, but what it can do. A service should not care about which service does the job, but that a service does the job. 
+A real world example is going with your bag to the supermarket and buy stuff. To get the job done, any cash desk will do (although we would like to get stuff for free), as long as you can pay for your stuff and go home. Although this is a lot better, it still has certain drawbacks, for example up-time of services and every request always requiring a reply. These drawbacks is something we can handle with our next topic: messaging.
+Messaging & Bounded contexts
+To explain how we can conquer these drawbacks, I will first describe a use case implemented with service discovery. Let's say we have a todo list where we can create Todo's. However, our boss does not want short descriptive todos, so we need to have a service that can create todos, but also one that can validate them while creating them. If you do a request from the client, the request is sent to the service that creates todos. This service validates the todo via a todo validator service. This validator returns either valid or invalid. If valid, the todo is created and the user receives the new todo in the todo list. If invalid, the user receives a notification why the todo was invalid.
+Ok got that? If not, this process is demonstrated in the image below (assume every service knows where to send requests to via service discovery as explained before).
+
+
+
+This image shows that every request requires a reply, because if the requestor does not get a reply, it simply cannot do anything on it's own. Also, if you want the validator to send a message that is interesting for the client while this process is happening, you have a problem. Sending a message from the validator is not possible without putting very large business logic in your client applications, something you should never do. On top of that, the todo-creator will get a response he has to understand and has to deal with. Sending responses from each service to the client by itself reduces the knowledge required by a service.
+With messaging, you do not have to think about waiting for a reply on the published message. You only have to think within the microservice itself by publishing messages and subscribing to certain messages. For example, a client is interested in todos that are created or not passing the validation. A validator is only interested in todos that need validation, and publishes messages about whether something is valid or invalid. The creator is only interested in todos that are requested for creation and the ones that are valid, so the todos can be stored. Within all communication, a certain identifier is always passed with every message published. Our user application can then differentiate the different messages coming in by that identifier, so correct views will be updated.
+This technique allows one to only to think about what your messaging payload and message names need to look like and you are good to go. With that said, the following image shows this visually (keep in mind that this is a use case do demonstrate the power of messaging, not about how this domain should look like)
+
+
+
+Beautiful isn't it? Using this kind of communication, every service is interested in certain messages, does something with that message and publishes other messages. What happens with those messages is not relevant for the service. The service operates within its own context and not that of others. Also, the user client does not directly rely anymore on the todo-creator. Same thing for the todo-creator vs todo-validator.
+To better understand this, I wrote an example based on a previous example from one of my articles React Redux & WebSockets. It demonstrates the communication flow using a frontend that is connected to a gateway via WebSockets. As addition, I added the two servers written in Node.js, representing the todo-creator and todo-validator. For the messaging I used RabbitMQ, as it is easy to set up a few queues for our messages*. With every message, the user identifier of the connected WebSocket is sent with every message. This way the gateway knows to which socket it should sent replies to, as there is no direct response-reply mechanism.
+The example app can be found on here: low-coupled-microservices.
+* RabbitMQ introduces a single point of failure, because the microservices rely on the RabbitMQ message broker for subscribing and publishing messages (the example app does not include fallback and retry features to take care of this). There are several ways to handle this by using clusters, durable queues and persistent messages, so downtime is minimal and messages do not get lost. Also, RabbitMQ isn't the only messaging system out there. There are alternatives like NATS and Apache Kafka.
+Wrap-up
+Microservices is about separating concerns in different bounded contexts. To do this it is important that a microservice can and should work on it's own and therefor be loosely coupled:
+
+Write microservices with minimal dependencies;
+Do not give a microservice unnecessary knowledge outside it's own context;
+Use minimal direct communication between services to ensure it has no direct reliability and therefore can function on it's own.
+
+Big thanks for reading it all the way to the end. Bear in mind that there are many ways of implementing and designing microservices. There is simply no silver bullet in doing it, though microservices shares the common principle of separating your concerns. Decoupling makes that easier to do in my opinion, because you can worry less about the rest of the system and be more focused on the logic within your microservice.
+- Patrick van Vuuren
+Software Developer & Scrum Master @ Proforto
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            47
+        
+
+
+        
+            7 Comments
+          
+      
+
+
+
+
+
+Like
+
+
+
+
+Comment
+
+
+
+
+Share
+
+
+
+
+
+
+
+
+
+
+
+
+
+                Pranitha Reddy Kethiri
+              
+
+
+Great Explanation with simplest example/Usecase. Crystal clear understanding provided about loosely coupling micro-services. Thanks much
+
+
+
+
+                  Like
+                
+
+        Sign in to like this comment
+      
+
+
+
+                  Reply
+                
+
+        Sign in to reply to this comment
+      
+
+ 
+
+
+
+
+          
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+    2y
+  
+        
+
+
+
+
+
+
+
+
+
+                  Report this comment
+                
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                Stanislav Ondac
+              
+
+
+Hello, let me disagree with you on this one "The service operates within its own context and not that of others". Messaging helps you only with operational coupling (you don't need other service to be available at the same moment), but not with logical coupling. Validation service needs to know about the message structure from creator service (or any other service, who will produce this service). So when creator changes the message structure , validator is affected . We can say - Validator is tightly coupled to the creator service. 
+
+
+
+
+                  Like
+                
+
+        Sign in to like this comment
+      
+
+
+
+                  Reply
+                
+
+        Sign in to reply to this comment
+      
+
+
+                2 Likes
+              
+
+
+
+
+
+          
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+    3y
+  
+        
+
+
+
+
+
+
+
+
+
+                  Report this comment
+                
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+                Patrick van Vuuren
+              
+
+
+Hi Stanislav, thanks for your reply. Although you might think it is tightly coupled, I'd disagree in that case.
+
+Let me explain. It has knowledge how to validate let's say 'Todo version 1'. If you change the messages to a different structure, let's say 'Todo version 2', he will invalidate it.
+
+But that's the whole point, it knows how to validate 'Todo version 1'. The validator is not 'affected' or 'tightly coupled', but only has knowledge of a certain message structure. However in a total overview, without the validator there are no valid todo's.
+
+In this case I'd advise to use certain contracts of message schema's to prevent picking up or sending a message that has a different structure than expected. These will help with further implementation as complexity grows in an application or you have to deal with versioning.
+
+
+
+
+                  Like
+                
+
+        Sign in to like this comment
+      
+
+
+
+                  Reply
+                
+
+        Sign in to reply to this comment
+      
+
+ 
+
+
+
+
+          
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+    3y
+  
+        
+
+
+
+
+
+
+
+
+
+                  Report this comment
+                
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+                Balaji Sijapati
+              
+
+
+Nice Explanation
+
+
+
+
+                  Like
+                
+
+        Sign in to like this comment
+      
+
+
+
+                  Reply
+                
+
+        Sign in to reply to this comment
+      
+
+ 
+
+
+
+
+          
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+    3y
+  
+        
+
+
+
+
+
+
+
+
+
+                  Report this comment
+                
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                Dele Agagu
+              
+
+
+Great article and well written. 
+
+
+
+
+                  Like
+                
+
+        Sign in to like this comment
+      
+
+
+
+                  Reply
+                
+
+        Sign in to reply to this comment
+      
+
+ 
+
+
+
+
+          
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+    3y
+  
+        
+
+
+
+
+
+
+
+
+
+                  Report this comment
+                
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                Rik Driever
+              
+
+
+Goed stuk Patrick. Ik zie in je voorbeeld dat elk component steeds alle relevante data uit de queue haalt, verwerkt en weer opnieuw in de queue zet? Hoe zou je dat aanpakken wanneer het om veel data gaat?
+
+
+
+
+                  Like
+                
+
+        Sign in to like this comment
+      
+
+
+
+                  Reply
+                
+
+        Sign in to reply to this comment
+      
+
+
+                1 Like
+              
+
+
+
+
+
+          
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+    5y
+  
+        
+
+
+
+
+
+
+
+
+
+                  Report this comment
+                
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+                Patrick van Vuuren
+              
+
+
+Dat ligt er dan aan wat 'veel data' is. Momenteel ervaar ik nog weinig limieten omtrent de maximum payload van een bericht in bijvoorbeeld RabbitMQ. Maar mocht je echt met Big Data werken, zou je Apache Kafka kunnen gebruiken en dan specifiek hun Streams API. Daarnaast zijn er ook nog mogelijkheden met het Google Cloud Platform. Google Dataflow in combinatie met Google Pub-Sub is in die zin hetzelfde principe dat Google Pub-Sub werkt als een messaging systeem waarbij Dataflow heel goed is in het verwerken van je data. 
+
+
+
+
+                  Like
+                
+
+        Sign in to like this comment
+      
+
+
+
+                  Reply
+                
+
+        Sign in to reply to this comment
+      
+
+ 
+
+
+
+
+          
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+    5y
+  
+        
+
+
+
+
+
+
+
+
+
+                  Report this comment
+                
+
+
+ 
+
+
+
+
+
+              See more comments
+          
+
+
+
+
+        To view or add a comment, sign in
+      
+      To view or add a comment, sign in
+
+
+
+
+
+
+
+
+
+More articles by this author
+
+
+              See all
+            
+
+
+
+ 
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+ 
+
+
+          React Redux & Websockets
+        
+
+            Aug 9, 2016
+          
+
+ 
+
+
+
+
+
+
+ 
+
+
+          10 tips to improve your Node.js ES6 development
+        
+
+            Feb 2, 2016
+          
+
+ 
+
+
+
+
+
+
+ 
+
+
+          React components - Unit testing
+        
+
+            Sep 7, 2015
+          
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+          Others also viewed
+        
+
+
+
+
+
+
+
+
+ 
+
+
+            
+        Loosely coupled, strongly cohesive - microservices
+      
+ 
+
+
+
+
+Prathish Kumar Srinivasan
+
+          
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+    4mo
+  
+        
+
+
+
+
+
+
+
+
+
+ 
+
+
+            
+        Microservices are not loosely Coupled: SAGA 
+      
+ 
+
+
+
+
+Nithish Selvakumaran
+
+          
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+    2y
+  
+        
+
+
+
+
+
+
+
+
+
+ 
+
+
+            
+        My simple words to clarify the confusion between AWS Cognito User Pools and Identity Pools
+      
+ 
+
+
+
+
+Ahmad Alhady
+
+          
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+    3y
+  
+        
+
+
+
+
+
+
+
+
+
+ 
+
+
+            
+        Should you provide client libraries to micro-service consumers? - Also integration is hard
+
+      
+ 
+
+
+
+
+Severin Gassauer-Fleissner
+
+          
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+    1y
+  
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+LinkedIn
+
+© 2022
+
+
+
+            About
+          
+
+
+
+            Accessibility
+          
+
+
+
+            User Agreement
+          
+
+
+
+            Privacy Policy
+          
+
+
+
+            Cookie Policy
+          
+
+
+
+            Copyright Policy
+          
+
+
+
+            Brand Policy
+          
+
+
+
+            Guest Controls
+          
+
+
+
+            Community Guidelines
+          
+
+
+
+
+
+
+
+
+                العربية (Arabic)
+            
+
+
+
+
+                Čeština (Czech)
+            
+
+
+
+
+                Dansk (Danish)
+            
+
+
+
+
+                Deutsch (German)
+            
+
+
+
+
+English (English)
+
+
+
+
+
+                Español (Spanish)
+            
+
+
+
+
+                Français (French)
+            
+
+
+
+
+                हिंदी (Hindi)
+            
+
+
+
+
+                Bahasa Indonesia (Bahasa Indonesia)
+            
+
+
+
+
+                Italiano (Italian)
+            
+
+
+
+
+                日本語 (Japanese)
+            
+
+
+
+
+                한국어 (Korean)
+            
+
+
+
+
+                Bahasa Malaysia (Malay)
+            
+
+
+
+
+                Nederlands (Dutch)
+            
+
+
+
+
+                Norsk (Norwegian)
+            
+
+
+
+
+                Polski (Polish)
+            
+
+
+
+
+                Português (Portuguese)
+            
+
+
+
+
+                Română (Romanian)
+            
+
+
+
+
+                Русский (Russian)
+            
+
+
+
+
+                Svenska (Swedish)
+            
+
+
+
+
+                ภาษาไทย (Thai)
+            
+
+
+
+
+                Tagalog (Tagalog)
+            
+
+
+
+
+                Türkçe (Turkish)
+            
+
+
+
+
+                简体中文 (Chinese (Simplified))
+            
+
+
+
+
+                正體中文 (Chinese (Traditional))
+            
+
+
+
+Language
+
+
+
+
+
+ 
+
+
+
+
+
+

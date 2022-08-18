@@ -4,6 +4,7 @@ from nltk.stem import WordNetLemmatizer
 import nltk.corpus as corpus
 import openpyxl
 import re
+from tqdm import tqdm
 
 DOCUMENTS_FOLDER = "txtfiles"
 
@@ -76,7 +77,7 @@ def ontology_replace(word, ontology_set, simplify_set, occurences):
             word = simplify_term(word, simplify_set)
             if word not in occurences: # new keyword, attach UID
                 count = occurences[target] = occurences[target] + 1
-                occurences[word] = target + str(count) if target else ""
+                occurences[word] = target + str(count) if target else "" 
             replace_result = occurences[word]
             break
         elif word.lower() in keywords: # possibly unnecessary, included as a safeguard.
@@ -84,7 +85,7 @@ def ontology_replace(word, ontology_set, simplify_set, occurences):
             word = simplify_term(word.lower(), simplify_set)
             if word not in occurences:
                 count = occurences[target] = occurences[target] + 1
-                occurences[word] = target + str(count) if target else ""
+                occurences[word] = target + str(count) if target else ""                
             replace_result = occurences[word]
             break
     return [replace_result, match]
@@ -92,7 +93,7 @@ def ontology_replace(word, ontology_set, simplify_set, occurences):
 def main():
     path = os.path.join(DOCUMENTS_FOLDER, "category_1_folder")
     sheet_path = os.path.join("preprocessing", "ontology_sheet.xlsx")
-    simp_sheet_path = os.path.join("preprocessing", "simplify_ontology.xlsx")
+    simp_sheet_path = os.path.join("preprocessing", "simplify_ontology.xlsx")    
     ontology_set = load_replacement_list(sheet_path)
     # github won't allow empty directories
     if not os.path.exists("debug_results"):
@@ -101,9 +102,8 @@ def main():
     replaced_words_file = open(replaced_path, 'w+')
     simplify_set = load_replacement_list(simp_sheet_path)
     compound_words_path = os.path.join("preprocessing", "compound_words.xlsx")
-    compounds_set = load_replacement_list(compound_words_path)  
-
-    for file_name in os.listdir(path):
+    compounds_set = load_replacement_list(compound_words_path)
+    for file_name in tqdm(os.listdir(path)):
         #print(file_name)
         file_path = os.path.join(path, file_name)
         with fileinput.FileInput(file_path, encoding="utf-8", inplace=True) as file:

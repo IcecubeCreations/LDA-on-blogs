@@ -1,0 +1,809 @@
+
+
+
+
+  
+
+
+
+
+Apache Camel Transforming Message using Simple Expression -
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Java Articles 
+
+
+
+RSS
+Facebook
+Twitter
+Google+
+LinkedIn
+
+
+
+
+
+
+Navigate 
+Tutorials
+
+Spring Core Tutorials
+Spring Integration Tutorials
+Spring Data Access Tutorials
+Java Concurrency Tutorials
+
+
+Java
+
+Java 8
+Java Reflection
+Java Basics
+Java OOPS
+Java Collections
+Java Concurrency
+Java Map
+Java Generics
+Java IO
+Java Serialization
+Java Annotations
+jaxp
+jax-rs
+Java References
+JNA
+
+
+Android
+Design Patterns
+
+Creational Design Patterns
+Structural Design Patterns
+Behavioral Design Patterns
+
+
+Spring
+
+Spring Core
+Spring Integration
+Spring Data Access
+Spring Boot
+
+
+Hibernate
+Camel
+Mule
+Web
+
+CSS3
+JQuery
+
+
+Data Structures
+Guava
+Hazelcast
+mongodb
+ActiveMQ
+Quartz
+RxJava
+Others
+
+TDD
+Servlet
+yaml
+Log4j
+Maven
+Scala
+apache
+
+
+Unit Testing
+
+JUnit
+Mockito
+TestNG
+
+
+ 
+
+
+
+
+
+
+
+
+Apache Camel Transforming Message using Simple Expression 
+ 0
+
+
+By
+Ram Satish
+
+on 
+June 23, 2015
+
+
+Camel
+
+
+
+
+When sender’s message format is different from the one receiver is expecting then the receiver needs a translator to transform the message to a format understood its internal components. There are several ways by which camel transforms the message. For example, using XQuery, XSLT, simple expressions etc.
+In this article, we will see some of the ways in which camel transforms the message content using simple expressions.
+Message Translator
+This example uses the following frameworks:
+
+Maven 3.2.3
+Apache Camel 2.15.1
+Spring 4.1.5.RELEASE
+Eclipse  as the IDE, version Luna 4.4.1.
+
+Dependencies
+We are just relying camel’s core components, the spring based components and the logger component in case you want to log something so our pom.xml consists of:
+
+camel-core – camel core components like timer, bean etc
+slf4j-api – in case you want to use log
+slf4j-log4j12 – if you want to use log4j as the slf4j implementation
+camel-stream – for printing the messages to console
+spring-context – for spring support
+camel-spring – include it if you want to define route in spring
+
+pom.xml
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>com.javarticles.camel</groupId>
+
+	<artifactId>camelHelloWorld</artifactId>
+
+	<version>0.0.1-SNAPSHOT</version>
+
+	<dependencies>
+
+		<dependency>
+
+			<groupId>org.apache.camel</groupId>
+
+			<artifactId>camel-core</artifactId>
+
+			<version>2.15.1</version>
+
+		</dependency>
+
+		<dependency>
+
+			<groupId>org.apache.camel</groupId>
+
+			<artifactId>camel-stream</artifactId>
+
+			<version>2.15.1</version>
+
+		</dependency>
+
+		<dependency>
+
+			<groupId>org.slf4j</groupId>
+
+			<artifactId>slf4j-api</artifactId>
+
+			<version>1.7.12</version>
+
+		</dependency>
+
+		<dependency>
+
+			<groupId>org.slf4j</groupId>
+
+			<artifactId>slf4j-log4j12</artifactId>
+
+			<version>1.7.12</version>
+
+		</dependency>
+
+		<dependency>
+
+			<groupId>org.springframework</groupId>
+
+			<artifactId>spring-context</artifactId>
+
+			<version>4.1.5.RELEASE</version>
+
+		</dependency>
+
+		<dependency>
+
+			<groupId>org.apache.camel</groupId>
+
+			<artifactId>camel-spring</artifactId>
+
+			<version>2.15.1</version>
+
+		</dependency>
+
+	</dependencies>
+
+</project>
+
+
+Simple Transformation “camel simple”
+Camel provides transform() method to do inline transformation of the message. You can use camel provided expressions to transform the message content. In the below example, Camel uses Simple Expression Language to convert the message content to <out>original message</out>. The processing steps that follow the transform() will see the transform message content.
+SimpleTransformExample:
+package com.javarticles.camel;
+
+
+
+import org.apache.camel.CamelContext;
+
+import org.apache.camel.ProducerTemplate;
+
+import org.apache.camel.builder.RouteBuilder;
+
+import org.apache.camel.impl.DefaultCamelContext;
+
+import org.apache.camel.impl.DefaultProducerTemplate;
+
+
+
+public class SimpleTransformExample {
+
+    public static void main(String[] args) throws Exception {
+
+        CamelContext camelContext = new DefaultCamelContext();
+
+        try {
+
+            camelContext.addRoutes(new RouteBuilder() {
+
+                public void configure() {
+
+                    from("direct:start")
+
+                    .transform(simple("<out>${body}</out>"))
+
+                    .to("stream:out");
+
+                }
+
+            });
+
+            camelContext.start();
+
+            ProducerTemplate template = new DefaultProducerTemplate(
+
+                    camelContext);
+
+            template.start();
+
+            template.sendBody("direct:start", "Hello");
+
+        } finally {
+
+            camelContext.stop();
+
+        }
+
+    }
+
+}
+
+
+Output:
+&lt;out&gt;Hello&lt;/out&gt;
+
+
+We can achieve the same thing using spring XML.
+applicationContext.xml:
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+
+	xsi:schemaLocation="
+
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+
+        http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd
+
+       ">
+
+	<camelContext xmlns="http://camel.apache.org/schema/spring">
+
+		<route>
+
+			<from uri="direct:start" />
+
+			<transform><simple><out>${body}</out></simple></transform>
+
+			<to uri="stream:out"/>
+
+		</route>
+
+	</camelContext>
+
+</beans>
+
+
+SimpleTransformExampleUsingSpring:
+package com.javarticles.camel;
+
+
+
+import org.apache.camel.CamelContext;
+
+import org.apache.camel.ProducerTemplate;
+
+import org.apache.camel.impl.DefaultProducerTemplate;
+
+import org.apache.camel.spring.SpringCamelContext;
+
+import org.springframework.context.ApplicationContext;
+
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+
+
+public class SimpleTransformExampleUsingSpring {
+
+    public static void main(String[] args) throws Exception {
+
+        ApplicationContext appContext = new ClassPathXmlApplicationContext(
+
+                "applicationContext.xml");
+
+        CamelContext camelContext = SpringCamelContext.springCamelContext(
+
+                appContext, false);
+
+        try {
+
+            camelContext.start();          
+
+            ProducerTemplate template = new DefaultProducerTemplate(
+
+                    camelContext);
+
+            template.start();
+
+            template.sendBody("direct:start", "Hello");
+
+        } finally {
+
+            camelContext.stop();
+
+        }
+
+    }
+
+
+
+}
+
+
+Message Transformation using Camel’s Constant Expression
+In the below example, if the article name contains ‘Camel’, we transform the message to simple ‘Yes’ else a ‘No’. We use choice(), when() and otherwise() to decide the outcome. This is similar to ‘If else’ construct. We create a constant expression using Method constant().
+ConstantTransformExample:
+package com.javarticles.camel;
+
+
+
+import org.apache.camel.CamelContext;
+
+import org.apache.camel.ProducerTemplate;
+
+import org.apache.camel.builder.RouteBuilder;
+
+import org.apache.camel.impl.DefaultCamelContext;
+
+import org.apache.camel.impl.DefaultProducerTemplate;
+
+
+
+public class ConstantTransformExample {
+
+    public static void main(String[] args) throws Exception {
+
+        CamelContext camelContext = new DefaultCamelContext();
+
+        try {
+
+            camelContext.addRoutes(new RouteBuilder() {
+
+                public void configure() {
+
+                    from("direct:start")
+
+                    .log("Article name is ${body}")
+
+                    .choice()
+
+                        .when().simple("${body} contains 'Camel'")
+
+                            .transform(constant("Yes"))
+
+                            .to("stream:out")
+
+                        .otherwise()
+
+                            .transform(constant("No"))
+
+                            .to("stream:out")
+
+                    .end();
+
+                }
+
+            });
+
+            camelContext.start();
+
+            ProducerTemplate template = new DefaultProducerTemplate(
+
+                    camelContext);
+
+            template.start();
+
+            template.sendBody("direct:start", "Camel Components");
+
+            template.sendBody("direct:start", "Spring Integration");
+
+        } finally {
+
+            camelContext.stop();
+
+        }
+
+    }
+
+}
+
+
+Output:
+09:15| INFO | MarkerIgnoringBase.java 95 | Article name is Camel Components
+
+Yes
+
+09:15| INFO | MarkerIgnoringBase.java 95 | Article name is Spring Integration
+
+No
+
+
+Transformation using Camel’s ValueBuilder
+A ValueBuilder is a a builder of expressions or predicates based on values.
+In the below example, we use ValueBuilder to build expressions to transform the message.
+The message content itself can be converted to a ValueBuilder using the body() method.
+We show here couple of ways of transforming message using body().prepend() and body().convertToString(). If you want to prepend some text use prepend(). If you want to convert an Object into a string representation use convertToString().
+If you want to build your own ValueBuilder, you can do by passing an implementation of Expression object. Here we have used camel provided ExpressionAdapter which is a helper class for implementing an Expression object. All you have to do is implement evaluate(Exchange). In our example we are using it to convert new line characters to a space character.
+TransformUsingBodyFunctionsExample:
+package com.javarticles.camel;
+
+
+
+import org.apache.camel.CamelContext;
+
+import org.apache.camel.Exchange;
+
+import org.apache.camel.ProducerTemplate;
+
+import org.apache.camel.builder.RouteBuilder;
+
+import org.apache.camel.builder.ValueBuilder;
+
+import org.apache.camel.impl.DefaultCamelContext;
+
+import org.apache.camel.impl.DefaultProducerTemplate;
+
+import org.apache.camel.support.ExpressionAdapter;
+
+
+
+public class TransformUsingBodyFunctionsExample {
+
+    public static void main(String[] args) throws Exception {
+
+        CamelContext camelContext = new DefaultCamelContext();
+
+        try {
+
+            camelContext.addRoutes(new RouteBuilder() {
+
+                public void configure() {
+
+                    from("direct:bodyPrepend").transform(body().prepend("Hello")).to("stream:out");
+
+                    from("direct:bodyConvert").transform(body().convertToString()).to("stream:out");
+
+                    from("direct:valueBuilder").transform(new ValueBuilder(new ExpressionAdapter(){
+
+                        @Override
+
+                        public Object evaluate(Exchange exchange) {
+
+                            String s = exchange.getIn().getBody(String.class);
+
+                            return s != null ? s.replace('\n', ' ') : null;
+
+                        }
+
+                    })).to("stream:out");
+
+                }
+
+            });
+
+            camelContext.start();
+
+            ProducerTemplate template = new DefaultProducerTemplate(
+
+                    camelContext);
+
+            template.start();
+
+            template.sendBody("direct:bodyPrepend", "World");
+
+            template.sendBody("direct:bodyConvert", new ValueObject("HelloWorld"));
+
+            template.sendBody("direct:valueBuilder", "Hello\nWorld");
+
+        } finally {
+
+            camelContext.stop();
+
+        }
+
+    }
+
+    
+
+    private static class ValueObject {
+
+        private String s;
+
+        ValueObject(String s) {
+
+            this.s = s;
+
+        }
+
+        public String toString() {
+
+            return "Value(" + s + ")";
+
+        }
+
+    }
+
+}
+
+
+Output:
+
+
+
+HelloWorld
+
+Value(HelloWorld)
+
+Hello World
+
+
+Transform using Bean
+In this example, we transform message using a bean. It transforms the message content to upper case.camel simple
+Class UpperCase is our simple bean which expects the message content in form of a string, transforms the string and then returns it.
+The bean can be called simply using method(). Since the bean contains only one method, we don’t have to pass the method name else you need to pass the bean class and the method name.
+You also need to register the bean against a name so that the route plan can access the bean.
+UpperCase:
+package com.javarticles.camel;
+
+
+
+public class UpperCase {
+
+    public String toUpper(String s) {
+
+        return s.toUpperCase();
+
+    }
+
+}
+
+
+package com.javarticles.camel;
+
+
+
+import org.apache.camel.CamelContext;
+
+import org.apache.camel.ProducerTemplate;
+
+import org.apache.camel.builder.RouteBuilder;
+
+import org.apache.camel.impl.DefaultCamelContext;
+
+import org.apache.camel.impl.DefaultProducerTemplate;
+
+import org.apache.camel.util.jndi.JndiContext;
+
+
+
+public class TransformUsingBeanExample {
+
+    public static void main(String[] args) throws Exception {
+
+        JndiContext jndiContext = new JndiContext();
+
+        jndiContext.bind("uppercase", new UpperCase());
+
+        CamelContext camelContext = new DefaultCamelContext(jndiContext);
+
+        try {
+
+            camelContext.addRoutes(new RouteBuilder() {
+
+                public void configure() {
+
+                    from("direct:start").log("Transform ${body} to upperCase")
+
+                            .transform(method("uppercase")).to("stream:out");
+
+                }
+
+            });
+
+            camelContext.start();
+
+            ProducerTemplate template = new DefaultProducerTemplate(
+
+                    camelContext);
+
+            template.start();
+
+            template.sendBody("direct:start", "hello world");
+
+        } finally {
+
+            camelContext.stop();
+
+        }
+
+    }
+
+}
+
+
+Output:
+10:15| INFO | DefaultCamelContext.java 2454 | Apache Camel 2.15.1 (CamelContext: camel-1) started in 0.270 seconds
+
+10:15| INFO | MarkerIgnoringBase.java 95 | Transform hello world to upperCase
+
+HELLO WORLD
+
+
+Download the source code “camel simple”
+This was an example about Camel message transformation using simple expressions.
+You can download the source code here: camelTransformationExamples.zip
+
+
+
+
+Share.
+
+
+Twitter
+
+Facebook
+
+Google+
+
+Pinterest
+
+LinkedIn
+
+Tumblr
+
+Email
+
+
+
+
+
+Comments are closed.
+
+
+
+
+
+
+
+
+
+
+
+Search for:
+
+
+
+
+Previous PostsJava Thread Determining Cpu TimeSpring property-placeholder attributesMule db insert using fileJava ShutdownHook ExampleJUnit Timeout TestRule ExampleSpring HibernateDaoSupport ExampleCreate New Maven ProjectSecurity generating and exporting DSA keysGuava Table ExampleAndroid Drag and Drop ExampleApache Camel Jdbc Component InsertSpring Scanning ComponentsJava Decompressing Files ExampleExample of manually publishing a message to an outbound channelAndroid ListView: Adding Quick ‘Add’ action bar to the List Page
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

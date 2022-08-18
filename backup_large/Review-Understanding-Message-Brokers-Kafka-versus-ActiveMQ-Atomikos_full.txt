@@ -1,0 +1,560 @@
+
+
+
+
+
+
+
+
+
+
+Review: Understanding Message Brokers - Kafka versus ActiveMQ - Atomikos
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Products
+
+TransactionsEssentials
+ExtremeTransactions
+
+
+References
+Support
+Resources
+Company
+
+About Us
+Contact Us
+Team
+Careers
+
+
+Buy Now
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Blog
+ 
+The Atomikos Blog
+
+
+Similar
+
+ 
+         Microservice Pitfalls 
+         How microservices can corrupt your data - even with eventual consistency or sagas
+
+
+
+
+
+ 
+         High performance JMS processing with XA 
+         Exactly-once is possible at high speed!
+
+
+
+
+ 
+
+         Exactly-Once Delivery With Kafka 
+         
+
+
+
+
+
+ 
+         Distributed Transaction Patterns 
+         
+
+
+
+
+
+ 
+         How to avoid poison messages 
+         
+
+
+
+
+Latest in Tech tips
+
+
+       Critical update: Log4J injection bug
+      
+
+
+
+
+ 4 Microservice Myths and How to Avoid Them
+      
+
+
+
+
+       Safe rollback and guaranteed data consistency for continuous deployment of microservices
+      
+
+
+
+
+       How to use Atomikos without Spring
+      
+
+
+
+
+       How to avoid losing transaction logs when your pod crashes
+      
+
+
+
+ You are here: Blog » Tech tips » Review: Understanding Message Brokers - Kafka versus ActiveMQ
+
+
+
+
+Review: Understanding Message Brokers - Kafka versus ActiveMQ 
+
+ 15 Sep 2017
+|  Guy Pardon
+|  Tech tips, Vision
+|  activemq, broker, exactly-once delivery, jms, kafka
+
+
+
+Our review of the ebook: "Understanding Message Brokers" by Jakub Korab…
+
+This article is our review of the ebook "Understanding Message Brokers" published by O'Reilly. It's a biased review because we approach messaging from the perspective of transactional exactly-once delivery - but if you're interested in exactly-once delivery then this article is probably a must-read.
+
+ 
+  Introduction 
+   ActiveMQ 
+   Kafka 
+   Conclusions  
+  Our take 
+   Without Kafka 
+   With Kafka 
+
+   Next steps? 
+   References 
+
+
+
+  Introduction 
+The author of the ebook has lots of past expertise with ActiveMQ (and Camel) and recently started working on the Kafka project. The ebook gives his perspectives on both these message brokers, by discussing each one in turn:
+  ActiveMQ 
+As the author explains, a lot of the ActiveMQ architecture was dictated by the JMS specification. The power of the JMS specification is a standard way of interfacing with message brokers - and for this reason JMS has been nominated as one of the best Java enterprise APIs.
+A big part of JMS is concerned about reliable, persistent messaging without putting too much burden on the messaging clients. For instance, it is the message broker's responsibility to keep messages until the consumers have processed them. This makes the broker a bit more complex, and (at least for ActiveMQ) this makes performance degrade as the number of consumers goes up.
+Consequently, JMS message brokers like ActiveMQ are less suited for the "universal data pipeline" pattern - in fact it's considered an anti-pattern for the JMS broker architecture. And because the broker keeps messages for the consumers, too many consumers that go offline can consume a bit more disk space (if this makes you think Kafka uses less disk space: read on!). Note that many JMS brokers allow setting a message lifetime, after which unconsumed messages can be discarded - so in practice the problem may not be as big as you might expect.
+  Kafka 
+The design goal of Kafka was (reportedly) to enable the "universal data pipeline" at LinkedIn. This required a different broker - because it's an anti-pattern in JMS for the reasons explained above. So where JMS and ActiveMQ are tuned for reliable persistent messaging (and therefore can't support data pipelines very well), Kafka's design focuses on exactly these data pipelines. It does offer persistence, but it's not as guaranteed as with JMS-based brokers.
+To achieve its goals, Kafka uses a "unified destination model" called "topic" (something in between the notion of a JMS topic and a JMS queue). Messages are kept for a while (and can be consumed more than once via resettable pointers if desired). However, message persistence is limited in time and it is the consumer's responsibility to consume relevant messages before the broker deletes them. So: messages can be lost (in addition to being delivered more than once).
+Overall, the design of the Kafka broker increases disk usage by as much as 1000 times what ActiveMQ (or JMS brokers) need, without any guarantees for consumers that fail to pick up their messages before the broker decides to delete them. However, it's really fast and can handle up to millions of messages per second.
+Author's note: I found several discussions suggesting that persistence is not guaranteed in Kafka because it does not immediately flush to disk. If this is true, then there is actually no persistence guarantee at all - only best-effort. This probably explains why it can be very fast - at the cost of possible message loss.
+
+  Conclusions 
+
+  Our take 
+
+
+Whereas the book claims that exactly-once delivery does not exist, we have shown how easy it is in this article. That is: it's easy if you use JMS/XA capable brokers like ActiveMQ. In the case of Kafka, it's quite different: because Kafka delegates the burden of exactly-once to the message consumer, you're bound to encounter the pitfalls of the idempotent consumer. Message loss is also possible. Needless to say, XA is not supported by Kafka.
+We recommend using Kafka for higher-performance monitoring use cases where message loss is not important, such as diagnostic logging events, performance metrics, or other statistical event types. But if you care about exactly-once delivery, if your messages are valuable or if you don't need a "universal data pipeline" then it's best to stick to a classical broker like ActiveMQ.
+  Without Kafka 
+Without Kafka, you benefit from the infrastructure logic offered by your DBMS and/or message broker:
+
+For regular applications, this is probably what you want.
+  With Kafka 
+With Kafka you only have log files, meaning you have to do everything else yourself in your code:
+
+If you're LinkedIn or any other Internet giant then this may be acceptable to you. Alternatively, if managing log files is your thing then this is what you want. In all other cases, you may want to stick to what is out there already…
+  Next steps? 
+Download now to start exactly-once processing with ActiveMQ and XA:
+FREE download: TransactionsEssentials
+
+(Includes working samples that use ActiveMQ for exactly-once delivery)
+
+  References 
+
+
+ The ebook can be downloaded from here.
+  The ebook author's website can be found here.
+
+
+
+
+ExtremeTransactions 4.0.60How to avoid poison messages
+
+
+
+
+
+
+
+Attachments ($count)
+
+
+Upload filesUploading … Drag files hereShow options
+
+
+Search:
+
+
+
+Sort by:
+
+Name
+Date
+Author
+Size
+
+
+
+Results per page:
+
+6
+12
+24
+48
+all
+
+
+
+
+Display hidden:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Understanding Message Brokers - Kafka versus ActiveMQ.png
+(315.78 KB)
+
+
+17 Mar 2021 - 14:01 | Version 1 | Guy Pardon
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Screenshot 2018-10-12 16.26.05.png
+(159.41 KB)
+
+
+12 Oct 2018 - 16:31 | Version 1 | Guy Pardon
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Screenshot 2018-10-12 16.26.19.png
+(142.58 KB)
+
+
+12 Oct 2018 - 16:29 | Version 1 | Guy Pardon
+            
+
+
+
+
+
+
+
+
+
+
+More actions
+Insert links
+Create image galleryDownload
+Hide
+Unhide
+Move
+Delete
+
+
+
+0 attachment(s)
+    
+
+
+
+Select all
+Clear all
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Connect 
+ Facebook
+  Twitter
+  LinkedIn
+  Recommend us
+
+
+
+Contact Us
+Atomikos Corporate Headquarters 
+Hoveniersstraat, 39/1, 2800 
+Mechelen, Belgium 
+
+
+E info@atomikos.com 
+E sales@atomikos.com 
+T +3215613055
+
+Community
+
+Log inBecome a registered userWhy Register
+
+
+
+ 
+ Blog
+  Products
+  References
+  Support
+  Resources
+  Company
+
+
+
+Copyright 2022 Atomikos BVBA | Our Privacy Policy
+
+
+
+
+	 By using this site you agree to our cookies. More info.
+	 That's Fine
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

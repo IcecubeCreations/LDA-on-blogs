@@ -1,0 +1,511 @@
+
+
+
+
+
+
+
+Top Ten Differences Between ActiveMQ and Amazon SQS – The Dulin Report
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Skip to content
+
+
+
+
+The Dulin Report
+
+
+
+
+Opinions on software engineering, enterprise architecture, cloud computing, and occasional rants about politics and consumer technology. Hosted by Oleg Dulin.
+
+Menu
+Oleg Dulin
+Disclaimer
+Portfolio
+ 
+
+
+
+
+
+
+
+
+Top Ten Differences Between ActiveMQ and Amazon SQS
+
+Oleg DulinSeptember 5, 2015February 15, 2019Analysis 
+
+Post navigation
+PreviousNext
+ 
+
+Taxi queue at LaGuardiaPhoto credit: Scott Beale / Laughing Squid
+UPDATE 2/15/2018: This post was originally published in 2015. While it is informative in its own right, a lot has changed in AWS since then. In particular, AWS now offers managed ActiveMQ. Please read a more up-to-date article on the topic: Which AWS messaging and queing service to use?
+
+1. Persistence and Durability
+ActiveMQ
+Depending on the configuration ActiveMQ can maintain a message journal1. Each message is first written into a journal before being shipped to consumers. Ultimately, the number of messages that can be persisted is constrained by the available disk capacity.
+SQS
+Amazon SQS stores messages in a distributed storage across all availability zones in a given region2. Each message size can be up to 256KB and SQS can store an unlimited number of messages across unlimited number of queues3.
+2. Redundancy
+ActiveMQ
+ActiveMQ offers a number of different configuration options for clustering4:
+
+Broker Clusters and Networks of Brokers: this architecture is most appropriate for distributed networks of brokers. Producers on each broker can reach consumers across the entire cluster. This is most appropriate for a use case such as delivering market data to all consumers across the entire network (JMS topics). This is not exactly a redundant configuration – failure of a single broker results in message loss on that broker.
+Master-Slave : In this configuration two or more ActiveMQ brokers use some sort of a shared5 storage for the journal. Prior to ActiveMQ 5.9 one had to relied either on a shared file system such as SAN or on an SQL database – which simply shifted the replication responsibility to a different technology. Starting with ActiveMQ 5.9 there is an option to use Replicated LevelDB with Zookeeper6.
+
+SQS
+SQS stores messages in redudant storage across all availability zones in a given region. To achieve high levels of redundancy and guarantee that no message is ever lost it relaxes some of the properties of a queueing system7. What that means is that on rare occasions messages may arrive out of order, and same message may be delivered more than once.
+3. Graceful Failure
+ActiveMQ
+In a master-slave8 configuration all clients failover to the next available slave and continue processing messages. In any other configuration, all processing stops until the client is able to reconnect to its broker.
+In the event of high memory, temp storage, or jounal space usage ActiveMQ can pause producers until the space frees up. This creates a potential for a deadlock situation where some consumers also act as publishers and become unable to publish or consume messages. There is a risk of the entire system locking up until space is freed up or configuration is changed.
+SQS
+When your application attempts to retrieve messages from a queue SQS picks a subset of all servers and returns messages from those servers. What that means is that if for some reason a server was unavailable a message may not get retrieved – but will on subsequent requests. This is mitigated to a certain extent by use of long polling9.
+4. Message Order and Delivery Guarantee
+ActiveMQ
+Messages are delivered in the order they are sent10. When there are multiple consumers on the same queue some of the order may be lost – however, that is the case with any queue that has multiple consumers and it is exacerbated by clustering configurations.
+SQS
+In order to achieve high levels of scalability and redundancy SQS relaxes some of the guarantees of a traditional queuing system. On rare occasions messages may be delivered out of order and more than once, but they will get delivered and no message will be lost. Applications sensitive to duplicated or out-of-order processing need to implement logic to cover these scenarios11.
+5. Monitoring and Utility API
+This may seem off topic but I do find it necessary to mention. It is often useful, from application standpoint, to perform various utility functions against queues. An application may measure the rate of dequeuing, calculate number of pending messages, and self-optimize.
+JMS does not offer API to retrieve this information. ActiveMQ does expose some of this via JMX, however12. Similarly, SQS offers metrics and utility API as part of the SDK.
+6. Standards Compliance
+ActiveMQ
+ActiveMQ conforms to the JMS API specification in the Java universe and has drivers for other platforms and API specifications.
+SQS
+SQS uses HTTP REST protocol and a proprietary SDK. However, Amazon does offer a JMS implementation of the SQS SDK13.
+7. Push Messages as They Become Available
+ActiveMQ
+The default ActiveMQ protocol is based on a socket connection that allows messages to get pushed to the consumer as soon as they are published. With JMS one can implement MessageListener14 interface and receive messages as they arrive.
+SQS
+SQS does not natively support push. One has to poll to retrieve messages. This is a minor inconvenience since Amazon provides both long polling and a JMS implementation. Various approaches exist to mimic the push behavior including one that I described in my post on “Guaranteeing Delivery of Messages with Amazon SQS.”15
+8. Scalability and Performance
+ActiveMQ
+ActiveMQ can handle tens of thousands of messages per second on a single broker16. There is a great deal of tuning that affects ActiveMQ performance including the host computer capacity, network topology, etc. Scalability is achieved either vertically by upgrading broker hardware or horizontally by expanding the broker cluster.
+SQS
+SQS does not return from a SendMessage request unless the message has been successfully store and as a result it has a request-response latency of around 20ms. At first glance it may mean that it cannot handle more than a few hundred messages per second.
+However, when dealing with a distributed queue like SQS one has to distinguish between latency and throughout17. SQS scales horizontally. By using multiple threads it is possible to increase message throughput almost indefinitely.
+9. Setup, Operations and Support
+ActiveMQ
+ActiveMQ is just like any other software that one has to install, configure, monitor and maintain. Configuring and tuning ActiveMQ requires thorough understanding of hundreds of different settings18. ActiveMQ itself is written in Java so understanding of Java topics like memory management and garbage collection is helpful.
+SQS
+As long as you are operating in the AWS environment there is nothing to configure, install or maintain. SQS is a completely managed service.
+10. Costs
+ActiveMQ
+ActiveMQ needs hosts to run on and storage it can use. Someone has to support and maintain it. The costs of ActiveMQ are a function of resources it needs to run and time it takes to tune, configure and maintain it. These costs are still present during periods of low utilization since it doesn’t scale automatically.
+SQS
+SQS is priced as a function of number of requests and data transfer. You are only charged for what you consume, so during periods of low utilization the costs are lower.
+Conclusion
+The discussion in this post boils down to the choice between a fully managed cloud service and an installable software product, just like DynamoDB vs Cassandra19. A managed service simplifies development and maintenance at the expense of standards compliance and customization options.
+
+
+
+ActiveMQ Persistence ↩
+Introduction to Amazon SQS ↩
+Amazon SQS Technical FAQs ↩
+ActiveMQ Clustering ↩
+ActiveMQ Replicated Message Store ↩
+ActiveMQ Replicated LevelDB ↩
+Properties of Distributed Queues ↩
+ActiveMQ Master Slave ↩
+Amazon SQS Long Polling ↩
+ActiveMQ Message Order ↩
+Idempotent Receiver pattern ↩
+ActiveMQ JMX API ↩
+New SQS Client Library for JMS ↩
+MessageListener interface ↩
+Guaranteeing Delivery of Messages with AWS SQS ↩
+ActiveMQ Performance ↩
+Scaling with Amazon SQS ↩
+Configuring ActiveMQ ↩
+Why I am tempted to replace Cassandra with DynamoDB ↩
+
+
+Share this:TwitterFacebook
+
+Related
+ 
+
+
+activemq, amazon, aws, cloud, sqs 
+
+
+
+Post navigation
+Previous We Live in a Mobile Device Notification HellNext Setting Up Cross-Region Replication of AWS RDS for PostgreSQL 
+ 
+
+ 
+
+Published by Oleg Dulin
+
+
+			I am a software engineer and technology architect in New York City / New Jersey area. All opinions expressed here are mine and do not represent opinions of my employers and customers, nor should my opinions be construed as opinions about my employers and customers.
+
+Copyright 2000-2019+, all rights reserved			
+				View all posts by Oleg Dulin			
+
+
+
+
+			2 Comments		
+
+
+
+
+
+ Raymond Naseef says: 
+
+October 5, 2016 at 6:32 pm 
+
+
+Thank you for this wonderful article with detailed information great for making technical & business decisions regarding different MQ on Amazon AWS. There are 2 mistakes on the page, in part 8. Scalability and Performance under SQS:
+1)
+  Mistake: the message has been successfully store and
+  Correction: the … stored and
+2)
+  Mistake: to distinguish between latency and throughout
+  Correction: to distinguish between latency and throughput
+Regards,
+Ray
+
+
+
+
+
+
+
+ Tom Dawson says: 
+
+March 29, 2018 at 3:45 pm 
+
+
+Note that AWS also offers a managed version of ActiveMQ, appropriately named “Amazon MQ”.  Worth looking at.
+
+
+
+
+Comments are closed.
+
+
+
+
+Search
+
+Search for:
+
+
+
+
+
+
+Blog at WordPress.com.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Follow
+
+
+Following
+
+
+
+
+
+
+
+				The Dulin Report			
+
+
+Join 70 other followers
+
+
+
+
+
+
+
+ 
+
+												Sign me up											
+
+
+
+
+											Already have a WordPress.com account? Log in now. 
+
+
+
+
+
+
+ 
+
+
+
+
+
+				The Dulin Report			
+
+
+
+ Customize
+
+
+
+
+Follow
+
+
+Following
+
+
+Sign up
+Log in
+Copy shortlink
+Report this content
+
+
+											View post in Reader										
+
+
+Manage subscriptions
+
+Collapse this bar
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Loading Comments...
+
+
+
+ 
+
+
+
+													You must be logged in to post a comment.												
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+

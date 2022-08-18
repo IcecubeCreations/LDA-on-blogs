@@ -1,0 +1,794 @@
+
+
+
+
+
+
+
+3 methods for microservice communication - LogRocket Blog
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+BlogPodcastMeetups
+
+
+
+Sign In
+Start monitoring for free
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+Share 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Reply 
+
+
+3
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+Kyle Galbraith Follow
+Software engineer and entrepreneur. Love traveling and experiencing life. kylegalbraith.com/learn-aws.
+
+
+3 methods for microservice communication
+
+
+
+August 27, 2019 
+
+5 min read
+1489
+
+
+ 
+In the world of microservice architecture, we build out an application via a collection of services. Each service in the collection tends to meet the following criteria:
+
+Loosely coupled
+Maintainable and testable
+Can be independently deployed
+
+Each service in a microservice architecture solves a business problem in the application, or at least supports one. A single team is responsible and accountable for one or more services in the application.
+Microservice architectures can unlock a number of different benefits.
+
+They are often easier to build and maintain
+Services are organized around business problems
+They increase productivity and speed
+They encourage autonomous, independent teams
+
+These benefits are a big reason microservices are increasing in popularity. But potholes exist that can derail all these benefits. Hit those and you’ll get an architecture that amounts to nothing more than distributed technical debt.
+Communication between microservices is one such pothole that can wreak havoc if not considered ahead of time.
+The goal of this architecture is to create loosely coupled services, and communication plays a key role in achieving that. In this article, we are going to focus on three ways that services can communicate in a microservice architecture. Each one, as we are going to see, comes with its own benefits and tradeoffs.
+HTTP communication
+The outright leader when choosing how services will communicate with each other tends to be HTTP. In fact, we could make a case that all communication channels derive from this one. But, setting that aside, HTTP calls between services is a viable option for service-to-service communication.
+It might look something like this if we have two services in our architecture. ServiceA might process a request and call ServiceB to get another piece of information.
+function process(name: string): Promise<boolean> {
+    /** do some ServiceA business logic
+        ....
+        ....
+    */
+    /**
+     * call ServiceB to run some different business logic
+    */
+    return fetch('https://service-b.com/api/endpoint')
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error(response.statusText)
+            } else {
+                return response.json().then(({saved}) => {
+                    return saved
+                })
+            }
+        })
+}
+The code is self-explanatory and fits into the microservice architecture. ServiceA owns a piece of business logic. It runs its code and then calls over to ServiceB to run another piece of business logic. In this code, the first service is waiting for the second service to complete before it returns.
+What we have here is synchronous HTTP calls between the two services. This is a viable communication pattern, but it does create coupling between the two services that we likely don’t need.
+
+
+We made a custom demo for .No really. Click here to check it out.
+
+Click here to see the full demo with network requests
+
+
+
+Another option in the HTTP spectrum is asynchronous HTTP between the two services. Here is what that might look like:
+function asyncProcess(name: string): Promise<string> {
+    /** do some ServiceA business logic
+        ....
+        ....
+    */
+    /**
+     * call ServiceB to run some different business logic
+    */
+    return fetch('https://service-b.com/api/endpoint')
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error(response.statusText)
+            } else {
+                return response.json().then(({statusUrl}) => {
+                    return statusUrl
+                })
+            }
+        })
+}
+The change is subtle. Now, instead of ServiceB returning a saved property, it is returning a statusUrl. This means that this service is now taking the request from the first service and immediately returning a URL. This URL can be used to check on the progress of the request.
+We have transformed the communication between the two services from synchronous to asynchronous. Now, the first service is no longer stuck waiting for the second service to complete before returning from its work.
+With this approach, we keep the services isolated from one another, and the coupling is loose. The downside is that it creates extra HTTP requests on the second service; it is now going to be polled from the outside until the request is completed. This introduces complexity on the client as well since it now must check the progress of the request.
+But asynchronous communication allows the services to remain loosely coupled from one another.
+Message communication
+Another communication pattern we can leverage in a microservice architecture is message-based communication.
+Unlike HTTP communication, the services involved do not directly communicate with each other. Instead, the services push messages to a message broker that other services subscribe to. This eliminates a lot of complexity associated with HTTP communication.
+It doesn’t require services to know how to talk to one another; it removes the need for services to call each other directly. Instead, all services know of a message broker, and they push messages to that broker. Other services can choose to subscribe to the messages in the broker that they care about.
+If our application is in Amazon Web Services, we can use Simple Notification Service (SNS) as our message broker. Now ServiceA can push messages to an SNS topic that ServiceB listens on.
+function asyncProcessMessage(name: string): Promise<string> {
+    /** do some ServiceA business logic
+        ....
+        ....
+    */
+    /**
+     * send message to SNS that ServiceB is listening on
+    */
+    let snsClient = new AWS.SNS()
+    let params = {
+        Message: JSON.stringify({
+            'data': 'our message data'
+        }),
+        TopicArn: 'our-sns-topic-message-broker'
+    }
+
+    return snsClient.publish(params)
+        .then((response) => {
+            return response.MessageId
+        })
+}
+ServiceB listens for messages on the SNS topic. When it receives one it cares about, it executes its business logic.
+This introduces its own complexities. Notice that ServiceA no longer receives a status URL to check on progress. This is because we only know that the message has been sent, not that ServiceB has received it.
+This could be solved in many different ways. One way is to return the MessageId to the caller. It can use that to query ServiceB, which will store the MessageId of the messages it has received.
+Take note that there is still some coupling between the two services using this pattern. For instance, ServiceB and ServiceA must agree on what the message structure is and what it contains.
+Event-driven communication
+The final communication pattern we will visit in this post is the event-driven pattern. This is another asynchronous approach, and it looks to remove the coupling between services altogether.
+Unlike the messaging pattern where the services must know of a common message structure, an event-driven approach doesn’t need this. Communication between services takes place via events that individual services produce.
+A message broker is still needed here since individual services will write their events to it. But, unlike the message approach, the consuming services don’t need to know the details of the event; they react to the occurrence of the event, not the message the event may or may not deliver.
+In formal terms, this is often referred to as “event only-driven communication.” Our code is like our messaging approach, but the event we push to SNS is generic.
+function asyncProcessEvent(name: string): Promise<string> {
+    /** do some ServiceA business logic
+        ....
+        ....
+    */
+    /**
+     * call ServiceB to run some different business logic
+    */
+    let snsClient = new AWS.SNS()
+    let params = {
+        Message: JSON.stringify({
+            'event': 'service-a-event'
+        }),
+        TopicArn: 'our-sns-topic-message-broker'
+    }
+
+    return snsClient.publish(params)
+        .then((response) => {
+            return response.MessageId
+        })
+}
+Notice here that our SNS topic message is a simple event property. Every service agrees to push events to the broker in this format, which keeps the communication loosely coupled. Services can listen to the events that they care about, and they know what logic to run in response to them.
+This pattern keeps services loosely coupled as no payloads are included in the event. Each service in this approach reacts to the occurrence of an event to run its business logic. Here, we are sending events via an SNS topic. Other events could be used, such as file uploads or database row updates.
+
+200’s only : Monitor failed and slow network requests in production
+While implementing microservices is step one, making sure services continue to serve resources to your app in production is where things get tougher. If you’re interested in ensuring requests to the backend or third-party services are successful, try LogRocket. https://logrocket.com/signup/
+LogRocket is like a DVR for web apps, recording literally everything that happens on your site. Instead of guessing why problems happen, you can aggregate and report on problematic Axios requests to quickly understand the root cause.
+LogRocket instruments your app to record baseline performance timings such as page load time, time to first byte, and slow network requests, and also logs Redux, NgRx, and Vuex actions/state. Start monitoring for free.
+
+Conclusion
+Are these all the communication patterns that are possible in a microservice-based architecture? Definitely not. There are more ways for services to communicate both in a synchronous and asynchronous pattern.
+But, these three highlight the advantages and disadvantages of favoring synchronous versus asynchronous. There are coupling considerations to take into account when choosing one over the other, but there are also the development and debugging considerations to factor in as well.
+If you have any questions about this blog post, AWS, serverless, or coding in general, feel free to ping me via Twitter @kylegalbraith. Also check out my weekly Learn by Doing newsletter or my Learn AWS By Using It course to learn even more about the cloud, coding, and DevOps.
+LogRocket: Full visibility into your web apps
+
+LogRocket is a frontend application monitoring solution that lets you replay problems as if they happened in your own browser. Instead of guessing why errors happen, or asking users for screenshots and log dumps, LogRocket lets you replay the session to quickly understand what went wrong. It works perfectly with any app, regardless of framework, and has plugins to log additional context from Redux, Vuex, and @ngrx/store.
+In addition to logging Redux actions and state, LogRocket records console logs, JavaScript errors, stacktraces, network requests/responses with headers + bodies, browser metadata, and custom logs. It also instruments the DOM to record the HTML and CSS on the page, recreating pixel-perfect videos of even the most complex single-page apps.
+Try it for free.
+
+Share this:TwitterRedditLinkedInFacebook
+
+
+
+
+
+ 
+
+
+Kyle Galbraith Follow
+Software engineer and entrepreneur. Love traveling and experiencing life. kylegalbraith.com/learn-aws.
+
+
+
+
+Uncategorized 
+
+
+
+« Building full-stack web apps with Go, Vecty, and WebAssembly
+Creating a full-stack MERN app using JWT authentication: Part 2 »
+
+
+
+
+
+
+
+
+
+
+
+
+Redux Toolkit’s new listener middleware vs. Redux-Saga
+
+
+
+
+
+ 
+
+
+
+Joseph Mawa
+May 26, 2022
+
+9 min read
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+How to style React Router links with styled-components
+
+
+
+
+
+ 
+
+
+
+Temitope Oyedele
+May 25, 2022
+
+6 min read
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+NestJS serverless application on AWS with DynamoDB
+
+
+
+
+
+ 
+
+
+
+Ekekenta Odionyenfe
+May 25, 2022
+
+5 min read
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+3 Replies to “3 methods for microservice communication” 
+
+
+
+
+
+ Abhishek Yadav says: 
+
+August 28, 2019 at 10:47 pm 
+
+
+In the event driven communication, what if both services want to communicate tby passing some data between each other?
+
+ 
+
+
+
+
+
+ HamidrezaTA says: 
+
+April 17, 2022 at 4:38 am 
+
+
+I have exactly this question, About uploading a picture, How one server send paicture data to another server if no payload contains on event messages ?
+
+ 
+
+
+
+
+
+
+
+ Uzo says: 
+
+June 29, 2020 at 2:11 pm 
+
+
+Nice article
+
+ 
+
+
+
+Leave a Reply Cancel reply
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+Have you listened to our podcast? Check it out:
+
+
+
+
+
+
+
+PodRocket|Ep. 34
+
+Rome and Rome Tools, Inc. with Sebastian McKenzie and Jamie Kyle
+
+In this episode, Ben and Kaelan talk to Sebastian McKenzie and Jamie Kyle about Rome Tools, Inc., the roadmap for Rome, and the experience of getting funding as an open-source tool.
+Listen now
+
+
+
+
+
+
+
+PodRocket|Ep. 29
+
+Continuing education with Eve Porcello
+
+In this episode, we talk to Eve Porcello about her experience teaching web development and Moon Highway, a training and curriculum development company she runs.
+Listen now
+
+
+
+
+
+
+
+PodRocket|Ep. 26
+
+Redux is alive and well with Mark Erikson
+
+What is modern Redux? What is it with the obsession of declaring Redux dead? In this episode, Ben and Brian interview Mark Erikson to talk about all things Redux.
+Listen now
+
+
+
+
+
+
+
+PodRocket|Ep. 30
+
+Rocket Surgery: Kaelan and Chris Coyier compare notes
+
+Are you up to speed on all of this new CSS stuff? Chris Coyier and Kaelan compare notes on CSS and frontend development (they also discuss MDN plus).
+Listen now
+
+
+
+
+
+ 
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Loading Comments...
+
+
+
+ 
+
+
+Write a Comment...
+
+
+
+
+Email (Required)
+
+
+
+Name (Required)
+
+
+
+Website
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

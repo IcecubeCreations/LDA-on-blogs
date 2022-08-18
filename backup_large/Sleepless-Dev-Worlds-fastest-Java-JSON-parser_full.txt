@@ -1,0 +1,1544 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Sleepless Dev: World's fastest Java JSON parser
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Sleepless Dev
+
+
+
+
+Rick's Sleepless in Dublin. Random thoughts about software development. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Subscribe To
+
+
+
+
+
+
+
+Posts
+
+
+
+
+
+
+
+
+
+
+                  Atom
+                
+
+
+
+
+
+
+
+
+
+
+Posts
+
+
+
+
+
+
+
+
+
+
+
+
+Comments
+
+
+
+
+
+
+
+
+
+
+                  Atom
+                
+
+
+
+
+
+
+
+
+
+
+Comments
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Rick
+
+
+
+
+
+Rick
+
+
+
+
+
+Tuesday, December 10, 2013
+
+
+
+
+
+
+
+World's fastest Java JSON parser
+
+
+
+
+
+I wrote the world's fastest Java JSON parser (so far, I am sure someone can write one that is faster). I should say I wrote a Java JSON parser that is currently faster than GSON, Smart JSON and Jackson. The world is pretty big, and I am sure if I was able to do this that someone out there has one that is faster. There is some guy in the frozen tundra in northwest Siberia that has the world's fastest JSON parser. Until he comes forward, I will claim it.
+
+I wish I could tell you that it is the fastest because I used some really fancy technique, but I can't. If you know some fancy technique to make it faster, let me know. I will try to add it in later.
+
+The truth is my technique was brute force trial and error. I wrote six or seven different parsers and then performance tuned them. The ones that did well, I kept. The ones that did not do well, I killed. Then I just kept iterating. I am a bit more Edison and lot less Tesla. Although I did have some ideas which I thought would make it go fast, and those in retrospect seem to have panned out better than I expected. I had a good mentor.
+
+I learned a few things about performance and performance tuning along the ways, and I know there are still some low hanging fruit. It can be faster. I know it can be faster. Right now it needs features more than speed. And fastest will have to be fast enough.
+
+Some caveats, I've only tested this with files that are up to 2MB in size. My plan was to never go above 30K in size and only optimize for small payloads (small Websocket and REST calls). Then someone wrote a benchmark with a 2 MB file, and Boon JSON parser was losing by a 20% margin behind Jackson, and it made me sad so I made it faster. I have a nasty competitive streak that I try to bury deep (I get it from my mom's side of the family), but comes out and makes me argue on the Internet much longer than I should (it gets muted with age).
+
+So why write a JSON parser. I am the author of Boon. Boon is meant to be an batteries included library for Java. I look at Boon as the Python lib to Python. Except I can build Boon on top of Java and the JDK. Boon adds simple file handing, process management, slice notation, in-memory object queries and JSON `repr` support. Boon is useful but far from done. JSON to me was essential to Boon. Every time I mention that Boon would have JSON support, I got why would you do that... why not just use Jackson.
+
+The answer is Jackson is a fine library and it has features for JSON that Boon will never have, but I don't want Boon to depend on anything but the JDK. Boon JSON support is not meant to replace Jackson. It does not have all of the features of Jackson. Jackson was too much for Boon. I have used Jackson and it is a great library, and it is full featured. I have a lot of respect for Jackson.
+
+Boon can read a JSON file into a HashMap. There is no JSON DOM like thing in Boon. The closest you get is a List, HashMap, Integer, Double, String, hierarchy. I don't much care for JSON DOMs. It just another API to learn and I like List and HashMap better. Boon can also read in a JSON file and create a hierarchy of Java beans. Currently Boon only works with char[], byte[], String, CharSequence (StringBuilder, CharacterBuffer, String, etc.). There is no support for InputStream or Reader. Boon has an IO lib that can turn a InputStream or a Reader into a String or byte[] so you can easily invoke the parser (it takes one line of code to turn an InputStream or Reader into a String or byte[] with Boon).
+
+Features that Boon JSON support has:
+
+
+Object serialization (in only, out not implemented yet)
+Read JSON file as Map, List, Integer, Double and Strings
+
+
+That pretty much sums it up for now.
+
+
+
+I plan on adding the following:
+
+
+Object serialization output (take a Java object or map and create JSON)
+Loose JSON syntax support
+
+
+The first is something I planned on adding all along. The second is a user request. It is from my most important user (the first user of Boon JSON support).
+
+
+
+
+You can see the benchmarks at https://github.com/RichardHightower/json-parsers-benchmark
+
+
+
+The benchmark system was created by Stéphane Landelle. Mr Landelle has forgot more about benchmarking than I know. He is using the OpenJDK benchmark tool which is suppose to simulate closer to real world usage by eliminating tight-loop JIT optimization which would not happen in the real world. (Boon does well with tight-loop JIT optimization too BTW). He setup JMH. "The jmh is a Java harness for building, running, and analyzing nano/micro/macro benchmarks written in Java and other languages targeting the JVM." It is part of the OpenJDK stuff. Yep that is about all I know.
+
+
+
+
+
+
+Run with java -jar target/microbenchmarks.jar ".*" -wi 1 -i 5 -f 1 -t 8
+
+
+12/9/2013
+Benchmark                                      Mode Thr     Count  Sec         Mean   Mean error    Units
+i.g.b.j.BoonBenchmark.actionLabel             thrpt   8         5    1   952181.033    49994.359    ops/s
+i.g.b.j.GSONBenchmark.actionLabel             thrpt   8         5    1   454655.750    38697.027    ops/s
+i.g.b.j.JacksonASTBenchmark.actionLabel       thrpt   8         5    1   687899.190    92115.124    ops/s
+i.g.b.j.JacksonObjectBenchmark.actionLabel    thrpt   8         5    1   631883.253    58187.074    ops/s
+i.g.b.j.JsonSmartBenchmark.actionLabel        thrpt   8         5    1   638245.510    28490.542    ops/s
+Winner boon (30% to 90% faster)
+
+Benchmark                                      Mode Thr     Count  Sec         Mean   Mean error    Units
+i.g.b.j.BoonBenchmark.citmCatalog             thrpt   8         5    1      595.320      226.746    ops/s
+i.g.b.j.GSONBenchmark.citmCatalog             thrpt   8         5    1      519.460       67.587    ops/s
+i.g.b.j.JacksonASTBenchmark.citmCatalog       thrpt   8         5    1      522.447      132.712    ops/s
+i.g.b.j.JacksonObjectBenchmark.citmCatalog    thrpt   8         5    1      560.960       70.337    ops/s
+i.g.b.j.JsonSmartBenchmark.citmCatalog        thrpt   8         5    1      498.567       20.052    ops/s
+Winner boon (Jackson and Boon are neck and neck. Jackson JSON DOM thing against Boon's HashMap/List thing.)
+
+
+Benchmark                                      Mode Thr     Count  Sec         Mean   Mean error    Units
+i.g.b.j.BoonBenchmark.medium                  thrpt   8         5    1   717076.143    66137.610    ops/s
+i.g.b.j.GSONBenchmark.medium                  thrpt   8         5    1   323030.350    28039.737    ops/s
+i.g.b.j.JacksonASTBenchmark.medium            thrpt   8         5    1   466943.663    40722.303    ops/s
+i.g.b.j.JacksonObjectBenchmark.medium         thrpt   8         5    1   452389.270    38322.667    ops/s
+i.g.b.j.JsonSmartBenchmark.medium             thrpt   8         5    1   385977.377    29823.120    ops/s
+Winner boon (Up to twice as fast! and at least 60% faster)
+
+Benchmark                                      Mode Thr     Count  Sec         Mean   Mean error    Units
+i.g.b.j.BoonBenchmark.menu                    thrpt   8         5    1  3160492.197   280592.358    ops/s
+i.g.b.j.GSONBenchmark.menu                    thrpt   8         5    1   821103.300    53954.500    ops/s
+i.g.b.j.JacksonASTBenchmark.menu              thrpt   8         5    1  2042108.620   208072.795    ops/s
+i.g.b.j.JacksonObjectBenchmark.menu           thrpt   8         5    1  1880851.927   222762.253    ops/s
+i.g.b.j.JsonSmartBenchmark.menu               thrpt   8         5    1  2025717.690    85594.849    ops/s
+Winner boon (33% faster to 2.5X as fast)
+
+Benchmark                                      Mode Thr     Count  Sec         Mean   Mean error    Units
+i.g.b.j.BoonBenchmark.sgml                    thrpt   8         5    1  2008532.590   196291.511    ops/s
+i.g.b.j.GSONBenchmark.sgml                    thrpt   8         5    1   718620.370    42423.609    ops/s
+i.g.b.j.JacksonASTBenchmark.sgml              thrpt   8         5    1  1323524.563   154470.599    ops/s
+i.g.b.j.JacksonObjectBenchmark.sgml           thrpt   8         5    1  1222662.750   140235.072    ops/s
+i.g.b.j.JsonSmartBenchmark.sgml               thrpt   8         5    1  1074628.607   118118.963    ops/s
+Winner boon (70% faster to 2.5X faster)
+
+Benchmark                                      Mode Thr     Count  Sec         Mean   Mean error    Units
+i.g.b.j.BoonBenchmark.small                   thrpt   8         5    1 15826710.817  1045854.168    ops/s
+i.g.b.j.GSONBenchmark.small                   thrpt   8         5    1  1214721.220    26642.421    ops/s
+i.g.b.j.JacksonASTBenchmark.small             thrpt   8         5    1  8717521.267   803443.056    ops/s
+i.g.b.j.JacksonObjectBenchmark.small          thrpt   8         5    1  3596064.317   109024.645    ops/s
+i.g.b.j.JsonSmartBenchmark.small              thrpt   8         5    1  8496899.873   519262.035    ops/s
+Winner boon (60% faster to 10X faster)
+
+
+Benchmark                                      Mode Thr     Count  Sec         Mean   Mean error    Units
+i.g.b.j.BoonBenchmark.webxml                  thrpt   8         5    1   371945.473    37984.891    ops/s
+i.g.b.j.GSONBenchmark.webxml                  thrpt   8         5    1   166292.277    14117.248    ops/s
+i.g.b.j.JacksonASTBenchmark.webxml            thrpt   8         5    1   244590.407    24276.624    ops/s
+i.g.b.j.JacksonObjectBenchmark.webxml         thrpt   8         5    1   235309.430    20480.132    ops/s
+i.g.b.j.JsonSmartBenchmark.webxml             thrpt   8         5    1   206388.830    20392.364    ops/s
+Winner boon (a lot faster)
+
+Benchmark                                      Mode Thr     Count  Sec         Mean   Mean error    Units
+i.g.b.j.BoonBenchmark.widget                  thrpt   8         5    1  1896055.073   122966.480    ops/s
+i.g.b.j.GSONBenchmark.widget                  thrpt   8         5    1   655790.267    37677.131    ops/s
+i.g.b.j.JacksonASTBenchmark.widget            thrpt   8         5    1  1162009.513   116017.073    ops/s
+i.g.b.j.JacksonObjectBenchmark.widget         thrpt   8         5    1  1073394.043    52104.314    ops/s
+i.g.b.j.JsonSmartBenchmark.widget             thrpt   8         5    1   893633.533    60634.631    ops/s
+Winner boon (a lot faster)
+
+
+
+
+
+
+
+
+
+
+I believe the above was done without the Index overlay parser. There is an index overlay parser version that is a bit faster (10 to 20% faster, you turn it on by setting a flag in the JSON builder). When I ran the test before, both the index overlay and the normal parser were winning. 
+
+But it is like when I bench pressed 400 lbs. I told people 400 lbs because if I told them what I really bench pressed no one would believe me. 400 lbs was unbelievable enough. :)
+
+
+Common comments and questions and my responses
+
+
+
+1) Didn't you just pick JSON files that Boon would do the best on.
+
+
+
+Sadly, no, I just use the sample JSON files from json.org and one sample file that Stephane included. 
+
+
+
+I think Boon does best on JSON files that have a lot of numbers to parse. Boon copies a technique from Jackson to do a no buffer parser of Integers and Longs and then just expanded on that idea to include Double so if I were going to cheat, that is how I would do it. I'd get a JSON file that was just full of doubles like 1.7345, and just fill the file up with them, and then Boon should just destroy the competition, but why? I make no money from the Boon JSON parser. I did it to learn and grow as a developer. What would I learn? How would I grow?
+
+2) Why don't you test this against JSON parser XYZ?
+
+
+
+I have only heard of Jackson and GSON when I started so those are the two I started with. Stephane added Json Smart. I am sure since I am not a rocket scientist that someone out there has a faster JSON parser. 
+
+
+
+3) Those other JSON parser are much more mature.
+
+
+
+True. Please continue to use them. There is no reason to switch to Boon JSON parsing if they work for you. I don't want to compete against Jackson. Boon is not a JSON project. It is a project that has JSON support. 
+
+
+
+
+4) Those other JSON parser have feature XYX and Boon does not
+
+
+
+Again... True. Please continue to use them. There is no reason to switch to Boon JSON parsing if they work for you. I don't want to compete against Jackson. Boon is not a JSON project. It is a project that has JSON support.
+
+
+
+That said, feel free to send me a feature request. Stephane has sent me several and I implemented all but the two I mentioned above. 
+
+5) Why?
+Why not!
+
+6) Why did you reinvent the wheel?
+
+Why do we have Hyundai, Honda, Ford and Chevrolet?
+
+I was just looking for a small JSON parser. I had to make it fast because the first thing developers ask is how fast is this compared to Jackson. So... There you go. While speed of your JSON parser might not Paredo out to mean much to your overall tech stack, one needs to make it fast for it to be considered. I don't plan on spending much more time on the benchmark side of the house if someone beats Boon really badly, then there are lots of tricks I learned that I am sure could get Boon JSON parsing to go even faster. Since it is currently the fastest that I know of, and it is faster than the parser that gets used the most, speed is no longer a top priority.
+
+My plan is for Boon to offer handlebar templating and expressions  (and a full query language for OO, which is already implemented btw). I do plan on creating WebSocket and REST frameworks on top of Boon JSON support so being slow was not in the cards (my plan is to do this on top of Vertx because it is easier for me than Netty). Yes I plan on writing my own REST framework and my own Websocket framework, and my own Web framework. Yes I "plan" on competing against Spring MVC, Struts, JAX-RS, etc. so if my JSON parser pisses you off, wait until you see my complete tech stack vision with my very own handlebar implementation replacing JSPs. :) Will I ever do it all... I have doubts. But Boon is already useful as is.
+
+7) Isn't Boon faster because it does not support feature XYX?
+
+Maybe. I am surprised that Boon is as fast as it is. I have never done this before. This is all new to me. I figured Jackson was unbeatable. Once I have a more tolerant / lax JSON parser maybe Boon will be slower. I just don't know.
+
+8) Your benchmark is unfair because you don't do...  
+
+Send a pull request. I will check it out. GSON did a lot better on the initial benchmarks that I wrote, but did not seem to fair as well under JMH. I don't actually know why.
+
+
+
+
+
+
+
+Posted by
+
+
+
+RickHigh
+
+
+
+
+at
+
+9:01 AM
+
+
+
+
+
+
+
+
+
+
+
+Email ThisBlogThis!Share to TwitterShare to FacebookShare to Pinterest
+
+
+
+
+
+
+
+
+
+
+
+
+No comments:
+
+
+
+
+
+
+
+Post a Comment
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Newer Post
+
+
+Older Post
+
+Home
+
+
+
+
+Subscribe to:
+Post Comments (Atom)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+About Me
+
+
+
+
+RickHigh
+
+
+
+View my complete profile
+
+
+
+
+
+
+Related sites
+
+
+Spark Training
+Cassandra Training
+Kafka training
+Cassandra Consulting: Architecture Analysis
+Cassandra Consulting: Quick Start
+Cassandra Course
+Amazon Cassandra Support
+Cloud Computing Executive Seminars
+Cloud Computing Experts
+InfoQ Articles
+DZone posts / articles
+Linkedin profile
+My main blog site for 2002-2009
+Outdated BIO
+Twitter Feed
+
+
+
+
+Blog Archive
+
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+2020
+
+(3)
+
+
+
+
+
+        ► 
+      
+
+
+
+February
+
+(3)
+
+
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+2017
+
+(13)
+
+
+
+
+
+        ► 
+      
+
+
+
+May
+
+(4)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+April
+
+(2)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+March
+
+(7)
+
+
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+2016
+
+(33)
+
+
+
+
+
+        ► 
+      
+
+
+
+September
+
+(1)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+June
+
+(1)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+May
+
+(7)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+April
+
+(14)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+February
+
+(9)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+January
+
+(1)
+
+
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+2015
+
+(84)
+
+
+
+
+
+        ► 
+      
+
+
+
+December
+
+(3)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+November
+
+(3)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+October
+
+(2)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+September
+
+(11)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+August
+
+(8)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+July
+
+(3)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+June
+
+(3)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+May
+
+(13)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+April
+
+(3)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+March
+
+(13)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+February
+
+(19)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+January
+
+(3)
+
+
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+2014
+
+(50)
+
+
+
+
+
+        ► 
+      
+
+
+
+December
+
+(2)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+October
+
+(1)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+September
+
+(4)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+May
+
+(12)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+April
+
+(15)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+March
+
+(8)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+February
+
+(5)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+January
+
+(3)
+
+
+
+
+
+
+
+
+
+        ▼ 
+      
+
+
+
+2013
+
+(34)
+
+
+
+
+
+        ▼ 
+      
+
+
+
+December
+
+(7)
+
+From File to java.util.Map. Boon faster than Jackson
+Boon JSON parser seems to be the fastest
+JsonPath.. Decides Boon is the fastest way to do J...
+LRUCache in Java using just java APIS
+World's fastest Java JSON parser
+Here we go again... latest round of optimization J...
+Boon fastest way to turn JSON into useable Java (U...
+
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+November
+
+(10)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+October
+
+(10)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+August
+
+(1)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+January
+
+(6)
+
+
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+2012
+
+(14)
+
+
+
+
+
+        ► 
+      
+
+
+
+September
+
+(7)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+June
+
+(7)
+
+
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+2011
+
+(24)
+
+
+
+
+
+        ► 
+      
+
+
+
+November
+
+(1)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+April
+
+(10)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+March
+
+(2)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+February
+
+(5)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+January
+
+(6)
+
+
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+2010
+
+(15)
+
+
+
+
+
+        ► 
+      
+
+
+
+June
+
+(1)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+May
+
+(1)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+April
+
+(1)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+March
+
+(4)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+February
+
+(8)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Rick Hightower Copyright 2017 (C). All right reserved. Movie rights given to Jason Statham.. Simple theme. Theme images by dino4. Powered by Blogger.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Kafka and Cassandra support, training for AWS EC2
+Cassandra 3.0 Training
+
+
+
+
+
+
+
+

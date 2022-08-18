@@ -1,0 +1,1043 @@
+
+
+
+
+
+
+
+
+
+
+Performance comparison of several common JSON libraries in Java - Programmer Sought
+
+
+
+
+
+
+
+
+
+
+
+
+
+ProgrammerSought
+
+
+Home
+Contact Us
+Privacy Policy
+
+
+☰ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Performance comparison of several common JSON libraries in Java
+
+
+
+
+
+
+
+
+
+
+SON is a fairly common data transfer format in web development or server development. In general, we don't need to care too much about the performance of JSON parsing constructs, except in systems with higher performance requirements.
+At present, there are many kinds of JSON class libraries for Java open source. Below we take 4 commonly used JSON libraries for performance test comparison. At the same time, according to the test results, we can select the most suitable JSON library according to the actual application scenario.
+The four JSON class libraries are: Gson, FastJson, Jackson, Json-lib.
+basic introduction
+Choosing a suitable JSON library is considered in several ways:
+
+String parsing into JSON performance
+String parsing into JavaBean performance
+JavaBean constructs JSON performance
+Collection constructs JSON performance
+Ease of use
+
+Briefly introduce the identity background of the next four libraries.
+Gson
+project address:https://github.com/google/gson
+Gson is currently the most versatile Json parsing artifact. Gson was originally developed by Google in response to Google's internal needs, but has been used by many companies or users since the first release in May 2008. Gson's application is mainly toJson and fromJson two conversion functions, no dependencies, no need for an extra jar, can run directly on the JDK. Before using this object transformation, you must first create the type of the object and its members to successfully convert the JSON string into the corresponding object. As long as there are get and set methods in the class, Gson can completely implement complex type json to bean or bean to json conversion, which is an artifact of JSON parsing.
+FastJson
+project address:https://github.com/alibaba/fastjson
+Fastjson is a high-performance JSON processor written in the Java language developed by Alibaba. No dependencies, no extra jars are required, and you can run directly on the JDK. FastJson will have some problems on the complex type of bean transformation Json, there may be a type of reference, resulting in Json conversion error, need to make a reference. FastJson uses the original algorithm to maximize the speed of the parse, exceeding all json libraries.
+Jackson
+project address:https://github.com/FasterXML/jackson
+Jackson is a widely used Java open source framework for serializing and deserializing json. The Jackson community is relatively active and faster to update. From the statistics in Github, Jackson is one of the most popular json parsers. Spring MVC's default json parser is Jackson.
+Jackson has many advantages:
+
+Jackson relies on fewer jars and is easy to use.
+Compared to other Java json frameworks, Gson, etc., Jackson parses large json files faster.
+Jackson runs with less memory and better performance
+Jackson has a flexible API that can be easily extended and customized.
+
+The latest version is 2.9.4, and Jackson's core module consists of three parts:
+
+The Jackson-core core package provides APIs based on "streaming mode" parsing, including JsonPaser and JsonGenerator. The Jackson internal implementation generates and parses json through the JsonGenerator and JsonParser of the high-performance streaming mode API.
+The Jackson-annotations annotation package provides standard annotations;
+The Jackson-databind data binding package provides related APIs (ObjectMapper) based on "object binding" parsing and related APIs parsed by "tree model" (JsonNode); API and "tree model" parsing based on "object binding" parsing The API relies on an API based on "streaming mode" parsing.
+
+Why is Jackson's introduction so long? Because it is also my favorite.
+Json-lib
+project address:http://json-lib.sourceforge.net/index.html
+Json-lib is also the most widely used json parsing tool. json-lib is not a bad place to rely on many third-party packages. For complex type conversions, json-lib has defects in converting json into beans, such as There will be a list or map collection of another class in a class, and the conversion of json-lib from json to bean will cause problems. Json-lib can't meet the needs of the current Internet in terms of functions and performance.
+Write performance tests
+Next, start writing the performance test code for these four libraries.
+Add maven dependencies
+Of course, the first is to add maven dependencies for the four libraries. To be fair, I use all of their latest versions:
+
+
+
+ 1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+ 
+ <!-- Json libs-->
+<dependency>
+    <groupId>net.sf.json-lib</groupId>
+    <artifactId>json-lib</artifactId>
+    <version>2.4</version>
+    <classifier>jdk15</classifier>
+</dependency>
+<dependency>
+    <groupId>com.google.code.gson</groupId>
+    <artifactId>gson</artifactId>
+    <version>2.8.2</version>
+</dependency>
+<dependency>
+    <groupId>com.alibaba</groupId>
+    <artifactId>fastjson</artifactId>
+    <version>1.2.46</version>
+</dependency>
+<dependency>
+    <groupId>com.fasterxml.jackson.core</groupId>
+    <artifactId>jackson-databind</artifactId>
+    <version>2.9.4</version>
+</dependency>
+<dependency>
+    <groupId>com.fasterxml.jackson.core</groupId>
+    <artifactId>jackson-annotations</artifactId>
+    <version>2.9.4</version>
+</dependency>
+ 
+
+
+
+Tool classes for four libraries
+FastJsonUtil.java
+
+
+
+ 1
+2
+3
+4
+5
+6
+7
+8
+9
+ 
+ public class FastJsonUtil {
+    public static String bean2Json(Object obj) {
+        return JSON.toJSONString(obj);
+    }
+
+    public static <T> T json2Bean(String jsonStr, Class<T> objClass) {
+        return JSON.parseObject(jsonStr, objClass);
+    }
+}
+ 
+
+
+
+GsonUtil.java
+
+
+
+ 1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+ 
+ public class GsonUtil {
+    private static Gson gson = new GsonBuilder().create();
+
+    public static String bean2Json(Object obj) {
+        return gson.toJson(obj);
+    }
+
+    public static <T> T json2Bean(String jsonStr, Class<T> objClass) {
+        return gson.fromJson(jsonStr, objClass);
+    }
+
+    public static String jsonFormatter(String uglyJsonStr) {
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        JsonParser jp = new JsonParser();
+        JsonElement je = jp.parse(uglyJsonStr);
+        return gson.toJson(je);
+    }
+}
+ 
+
+
+
+JacksonUtil.java
+
+
+
+ 1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+ 
+ public class JacksonUtil {
+    private static ObjectMapper mapper = new ObjectMapper();
+
+    public static String bean2Json(Object obj) {
+        try {
+            return mapper.writeValueAsString(obj);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public static <T> T json2Bean(String jsonStr, Class<T> objClass) {
+        try {
+            return mapper.readValue(jsonStr, objClass);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+}
+ 
+
+
+
+JsonLibUtil.java
+
+
+
+ 1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+ 
+ public class JsonLibUtil {
+
+    public static String bean2Json(Object obj) {
+        JSONObject jsonObject = JSONObject.fromObject(obj);
+        return jsonObject.toString();
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T> T json2Bean(String jsonStr, Class<T> objClass) {
+        return (T) JSONObject.toBean(JSONObject.fromObject(jsonStr), objClass);
+    }
+}
+ 
+
+
+
+Prepare the Model class
+Here I write a simple Person class, with attributes such as Date, List, Map, and a custom class FullName to maximize the real scene.
+
+
+
+ 1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+ 
+ public class Person {
+    private String name;
+    private FullName fullName;
+    private int age;
+    private Date birthday;
+    private List<String> hobbies;
+    private Map<String, String> clothes;
+    private List<Person> friends;
+
+         // getter/setter omitted
+
+    @Override
+    public String toString() {
+        StringBuilder str = new StringBuilder("Person [name=" + name + ", fullName=" + fullName + ", age="
+                + age + ", birthday=" + birthday + ", hobbies=" + hobbies
+                + ", clothes=" + clothes + "]\n");
+        if (friends != null) {
+            str.append("Friends:\n");
+            for (Person f : friends) {
+                str.append("\t").append(f);
+            }
+        }
+        return str.toString();
+    }
+
+}
+ 
+
+
+
+
+
+
+ 1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+ 
+ public class FullName {
+    private String firstName;
+    private String middleName;
+    private String lastName;
+
+    public FullName() {
+    }
+
+    public FullName(String firstName, String middleName, String lastName) {
+        this.firstName = firstName;
+        this.middleName = middleName;
+        this.lastName = lastName;
+    }
+
+    // omit getter and setter
+
+    @Override
+    public String toString() {
+        return "[firstName=" + firstName + ", middleName="
+                + middleName + ", lastName=" + lastName + "]";
+    }
+}
+ 
+
+
+
+JSON serialization performance benchmark
+
+
+
+ 1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+ 
+ @BenchmarkMode(Mode.SingleShotTime)
+@OutputTimeUnit(TimeUnit.SECONDS)
+@State(Scope.Benchmark)
+public class JsonSerializeBenchmark {
+    /**
+           * Serialization parameter
+     */
+    @Param({"1000", "10000", "100000"})
+    private int count;
+
+    private Person p;
+
+    public static void main(String[] args) throws Exception {
+        Options opt = new OptionsBuilder()
+                .include(JsonSerializeBenchmark.class.getSimpleName())
+                .forks(1)
+                .warmupIterations(0)
+                .build();
+        Collection<RunResult> results =  new Runner(opt).run();
+                 ResultExporter.exportResult("JSON Serialization Performance", results, "count", "Second");
+    }
+
+    @Benchmark
+    public void JsonLib() {
+        for (int i = 0; i < count; i++) {
+            JsonLibUtil.bean2Json(p);
+        }
+    }
+
+    @Benchmark
+    public void Gson() {
+        for (int i = 0; i < count; i++) {
+            GsonUtil.bean2Json(p);
+        }
+    }
+
+    @Benchmark
+    public void FastJson() {
+        for (int i = 0; i < count; i++) {
+            FastJsonUtil.bean2Json(p);
+        }
+    }
+
+    @Benchmark
+    public void Jackson() {
+        for (int i = 0; i < count; i++) {
+            JacksonUtil.bean2Json(p);
+        }
+    }
+
+    @Setup
+    public void prepare() {
+        List<Person> friends=new ArrayList<Person>();
+                 Friends.add(createAPerson(" ",null));
+        friends.add(createAPerson("Tony",null));
+                 Friends.add(createAPerson(" ",null));
+                 p=createAPerson(" ", friends);
+    }
+
+    @TearDown
+    public void shutdown() {
+    }
+
+    private Person createAPerson(String name,List<Person> friends) {
+        Person newPerson=new Person();
+        newPerson.setName(name);
+        newPerson.setFullName(new FullName("zjj_first", "zjj_middle", "zjj_last"));
+        newPerson.setAge(24);
+        List<String> hobbies=new ArrayList<String>();
+                 Hobbies.add("basketball");
+                 Hobbies.add("Swim");
+        hobbies.add("coding");
+        newPerson.setHobbies(hobbies);
+        Map<String,String> clothes=new HashMap<String, String>();
+        clothes.put("coat", "Nike");
+        clothes.put("trousers", "adidas");
+                 Clothes.put("shoes", "Anta");
+        newPerson.setClothes(clothes);
+        newPerson.setFriends(friends);
+        return newPerson;
+    }
+}
+ 
+
+
+
+Explain, in the above code
+
+
+
+ 1
+ 
+  ResultExporter.exportResult("JSON Serialization Performance", results, "count", "Second");
+ 
+
+
+
+This is my own method of filling the performance test report data into the Echarts diagram, and then exporting the png image. I will not post the specific code. Refer to my github source code.
+Result graph after execution:
+
+From the above test results, Gson performance is the best when the serialization times are small. When it increases, it reaches 100000. Gson is weaker than Jackson and FastJson. At this time, FastJson performance is real, and you can also Seeing that the number is small or not, Jackson has always performed well. And that Json-lib is simply funny. ^_^
+JSON deserialization performance benchmark
+
+
+
+ 1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+ 
+ @BenchmarkMode(Mode.SingleShotTime)
+@OutputTimeUnit(TimeUnit.SECONDS)
+@State(Scope.Benchmark)
+public class JsonDeserializeBenchmark {
+    /**
+           * Deserialization parameters
+     */
+    @Param({"1000", "10000", "100000"})
+    private int count;
+
+    private String jsonStr;
+
+    public static void main(String[] args) throws Exception {
+        Options opt = new OptionsBuilder()
+                .include(JsonDeserializeBenchmark.class.getSimpleName())
+                .forks(1)
+                .warmupIterations(0)
+                .build();
+        Collection<RunResult> results =  new Runner(opt).run();
+                 ResultExporter.exportResult("JSON deserialization performance", results, "count", "seconds");
+    }
+
+    @Benchmark
+    public void JsonLib() {
+        for (int i = 0; i < count; i++) {
+            JsonLibUtil.json2Bean(jsonStr, Person.class);
+        }
+    }
+
+    @Benchmark
+    public void Gson() {
+        for (int i = 0; i < count; i++) {
+            GsonUtil.json2Bean(jsonStr, Person.class);
+        }
+    }
+
+    @Benchmark
+    public void FastJson() {
+        for (int i = 0; i < count; i++) {
+            FastJsonUtil.json2Bean(jsonStr, Person.class);
+        }
+    }
+
+    @Benchmark
+    public void Jackson() {
+        for (int i = 0; i < count; i++) {
+            JacksonUtil.json2Bean(jsonStr, Person.class);
+        }
+    }
+
+    @Setup
+    public void prepare() {
+                 jsonStr="{\"name\":\" \",\"fullName\":{\"firstName\":\"zjj_first\",\"middleName\":\"zjj_middle\",\" lastName\":\"zjj_last\"},\"age\":24,\"birthday\":null,\"hobbies\":[\"basketball\",\"swim\",\"coding\ "], \"clothes\":{\"shoes\":\"Anta\",\"trousers\":\"adidas\",\"coat\":\"Nike\"},\"friends \":[{\"name\":\" \",\"fullName\":{\"firstName\":\"xxx_first\",\"middleName\":\"xxx_middle\",\" lastName\":\"xxx_last\"},\"age\":24,\"birthday\":null,\"hobbies\":[\"basketball\",\"swim\",\"coding\ "], \"clothes\":{\"shoes\":\"Anta\",\"trousers\":\"adidas\",\"coat\":\"Nike\"},\"friends \":null},{\"name\":\"Tony\",\"fullName\":{\"firstName\":\"xxx_first\",\"middleName\":\"xxx_middle\", \"lastName\":\"xxx_last\"},\"age\":24,\"birthday\":null,\"hobbies\":[\"basketball\",\"swim\",\" Coding\"],\"clothes\":{\"shoes\":\"Anta\",\"trousers\":\"adidas\",\"coat\":\"Nike\"},\ "friends\":null},{\"name\":\"Chen Xiao Er\",\"fullName\":{\"firstName\":\"xxx_first\",\"middleName\":\" Xxx_middle\",\"lastName\":\"xxx_last\"} ,\"age\":24,\"birthday\":null,\"hobbies\":[\"basketball\",\"swim\",\"coding\"],\"clothes\":{ \"shoes\":\"Anta\",\"trousers\":\"adidas\",\"coat\":\"Nike\"},\"friends\":null}]}";
+    }
+
+    @TearDown
+    public void shutdown() {
+    }
+}
+ 
+
+
+
+Result graph after execution:
+
+As can be seen from the above test results, when deserialization, Gson, Jackson and FastJson have little difference, and the performance is excellent, and the Json-lib still continues to be funny.
+ 
+This article is from:
+https://www.xncoding.com/2018/01/09/java/jsons.html
+
+Copyright Complaint      
+Spam Report
+
+
+
+
+
+
+
+
+
+
+Intelligent Recommendation
+
+
+
+
+
+
+Two JSON class libraries Jackson and JSON-LIB performance comparison (new third test)
+
+
+
+Last updated: 2010-08-18, increasing the performance testing of GSON   Recently, some performance optimization work, when choosing the JSON class library, found that in addition to the commonly u...
+
+
+
+
+
+
+
+
+
+
+
+The comparison of the three libraries of Java operation JSON Jackson Gson fastjson is not complete...
+
+
+
+Foreword There are currently three main libraries used by Jackson Gson fastjson As the SpringBoot technology stack, the default Jackson is the best Gson Maven component address | Github address The la...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Performance comparison test results of various Java serialization libraries
+
+
+
+This test focuses on the encoding and decoding of cyclefree data structures. Some serializers support loop detection/object sharing, some serializers support both models, some serializers include meta...
+
+
+
+
+
+
+
+
+
+
+
+Implementation and Comparison of Several Common Sorts in Java
+
+
+
+[b] The algorithm for sorting is roughly divided into two categories: sequential sorting and logarithmic sorting. Sequential sorting generally uses a pair of nested loop structures (mostly two for loo...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Comparison of several common dynamic agents in Java
+
+
+
+Stamp the blue word "TopCoder"Follow us! Common dynamic agents in Java are: JDK dynamic agents, cglib, ASM, bytebuddy, etc., as shown below: •JDK dynamic proxy: Dynamically create proxy...
+
+
+
+
+
+
+
+
+
+
+
+More Recommendation
+
+
+
+
+
+
+
+
+
+
+Implementation and comparison of several sorting algorithms common in java
+
+
+
+Article Directory 1. Bubble sort 1.1 Bubble Sort Normal Edition 1.2 Upgraded version of bubble sort 2. Choose Sort 3. Insertion sort 4. Quick sort 5. Merge sort 6. Hill sort 7. Cardinality sort 8. Hea...
+
+
+
+
+
+
+
+
+
+
+
+Several performance comparison of several documents
+
+
+
+File read and write performance is affected by many factors, in which the buffer is a factor that cannot be ignored. Look at several examples to compare performance comparison of various file operatio...
+
+
+
+
+
+
+
+
+
+
+
+Json library performance comparison
+
+
+
+Seeing the public number of the little wolfI feel a little touched. From the beginning I contacted JsonObject to Gson, the most recent ObjectMapper was to serialize and deserialize json. Specific perf...
+
+
+
+
+
+
+
+
+
+
+
+JSON parsing performance comparison
+
+
+
+After obtaining the data of our project is to use JSON string to pass parameters, when the call interface of the front will pass a JSON string, the interface to JSON turn into a Map, easy to write bus...
+
+
+
+
+
+
+
+
+
+
+
+Json performance comparison
+
+
+
+Description: a data analysis 1,000,000 times, cycle 10 times Gson dependent on version 2.8.5, Jackson relies version 2.9.9.2 Short Data   Gson Jackson Serialization Cost 2222 ms. Cost 1798 ms. Co...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Related Posts
+Comparison of several common JSON libraries in Java
+Several common JSON libraries in Java
+Comparison of parsing speed of several JSON libraries in java
+Several JSON libraries simple comparison
+Java common Json library performance comparison
+Performance comparison of several commonly used JSON libraries, why fastjson is so fast
+Common Java class libraries Comparable Comparison
+Performance comparison of several methods of java-string splicing
+Several data source performance comparison of Java
+Performance comparison between two JSON class libraries, Jackson and JSON-lib (new third test)
+
+
+
+
+
+
+Popular Posts
+Several ways of eS6 export
+Introduction to Spring's three basic components
+form an encrypted form the background foreground js java
+Spring framework learning three (type data injection)
+spring-datesource.xml configuration, spring integration mybatis
+Leetcode 592. Score Adjusting C ++
+LeetCode2 Add Two Numbers
+Introduction to database integrity [Chapter] mind mapping database system
+ResNet101V2 network structure
+[Minimum path coverage]hdoj 3335: Divisibility
+
+
+
+
+
+
+Recommended Posts
+Solve Selenium.common.Exceptions.webdriveRexception: Message: Unknown Error: Cannot Find Chrome Binary
+JS references text information in the outermost JS
+The realization of Window, WindowManager and floating frame video playback in Android
+Design Mode - Component mode
+Java foundation (20) (thread pool, waiting wake-up mechanism, Voliate keyword, single case design pattern "lazy mode" "Hungry Mode")
+Apache common interview
+leetcode209. The smallest length sub-array/double pointer, prefix sum, dichotomy
+[0CTF 2016]piapiapia
+Java string interview questions and answers
+Mina develops an example of the udp protocol
+
+
+
+
+
+Related Tags
+Java foundationjavaProgramming languagejsonUnityJsonunityfastjsonjacksongsonJava
+
+
+
+
+
+
+
+
+ Copyright  DMCA © 2018-2022 - All Rights Reserved - www.programmersought.com  User Notice 
+
+
+Top
+
+
+
+
+
+
+
+
+
+
+
+
+
+

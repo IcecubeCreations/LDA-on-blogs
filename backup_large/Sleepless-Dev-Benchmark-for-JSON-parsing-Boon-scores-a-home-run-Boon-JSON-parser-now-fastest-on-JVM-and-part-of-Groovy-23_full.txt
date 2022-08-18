@@ -1,0 +1,1956 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Sleepless Dev: Benchmark for JSON parsing: Boon scores a home run! (Boon JSON parser now fastest on JVM and part of Groovy 2.3)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Sleepless Dev
+
+
+
+
+Rick's Sleepless in Dublin. Random thoughts about software development. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Subscribe To
+
+
+
+
+
+
+
+Posts
+
+
+
+
+
+
+
+
+
+
+                  Atom
+                
+
+
+
+
+
+
+
+
+
+
+Posts
+
+
+
+
+
+
+
+
+
+
+
+
+Comments
+
+
+
+
+
+
+
+
+
+
+                  Atom
+                
+
+
+
+
+
+
+
+
+
+
+Comments
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Rick
+
+
+
+
+
+Rick
+
+
+
+
+
+Tuesday, November 26, 2013
+
+
+
+
+
+
+
+
+Benchmark for JSON parsing: Boon scores a home run! (Boon JSON parser now fastest on JVM and part of Groovy 2.3)
+
+
+
+
+
+
+This post is old now. You really want to go here:
+
+
+This post is the early days of a parser that is now part of Groovy 2.3. It provides drastic JSON parsing and serialization performance improvements "The Rick (Hightower)/ Andrey duo spent a fair amount of time optimizing our JSON support, making Groovy 2.3’s JSON support usually faster than all the JSON libraries available in the Java ecosystem." --Guillaume LaForge
+
+
+
+
+
+Groovy JSON support and the Boon JSON parser are up to 3x to 5x faster than Jackson at parsing JSON from String and char[], and 2x to 4x faster at parsing byte[]. Read about all of the Java JSON benchmark details here (Jackson JSON vs. Boon and Groovy JSON Parser).
+
+
+
+
+
+
+-- Original Post --
+
+If you want to turn a JSON file into a java.util.Map, it appears that Boon is the fastest option. When I first read the article, this was not the case. I had some ideas for speeding up the JSON parsing, but never seemed to need to (it seemed fast enough). Then this article came out, http://www.infoq.com/articles/HIgh-Performance-Parsers-in-Java.
+
+I downloaded the source for the benchmark, and ran the benchmarks.
+
+Then I tweaked Boon JSON parser to be faster than GSON.
+
+I also improved compliance testing of the Boon parser, and was able to tweak performance by 20x to 25x for Boon parser in a about the first hour or so. Within about an hour of trying to tune it, I fixed some obvious mistakes and it was faster than Jackson and GSON, but much faster but faster.
+
+Then I added the performance enhancements that I dreamed about, but never implemented. Then it got really fast. Then I iterated. Iterated. Iterated. At one point I had like 20 parsers written all trying different techniques for speed. It was no longer Boon versus Jackson or Boon versus GSON. It was Boon versus Boon. 
+
+It appears it is now faster than Jackson and GSON for the use case of turning a JSON string into a java.util.Map.
+
+Boon allows turning a map into a Java object so it can do object serializaiton of JSON, but you have to first convert JSON into Map and then Map into Object.
+
+I have not performance tuned full Object serialization this and I am sure GSON and Jackson must be faster. Boon plans on supporting this so the plan is for it be very fast if not the fastest (eventually).
+
+But tune in later for more benchmarks.
+
+For now, it is just the fastest at serialization to a map.
+
+Boon does not plan on being a pull parser or a tree parser or a event parser... ever. Boon does JSON but not all the ins and outs. If you want a pull parser, use Jackson or GSON. If you want a tree view parser, use Jackson or GSON.
+
+Boon is optimized for REST calls and Websocket messages. It is not a generic JSON parser. I don't want it to be. I don't care.
+
+parsers-in-java
+
+A set of JSON parser benchmarks.
+
+JSON Compliance
+
+Using json.org/examples (http://json.org/example) as a guide:
+testing actionLabel.json 
+BOON 1 PASSED actionLabel.json 
+BOON 2 PASSED actionLabel.json 
+GSON # PASSED actionLabel.json 
+INFO Q FAILED actionLabel.json 
+JACK 1 PASSED actionLabel.json 
+
+testing menu.json 
+BOON 1 PASSED menu.json 
+BOON 2 PASSED menu.json 
+GSON # PASSED menu.json 
+INFO Q FAILED menu.json 
+JACK 1 PASSED menu.json 
+
+testing sgml.json 
+BOON 1 PASSED sgml.json 
+BOON 2 PASSED sgml.json 
+GSON # PASSED sgml.json 
+INFO Q FAILED sgml.json 
+JACK 1 PASSED sgml.json 
+
+testing webxml.json 
+BOON 1 PASSED webxml.json 
+BOON 2 PASSED webxml.json 
+GSON # PASSED webxml.json 
+INFO Q FAILED webxml.json 
+JACK 1 PASSED webxml.json 
+
+testing widget.json 
+BOON 1 PASSED widget.json 
+BOON 2 PASSED widget.json 
+GSON # PASSED widget.json 
+INFO Q FAILED widget.json 
+JACK 1 PASSED widget.json 
+
+
+
+For background, read this article on how to write fast parsers.
+
+http://www.infoq.com/articles/HIgh-Performance-Parsers-in-Java
+
+Parse times for small json 10,000,000 runs:
+GSON:         8,334 mili second
+JACKSON:      7,156
+Boon 2:       2,645
+Boon 1:       3,799
+InfoQ :      11,431
+
+
+Smaller is better.
+
+The slowest parser was the one from the article on how to write fast parser. I make mistakes too so no harm, no foul. It is still an interesting article and has good ideas. Boon 2 is 3x faster than Jackson for this use case. Boon 1 is almost 2x faster then Jackson for this use case.
+
+Parse times for large json file 1,000,000 runs:
+Boon 2:     15,543 mili second
+Boon 1:     19,967
+JACKSON:    18,985
+InfoQ:      ParserException
+GSON:       25,870
+
+
+Lower is better. It should be noted that Boon 1 was taking 200+ seconds when I first ran this test. I had to make some changes to get Boon 1 to this level. It was actually one small change. ;) I love profilers.
+
+Here is the JSON for the small json file (large JSON file is below):
+
+{
+    "debug": "on\toff",
+    "num" : 1
+
+}
+
+
+
+Source code for benchmark tests:
+
+...
+public class BoonBench2Mark {
+
+    public static void main(String[] args) throws IOException {
+        String fileName = "data/small.json.txt";
+        if(args.length > 0) {
+            fileName = args[0];
+        }
+        System.out.println("parsing: " + fileName);
+
+        DataCharBuffer dataCharBuffer = FileUtil.readFile(fileName);
+
+
+        int iterations = 10_000_000; //10.000.000 iterations to warm up JIT and minimize one-off overheads etc.
+        long startTime = System.currentTimeMillis();
+        for(int i=0; i<iterations; i++) {
+            parse(dataCharBuffer);
+        }
+        long endTime = System.currentTimeMillis();
+
+        long finalTime = endTime - startTime;
+
+        System.out.println("final time: " + finalTime);
+    }
+
+    private static void parse(DataCharBuffer dataCharBuffer) {
+        Map<String, Object> map =  JSONParser2.parseMap ( dataCharBuffer.data );
+
+
+    }
+
+}
+...
+public class BoonBenchMark {
+
+    public static void main(String[] args) throws IOException {
+        String fileName = "data/small.json.txt";
+        if(args.length > 0) {
+            fileName = args[0];
+        }
+        System.out.println("parsing: " + fileName);
+
+        DataCharBuffer dataCharBuffer = FileUtil.readFile(fileName);
+
+
+        int iterations = 10_000_000; //10.000.000 iterations to warm up JIT and minimize one-off overheads etc.
+        long startTime = System.currentTimeMillis();
+        for(int i=0; i<iterations; i++) {
+            parse(dataCharBuffer);
+        }
+        long endTime = System.currentTimeMillis();
+
+        long finalTime = endTime - startTime;
+
+        System.out.println("final time: " + finalTime);
+    }
+
+    private static void parse(DataCharBuffer dataCharBuffer) {
+        Map<String, Object> map =  JSONParser.parseMap ( dataCharBuffer.data );
+    }
+}
+...
+public class JacksonBenchmark {
+
+
+    public static void main(String[] args) throws IOException {
+        String fileName = "data/small.json.txt";
+        if(args.length > 0) {
+            fileName = args[0];
+        }
+        System.out.println("parsing: " + fileName);
+
+        DataCharBuffer dataCharBuffer = FileUtil.readFile(fileName);
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        int iterations = 10_000_000; //10.000.000 iterations to warm up JIT and minimize one-off overheads etc.
+        long startTime = System.currentTimeMillis();
+
+        String str = new String (dataCharBuffer.data);
+        for(int i=0; i<iterations; i++) {
+            parse(str, objectMapper);
+        }
+        long endTime = System.currentTimeMillis();
+
+        long finalTime = endTime - startTime;
+
+        System.out.println("final time: " + finalTime);
+    }
+
+    private static void parse(String str, ObjectMapper mapper) {
+        try {
+            Map<String, Object> map = (Map<String, Object>) mapper.readValue ( str, Map.class );
+        } catch ( IOException e ) {
+            e.printStackTrace ();  //To change body of catch statement use File | Settings | File Templates.
+        }
+
+    }
+...
+public class GsonBenchmark {
+
+    public static void main(String[] args) throws IOException {
+        String fileName = "data/small.json.txt";
+        if(args.length > 0) {
+            fileName = args[0];
+        }
+        System.out.println("parsing: " + fileName);
+
+        DataCharBuffer dataCharBuffer = FileUtil.readFile(fileName);
+        Gson gson = new Gson();
+
+        int iterations = 10_000_000; //10.000.000 iterations to warm up JIT and minimize one-off overheads etc.
+        long startTime = System.currentTimeMillis();
+        for(int i=0; i<iterations; i++) {
+            parse(dataCharBuffer, gson);
+        }
+        long endTime = System.currentTimeMillis();
+
+        long finalTime = endTime - startTime;
+
+        System.out.println("final time: " + finalTime);
+    }
+
+    private static void parse(DataCharBuffer dataCharBuffer, Gson gson) {
+        Map<String, Object> map = (Map<String, Object>) gson.fromJson (
+                new CharArrayReader ( dataCharBuffer.data, 0, dataCharBuffer.length ), Map.class );
+   }
+}
+
+
+
+Source code for large test:
+
+InfoQ
+
+package com.jenkov.parsers.round2;
+
+import com.jenkov.parsers.FileUtil;
+import com.jenkov.parsers.core.DataCharBuffer;
+import com.jenkov.parsers.core.IndexBuffer;
+import com.jenkov.parsers.json.ElementTypes;
+import com.jenkov.parsers.json.JsonParser;
+import org.boon.IO;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.boon.Exceptions.die;
+
+/**
+ */
+public class JsonParserBenchMark {
+
+    public static void main(String[] args) throws IOException {
+
+        String fileName = "data/webxml.json";
+
+
+        String fileContents = IO.read ( fileName );
+
+
+        JsonParser jsonParser   = new JsonParser();
+        IndexBuffer jsonElements = new IndexBuffer(1024, true);
+
+        int iterations = 10_000_000;
+        long startTime = System.currentTimeMillis();
+        for(int i=0; i<iterations; i++) {
+            parse(new DataCharBuffer ( fileContents.toCharArray () ), jsonParser, jsonElements);
+        }
+        long endTime = System.currentTimeMillis();
+
+        long finalTime = endTime - startTime;
+
+        System.out.println("final time: " + finalTime);
+
+
+
+
+    }
+
+    private static void parse(DataCharBuffer dataCharBuffer, JsonParser jsonParser, IndexBuffer jsonElements) {
+        jsonParser.parse(dataCharBuffer, jsonElements);
+
+    }
+
+}
+
+
+
+Jackson
+
+package com.jenkov.parsers.round2;
+
+import org.boon.IO;
+import org.codehaus.jackson.map.ObjectMapper;
+
+import java.io.IOException;
+import java.util.Map;
+
+public class JacksonBenchmark {
+
+
+
+    public static void main(String[] args) throws IOException {
+        String fileName = "data/webxml.json";
+
+
+        String fileContents = IO.read ( fileName );
+
+        ObjectMapper mapper = new ObjectMapper();
+
+        int iterations = 1_000_000; //10.000.000 iterations to warm up JIT and minimize one-off overheads etc.
+        long startTime = System.currentTimeMillis();
+        for(int i=0; i<iterations; i++) {
+            parse(fileContents, mapper);
+        }
+        long endTime = System.currentTimeMillis();
+
+        long finalTime = endTime - startTime;
+
+        System.out.println("final time: " + finalTime);
+    }
+
+    private static void parse(String fileContents, ObjectMapper mapper) {
+        try {
+            Map<String, Object> map = (Map<String, Object>) mapper.readValue ( fileContents, Map.class);
+        } catch ( IOException e ) {
+            e.printStackTrace ();  //To change body of catch statement use File | Settings | File Templates.
+        }
+
+
+    }
+
+}
+
+
+
+
+GSON
+
+package com.jenkov.parsers.round2;
+
+import com.google.gson.Gson;
+import org.boon.IO;
+
+import java.io.IOException;
+import java.util.Map;
+
+public class GsonBenchMark {
+
+
+    public static void main(String[] args) throws IOException {
+        String fileName = "data/webxml.json";
+
+
+        String fileContents = IO.read ( fileName );
+        Gson gson = new Gson();
+
+        int iterations = 1_000_000; //10.000.000 iterations to warm up JIT and minimize one-off overheads etc.
+        long startTime = System.currentTimeMillis();
+        for(int i=0; i<iterations; i++) {
+            parse(fileContents, gson);
+        }
+        long endTime = System.currentTimeMillis();
+
+        long finalTime = endTime - startTime;
+
+        System.out.println("final time: " + finalTime);
+    }
+
+    private static void parse(String fileContents, Gson gson) {
+        Map<String, Object> map = (Map<String, Object>) gson.fromJson (fileContents, Map.class );
+
+
+
+    }
+
+}
+
+
+
+BOON 2
+
+package com.jenkov.parsers.round2;
+
+import org.boon.IO;
+import org.boon.json.JSONParser2;
+
+import java.io.IOException;
+import java.util.Map;
+
+
+/**
+ */
+public class BoonBenchV2Mark {
+
+    public static void main(String[] args) throws IOException {
+        String fileName = "data/webxml.json";
+
+
+        String fileContents = IO.read ( fileName );
+
+
+        int iterations = 1_000_000; //1.000.000 iterations to warm up JIT and minimize one-off overheads etc.
+        long startTime = System.currentTimeMillis();
+        for(int i=0; i<iterations; i++) {
+            parse(fileContents);
+        }
+        long endTime = System.currentTimeMillis();
+
+        long finalTime = endTime - startTime;
+
+        System.out.println("final time: " + finalTime);
+    }
+
+    private static void parse(String fileContents) {
+        Map<String, Object> map =  JSONParser2.parseMap ( fileContents );
+
+
+    }
+
+
+}
+
+
+
+
+Boon 1
+
+package com.jenkov.parsers.round2;
+
+
+import org.boon.IO;
+import org.boon.json.JSONParser;
+
+import java.io.IOException;
+import java.util.Map;
+
+
+public class BoonV1BenchMark {
+
+
+    public static void main(String[] args) throws IOException {
+        String fileName = "data/webxml.json";
+
+
+        String fileContents = IO.read ( fileName );
+
+
+        int iterations = 1_000_000; //1.000.000 iterations to warm up JIT and minimize one-off overheads etc.
+
+        long startTime = System.currentTimeMillis();
+        for(int i=0; i<iterations; i++) {
+            parse(fileContents);
+        }
+        long endTime = System.currentTimeMillis();
+
+        long finalTime = endTime - startTime;
+
+        System.out.println("final time: " + finalTime);
+    }
+
+    private static void parse(String fileContents) {
+        Map<String, Object> map =  JSONParser.parseMap ( fileContents );
+
+
+    }
+
+}
+
+
+
+
+Large json file from json.org examples
+
+{"web-app": {
+    "servlet": [
+        {
+            "servlet-name": "cofaxCDS",
+            "servlet-class": "org.cofax.cds.CDSServlet",
+            "init-param": {
+                "configGlossary:installationAt": "Philadelphia, PA",
+                "configGlossary:adminEmail": "ksm@pobox.com",
+                "configGlossary:poweredBy": "Cofax",
+                "configGlossary:poweredByIcon": "/images/cofax.gif",
+                "configGlossary:staticPath": "/content/static",
+                "templateProcessorClass": "org.cofax.WysiwygTemplate",
+                "templateLoaderClass": "org.cofax.FilesTemplateLoader",
+                "templatePath": "templates",
+                "templateOverridePath": "",
+                "defaultListTemplate": "listTemplate.htm",
+                "defaultFileTemplate": "articleTemplate.htm",
+                "useJSP": false,
+                "jspListTemplate": "listTemplate.jsp",
+                "jspFileTemplate": "articleTemplate.jsp",
+                "cachePackageTagsTrack": 200,
+                "cachePackageTagsStore": 200,
+                "cachePackageTagsRefresh": 60,
+                "cacheTemplatesTrack": 100,
+                "cacheTemplatesStore": 50,
+                "cacheTemplatesRefresh": 15,
+                "cachePagesTrack": 200,
+                "cachePagesStore": 100,
+                "cachePagesRefresh": 10,
+                "cachePagesDirtyRead": 10,
+                "searchEngineListTemplate": "forSearchEnginesList.htm",
+                "searchEngineFileTemplate": "forSearchEngines.htm",
+                "searchEngineRobotsDb": "WEB-INF/robots.db",
+                "useDataStore": true,
+                "dataStoreClass": "org.cofax.SqlDataStore",
+                "redirectionClass": "org.cofax.SqlRedirection",
+                "dataStoreName": "cofax",
+                "dataStoreDriver": "com.microsoft.jdbc.sqlserver.SQLServerDriver",
+                "dataStoreUrl": "jdbc:microsoft:sqlserver://LOCALHOST:1433;DatabaseName=goon",
+                "dataStoreUser": "sa",
+                "dataStorePassword": "dataStoreTestQuery",
+                "dataStoreTestQuery": "SET NOCOUNT ON;select test='test';",
+                "dataStoreLogFile": "/usr/local/tomcat/logs/datastore.log",
+                "dataStoreInitConns": 10,
+                "dataStoreMaxConns": 100,
+                "dataStoreConnUsageLimit": 100,
+                "dataStoreLogLevel": "debug",
+                "maxUrlLength": 500}},
+        {
+            "servlet-name": "cofaxEmail",
+            "servlet-class": "org.cofax.cds.EmailServlet",
+            "init-param": {
+                "mailHost": "mail1",
+                "mailHostOverride": "mail2"}},
+        {
+            "servlet-name": "cofaxAdmin",
+            "servlet-class": "org.cofax.cds.AdminServlet"},
+
+        {
+            "servlet-name": "fileServlet",
+            "servlet-class": "org.cofax.cds.FileServlet"},
+        {
+            "servlet-name": "cofaxTools",
+            "servlet-class": "org.cofax.cms.CofaxToolsServlet",
+            "init-param": {
+                "templatePath": "toolstemplates/",
+                "log": 1,
+                "logLocation": "/usr/local/tomcat/logs/CofaxTools.log",
+                "logMaxSize": "",
+                "dataLog": 1,
+                "dataLogLocation": "/usr/local/tomcat/logs/dataLog.log",
+                "dataLogMaxSize": "",
+                "removePageCache": "/content/admin/remove?cache=pages&id=",
+                "removeTemplateCache": "/content/admin/remove?cache=templates&id=",
+                "fileTransferFolder": "/usr/local/tomcat/webapps/content/fileTransferFolder",
+                "lookInContext": 1,
+                "adminGroupID": 4,
+                "betaServer": true}}],
+    "servlet-mapping": {
+        "cofaxCDS": "/",
+        "cofaxEmail": "/cofaxutil/aemail/*",
+        "cofaxAdmin": "/admin/*",
+        "fileServlet": "/static/*",
+        "cofaxTools": "/tools/*"},
+
+    "taglib": {
+        "taglib-uri": "cofax.tld",
+        "taglib-location": "/WEB-INF/tlds/cofax.tld"}}}
+
+
+
+I am not sure what a micro benchmark is, and this benchmark might not be completely fair. Please let me know how to improve it.
+
+Thanks
+
+--Rick Hightower
+
+
+
+
+Posted by
+
+
+
+RickHigh
+
+
+
+
+at
+
+9:43 AM
+
+
+
+
+
+
+
+
+
+
+
+Email ThisBlogThis!Share to TwitterShare to FacebookShare to Pinterest
+
+
+
+
+
+
+
+
+
+
+
+
+2 comments:
+
+
+
+
+Perry JamesMay 17, 2020 at 4:28 PMHi everybody, I hope you are doing good. Dear admin I had scroll down your site and found it really useful for web development tools. Since I am a developer, I most often refer people to use best website in the town for web development. Your efforts are really appreciable. We also provide web development tool. Here is the link of our site   jsononline ReplyDeleteRepliesReplyJennifer blogJuly 9, 2020 at 4:27 AMI've read all your post and It's really amazing , I can say. Keep it up and I will follow every single one of them :) دمج pdfReplyDeleteRepliesReplyAdd commentLoad more...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Newer Post
+
+
+Older Post
+
+Home
+
+
+
+
+Subscribe to:
+Post Comments (Atom)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+About Me
+
+
+
+
+RickHigh
+
+
+
+View my complete profile
+
+
+
+
+
+
+Related sites
+
+
+Spark Training
+Cassandra Training
+Kafka training
+Cassandra Consulting: Architecture Analysis
+Cassandra Consulting: Quick Start
+Cassandra Course
+Amazon Cassandra Support
+Cloud Computing Executive Seminars
+Cloud Computing Experts
+InfoQ Articles
+DZone posts / articles
+Linkedin profile
+My main blog site for 2002-2009
+Outdated BIO
+Twitter Feed
+
+
+
+
+Blog Archive
+
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+2020
+
+(3)
+
+
+
+
+
+        ► 
+      
+
+
+
+February
+
+(3)
+
+
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+2017
+
+(13)
+
+
+
+
+
+        ► 
+      
+
+
+
+May
+
+(4)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+April
+
+(2)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+March
+
+(7)
+
+
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+2016
+
+(33)
+
+
+
+
+
+        ► 
+      
+
+
+
+September
+
+(1)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+June
+
+(1)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+May
+
+(7)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+April
+
+(14)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+February
+
+(9)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+January
+
+(1)
+
+
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+2015
+
+(84)
+
+
+
+
+
+        ► 
+      
+
+
+
+December
+
+(3)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+November
+
+(3)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+October
+
+(2)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+September
+
+(11)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+August
+
+(8)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+July
+
+(3)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+June
+
+(3)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+May
+
+(13)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+April
+
+(3)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+March
+
+(13)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+February
+
+(19)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+January
+
+(3)
+
+
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+2014
+
+(50)
+
+
+
+
+
+        ► 
+      
+
+
+
+December
+
+(2)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+October
+
+(1)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+September
+
+(4)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+May
+
+(12)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+April
+
+(15)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+March
+
+(8)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+February
+
+(5)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+January
+
+(3)
+
+
+
+
+
+
+
+
+
+        ▼ 
+      
+
+
+
+2013
+
+(34)
+
+
+
+
+
+        ► 
+      
+
+
+
+December
+
+(7)
+
+
+
+
+
+
+
+        ▼ 
+      
+
+
+
+November
+
+(10)
+
+Benchmark for JSON parsing: Boon scores a home run...
+Setting up new Mac book for Java DevStep 1: Instal...
+Socket Server / EchoServer / EchoClient redux
+Using mvnDebug to remote attach debuggers to Java ...
+Installing Vertx on Ubuntu 13
+MongoDB FUD
+Stackoverflow question on posting an HTTP form wit...
+Fastet Java I/O circa 2013 (Writing Large Files Re...
+Crash Java Shell
+What if Java collections and Java hierarchies were...
+
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+October
+
+(10)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+August
+
+(1)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+January
+
+(6)
+
+
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+2012
+
+(14)
+
+
+
+
+
+        ► 
+      
+
+
+
+September
+
+(7)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+June
+
+(7)
+
+
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+2011
+
+(24)
+
+
+
+
+
+        ► 
+      
+
+
+
+November
+
+(1)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+April
+
+(10)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+March
+
+(2)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+February
+
+(5)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+January
+
+(6)
+
+
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+2010
+
+(15)
+
+
+
+
+
+        ► 
+      
+
+
+
+June
+
+(1)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+May
+
+(1)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+April
+
+(1)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+March
+
+(4)
+
+
+
+
+
+
+
+        ► 
+      
+
+
+
+February
+
+(8)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Rick Hightower Copyright 2017 (C). All right reserved. Movie rights given to Jason Statham.. Simple theme. Theme images by dino4. Powered by Blogger.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Kafka and Cassandra support, training for AWS EC2
+Cassandra 3.0 Training
+
+
+
+
+
+
+
+

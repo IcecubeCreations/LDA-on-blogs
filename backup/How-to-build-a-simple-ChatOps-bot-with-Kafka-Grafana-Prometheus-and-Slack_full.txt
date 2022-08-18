@@ -1,0 +1,484 @@
+
+
+
+
+
+How to build a simple ChatOps bot with Kafka, Grafana, Prometheus, and Slack
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      Search
+    
+
+
+
+
+
+Submit your search query
+
+
+
+
+
+
+
+
+
+
+Forum
+Donate
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                            February 5, 2018
+                        
+/
+
+                                #Slack
+                            
+
+How to build a simple ChatOps bot with Kafka, Grafana, Prometheus, and Slack
+
+
+
+
+
+
+
+
+
+
+
+
+
+by Luc RussellHow to build a simple ChatOps bot with Kafka, Grafana, Prometheus, and SlackThis tutorial describes an approach for building a simple ChatOps bot, which uses Slack and Grafana to query system status. The idea is to be able to check the status of your system with a conversational interface if you’re away from your desk but still have basic connectivity e.g. on your phone:This tutorial is split into two parts: the first part will set up the infrastructure for monitoring Kafka with Prometheus and Grafana, and the second part will build a simple bot with Python which can respond to questions and return Grafana graphs over Slack.Notifications are a native feature of Grafana, i.e. the ability to send alert messages to a Slack channel if conditions are breached. A Slack bot is a slightly different tool. It will be able to respond to simple questions about the state of a system to assist with troubleshooting.The goal is to design something which runs inside a firewalled environment, without requiring proxy access, or access to any 3rd party services like Amazon S3. Graph images are therefore generated on the local file system and uploaded as attachments to Slack, to avoid hosting on public infrastructure.ComponentsThe main components here are:Kafka: A message streaming platform. This is the system we’re interested in monitoring.Prometheus: A monitoring system for collecting metrics at given intervals, evaluating rules, and triggering alerts.prometheus-jmx-exporter: A Prometheus collector that can scrape and expose JMX data, allowing us to collect metrics from Kafka.Grafana: A visualization platform, commonly used for visualizing time series data for infrastructure and application analytics. This allows us to graphically display collected metrics.Slack: The messaging application, which will allow us to interface with our chat bot.Slack bot: Described in Part Two below, a simple Python script which can retrieve graphs from Grafana and upload to Slack.These steps are based around monitoring Kafka, but the same general approach could be followed to integrate with other services.Let’s Get StartedFull source code is available here.PrerequisitesBasic knowledge of Python: the code is written for Python 3.6.Docker: docker-compose is used to run the Kafka broker.kafkacat: This is a useful tool for interacting with Kafka (e.g. publishing messages to topics)Note: if you’re in a hurry to start everything up, just clone the project from the link above and run docker-compose up -d.There are two parts to the remainder of this tutorial. The first part describes how to set up the monitoring infrastructure, and the second walks through the Python code for the Slack bot.Part One: Assemble a Monitoring StackWe’ll use Grafana and Prometheus to set up a monitoring stack. The service to be monitored is Kafka, which means we’ll need a bridge to export JMX data from Kafka to Prometheus. This prometheus-jmx-exporter docker image fulfills this role nicely. This service extracts metrics from Kafka’s JMX server and exposes them over HTTP, so they can be polled by Prometheus.To enable JMX metrics in the Kafka server, we need to apply some configuration settings to the Kafka server, and link the kafka-jmx-exporter container with the Kafka server:Ensure the KAFKA_JMX_OPTSand JMX_PORT environment variables are set on the kafka containerEnsure the kafka-jmx-exporter and kafka containers are on the same network (backend)Ensure the JMX_HOST value for the kafka-jmx-exporter container matches the KAFKA_ADVERTISED_HOST_NAME on the kafka containerEnsure the KAFKA_ADVERTISED_HOST_NAME has a corresponding entry in /etc/hosts.Pin wurstmeister/kafka to version 1.0.0. There may be an issue configuring JMX with earlier versions of the wurstmeister/kafka imagePin prom/prometheus to version v2.0.0That upgrade requires one compatibility change, which is to rename target_groups to static_configs in the prometheus.yml file.The resulting sections of the docker-compose.yml should look like this:    kafka:
+    image: wurstmeister/kafka:1.0.0
+    ports:
+      - "9092:9092"
+      - "1099:1099"
+    depends_on:
+      - zookeeper
+    environment:
+      - KAFKA_ADVERTISED_PORT=9092
+      - KAFKA_BROKER_ID=1
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper
+      - KAFKA_ADVERTISED_HOST_NAME=kafka
+      - ZOOKEEPER_CONNECTION_TIMEOUT_MS=180000
+      - KAFKA_CREATE_TOPICS=transactions:1:1
+      - KAFKA_JMX_OPTS=-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=kafka -Dcom.sun.management.jmxremote.rmi.port=1099
+      - JMX_PORT=1099
+    networks:
+      - backend
+
+  kafka-jmx-exporter:
+    build: ./prometheus-jmx-exporter
+    ports:
+      - "8080:8080"
+    links:
+      - kafka
+    environment:
+      - JMX_PORT=1099
+      - JMX_HOST=kafka
+      - HTTP_PORT=8080
+      - JMX_EXPORTER_CONFIG_FILE=kafka.yml
+    networks:
+        - backend
+
+  prometheus:
+    ports:
+      - 9090:9090/tcp
+    image: prom/prometheus:v2.0.0
+    volumes:
+      - ./etc:/etc/prometheus
+      - prometheus_data:/prometheus
+    links:
+      - kafka-jmx-exporter
+    restart: always
+    networks:
+        - backenddocker-compose.ymlGrafana can be configured to read a JSON dashboard file at startup — there is one supplied in the etc/Kafka.json, pre-configured with some sample Kafka monitoring information.Start the Monitoring StackWith everything configured appropriately, you should be able to start the stack with docker-compose up -d. Then send a few messages to Kafka with kafkacat:for i in `seq 1 3`;
+do
+        echo "hello"  | kafkacat -b kafka:9092 -t transactions
+doneView the Kafka dashboard at http://localhost:3000, and you should see something like this:Part Two: Build the Slack BotWith the monitoring infrastructure in place, we can now write our simple Slack bot. This section describes the steps to create the bot, and some relevant snippets from the code.The first step is to create and register the bot on the Slack website, which you can do by logging in to Slack, going to the https://api.slack.com/bot-users page, then searching on that page for “new bot user integration”:Create the botOn the next screen you can customize details, e.g. add an icon and description for the bot.When your bot is created, go ahead and invite it somewhere. You can create a private channel for testing:Create a channel for testingThen invite the bot to the test channel with /invite @handy_bot:Invite the botOur bot will respond to a few simple questions which we’ll define on lines 1–3:		self.respond_to = ['list graph shortcuts',
+                           'graph <shortcut>',
+                           'help']
+        self.help_msg = '```\n'
+        for answer in self.respond_to:
+            self.help_msg += f'{answer}\n'
+        self.help_msg += '```'In app.py, we’ll read our configuration file and start the bot:def main(arguments=None):
+    if not arguments:
+        arguments = docopt(__doc__)
+    config = configure(arguments['--config-file'])
+    mybot = SlackBot(config)
+    mybot.start()The start method looks like this:    def start(self):
+        if self.slack_client.rtm_connect():
+            print("Bot is alive and listening for messages...")
+            while True:
+                events = self.slack_client.rtm_read()
+                for event in events:
+                    if event.get('type') == 'message':
+                        # If we received a message, read it and respond if necessary
+                        self.on_message(event)
+
+                time.sleep(1)line 2: makes a connection to the Slack APIline 5: on a given polling frequency (1 second), check if there are any new eventsline 7: if the event is a message, drop into the on_message method, and if we get a response from that method, print it out to the channel that the message was posted in:    def on_message(self, event):
+       ...
+        full_text = event.get('text', '') or ''
+
+        if full_text.startswith(self.bot_id):
+            question = full_text[len(self.bot_id):]
+            if len(question) > 0:
+                question = question.strip().lower()
+                channel = event['channel']
+                ...
+                elif 'graph' in question:
+                    self.respond(channel, 'Please wait...', True)The on_message method is where we’ll decide how to respond to the messages the bot receives. The generate_and_upload_graph method is the most interesting response. The idea here is to start up a temporary Docker container to capture the screenshot.Grafana does have the ability to render any graph as a PNG file. However, in the latest release of Grafana there appears to be an error with the phantomjs library used internally for image generation.A more reliable utility for headless browsing is Puppeteer, based on Google Chrome, and someone has helpfully already wrapped this in a Docker image. This gives us an opportunity to experiment with the Docker Python API:    def generate_and_upload_graph(self, filename, url, channel):
+        dir_name = os.path.dirname(os.path.abspath(__file__))
+
+        client = docker.APIClient()
+
+        container = client.create_container(
+            image='alekzonder/puppeteer:1.0.0',
+            command=f'screenshot \'{url}\' 1366x768',
+            volumes=[dir_name],
+
+            host_config=client.create_host_config(binds={
+                dir_name: {
+                    'bind': '/screenshots'
+                }
+            }, network_mode='host')
+        )
+
+        files1 = prepare_dir(dir_name)
+
+        client.start(container)
+
+        # Poll for new files
+        while True:
+            time.sleep(2)
+            files2 = os.listdir(dir_name)
+            new = [f for f in files2 if all([f not in files1, f.endswith(".png")])]
+            for f in new:
+                with open(f, 'rb') as in_file:
+                    ret = self.slack_client.api_call(
+                        "files.upload",
+                        filename=filename,
+                        channels=channel,
+                        title=filename,
+                        file=io.BytesIO(in_file.read()))
+                    if 'ok' not in ret or not ret['ok']:
+                        print('File upload failed %s', ret['error'])
+                os.remove(f)
+            breaklines 6:16: use the Docker Python API to dynamically create a container based on the alekzonder/puppeteer imageline 13: binds the current directory to /screenshots in the container so we can write the file somewhere accessibleline 15: sets network_mode=host so the container can access Grafana on localhostlines 23:38 will watch for new images being added to the directory and upload themStart the BotWith the monitoring stack running, you should be able to start the bot. From the slackbot directory:$ python bot.py --config=config.yaml 
+Bot is alive and listening for messages...The bot can respond to a couple of basic requests, as below, and you can of course tailor the capabilities of a bot to the specific systems you want to monitor.Respond to a help messageConclusionChatOps bots can be useful assistants to help you operate a running system. This is a simplified use case, but the general concept can be extended to support more complex requirements.Making use of the Docker API to dynamically create containers is a convoluted mechanism for capturing a screenshot, but this technique can be particularly useful when you need to quickly add a feature to your own application which has already been wrapped as a Docker image.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    If this article was helpful, tweet it.
+
+
+
+
+        Learn to code for free. freeCodeCamp's open source curriculum has helped more than 40,000 people get jobs as developers. Get started
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+freeCodeCamp is a donor-supported tax-exempt 501(c)(3) nonprofit organization (United States Federal Tax Identification Number: 82-0779546)
+Our mission: to help people learn to code for free. We accomplish this by creating thousands of videos, articles, and interactive coding lessons - all freely available to the public. We also have thousands of freeCodeCamp study groups around the world.
+Donations to freeCodeCamp go toward our education initiatives, and help pay for servers, services, and staff.
+
+                    You can make a tax-deductible donation here.
+                
+
+
+Trending Guides
+
+
+Zoom Screen Sharing
+                        
+Decimal Place Value
+                        
+How to Get Into BIOS
+                        
+String to Int in C++
+                        
+What is msmpeng.exe
+                        
+Facetime Not Working
+                        
+Desktop Icons Missing
+                        
+How to Copy and Paste
+                        
+Delete a Page in Word
+                        
+vcruntime140.dll Error
+                        
+
+
+C++ Vector
+                        
+What is CPU
+                        
+IPV4 vs IPV6 
+                        
+What is IPTV
+                        
+HTML Font Size
+                        
+Change Mouse DPI
+                        
+How to Make a GIF
+                        
+Git Rename Branch
+                        
+Make a Video Game
+                        
+CSS Media Queries
+                        
+
+
+
+How to Open .dat Files
+                            
+Record Calls on iPhone
+                            
+Ascending vs Descending
+                            
+HTML Email Link Tutorial
+                            
+Python List Comprehension
+                            
+
+
+Password Protect Zip File
+                            
+Restore Deleted Word File
+                            
+Software Engineering Guide
+                            
+How to Find Your IP Address
+                            
+How to Find iPhone Download
+                            
+
+
+
+
+
+
+Our Nonprofit
+
+
+
+                    About
+                
+
+                    Alumni Network
+                
+
+                    Open Source
+                
+
+                    Shop
+                
+
+                    Support
+                
+
+                    Sponsors
+                
+
+                    Academic Honesty
+                
+
+                    Code of Conduct
+                
+
+                    Privacy Policy
+                
+
+                    Terms of Service
+                
+
+                    Copyright Policy
+                
+
+
+
+
+
+
+
+
+
+
+

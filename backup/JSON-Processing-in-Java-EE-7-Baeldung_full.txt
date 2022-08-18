@@ -1,0 +1,620 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+JSON Processing in Java EE 7 | Baeldung
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Start HereCourses ▼▲
+
+
+
+
+
+
+
+
+
+REST with Spring
+
+
+The canonical reference for building a production grade API with Spring
+
+
+
+
+
+
+
+
+
+
+
+Learn Spring Security ▼▲
+
+
+THE unique Spring Security education if you’re working with Java today
+
+
+
+
+
+
+
+
+
+
+
+
+Learn Spring Security Core
+
+
+Focus on the Core of Spring Security 5
+
+
+
+
+
+
+
+
+
+
+
+Learn Spring Security OAuth
+
+
+Focus on the new OAuth2 stack in Spring Security 5
+
+
+
+
+
+
+
+
+
+
+
+
+Learn Spring
+
+
+From no experience to actually building stuff​
+
+
+
+
+
+
+
+
+
+
+
+Learn Spring Data JPA
+
+
+The full guide to persistence with Spring Data JPA
+
+
+
+
+Guides ▼▲
+
+
+
+
+
+
+
+
+
+Persistence
+
+
+The Persistence with Spring guides
+
+
+
+
+
+
+
+
+
+
+
+REST
+
+
+The guides on building REST APIs with Spring
+
+
+
+
+
+
+
+
+
+
+
+Security
+
+
+The Spring Security guides
+
+
+
+
+About ▼▲
+
+
+
+
+
+
+
+
+
+Full Archive
+
+
+The high level overview of all the articles on the site.
+
+
+
+
+
+
+
+
+
+
+
+Baeldung Ebooks
+
+
+Discover all of our eBooks
+
+
+
+
+
+
+
+
+
+
+
+About Baeldung
+
+
+About Baeldung.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+JSON Processing in Java EE 7
+Last modified: May 6, 2021
+
+
+ by 
+
+baeldung 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Jakarta EEJSON 
+
+
+
+
+
+
+Jackson Top 
+Get started with Spring 5 and Spring Boot 2, through the Learn Spring course:
+>> CHECK OUT THE COURSE
+
+ 
+
+1. Overview
+
+This article will show you how to process JSON using only core Java EE, without the use of third-party dependencies like Jersey or Jackson. Pretty much everything we'll be using is provided by the javax.json package.
+2. Writing an Object to JSON String
+
+Converting a Java object into a JSON String is super easy. Let's assume we have a simple Person class:
+public class Person {
+    private String firstName;
+    private String lastName;
+    private Date birthdate;
+
+    // getters and setters
+}
+To convert an instance of that class to a JSON String, first we need to create an instance of JsonObjectBuilder and add property/value pairs using the add() method:
+JsonObjectBuilder objectBuilder = Json.createObjectBuilder()
+  .add("firstName", person.getFirstName())
+  .add("lastName", person.getLastName())
+  .add("birthdate", new SimpleDateFormat("DD/MM/YYYY")
+  .format(person.getBirthdate()));
+Notice that the add() method has a few overloaded versions. It can receive most of the primitive types (as well as boxed objects) as its second parameter.
+Once we're done setting the properties we just need to write the object into a String:
+
+
+
+JsonObject jsonObject = objectBuilder.build();
+        
+String jsonString;
+try(Writer writer = new StringWriter()) {
+    Json.createWriter(writer).write(jsonObject);
+    jsonString = writer.toString();
+}
+And that's it! The generated String will look like this:
+{"firstName":"Michael","lastName":"Scott","birthdate":"06/15/1978"}
+2.1. Using JsonArrayBuilder to Build Arrays
+
+Now, to add a little more complexity to our example, let's assume that the Person class was modified to add a new property called emails which will contain a list of email addresses:
+public class Person {
+    private String firstName;
+    private String lastName;
+    private Date birthdate;
+    private List<String> emails;
+    
+    // getters and setters
+
+}
+To add all the values from that list to the JsonObjectBuilder we'll need the help of JsonArrayBuilder:
+JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
+                
+for(String email : person.getEmails()) {
+    arrayBuilder.add(email);
+}
+        
+objectBuilder.add("emails", arrayBuilder);
+Notice that we're using yet another overloaded version of the add() method that takes a JsonArrayBuilder object as its second parameter.
+So, let's look at the generated String for a Person object with two email addresses:
+
+
+
+{"firstName":"Michael","lastName":"Scott","birthdate":"06/15/1978",
+ "emails":["[email protected]","[email protected]"]}
+2.2. Formatting the Output With PRETTY_PRINTING
+
+So we have successfully converted a Java object to a valid JSON String. Now, before moving to the next section, let's add some simple formatting to make the output more “JSON-like” and easier to read.
+In the previous examples, we created a JsonWriter using the straightforward Json.createWriter() static method. In order to get more control of the generated String, we will leverage Java 7's JsonWriterFactory ability to create a writer with a specific configuration.
+Map<String, Boolean> config = new HashMap<>();
+
+config.put(JsonGenerator.PRETTY_PRINTING, true);
+        
+JsonWriterFactory writerFactory = Json.createWriterFactory(config);
+        
+String jsonString;
+ 
+try(Writer writer = new StringWriter()) {
+    writerFactory.createWriter(writer).write(jsonObject);
+    jsonString = writer.toString();
+}
+The code may look a bit verbose, but it really doesn't do much.
+First, it creates an instance of JsonWriterFactory passing a configuration map to its constructor. The map contains only one entry which sets true to the PRETTY_PRINTING property. Then, we use that factory instance to create a writer, instead of using Json.createWriter().
+The new output will contain the distinctive line breaks and tabulation that characterizes a JSON String:
+
+
+
+{
+    "firstName":"Michael",
+    "lastName":"Scott",
+    "birthdate":"06/15/1978",
+    "emails":[
+        "[email protected]",
+        "[email protected]"
+    ]
+}
+3. Building a Java Object From a String
+
+Now let's do the opposite operation: convert a JSON String into a Java object.
+The main part of the conversion process revolves around JsonObject. To create an instance of this class, use the static method Json.createReader() followed by readObject():
+JsonReader reader = Json.createReader(new StringReader(jsonString));
+
+JsonObject jsonObject = reader.readObject();
+The createReader() method takes an InputStream as a parameter. In this example, we're using a StringReader, since our JSON is contained in a String object, but this same method could be used to read content from a file, for example, using FileInputStream.
+With an instance of JsonObject at hand, we can read the properties using the getString() method and assign the obtained values to a newly created instance of our Person class:
+Person person = new Person();
+
+person.setFirstName(jsonObject.getString("firstName"));
+person.setLastName(jsonObject.getString("lastName"));
+person.setBirthdate(dateFormat.parse(jsonObject.getString("birthdate")));
+3.1. Using JsonArray to Get List Values
+
+We'll need to use a special class, called JsonArray to extract list values from JsonObject:
+JsonArray emailsJson = jsonObject.getJsonArray("emails");
+
+List<String> emails = new ArrayList<>();
+
+for (JsonString j : emailsJson.getValuesAs(JsonString.class)) {
+    emails.add(j.getString());
+}
+
+person.setEmails(emails);
+That's it! We have created a complete instance of Person from a Json String.
+4. Querying for Values 
+
+Now, let's assume we are interested in a very specific piece of data that lies inside a JSON String.
+Consider the JSON below representing a client from a pet shop. Let's say that, for some reason, you need to get the name of the third pet from the pets list:
+
+
+
+{
+    "ownerName": "Robert",
+    "pets": [{
+        "name": "Kitty",
+        "type": "cat"
+    }, {
+        "name": "Rex",
+        "type": "dog"
+    }, {
+        "name": "Jake",
+        "type": "dog"
+    }]
+}
+Converting the whole text into a Java object just to get a single value wouldn't be very efficient. So, let's check a couple of strategies to query JSON Strings without having to go through the whole conversion ordeal.
+4.1. Querying Using Object Model API
+
+Querying for a property's value with a known location in the JSON structure is straightforward. We can use an instance of JsonObject, the same class used in previous examples:
+JsonReader reader = Json.createReader(new StringReader(jsonString));
+
+JsonObject jsonObject = reader.readObject();
+
+String searchResult = jsonObject
+  .getJsonArray("pets")
+  .getJsonObject(2)
+  .getString("name");
+
+The catch here is to navigate through jsonObject properties using the correct sequence of get*() methods.
+In this example, we first get a reference to the “pets” list using getJsonArray(), which returns a list with 3 records. Then, we use getJsonObject() method, which takes an index as a parameter, returning another JsonObject representing the third item in the list. Finally, we use getString() to get the string value we are looking for.
+4.2. Querying Using Streaming API
+
+Another way to perform precise queries on a JSON String is using the Streaming API, which has JsonParser as its main class.
+JsonParser provides extremely fast, read-only, forward access to JS, with the drawback of being somewhat more complicated than the Object Model:
+JsonParser jsonParser = Json.createParser(new StringReader(jsonString));
+
+int count = 0;
+String result = null;
+
+while(jsonParser.hasNext()) {
+    Event e = jsonParser.next();
+    
+    if (e == Event.KEY_NAME) {
+        if(jsonParser.getString().equals("name")) {
+            jsonParser.next();
+           
+            if(++count == 3) {
+                result = jsonParser.getString();
+                break;
+            }
+        }   
+    }
+}
+This example delivers the same result as the previous one. It returns the name from the third pet in the pets list.
+Once a JsonParser is created using Json.createParser(), we need to use an iterator (hence the “forward access” nature of the JsonParser) to navigate through the JSON tokens until we get to the property (or properties) we are looking for.
+
+
+
+Every time we step through the iterator we move to the next token of the JSON data. So we have to be careful to check if the current token has the expected type. This is done by checking the Event returned by the next() call.
+There are many different types of tokens. In this example, we are interested in the KEY_NAME types, which represent the name of a property (e.g. “ownerName”, “pets”, “name”, “type”). Once we stepped through a KEY_NAME token with a value of “name” for the third time, we know that the next token will contain a string value representing the name of the third pet from the list.
+This is definitely harder than using the Object Model API, especially for more complicated JSON structures. The choice between one or the other, as always, depends on the specific scenario you will be dealing with.
+5. Conclusion
+
+We have covered a lot of ground on the Java EE JSON Processing API with a couple of simple examples. To learn other cool stuff about JSON processing, check our series of Jackson articles.
+Check the source code of the classes used in this article, as well as some unit tests, in our GitHub repository.
+Jackson bottom 
+Get started with Spring 5 and Spring Boot 2, through the Learn Spring course:
+>> CHECK OUT THE COURSE
+
+Generic footer banner
+
+
+
+
+
+
+Learning to build your APIwith Spring?
+Download the E-book
+
+
+
+
+
+Comments are closed on this article!
+
+
+
+
+
+
+
+Generic sidebar banner
+
+
+
+Building a REST API with Spring 5?
+Download the E-book
+ 
+ 
+ 
+ 
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+CoursesAll Courses
+All Bulk Courses
+The Courses Platform
+SeriesJava “Back to Basics” Tutorial
+Jackson JSON Tutorial
+Apache HttpClient Tutorial
+REST with Spring Tutorial
+Spring Persistence Tutorial
+Security with Spring
+Spring Reactive Tutorials
+AboutAbout Baeldung
+The Full Archive
+Editors
+Jobs
+Our Partners
+Partner with Baeldung
+ 
+
+Terms of Service
+Privacy Policy
+Company Info
+Contact
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

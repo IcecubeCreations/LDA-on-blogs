@@ -1,0 +1,473 @@
+
+
+
+
+
+
+
+
+
+
+Exposing asynchronous communication through a synchronous REST API with Spring 5 - Trifork Blog
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Skip to main content
+
+You are currently viewing the Trifork Blog, to view our full website please go to Trifork.com
+
+
+
+
+
+About Trifork
+Software Development
+
+Axon Framework
+From The Trenches
+Frontend
+Java
+Kotlin
+Spring
+
+
+AI/ ML
+DevOps
+
+Cloud Native
+
+
+IoT
+Microservices
+Business blogs
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+
+Keep updated on the technical solutions Trifork is working on!
+
+
+
+
+
+
+
+  
+
+About Trifork
+Software Development
+
+Axon Framework
+From The Trenches
+Frontend
+Java
+Kotlin
+Spring
+
+
+AI/ ML
+DevOps
+
+Cloud Native
+
+
+IoT
+Microservices
+Business blogs
+  
+
+
+
+HomeSoftware Development Spring Axon Framework AxonExposing asynchronous communication through a synchronous REST API with Spring 5
+
+Exposing asynchronous communication through a synchronous REST API with Spring 5April 13, 2018Written by Erwin de Gier  3 Comments
+
+On my current project, we opted not to use REST for the communication between our services. Instead we make use of AxonIQ’s AxonHub, which acts as a specialized message broker. Messages can be of three types:
+
+Command – You want to change something
+Event – You want to inform others of something that happened
+Query – You want to know something
+
+The communication is asynchronous and we also have to deal with eventual consistency. If we would create an order by sending a CreateOrderCommand, this order would result in various events which update the state of the Order. We then need to send a query, of which we also receive the result asynchronous.
+Our web and mobile frontend communicate with a microservices backend through a REST API. When the user creates an order (clicks the ‘buy’ button), they expect a result immediately. For both frontends, an API which models this user experience closely makes the most sense. This means that we want a more synchronous API, where we send a ‘create order’ request and immediately receive a response.
+We implemented this using a small REST facade which translates our asynchronous communication in the backend to the synchronous communication for the frontend. This is a good use case for Spring 5’s reactive Webflux and Project Reactor. Using Project Reactor’s reactive API makes it possible to combine multiple asynchronous calls and operate on their result. Webflux handles the conversion of the reactive types (Mono, Flux) to REST responses. It optimizes the use of threads; by writing non-blocking code, we can reuse threads between asynchronous calls for handling other requests.
+Diagram 1 gives us an overview of this approach.
+
+Diagram 1
+ 
+Implementation
+Let’s have a more detailed look at the code for the create order example. Listing 1 shows the (slightly) simplified implementation of our REST controller method.
+<br>
+@PostMapping<br>
+public Mono&amp;amp;lt;ResponseEntity&amp;amp;lt;OrderResponse&amp;amp;gt;&amp;amp;gt; createOrder(CreateOrderRequest request)<br>
+{<br>
+ CreateOrderCommand command = CreateOrderCommand.fromRequest(request); //1</p>
+<p> return this.commandGateway.send(command) //2<br>
+  .flatMap(id -&amp;amp;gt; queryGateway.send(new FindOrderSummaryQuery(id))) //3<br>
+  .retryWhen(errors -&amp;amp;gt; errors.delayElements(Duration.of(100, MILLIS)) //4<br>
+  .take(10)).concatWith(Mono.error(new RuntimeException())).next() //5<br>
+  .onErrorReturn(new OrderResponse(orderID, OrderStatus.CREATED)) //6<br>
+  .map(orderResponse -&amp;amp;gt; ResponseEntity.ok().body(orderResponse)); //7<br>
+}<br>
+
+Listing 1
+We first create a command out of the REST request (line 1). A command is a message with the specific intent to change something in our domain. In this specific case, we want to create a new order.
+After creating the command, the two asynchronous calls we make are:
+<br>
+Mono&amp;amp;lt;String&amp;amp;gt; id = this.commandGateway.send(command);<br>
+
+and:
+<br>
+Mono&amp;amp;lt;OrderResponse&amp;amp;gt; orderResponse = queryGateway.send(new FindOrderSummaryQuery(id));<br>
+
+Both calls return a single value by using a Mono. A Mono is a reactive type, comparable to the Java’s CompletableFuture. It has zero or one element and can represent an error. As with all reactive types, the value (or error) is delivered over time.
+The second call takes the result of the first call as its input. We need the returned id of the command to query for the order. We use the flatMap operator to achieve this (line 3). The flatMap takes the asynchronous result of call 1 and passes this as a parameter to the lambda of call 2. The callback version can be seen in Listing 2: notice the nested lambda, which makes the code complex and less readable.
+<br>
+this.commandGateway.send(command, id -&amp;amp;gt; {<br>
+  queryGateway.send(new FindOrderSummaryQuery(id));<br>
+});<br>
+
+Listing 2
+There is a delay between sending the command and being able to query the result. When the created order cannot be found (e.g. it isn’t create yet or something has gone wrong), an exception is thrown. In this chain, this is represented as a Mono.error(throwable). We use the retryWhen method to retry the query (line 4). We do this 10 times with a delay of 100 ms. When we still don’t get a result, we throw an error (line 5). We don’t expose the error to the client, but pass an OrderResponse with the id and status CREATED (line 6). The client can then query the status of the order later by using this id. This is a form of graceful degradation.
+Finally we map the order response from the query to a response entity which can be returned by Spring. Spring actually subscribes to this whole chain and sends out the REST response for us.
+Conclusion
+Spring 5 and Project Reactor allow us to handle asynchronous communication with concise and readable code. We can do retries, error handling and the combination of multiple asynchronous calls in just a few lines.
+The integration of Webflux with Project Reactor allows the use of reactive paradigms in a REST controller. Webflux uses an asynchronous approach. While we wait for a backend query to return, we don’t block the main thread. this allows it to be used for other requests.
+Our specific use case is a good example of one of the applications of Spring 5 Webflux and Project Reactor.
+
+
+
+  Axon, Axon Framework, Software Development, Spring  Axon Framework, AxonHub, reactive, Reactor, Spring, Webflux
+
+
+
+  
+
+
+  
+
+
+  
+
+
+  
+
+
+  
+
+
+
+
+
+
+Integrating the AWS Parameter Store with Spring Cloud
+Refactoring from Elasticsearch version 1 with Java Transport client to version 6 with High Level REST client
+
+
+
+
+3 Comments
+
+  
+
+
+
+
+
+
+
+
+
+
+				Tomasz Zielichowski
+            
+
+
+
+
+				March 27, 2019 - 18:51
+            
+
+
+
+How can You use
+“this.commandGateway.send(command)
+  .flatMap()” etc.
+if commandGateway.send() returns CompletableFuture not Mono or Flux?
+
+
+
+
+
+
+
+
+				Erwin de Gier
+            
+
+
+
+
+				March 27, 2019 - 19:11
+            
+
+
+
+By wrapping the Axon command gateway with our own implementation which converts the CompletableFuture to a Mono with use of Mono.fromFuture.
+
+
+
+
+
+
+
+
+				Tomasz Zielichowski
+            
+
+
+
+
+				March 27, 2019 - 20:33
+            
+
+
+
+Thank you for your answer! That makes a lot of sense 🙂
+Great work and great article!
+Cheers
+
+
+
+
+
+
+
+
+Comments are closed
+
+
+ Recently posted on Trifork Blog 
+
+Getting out of a codependent relationship, or: how I moved to a healthy component-based Spring Security configuration
+
+
+Don’t let regulatory compliance hold you back!
+
+
+Customers Drive Modern Applications
+
+
+The case of the lost id field
+
+
+OpenAI Codex – making programmers more productive
+
+
+Blog categoriesAgile
+Android
+AngularJS
+Apache Mahout
+Artificial Intelligence/ Machine Learning
+Axon
+Axon Framework
+Business
+C#
+Cloud Native
+Conference
+Content Management
+DevOps
+Digital Transformation
+Docker
+Education
+Enterprise Search
+From The Trenches
+Frontend
+General
+Groovy
+GWT
+Hippo
+HTML5
+Internet of Things
+iPad
+iPhone
+Java
+Knowledge
+Kotlin
+Liferay
+Magnolia
+Microservices
+Mobile
+Newsletter
+NoSQL
+NoSQL & Search
+Objective C
+Recruitment
+Software Development
+Spring
+System Administration
+Training
+User Experience
+Windows Phone
+GOTO Academy
+Upcoming IT courses (Virtual & On-Site):
+
+VIRTUAL | Core Spring | May 10-13, 2022
+
+AMSTERDAM | Core Spring | May 10-13, 2022
+AMSTERDAM | Software Architecture for Developers with Simon Brown | May 24-25, 2022
+
+AMSTERDAM | Designing Microservices with Sam Newman | October 25-27, 2022
+GOTO Conferences
+GOTO Amsterdam | June 12-15, 2022
+
+Trifork Blog © 2020 Trifork A/S. All rights reserved Trifork 
+ 
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

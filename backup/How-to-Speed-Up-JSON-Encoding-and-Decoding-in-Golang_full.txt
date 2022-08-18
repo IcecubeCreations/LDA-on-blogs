@@ -1,0 +1,453 @@
+How to Speed Up JSON Encoding and Decoding in GolangWorksServicesExpertiseDomainsCompanyBlogContact usWorksServicesExpertiseDomainsCompanyBlogContactsRecent projectsHealthfullyAn enterprise healthcare platform to optimize medical practice and connect doctors with patientsKPMGA mobile application for users to contact consultants and request a call back in real timeTransportation management systemA SaaS solution for transportation management and process automationmore worksCustom software developmentYalantis delivers custom technical solutions tailored to specific business objectivesDevelopment team augmentationYalantis staffs and manages remote high-performing teams cost-efficiently and within tight deadlinesIT consultingOur experts architect streamlined IT delivery systems with a high level of consistency and qualitySoftware reengineering and supportFor business continuity and sustainability, we transfer support duties and risks of any type to our IT expertsTechnologyCloud and DevOpsBig data and analyticsInternet of ThingsCybersecurityHigh load systemsUI and UX designSolutionsSaaS development servicesEnd-to-end business solutionsDigital transformationMobile software product developmentService DeliveryDeadline complianceDelivery optimizationStaff retentionCustomer success managementSupply chainCustom TMS, WMS, FMS, MRP, ERP and other solutions for the industryHealthcareCustom EHR, EMR, ERX, and other types of medical software productsCommunicationCustom modules and full-fledged platforms for the communication industryAboutYour trusted technology partner with industry expertise and professional development skillsManagementLearn about the Yalantis leadership teamClientsKPMG and Zillow have already entrusted us their digital trasformationEventsSharing our experience and nurturing talents through our Y-niversity events and coursesCareersWe look for people with excellent soft skills, inquiring minds, and aspirations for constant developmentAllCheck out our full set of the useful content about business, technology, and designBusinessDiscover business insights and ideas for your company sustainability and expansionTechnologyLearn more about the development trends and optimal tech solutions for your businessDesignObtain design guidelines and inspiration for projecting efficient user experience YalantisFind out more about how Yalantis operates to deliver top quality software productsProject inquirieshello@yalantis.comCareerscareers@yalantis.comCyprus 8 Athinon street,  Larnaca, 6023 Estonia 12 Parda,  Tallinn, 10151 Ukraine 12 Vasylya Stusa street, Lviv, 79000  8 Illinska street, Kyiv, 04070  5 Dmytra Yavornytskoho avenue, Dnipro, 49005 LatestBusinessTechnologyDesignYalantisSUBSCRIBEYalantis›Blog›TechnologyBest Practices for Speeding Up JSON Encoding and Decoding in Go Gregory Golovko  Golang developerSHAREAccording to the official Go documentation, to decode or encode JSON data we should use the Unmarshal and Marshal functions respectively. So in this manual, the terms marshalling and encoding are used interchangeably. In this post, we provide you with a guide and compare the most popular and effective fast encoding and decoding techniques in Go. We also provide Go code examples to check how the most popular tools deal with encoding/decoding objects of different sizes.Libraries for accelerating JSON marshalling/unmarshallingThere are several solutions how to use JSON files with Golang: encoding/json (the standard package)ffjsonfastjsoneasyjsonjson-iterator/go.Let’s take a quick look at these packages and write a code example for benchmark testing. encoding/jsonGolang has a standard package, encoding/json, that allows for easy and fast encoding and decoding. Here’s an example of a benchmark for marshalling and unmarshalling JSON objects: 
+
+// Benchmark large object marshal method from std package
+
+func BenchmarkStdMarshalLarge(b *testing.B) {
+
+    var l int64
+
+    for i := 0; i < b.N; i++ {
+
+        data, err := json.Marshal(&largeData)
+
+        if err != nil {
+
+            b.Error(err)
+
+        }
+
+        l = int64(len(data))
+
+    }
+
+    b.SetBytes(l)
+
+}
+
+ 
+
+// Benchmark concurrent large object marshal method from std package
+
+func BenchmarkStdMarshalLargeParallel(b *testing.B) {
+
+    var l int64
+
+    b.RunParallel(func(pb *testing.PB) {
+
+        for pb.Next() {
+
+            data, err := json.Marshal(&largeData)
+
+            if err != nil {
+
+                b.Error(err)
+
+            }
+
+            l = int64(len(data))
+
+        }
+
+    })
+
+    b.SetBytes(l)
+
+}
+
+ 
+
+// Benchmark large object unmarshal method from std package
+
+func BenchmarkStdUnmarshalLarge(b *testing.B) {
+
+    b.SetBytes(int64(len(largeStructString)))
+
+    for i := 0; i < b.N; i++ {
+
+        var s LargeStruct
+
+        err := json.Unmarshal(largeStructString, &s)
+
+        if err != nil {
+
+            b.Error(err)
+
+        }
+
+    }
+
+}
+
+But this package uses reflection while iteratively declaring the member of a structure and defining its type. This leads to low performance with high-load systems.Binary encoding is the best practice to solve this problem. It’s unavailable in the standard package but is widely used by other Go libraries such as ffjson and easyjson.  ffjsonThe main aim of this package is to facilitate JSON serialization with no additional code changes. Ffjson generates static MarshalJSON and UnmarshalJSON functions that reduce reliance upon runtime reflection for serialization. If ffjson doesn’t understand a Type involved, it falls back to encoding/json. This means the package is a safe drop-in replacement. To generate code, add the following line to your file ffjson <filename>.goHere’s an example of statically generated code for marshalling/unmarshalling methods with the ffjson package:
+
+// MarshalJSON marshal bytes to json - template
+
+func (j *LargeStruct) MarshalJSON() ([]byte, error) {
+
+    var buf fflib.Buffer
+
+    if j == nil {
+
+        buf.WriteString("null")
+
+        return buf.Bytes(), nil
+
+    }
+
+    err := j.MarshalJSONBuf(&buf)
+
+    if err != nil {
+
+        return nil, err
+
+    }
+
+    return buf.Bytes(), nil
+
+}
+
+ 
+
+...
+
+ 
+
+// UnmarshalJSON umarshall json - ffjson template
+
+func (j *LargeStruct) UnmarshalJSON(input []byte) error {
+
+    fs := fflib.NewFFLexer(input)
+
+    return j.UnmarshalJSONFFLexer(fs, fflib.FFParse_map_start)
+
+}And here’s an example of marshalling/unmarshalling methods for large JSON objects: 
+
+// Benchmark large object marshal method from ffjson package
+
+func BenchmarkFfJsonMarshalLarge(b *testing.B) {
+
+    var l int64
+
+    for i := 0; i < b.N; i++ {
+
+        data, err := ffjson.MarshalFast(&largeData)
+
+        if err != nil {
+
+            b.Error(err)
+
+        }
+
+        l = int64(len(data))
+
+    }
+
+    b.SetBytes(l)
+
+}
+
+ 
+
+// Benchmark large object marshal method with pool from ffjson package
+
+func BenchmarkFfJsonMarshalLargeWithPool(b *testing.B) {
+
+    var l int64
+
+    for i := 0; i < b.N; i++ {
+
+        data, err := ffjson.MarshalFast(&largeData)
+
+        if err != nil {
+
+            b.Error(err)
+
+        }
+
+        l = int64(len(data))
+
+        ffjson.Pool(data)
+
+    }
+
+    b.SetBytes(l)
+
+}
+
+ 
+
+// Benchmark concurrent large object marshal method from ffjson package
+
+func BenchmarkFfJsonMarshalLargeParallel(b *testing.B) {
+
+    var l int64
+
+    b.RunParallel(func(pb *testing.PB) {
+
+        for pb.Next() {
+
+            data, err := ffjson.MarshalFast(&largeData)
+
+            if err != nil {
+
+                b.Error(err)
+
+            }
+
+            l = int64(len(data))
+
+        }
+
+    })
+
+    b.SetBytes(l)
+
+}
+
+ 
+
+// Benchmark concurrent large object marshal method with pool from ffjson package
+
+func BenchmarkFfJsonMarshalLargeWithPoolParallel(b *testing.B) {
+
+    var l int64
+
+    b.RunParallel(func(pb *testing.PB) {
+
+        for pb.Next() {
+
+            data, err := ffjson.MarshalFast(&largeData)
+
+            if err != nil {
+
+                b.Error(err)
+
+            }
+
+            l = int64(len(data))
+
+            ffjson.Pool(data)
+
+        }
+
+    })
+
+    b.SetBytes(l)
+
+}
+
+ 
+
+// Benchmark large object unmarshal method from ffjson package
+
+func BenchmarkFfJsonUnmarshalLarge(b *testing.B) {
+
+    b.SetBytes(int64(len(largeStructString)))
+
+    for i := 0; i < b.N; i++ {
+
+        var s LargeStruct
+
+        if err := ffjson.UnmarshalFast(largeStructString, &s); err != nil {
+
+            b.Error(err)
+
+        }
+
+    }
+
+}easyjsonThis package aims to keep generated Go code simple enough so that it can be easily optimized or fixed. Another goal is to allow users to customize the generated code by providing options unavailable with the standard encoding/json package.Add this line to generate code:easyjson -all <filename>.goIncluding -all generates a marshaller and unmarshaller for all Go structures in the <filename>.go file. Here’s an example of statically generated code: 
+
+// MarshalJSON supports json.Marshaler interface
+
+func (v LargeStruct) MarshalJSON() ([]byte, error) {
+
+    w := jwriter.Writer{}
+
+    easyjson794297d0EncodeGitlabYalantisComJsonEncodingBenchmarkEasyjson10(&w, v)
+
+    return w.Buffer.BuildBytes(), w.Error
+
+}
+
+ 
+
+// UnmarshalJSON supports json.Unmarshaler interface
+
+func (v *LargeStruct) UnmarshalJSON(data []byte) error {
+
+    r := jlexer.Lexer{Data: data}
+
+    easyjson794297d0DecodeGitlabYalantisComJsonEncodingBenchmarkEasyjson10(&r, v)
+
+    return r.Error()
+
+}And here are examples of benchmark methods for marshalling and unmarshalling large JSON objects. 
+
+ // Benchmark large object marshal method from easyjson package
+
+func BenchmarkEasyJsonMarshalLarge(b *testing.B) {
+
+    var l int64
+
+    for i := 0; i < b.N; i++ {
+
+        data, err := largeData.MarshalJSON()
+
+        if err != nil {
+
+            b.Error(err)
+
+        }
+
+        l = int64(len(data))
+
+    }
+
+    b.SetBytes(l)
+
+}
+
+ 
+
+// Benchmark concurrent large object marshal method from easyjson package
+
+func BenchmarkEasyJsonMarshalLargeParallel(b *testing.B) {
+
+    b.SetBytes(int64(len(largeStructString)))
+
+    b.RunParallel(func(pb *testing.PB) {
+
+        for pb.Next() {
+
+            if _, err := largeData.MarshalJSON(); err != nil {
+
+                b.Error(err)
+
+            }
+
+        }
+
+    })
+
+}
+
+ 
+
+// Benchmark large object unmarshal method from easyjson package
+
+func BenchmarkEasyJsonUnmarshalLarge(b *testing.B) {
+
+    b.SetBytes(int64(len(largeStructString)))
+
+    for i := 0; i < b.N; i++ {
+
+        var s LargeStruct
+
+        if err := s.UnmarshalJSON(largeStructString); err != nil {
+
+            b.Error(err)
+
+        }
+
+    }
+
+}The above-mentioned packages implement binary encoders that generate static code for each component. This speeds up serialization. fastjsonAnother useful technique that facilitates encoding and decoding is direct string splitting. The following approach doesn’t implement marshalling and unmarshalling. It just performs functions for working with string variables in JSON format and proves itself to be a good solution for marshalling. This package parses arbitrary JSON without code generation, schema, and reflection. It quickly extracts part of the original JSON with Value.Get(...).MarshalTo and modifies it with the Del and Set functions. It can parse arrays containing values with distinct types – for example, it easily parses the following JSON array: [458, "foo", [155], {"a": "b"}, null].Here’s an example of a benchmark for parsing large objects:  
+
+// Benchmark large object parse method from fastjson package
+
+func BenchmarkFastJsonParseLarge(b *testing.B) {
+
+    b.SetBytes(int64(len(xlStructString)))
+
+    for i := 0; i < b.N; i++ {
+
+        if _, err := fastjson.Parse(string(largeStructString)); err != nil {
+
+            b.Error(err)
+
+        }
+
+    }
+
+}But it’s unable to parse JSON from io. Reader. For speeding up JSON parsing in Golang from a string, you should use the Scanner type.json-iterator/goJust like the standard package, this one is based on reflection, but it claims to have better performance and speed.It doesn’t require code generation; just import json-iterator/go in place of the standard package. Below, you’ll find an example of a benchmark method for marshalling and unmarshalling large JSON objects. 
+
+// Benchmark large object marshal method from jsoniter package
+
+
+
+func BenchmarkJsonIterMarshalLarge(b *testing.B) {
+
+    var l int64
+
+    for i := 0; i < b.N; i++ {
+
+        data, err := jsoniter.Marshal(&largeData)
+
+        if err != nil {
+
+            b.Error(err)
+
+        }
+
+        l = int64(len(data))
+
+    }
+
+    b.SetBytes(l)
+
+}
+
+ 
+
+// Benchmark concurrent large object marshal method from jsoniter package
+
+func BenchmarkJsonIterMarshalLargeParallel(b *testing.B) {
+
+    var l int64
+
+    b.RunParallel(func(pb *testing.PB) {
+
+        for pb.Next() {
+
+            data, err := jsoniter.Marshal(&largeData)
+
+            if err != nil {
+
+                b.Error(err)
+
+            }
+
+            l = int64(len(data))
+
+        }
+
+    })
+
+    b.SetBytes(l)
+
+}
+
+ 
+
+// Benchmark large object unmarshal method from jsoniter package
+
+func BenchmarkJsonIterUnmarshalLarge(b *testing.B) {
+
+    b.SetBytes(int64(len(largeStructString)))
+
+    for i := 0; i < b.N; i++ {
+
+        var s LargeStruct
+
+        err := jsoniter.Unmarshal(largeStructString, &s)
+
+        if err != nil {
+
+            b.Error(err)
+
+        }
+
+    }
+
+}Comparing librariesFirst, let’s conduct a general analysis of the packages. Both ffjson and easyjson are developed at the same pace and don’t have official releases. Json-iterator/go is being developed intensively, and its creators quickly resolve issues. Also, this package has quickly gained strong support from the developer community. Despite its young age, valyala/fastjson has gained trust in the developer community. To date, there’s a small list of issues, most of which have been quickly resolved.The table below sums up the general characteristics of these packages. It lists the current versions of the packages or their last common hashes in case the package has no official releases. The next step of our comparison is speed testing. For this, we used Go 1.12.6. Using the code above, we’ll check how fast the standard package and four alternative solutions perform Go JSON decoding and encoding. Read also: Node.js vs Go: Which Is Better for Backend Web Development?For more precise results, we performed benchmark tests with three types of objects:Small objects (up to 512 KB)Large objects (from 1 to 10 MB)Extra large objects (larger than 10 MB).Here are the results of our benchmark tests:To analyze the results of benchmark tests, we’ve created a bar chart that shows the speed of encoding and decoding JSON objects and the memory allocation for the encoding/json, json-iterator/go, ffjson, and easyjson packages. Here are the memory allocation indicators:Here’s we try to define the fastest JSON encoder/decoder: Let’s compare the packages that use reflection for encoding/decoding: encoding/json and json-iterator/go. The standard package performs encoding faster. If we talk about how to speed up the decoding scanner, json-iterator/go performs four times faster than the standard library.Next are easyjson and ffjson, which use static code generation. The benchmark tests showed that easyjson works 1.5 to 3 times faster than fastjson for both encoding and decoding. The results also showed 3 times faster parallel encoding/decoding in comparison with other packages. Such high results are reached by the effective use of a buffer pool, which divides large chunks of data into small portions for their further use with sync.Pool().The results of fastjson showed that the parsing method works 3,600 times faster with small objects than with other packages. But on the other hand, its speed decreases as the object size grows. So the speed of encoding large objects is 2 to 3 times slower than others. This is explained by the time-consuming process of text parsing. Bottom line Our benchmark tests let us make the following conclusions:Encoding/json is a good solution for working with small objects that have no need to withstand high load. If you need to marshall millions of objects with a similar structure, you can use packages with static code generation. Binary serialization requires two to four times more RAM for handling data compared with other methods.The parsing method used in fastjson boasts exceptional performance, but it can’t decode JSON into objects; it just creates a fieldset. You can get access to these fields using their keys. The fastjson package can be used when you need to check whether a field exists or get the value while bypassing the decoding process. As you can see, the choice of marshalling/unmarshalling method heavily depends on the type of data you’re going to work with. If you wonder what the best solution is for your project or want to find Go developers for your project, you can always write us. We’ll be glad to help you with Golang development. 4.8/ 5.0 Article rating 514  Reviews  Remember those Facebook reactions? Well, we aren't Facebook but we love reactions too. They can give us valuable insights on how to improve what we're doing. Would you tell us how you feel about this article? Get stories to you email once a month!Want stories to your inbox?BusinessWhy Use the Go Language for Your Project?TechnologyCode Review Via GitLab Merge RequestsTechnologyHow to Use Websockets in Golang: Best Tools and Step-by-Step GuideWorksAll case studiesHealthcare platform for HealthfullyCommunication software for KPMGTransportation management systemServicesCustom software developmentDevelopment team augmentationIT consultingSoftware reengineering and supportExpertiseTechnologyCloud and DevOpsBig data and analyticsInternet of ThingsCybersecurityHigh load systemsUI and UX designSolutionsSaaS development servicesEnd-to-end business solutionsDigital transformationMobile software product developmentService DeliveryDeadline complianceDelivery optimizationStaff retentionCustomer success managementDomainsSupply chainHealthcareCommunicationCompanyAboutManagementClientsEventsСareers©Copyright 2022 Yalantis – custom software development & engineering services. All Rights ReservedPrivacy PolicyContact usNothing Found. Please try again with some different keywords.WorksServicesExpertiseDomainsCompanyBlogContact usWorksServicesExpertiseDomainsCompanyBlogContactsRecent projectsHealthfullyAn enterprise healthcare platform to optimize medical practice and connect doctors with patientsKPMGA mobile application for users to contact consultants and request a call back in real timeTransportation management systemA SaaS solution for transportation management and process automationmore worksCustom software developmentYalantis delivers custom technical solutions tailored to specific business objectivesDevelopment team augmentationYalantis staffs and manages remote high-performing teams cost-efficiently and within tight deadlinesIT consultingOur experts architect streamlined IT delivery systems with a high level of consistency and qualitySoftware reengineering and supportFor business continuity and sustainability, we transfer support duties and risks of any type to our IT expertsTechnologyCloud and DevOpsBig data and analyticsInternet of ThingsCybersecurityHigh load systemsUI and UX designSolutionsSaaS development servicesEnd-to-end business solutionsDigital transformationMobile software product developmentService DeliveryDeadline complianceDelivery optimizationStaff retentionCustomer success managementSupply chainCustom TMS, WMS, FMS, MRP, ERP and other solutions for the industryHealthcareCustom EHR, EMR, ERX, and other types of medical software productsCommunicationCustom modules and full-fledged platforms for the communication industryAboutYour trusted technology partner with industry expertise and professional development skillsManagementLearn about the Yalantis leadership teamClientsKPMG and Zillow have already entrusted us their digital trasformationEventsSharing our experience and nurturing talents through our Y-niversity events and coursesCareersWe look for people with excellent soft skills, inquiring minds, and aspirations for constant developmentAllCheck out our full set of the useful content about business, technology, and designBusinessDiscover business insights and ideas for your company sustainability and expansionTechnologyLearn more about the development trends and optimal tech solutions for your businessDesignObtain design guidelines and inspiration for projecting efficient user experience YalantisFind out more about how Yalantis operates to deliver top quality software productsProject inquirieshello@yalantis.comCareerscareers@yalantis.comCyprus 8 Athinon street,  Larnaca, 6023 Estonia 12 Parda,  Tallinn, 10151 Ukraine 12 Vasylya Stusa street, Lviv, 79000  8 Illinska street, Kyiv, 04070  5 Dmytra Yavornytskoho avenue, Dnipro, 49005 Join for monthly insightsWe’ll send a careful selection of how-to articles, case studies, and Yalantis updates to your inbox at the end of each month!Enter your email address I accept your Privacy Policy Subscribe You’re in! Get ready to becomeeven more tech-savvy.You can always unsubscribe if you get bored.We use cookies to personalize our services and improve your experience on this website and its subdomains. We may use certain personal data for analytics and marketing purposes. Please read our Privacy Policy before using this website.I agreeI need to see Privacy Policy first

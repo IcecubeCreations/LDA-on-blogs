@@ -1,0 +1,951 @@
+
+
+
+
+
+Java JSON Parsers or How to Parse JSON in Java – Java Programming Tutorials
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+Skip to content 
+
+
+
+
+						Java Programming Tutorials
+					
+
+ 
+
+
+
+
+
+Menu 
+
+
+
+
+
+
+
+
+Menu 
+Home
+Java
+
+
+
+Java Core Tutorials
+
+
+
+Java String
+Java Collections Framework
+Java Multithreading and Concurrency
+
+
+Spring Framework Tutorials
+Hibernate Tutorials
+
+
+JavaScript
+
+
+
+GAMES
+
+
+
+Snake Game
+
+
+
+
+Database
+
+
+
+MySQL
+
+
+VCS
+
+
+
+Git Tutorials
+
+
+BOOKS
+ 
+
+
+
+
+
+
+
+
+
+
+Java JSON Parsers or How to Parse JSON in Java 
+May 24, 2021February 13, 2019 
+
+
+This article is an overview of Java JSON libraries.
+You’ll learn how to parse (decode) JSON in Java – string to object representation.
+I’ll explain 2 approaches of parsing JSON in Java and what is a best Java JSON library for each case.
+But first of all, let’s define what is a JSON and why do you need it.
+JSON is a text-based data exchange format.
+It defines only two data structures: objects and arrays.
+An object is a set of name-value pairs, and an array is a list of values.
+JSON defines seven value types: string, number, object, array, true, false, and null.
+It was introduced in JavaScript world as a replacement for the XML format, but now it is widely spread.
+JSON is often used as a common format to serialize and deserialize data in applications that communicate with each other over the Internet.
+So it is more compact and lightweight alternative to XML and de-facto standard for REST API.
+JSON Parsers in Java
+There are two main approaches to generate and parse JSON in Java:
+Object model:
+The parser creates tree-like object model in memory that represents JSON document.This gives an access to all content of JSON document by navigating tree structure, but it consumes a lot of memory as the whole document has to be loaded.The object model generates JSON output by navigating the entire tree at once.
+Streaming model:
+The event-based parser uses Streaming API.The parser reads JSON document one element step by step.It generates an event when found specific key or value.This approach is preferable if we don’t need all information from JSON document but search for something specific.The Streaming API generates JSON output to a given stream by making a function call with one element at a time.
+Usually, JSON Java libraries provide a quite simple processing flow:
+You should read a string (input stream, byte array etc.) using JSON reader into the JSON object.You can iterate through object properties and extract the data
+Java API for JSON Processing
+The Java API for JSON Processing (JSON-P) is described in JSR 353.
+The implementation was introduced in Java EE 7.
+Of course, you can use this API in Java SE environment, but in this case, you need to add to your application classpath corresponding library, that implement JSON-P API.
+You can download it here:
+https://github.com/javaee/jsonp/tree/master/impl
+Adding JSON-P API library in Maven environment is easy and absolutely straightforward, as usual:
+<dependency>
+    <groupId>javax.json</groupId>
+    <artifactId>javax.json-api</artifactId>
+    <version>1.1.2</version>
+</dependency>
+Let’s create small example how to create JSON file and parse it with help of JSON-P library:
+package com.explainjava;
+ 
+import javax.json.*;
+import javax.json.stream.JsonGenerator;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
+ 
+ 
+public class JsonpExample {
+    public static void main(String[] args) {
+        System.out.println("JSON-P Glassfish implementation example");
+        Map<String, Object> configs = new HashMap<>();
+        configs.put(JsonGenerator.PRETTY_PRINTING, true);
+        JsonBuilderFactory factory = Json.createBuilderFactory(configs);
+ 
+        JsonObject jsonObject = factory.createObjectBuilder().addNull("nullField")
+                .add("stringField", "String value")
+                .add("trueField", true)
+                .add("falseField", false)
+                .add("numberField", 42.1)
+                .add("arrayField", Json.createArrayBuilder().add("String value").add(new BigDecimal(34.32).setScale(2, BigDecimal.ROUND_HALF_UP))
+                        .add(Json.createObjectBuilder().add("innerObjectField", "innerObjectField value").build())
+                        .build())
+                .build();
+ 
+        System.out.println("Generated JSON file:");
+        JsonWriter outWriter = Json.createWriterFactory(configs).createWriter(System.out);
+        outWriter.writeObject(jsonObject);
+        System.out.println();
+ 
+        // now we parse JSON
+ 
+        StringWriter stringWriter = new StringWriter();
+        JsonWriter writer = Json.createWriterFactory(configs).createWriter(stringWriter);
+        writer.writeObject(jsonObject);
+ 
+        StringReader reader = new StringReader(stringWriter.toString());
+        JsonReader jsonReader = Json.createReader(reader);
+ 
+        System.out.println("Parsed values:");
+        JsonObject newJsonObject = jsonReader.readObject();
+        Object nullField = newJsonObject.isNull("nullField") ? null : newJsonObject.get("nullField");
+        System.out.println(nullField);
+        String stringField = newJsonObject.getString("stringField", "default value in case string field is null or doesn't exist");
+        System.out.println(stringField);
+        Boolean trueField = newJsonObject.getBoolean("trueField", false);
+        System.out.println(trueField);
+        Boolean falseField = newJsonObject.getBoolean("falseField", false);
+        System.out.println(falseField);
+        int intNumber = newJsonObject.getInt("numberField", 0);
+        System.out.println(intNumber);
+        BigDecimal number = newJsonObject.getJsonNumber("numberField").bigDecimalValue();
+        System.out.println(number);
+    }
+}
+First, we create a map with configuration settings and generate JsonBuilderFactory factory, it will provide numerous builders, such as createObjectBuilder and createArrayBuilder.
+Thee main JSON-P API entry point is singleton JSON class.
+Next, with help of factory, we generate a JSON representation of an object, which consists all JSON types: string, number, object, array, true, false, and null.
+After that, JsonObject can be used for writing with help of JsonWriter, which is once again provided by WriterFactory:
+JsonWriter outWriter = Json.createWriterFactory(configs).createWriter(System.out);
+For simplicity, we are using System.out output as a target in this example.
+writer.writeObject(jsonObject);
+the output is:
+{  
+   "nullField":null,
+   "stringField":"String value",
+   "trueField":true,
+   "falseField":false,
+   "numberField":42.1,
+   "arrayField":[  
+      "String value",
+      34.32,
+      {  
+         "innerObjectField":"innerObjectField value"
+      }
+   ]
+}
+Looks quite easy.
+But be careful with BigDecimal class, use scale() method to restrict a number of digits.
+As it was told before, we can use two different approaches to read values in JSON format: Streaming and Object model. JSON-P supports both of them.
+Let’s try to read values we stored with help of Object model approach.
+As a source we are using generated JSON we already have.
+First, we need JsonWriter:
+StringWriter stringWriter = new StringWriter();
+JsonWriter writer = Json.createWriterFactory(configs).createWriter(stringWriter);
+writer.writeObject(jsonObject);
+StringReader reader = new StringReader(stringWriter.toString());
+JsonReader jsonReader = Json.createReader(reader);
+Since we have no settings for a reader, we don’t need to use a factory.
+So, let’s read data from JsonReader and print it to system output:
+JsonObject newJsonObject = jsonReader.readObject();
+Object nullField = newJsonObject.isNull("nullField") ? null : newJsonObject.get("nullField");
+System.out.println(nullField);
+String stringField = newJsonObject.getString("stringField", "default value in case string field is null or doesn't exist");
+System.out.println(stringField);
+Boolean trueField = newJsonObject.getBoolean("trueField", false);
+System.out.println(trueField);
+Boolean falseField = newJsonObject.getBoolean("falseField", false);
+System.out.println(falseField);
+int intNumber = newJsonObject.getInt("numberField", 0);
+System.out.println(intNumber);
+BigDecimal number = newJsonObject.getJsonNumber("numberField").bigDecimalValue();
+System.out.println(number);
+Once again, looks simple, but pay attention to the default value, defined in methods call as the second parameter.
+As you can see, we read the whole object from a reader and created JSON document’s representation JsonObject.
+It gives an ability to read all supported by JSON format types, and from these pieces, we could restore quite complicated objects.
+In a case when we have a huge file in JSON format, and we interesting only in small part of data, this approach is not effective.
+So, Streaming API comes to the stage.
+There is an example of using Streaming API:
+reader = new StringReader(stringWriter.toString());
+final JsonParser parser = Json.createParser(reader);
+String key = null;
+String value = null;
+while (parser.hasNext()) {
+    final JsonParser.Event event = parser.next();
+    switch (event) {
+        case KEY_NAME:
+            key = parser.getString();
+            System.out.println("key was found: " + key);
+            break;
+        case VALUE_STRING:
+            String string = parser.getString();
+            System.out.println(string);
+            break;
+        case VALUE_NUMBER:
+            BigDecimal bdNumber = parser.getBigDecimal();
+            System.out.println(bdNumber);
+            break;
+        case VALUE_TRUE:
+            System.out.println(true);
+            break;
+        case VALUE_FALSE:
+            System.out.println(false);
+            break;
+        case START_ARRAY: {
+            System.out.print("found an array, so lets read only strings from it: [");
+            ARRAY_LOOP: while (parser.hasNext()) {
+                final JsonParser.Event innerEvent = parser.next();
+                switch (innerEvent) {
+                    case VALUE_STRING:
+                        String innerString = parser.getString();
+                        System.out.print("'"+ innerString + "' ");
+                        break;
+                    case END_ARRAY: {
+                        System.out.println("]");
+                        break ARRAY_LOOP;
+                    }
+                }
+            }
+        }
+    }
+}
+parser.close();
+Once again, we need a reader with JSON content and JSON class, which provide us instance of JsonParser:
+reader = new StringReader(stringWriter.toString());
+final JsonParser parser = Json.createParser(reader);
+We could iterate through JSON content and react to events:
+while (parser.hasNext()) {
+   final JsonParser.Event event = parser.next();
+...
+}
+there are 10 types of events:
+public static enum Event {
+        START_ARRAY,
+        START_OBJECT,
+        KEY_NAME,
+        VALUE_STRING,
+        VALUE_NUMBER,
+        VALUE_TRUE,
+        VALUE_FALSE,
+        VALUE_NULL,
+        END_OBJECT,
+        END_ARRAY;
+}
+so, for simple types such as strings and numbers, all is straightforward:
+case VALUE_NUMBER:
+    BigDecimal bdNumber = parser.getBigDecimal();
+    System.out.println(bdNumber);
+    break;
+for arrays and objects situation is more complicated, lets read all string values in an array:
+case START_ARRAY: {
+     System.out.print("found an array, so lets read only strings from it: [");
+     ARRAY_LOOP: while (parser.hasNext()) {
+          final JsonParser.Event innerEvent = parser.next();
+          switch (innerEvent) {
+               case VALUE_STRING:
+                    String innerString = parser.getString();
+                    System.out.print("'"+ innerString + "' ");
+                    break;
+               case END_ARRAY: {
+                    System.out.println("]");
+                    break ARRAY_LOOP;
+               }
+          }
+     }
+}
+look at the output of example:
+...
+key was found: arrayField
+found an array, so lets read only strings from it: ['String value' 'innerObjectField value' ]
+...
+It returns ALL string values we have in array, including string values of object’s fields. So you should be careful, and check twice that you filtered out unnecessary data.
+There is a problem in restoring objects from JSON: it is a boring, verbose and error-prone procedure. Next, we will find someone who helps us!
+Jackson library
+Jackson framework is famous as lightweight and fast implementation.
+It provides both Streaming API and Tree Model approach to read JSON data, and it provides conversation from JSON to/from Plain Old Java Object (POJO).
+For Data binding, it uses annotations and getter/setter methods.
+For using Jackson library you need 3 jar files:
+jackson-core.jar, jackson-annotations, jackson-databind
+You can find them here: https://github.com/FasterXML/ All you need is to add them to your app classpath.
+Serialize objects
+Suppose, we decided to get rich and become a drug car dealer.
+So, one of a task we could face is providing to ours web-client info about the car in JSON format.
+Let’s create Car class, which represents a car entity, and create a string with JSON representation of Car object:
+package com.explainjava;
+ 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+ 
+public class JacksonExample {
+    public static void main(String[] args) throws JsonProcessingException {
+        System.out.println("Jackson lib example");
+        Tyre[] tyresSet1 = {new Tyre("Michelin", 16), new Tyre("Michelin", 16),
+                new Tyre("Goodyear", 16), new Tyre("Goodyear", 16)};
+        Engine engine = new Engine("SKYACTIV-G 2.0", 1998, 116);
+        Car car = new Car("MAZDA CX-3", 10000, true, engine, tyresSet1);
+        ObjectMapper objectMapper = new ObjectMapper();
+        String result = objectMapper.writeValueAsString(car);
+        System.out.println("Default Jackson mapper produces:");
+        System.out.println(result);
+    }
+}
+ 
+class Car {
+    String model;
+    int mileage;
+    Engine engine;
+    Tyre[] tyres;
+    boolean isNavigationSystem;
+ 
+    Car(String model, int mileage, boolean isNavigationSystem, Engine engine, Tyre[] tyres) {
+        this.model = model;
+        this.mileage = mileage;
+        this.engine = engine;
+        this.tyres = tyres;
+        this.isNavigationSystem = isNavigationSystem;
+    }
+ 
+    public String getModel() {
+        return model;
+    }
+ 
+    public int getMileage() {
+        return mileage;
+    }
+ 
+    public Engine getEngine() {
+        return engine;
+    }
+ 
+    public Tyre[] getTyres() {
+        return tyres;
+    }
+ 
+    public boolean isNavigationSystem() {
+        return isNavigationSystem;
+    }
+ 
+}
+ 
+class Engine {
+    String model;
+    int capacity;
+    double output;
+ 
+    public String getModel() {
+        return model;
+    }
+ 
+    public int getCapacity() {
+        return capacity;
+    }
+ 
+    public double getOutput() {
+        return output;
+    }
+ 
+    Engine(String model, int capacity, double output) {
+        this.model = model;
+        this.capacity = capacity;
+        this.output = output;
+    }
+}
+ 
+class Tyre {
+    String model;
+    int radius;
+ 
+    Tyre(String model, int radius) {
+        this.model = model;
+        this.radius = radius;
+    }
+ 
+    public String getModel() {
+        return model;
+    }
+ 
+    public int getRadius() {
+        return radius;
+    }
+}
+the output is:
+Jackson lib example
+Default Jackson mapper produces:
+{"model":"MAZDA CX-3","mileage":10000,"engine":{"model":"SKYACTIV-G 2.0","capacity":1998,"output":116.0},"tyres":[{"model":"Michelin","radius":16},{"model":"Michelin","radius":16},{"model":"Goodyear","radius":16},{"model":"Goodyear","radius":16}],"navigationSystem":true}
+Its a magic, isn’t it?
+Let’s have a look at Car, Engine and Tyre class.
+Every class has getter methods for its values.
+They look redundant, but if we comment at least one of them, Car.getTyres() for example, we will get:
+{"model":"MAZDA CX-3","mileage":10000,"engine":{"model":"SKYACTIV-G 2.0","capacity":1998,"output":116.0},"navigationSystem":true}
+As shown, Tyres info is gone.
+Actually, Jackson framework uses getter methods of an object as one of implicit instruction how to create its JSON representation, or, in other words, to serialize it.
+Suppose, we don’t need to provide Tyres field of Car object, but we need a getter for Tyres field. Jackson framework supports a flexible mechanism to customize object’s JSON representation.
+So, let’s restore Car.getTyres() method, but add annotation @JsonIgnoreProperties to Car class:
+@JsonIgnoreProperties(value = { "tyres" })
+class Car {
+the output is:
+{"model":"MAZDA CX-3","mileage":10000,"engine":{"model":"SKYACTIV-G 2.0","capacity":1998,"output":116.0},"navigationSystem":true}
+The same result we can achieve by field annotation @JsonIgnore:
+class Car {
+    String model;
+    int mileage;
+    Engine engine;
+    @JsonIgnore
+    Tyre[] tyres;
+    boolean isNavigationSystem;
+With help of @JsonIgnoreType annotation, we even could forbid whole class to be serialized, for example, we can mark Engine class:
+@JsonIgnoreType
+class Engine {
+...
+in this case, Engine info will be omitted.
+There are couple notes:
+First, if we mark Tyres class by @JsonIgnoreType, tyres field will be present in JSON since its type is an array: Tyres[].
+Second, if we have no access to class sources, and have no ability to mark it with @JsonIgnoreType we can use Jackson dark magic mixins.
+For example, lets exclude Tyres[].class from serialisation:
+At first, let’s create a mixin class:
+@JsonIgnoreType
+class IgnoreTyreTypeMixin {
+...
+}
+add it to JSON mapper:
+ObjectMapper objectMapper = new ObjectMapper();
+objectMapper.addMixIn(Tyre[].class, IgnoreTyreTypeMixin.class);
+the output is:
+{"model":"MAZDA CX-3","mileage":10000,"engine":{"model":"SKYACTIV-G 2.0","capacity":1998,"output":116.0},"navigationSystem":true}
+Jackson framework gives us really fine grade control on serializing objects.
+For example, we want to filter out some data before serializing based on its value.
+Suppose, we are going to serialize two instances of Cars class newCar and oldCar, and we want to serialize mileage field only if it less than 10000 miles.
+If not, we just omit this info, a client should get the whole picture about a not-so-new car in increment…
+As a first step, we have to create a class, that implements PropertyFilter interface.
+It is convenient to use SimpleBeanPropertyFilter class, it implements PropertyFilter:
+SimpleBeanPropertyFilter carMileageFilter = new SimpleBeanPropertyFilter() {
+            @Override
+            public void serializeAsField
+                    (Object pojo, JsonGenerator jsonGenerator, SerializerProvider provider, PropertyWriter writer)
+                    throws Exception {
+                if (include(writer)) {
+                    if (!writer.getName().equals("mileage")) {
+                        writer.serializeAsField(pojo, jsonGenerator, provider);
+                        return;
+                    }
+                    int intValue = ((Car) pojo).getMileage();
+                    if (intValue <100000) {
+                        writer.serializeAsField(pojo, jsonGenerator, provider);
+                    }
+                } else if (!jsonGenerator.canOmitFields()) {
+                    writer.serializeAsOmittedField(pojo, jsonGenerator, provider);
+                }
+            }
+        };
+Next, we will mark Car class, that it is affected by the filter with name “mileageFilter”:
+@JsonFilter("mileageFilter")
+class Car {
+and we have to attach a created filter to FiterProvider:
+FilterProvider filters = new SimpleFilterProvider().addFilter("mileageFilter", carMileageFilter);
+String result = objectMapper.writer(filters).writeValueAsString(newCar);
+so, there is full example source:
+package com.explainjava;
+ 
+import com.fasterxml.jackson.annotation.JsonFilter;
+import com.fasterxml.jackson.annotation.JsonIgnoreType;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.ser.FilterProvider;
+import com.fasterxml.jackson.databind.ser.PropertyWriter;
+import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
+import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
+ 
+public class JacksonExample {
+    public static void main(String[] args) throws JsonProcessingException {
+        System.out.println("Jackson lib example");
+        Tyre[] tyresSet1 = {new Tyre("Michelin", 16), new Tyre("Michelin", 16),
+                new Tyre("Goodyear", 16), new Tyre("Goodyear", 16)};
+        Engine engine = new Engine("SKYACTIV-G 2.0", 1998, 116);
+        Car newCar = new Car("MAZDA CX-3", 10000, true, engine, tyresSet1);
+        Car oldCar = new Car("Old car", 200000, true, engine, tyresSet1);
+        SimpleBeanPropertyFilter carMileageFilter = new SimpleBeanPropertyFilter() {
+            @Override
+            public void serializeAsField
+                    (Object pojo, JsonGenerator jsonGenerator, SerializerProvider provider, PropertyWriter writer)
+                    throws Exception {
+                if (include(writer)) {
+                    if (!writer.getName().equals("mileage")) {
+                        writer.serializeAsField(pojo, jsonGenerator, provider);
+                        return;
+                    }
+                    int intValue = ((Car) pojo).getMileage();
+                    if (intValue <100000) {
+                        writer.serializeAsField(pojo, jsonGenerator, provider);
+                    }
+                } else if (!jsonGenerator.canOmitFields()) {
+                    writer.serializeAsOmittedField(pojo, jsonGenerator, provider);
+                }
+            }
+        };
+        FilterProvider filters = new SimpleFilterProvider().addFilter("mileageFilter", carMileageFilter);
+ 
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.addMixIn(Tyre[].class, IgnoreTyreTypeMixin.class);
+ 
+        String result = objectMapper.writer(filters).writeValueAsString(newCar);
+        System.out.println("new fancy car:");
+        System.out.println(result);
+        System.out.println("not so new car:");
+        result = objectMapper.writer(filters).writeValueAsString(oldCar);
+ 
+        System.out.println(result);
+    }
+}
+@JsonFilter("mileageFilter")
+class Car {
+...
+}
+ 
+class Engine {
+...
+}
+ 
+class Tyre {
+...
+}
+ 
+@JsonIgnoreType
+class IgnoreTyreTypeMixin {
+ 
+}
+the output is:
+Jackson lib example
+new fancy car:
+{"model":"MAZDA CX-3","mileage":10000,"engine":{"model":"SKYACTIV-G 2.0","capacity":1998,"output":116.0},"navigationSystem":true}
+not so new car:
+{"model":"Old car","engine":{"model":"SKYACTIV-G 2.0","capacity":1998,"output":116.0},"navigationSystem":true}
+Its a magic, I told you!
+Parse and bind
+Another very common task you can face during implementing web application is reading JSON string and parse it to object (to deserialize it).
+Jackson provides an API that looks similar to JSON-P framework.
+You can use Tree Model approach. in this case, we can use Jackson Framework for creating a tree of JsonNode objects which represent JSON entities.
+The framework provides an ability to traverse the tree and get values of nodes.
+For example, let’s restore some values from the serialized instance of Car class:
+System.out.println("Jackson lib example");
+Tyre[] tyresSet1 = {new Tyre("Michelin", 16), new Tyre("Michelin", 16),
+    new Tyre("Goodyear", 16), new Tyre("Goodyear", 16)};
+Engine engine = new Engine("SKYACTIV-G 2.0", 1998, 116);
+Car car = new Car("MAZDA CX-3", 10000, true, engine, tyresSet1);
+ObjectMapper objectMapper = new ObjectMapper();
+String result = objectMapper.writeValueAsString(car);
+System.out.println(result);
+ 
+ObjectMapper mapper = new ObjectMapper();
+ 
+JsonNode rootNode = mapper.readTree(result);
+ 
+JsonNode carModelNode = rootNode.path("model");
+System.out.println("restored car model:" + carModelNode.textValue());
+ 
+JsonNode engineNode = rootNode.path("engine");
+System.out.println("restored car engine output:" + engineNode.toString());
+ 
+JsonNode engineOutputNode = rootNode.findValue("output");
+System.out.println("restored car engine output:" + engineOutputNode.numberValue());
+the output is:
+Jackson lib example
+{"model":"MAZDA ...
+restored car model: MAZDA CX-3
+restored car engine:{"model":"SKYACTIV-G 2.0","capacity":1998,"output":116.0}
+restored car engine output:116.0
+As you can see, we can traverse tree step by step or search for JsonNode object by specific criteria.
+Actually, there are tons of useful methods for searching and getting nodes value, but it is senseless to rewrite Jackson documentation here.
+It is not a great surprise that restoring the Car class could be really boring and time-consuming.
+So I have a good news for you – Jackson framework can do it for you itself (with your help, of course).
+Let’s create a Car object and serialize it to string, as we already did. Next, we will try to de-serialize it.
+ObjectMapper class has a very convenient method, it looks like something we need:
+public static void main(String[] args) throws IOException {
+    System.out.println("Jackson lib example");
+    Tyre[] tyresSet1 = {new Tyre("Michelin", 16), new Tyre("Michelin", 16),
+    new Tyre("Goodyear", 16), new Tyre("Goodyear", 16)};
+    Engine engine = new Engine("SKYACTIV-G 2.0", 1998, 116);
+    Car car = new Car("MAZDA CX-3", 10000, true, engine, tyresSet1);
+    ObjectMapper objectMapper = new ObjectMapper();
+    String result = objectMapper.writeValueAsString(car);
+    System.out.println(result);
+ 
+    ObjectMapper mapper = new ObjectMapper();
+    Car restoredCar = mapper.readValue(result, Car.class);
+    System.out.println("restored car:" + restoredCar.toString());
+}
+Let’s try to run it… Err… something went wrong.
+It seems framework needs some our help for deserializing Car object properly.
+First, we need to provide a default constructor for all classes we are going to de-serialize.
+...
+    Car() {
+    }
+...
+    Engine() {
+    }
+...
+    Tyre() {
+    }
+...
+Next, we need to provide info for framework how to parse object’s properties.
+The common way is getter methods.
+Jackson is smart enough to resolve properties name and type from getter method.
+But we should be very careful with naming convention: for example, Car’s field isNavigationSystem is not so good, it confuses Jackson, so let’s rename it:
+...
+boolean navigationSystem;
+...
+    public boolean getNavigationSystem() {
+        return navigationSystem;
+    }
+...
+and at last, for debugging purposes only, let’s add toString() methods to Car, Tyre and Engine classes, there is final listing:
+package example.json;
+ 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.util.Arrays;
+ 
+public class JacksonExample {
+    public static void main(String[] args) throws IOException {
+        System.out.println("Jackson lib example");
+        Tyre[] tyresSet1 = {new Tyre("Michelin", 16), new Tyre("Michelin", 16),
+                new Tyre("Goodyear", 16), new Tyre("Goodyear", 16)};
+        Engine engine = new Engine("SKYACTIV-G 2.0", 1998, 116);
+        Car car = new Car("MAZDA CX-3", 10000, true, engine, tyresSet1);
+        ObjectMapper objectMapper = new ObjectMapper();
+        String result = objectMapper.writeValueAsString(car);
+        System.out.println(result);
+ 
+        ObjectMapper mapper = new ObjectMapper();
+        Car restoredCar = mapper.readValue(result, Car.class);
+        System.out.println("restored car:" + restoredCar.toString());
+    }
+}
+ 
+class Car {
+    String model;
+    int mileage;
+    Engine engine;
+    Tyre[] tyres;
+    boolean navigationSystem;
+ 
+    Car() {
+    }
+ 
+    Car(String model, int mileage, boolean isNavigationSystem, Engine engine, Tyre[] tyres) {
+        this.model = model;
+        this.mileage = mileage;
+        this.engine = engine;
+        this.tyres = tyres;
+        this.navigationSystem = isNavigationSystem;
+    }
+ 
+    public String getModel() {
+        return model;
+    }
+ 
+    public int getMileage() {
+        return mileage;
+    }
+ 
+    public Engine getEngine() {
+        return engine;
+    }
+ 
+    public Tyre[] getTyres() {
+        return tyres;
+    }
+ 
+    public boolean getNavigationSystem() {
+        return navigationSystem;
+    }
+ 
+    @Override
+    public String toString() {
+        return "Car{" +
+                "model='" + model + '\'' +
+                ", mileage=" + mileage +
+                ", engine=" + engine +
+                ", tyres=" + Arrays.toString(tyres) +
+                ", navigationSystem=" + navigationSystem +
+                '}';
+    }
+}
+ 
+class Engine {
+    String model;
+    int capacity;
+    double output;
+ 
+    public String getModel() {
+        return model;
+    }
+ 
+    public int getCapacity() {
+        return capacity;
+    }
+ 
+    public double getOutput() {
+        return output;
+    }
+ 
+    @Override
+    public String toString() {
+        return "Engine{" +
+                "model='" + model + '\'' +
+                ", capacity=" + capacity +
+                ", output=" + output +
+                '}';
+    }
+ 
+    Engine() {
+    }
+ 
+    Engine(String model, int capacity, double output) {
+        this.model = model;
+        this.capacity = capacity;
+        this.output = output;
+    }
+}
+ 
+class Tyre {
+    String model;
+    int radius;
+ 
+    Tyre() {
+    }
+ 
+    Tyre(String model, int radius) {
+        this.model = model;
+        this.radius = radius;
+    }
+ 
+    public String getModel() {
+        return model;
+    }
+ 
+    public int getRadius() {
+        return radius;
+    }
+ 
+    @Override
+    public String toString() {
+        return "Tyre{" +
+                "model='" + model + '\'' +
+                ", radius=" + radius +
+                '}';
+    }
+}
+the output is:
+Jackson lib example
+{"model":"MAZDA CX-3","mileage":10000,"engine":{"model":"SKYACTIV-G 2.0","capacity":1998,"output":116.0},"tyres":[{"model":"Michelin","radius":16},{"model":"Michelin","radius":16},{"model":"Goodyear","radius":16},{"model":"Goodyear","radius":16}],"navigationSystem":true}
+restored car:Car{model='MAZDA CX-3', mileage=10000, engine=Engine{model='SKYACTIV-G 2.0', capacity=1998, output=116.0}, tyres=[Tyre{model='Michelin', radius=16}, Tyre{model='Michelin', radius=16}, Tyre{model='Goodyear', radius=16}, Tyre{model='Goodyear', radius=16}], navigationSystem=true}
+Jackson DeserializationFeature
+Jackson Framework provides an ability to customize deserialization (reading JSON into Java Objects) on a per-call basis by a set of DeserializationFeatures for ObjectReader.
+You can also change defaults for ObjectMapper, to be used as the base for all ObjectReader instances, using enable(feature), disable(feature) and configure(feature, state) methods.
+        ObjectMapper mapper = new ObjectMapper();
+        SpecificClass restoredSpecific = mapper.readerFor(SpecificClass.class).with(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES)
+                .without(DeserializationFeature.ACCEPT_FLOAT_AS_INT).readValue(result);
+There are plenty of features, you can check their description in Jackson Framework documentation
+Conclusion
+Summing it up, you could see Java provides to programmer very robust and powerful tools for processing data in JSON format.
+You can use different approaches for parsing data depend on your needs and save a lot of time by implicit (but configurable) data binding and pay not too much attention to this task.
+
+
+
+
+Categories Java Tutorials 
+
+
+Tags convert, json, parse 
+Post navigation
+
+
+Comparable vs Comparator in Java: What to Use?
+
+Java String Pool: Concept & Advantages 
+
+
+
+
+
+
+Leave a Comment Cancel replyCommentName
+Email
+Website
+ Save my name, email, and website in this browser for the next time I comment.
+ 
+
+ 
+
+
+
+
+
+
+
+
+Search for:
+
+
+
+
+
+
+
+Popular Posts 
+
+
+Recent Posts
+
+
+Percentage Calculator
+
+
+How to Convert String to Int in Java
+
+
+How to set Java Home environment variable on Mac OS X
+
+
+How to Install Java on Ubuntu
+
+
+How to Install Java on MacOS
+
+
+最近の技術におけるスキルと情報
+
+
+
+Table of Contents
+
+
+
+
+
+
+JSON Parsers in JavaObject model:Streaming model:Java API for JSON ProcessingJackson librarySerialize objectsParse and bindConclusion
+
+Recent Comments 
+
+
+
+
+
+
+
+ExplainJava.com Copyright © 2017-2021.
+    				
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

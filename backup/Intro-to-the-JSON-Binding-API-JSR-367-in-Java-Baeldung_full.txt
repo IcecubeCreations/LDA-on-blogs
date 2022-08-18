@@ -1,0 +1,669 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Intro to the JSON Binding API (JSR 367) in Java | Baeldung
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Start HereCourses ▼▲
+
+
+
+
+
+
+
+
+
+REST with Spring
+
+
+The canonical reference for building a production grade API with Spring
+
+
+
+
+
+
+
+
+
+
+
+Learn Spring Security ▼▲
+
+
+THE unique Spring Security education if you’re working with Java today
+
+
+
+
+
+
+
+
+
+
+
+
+Learn Spring Security Core
+
+
+Focus on the Core of Spring Security 5
+
+
+
+
+
+
+
+
+
+
+
+Learn Spring Security OAuth
+
+
+Focus on the new OAuth2 stack in Spring Security 5
+
+
+
+
+
+
+
+
+
+
+
+
+Learn Spring
+
+
+From no experience to actually building stuff​
+
+
+
+
+
+
+
+
+
+
+
+Learn Spring Data JPA
+
+
+The full guide to persistence with Spring Data JPA
+
+
+
+
+Guides ▼▲
+
+
+
+
+
+
+
+
+
+Persistence
+
+
+The Persistence with Spring guides
+
+
+
+
+
+
+
+
+
+
+
+REST
+
+
+The guides on building REST APIs with Spring
+
+
+
+
+
+
+
+
+
+
+
+Security
+
+
+The Spring Security guides
+
+
+
+
+About ▼▲
+
+
+
+
+
+
+
+
+
+Full Archive
+
+
+The high level overview of all the articles on the site.
+
+
+
+
+
+
+
+
+
+
+
+Baeldung Ebooks
+
+
+Discover all of our eBooks
+
+
+
+
+
+
+
+
+
+
+
+About Baeldung
+
+
+About Baeldung.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Introduction to the JSON Binding API (JSR 367) in Java
+Last modified: February 12, 2020
+
+
+ by 
+
+baeldung 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Jakarta EEJSON 
+
+
+
+
+
+
+Jackson Top 
+Get started with Spring 5 and Spring Boot 2, through the Learn Spring course:
+>> CHECK OUT THE COURSE
+
+ 
+
+1. Overview
+
+For a long time, there was no standard for JSON processing in Java. The most common libraries used for JSON processing are Jackson and Gson.
+Recently, Java EE7 came with an API for parsing and generating JSON (JSR 353: Java API for JSON Processing).
+And finally, with the release of JEE 8, there is a standardized API (JSR 367: Java API for JSON Binding (JSON-B)).
+For now, its main implementations are Eclipse Yasson (RI) and Apache Johnzon.
+2. JSON-B API
+
+2.1. Maven Dependency
+
+Let's start by adding the necessary dependency.
+
+
+
+Keep in mind that in many cases it'll be enough to include the dependency for the chosen implementation and the javax.json.bind-api will be included transitively:
+<dependency>
+    <groupId>javax.json.bind</groupId>
+    <artifactId>javax.json.bind-api</artifactId>
+    <version>1.0</version>
+</dependency>
+The most recent version can be found at Maven Central.
+3. Using Eclipse Yasson
+
+Eclipse Yasson is the official reference implementation of JSON Binding API (JSR-367).
+3.1. Maven Dependency
+
+To use it, we need to include the following dependencies in our Maven project:
+<dependency>
+    <groupId>org.eclipse</groupId>
+    <artifactId>yasson</artifactId>
+    <version>1.0.1</version>
+</dependency>
+<dependency>
+    <groupId>org.glassfish</groupId>
+    <artifactId>javax.json</artifactId>
+    <version>1.1.2</version>
+</dependency>
+The most recent versions can be found at Maven Central.
+
+
+
+4. Using Apache Johnzon
+
+Another implementation we can use is Apache Johnzon which complies with the JSON-P (JSR-353) and JSON-B (JSR-367) APIs.
+4.1. Maven Dependency
+
+To use it, we need to include the following dependencies in our Maven project:
+<dependency>
+    <groupId>org.apache.geronimo.specs</groupId>
+    <artifactId>geronimo-json_1.1_spec</artifactId>
+    <version>1.0</version>
+</dependency>
+<dependency>
+    <groupId>org.apache.johnzon</groupId>
+    <artifactId>johnzon-jsonb</artifactId>
+    <version>1.1.4</version>
+</dependency>
+The most recent versions can be found at Maven Central.
+5. API Features
+
+The API provides annotations for customizing serialization/deserialization.
+Let's create a simple class and see how the example configuration looks like:
+
+
+
+public class Person {
+
+    private int id;
+
+    @JsonbProperty("person-name")
+    private String name;
+    
+    @JsonbProperty(nillable = true)
+    private String email;
+    
+    @JsonbTransient
+    private int age;
+     
+    @JsonbDateFormat("dd-MM-yyyy")
+    private LocalDate registeredDate;
+    
+    private BigDecimal salary;
+    
+    @JsonbNumberFormat(locale = "en_US", value = "#0.0")
+    public BigDecimal getSalary() {
+        return salary;
+    }
+ 
+    // standard getters and setters
+}
+After serialization, an object of this class will look like:
+{
+   "email":"[email protected]",
+   "id":1,
+   "person-name":"Jhon",
+   "registeredDate":"07-09-2019",
+   "salary":"1000.0"
+}
+The annotations used here are:
+
+@JsonbProperty – which is used for specifying a custom field name
+@JsonbTransient – when we want to ignore the field during deserialization/serialization
+@JsonbDateFormat – when we want to define the display format of the date
+@JsonbNumberFormat – for specifying the display format for numeric values
+@JsonbNillable – for enabling serialization of null values
+
+5.1. Serialization and Deserialization
+
+First of all, to obtain the JSON representation of our object, we need to use the JsonbBuilder class and its toJson() method.
+To start, let's create a simple Person object like this:
+Person person = new Person(
+  1, 
+  "Jhon", 
+  "[email protected]", 
+  20, 
+  LocalDate.of(2019, 9, 7), 
+  BigDecimal.valueOf(1000));
+And, instantiate the Jsonb class:
+Jsonb jsonb = JsonbBuilder.create();
+Then, we use the toJson method:
+String jsonPerson = jsonb.toJson(person);
+To obtain the following JSON representation:
+{
+    "email":"[email protected]",
+    "id":1,
+    "person-name":"Jhon",
+    "registeredDate":"07-09-2019",
+    "salary":"1000.0"
+}
+If we want to do the conversion the other way, we can use the fromJson method:
+
+
+
+Person person = jsonb.fromJson(jsonPerson, Person.class);
+Naturally, we can also process collections:
+List<Person> personList = Arrays.asList(...);
+String jsonArrayPerson = jsonb.toJson(personList);
+To obtain the following JSON representation:
+[ 
+    {
+      "email":"[email protected]",
+      "id":1,
+      "person-name":"Jhon", 
+      "registeredDate":"09-09-2019",
+      "salary":"1000.0"
+    },
+    {
+      "email":"[email protected]",
+      "id":2,
+      "person-name":"Jhon",
+      "registeredDate":"09-09-2019",
+      "salary":"1500.0"
+    },
+    ...
+]
+To convert from JSON array to List we'll use the fromJson API:
+List<Person> personList = jsonb.fromJson(
+  personJsonArray, 
+  new ArrayList<Person>(){}.getClass().getGenericSuperclass()
+);
+5.2. Custom Mapping With JsonbConfig
+
+The JsonbConfig class allows us to customize the mapping process for all classes.
+For example, we can change the default naming strategies or the properties order.
+Now, we’ll use the LOWER_CASE_WITH_UNDERSCORES strategy:
+JsonbConfig config = new JsonbConfig().withPropertyNamingStrategy(
+  PropertyNamingStrategy.LOWER_CASE_WITH_UNDERSCORES);
+Jsonb jsonb = JsonbBuilder.create(config);
+String jsonPerson = jsonb.toJson(person);
+To obtain the following JSON representation:
+{
+   "email":"[email protected]",
+   "id":1,
+   "person-name":"Jhon",
+   "registered_date":"07-09-2019",
+   "salary":"1000.0"
+}
+Now, we’ll change the property order with the REVERSE strategy. Using this strategy, the order of properties is in reverse order to lexicographical order.
+This can also be configured at compile time with the annotation @JsonbPropertyOrder. Let’s see it in action:
+
+
+
+JsonbConfig config 
+  = new JsonbConfig().withPropertyOrderStrategy(PropertyOrderStrategy.REVERSE);
+Jsonb jsonb = JsonbBuilder.create(config);
+String jsonPerson = jsonb.toJson(person);
+
+To obtain the following JSON representation:
+{
+    "salary":"1000.0",
+    "registeredDate":"07-09-2019",
+    "person-name":"Jhon",
+    "id":1,
+    "email":"[email protected]"
+}
+5.3. Custom Mapping With Adapters
+
+When the annotations and the JsonbConfig class aren’t enough for us, we can use adapters.
+To use them, we’ll need to implement the JsonbAdapter interface, which defines the following methods:
+
+adaptToJson – With this method, we can use custom conversion logic for the serialization process.
+adaptFromJson – This method allows us to use custom conversion logic for the deserialization process.
+
+Let’s create a PersonAdapter to process the id and name attributes of the Person class:
+public class PersonAdapter implements JsonbAdapter<Person, JsonObject> {
+
+    @Override
+    public JsonObject adaptToJson(Person p) throws Exception {
+        return Json.createObjectBuilder()
+          .add("id", p.getId())
+          .add("name", p.getName())
+          .build();
+    }
+
+    @Override
+    public Person adaptFromJson(JsonObject adapted) throws Exception {
+        Person person = new Person();
+        person.setId(adapted.getInt("id"));
+        person.setName(adapted.getString("name"));
+        return person;
+    }
+}
+Furthermore, we’ll assign the adapter to our JsonbConfig instance:
+JsonbConfig config = new JsonbConfig().withAdapters(new PersonAdapter());
+Jsonb jsonb = JsonbBuilder.create(config);
+And we’ll get the following JSON representation:
+{
+    "id":1, 
+    "name":"Jhon"
+}
+6. Conclusion
+
+In this tutorial, we saw an example of how to integrate the JSON-B API with Java applications using the available implementations, along with examples of customizing serialization and deserialization at both compile and runtime.
+The complete code is available, as always, over on Github.
+
+
+
+Jackson bottom 
+Get started with Spring 5 and Spring Boot 2, through the Learn Spring course:
+>> CHECK OUT THE COURSE
+
+Generic footer banner
+
+
+
+
+
+
+Learning to build your APIwith Spring?
+Download the E-book
+
+
+
+
+
+Comments are closed on this article!
+
+
+
+
+
+
+
+Generic sidebar banner
+
+
+
+Building a REST API with Spring 5?
+Download the E-book
+ 
+ 
+ 
+ 
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+CoursesAll Courses
+All Bulk Courses
+The Courses Platform
+SeriesJava “Back to Basics” Tutorial
+Jackson JSON Tutorial
+Apache HttpClient Tutorial
+REST with Spring Tutorial
+Spring Persistence Tutorial
+Security with Spring
+Spring Reactive Tutorials
+AboutAbout Baeldung
+The Full Archive
+Editors
+Jobs
+Our Partners
+Partner with Baeldung
+ 
+
+Terms of Service
+Privacy Policy
+Company Info
+Contact
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

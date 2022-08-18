@@ -1,0 +1,202 @@
+  FastJson - Convert Java objects to / from JSON - Mkyong.com                                   Main TutorialsJava 17 (LTS)Java 16Java 15Java 14Java 13Java 12Java 11 (LTS)Java 8 (LTS)Java IO / NIOJava JDBCJava JSONJava CSVJava XMLSpring BootJUnit 5MavenMisc    FastJson – Convert Java objects to / from JSONBy mkyong |  Last updated: May 3, 2019Viewed: 15,332 (+46 pv/w)Tags:fastjson | java | jsonFastJson provides easily APIs to convert Java objects to / from JSONJSON.toJSONString – Java objects to JSONJSON.parseObject – JSON to Java objectsJSON.parseArray – JSON array to List of Java objects Note You may have interest to read this How to parse JSON with JacksonOverall, the FastJson is really simple and easy to convert JSON to / from objects, however, it lack of direct File support, especially the JSON.parseArray method, it needs some extra efforts to read from a JSON file. Hope the future APIs like parseObject and parseArray are able to support for sources like File or URL directly.P.S Tested with FastJson 1.2.57pom.xml
+	<dependency>
+		<groupId>com.alibaba</groupId>
+		<artifactId>fastjson</artifactId>
+		<version>1.2.57</version>
+	</dependency>
+1. POJOA simple POJO, for JSON conversion.Staff.java
+package com.mkyong;
+
+import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+public class Staff {
+
+    private String name;
+    private int age;
+    private String[] position;
+    private List<String> skills;
+    private Map<String, BigDecimal> salary;
+
+    //getters, setters, toString, constructor
+}
+2. Java objects to JSONFastJsonExample1.java
+package com.mkyong;
+
+import com.alibaba.fastjson.JSON;
+
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.*;
+
+public class FastJsonExample1 {
+
+    public static void main(String[] args) {
+
+        Staff staff = createStaff();
+
+        // Java objects to JSON
+        String json = JSON.toJSONString(staff);
+        System.out.println(json);
+
+        // Java objects to JSON, pretty-print
+        String json2 = JSON.toJSONString(staff, true);
+        System.out.println(json2);
+
+        // Java objects to JSON, with formatted date
+        String json3 = JSON.toJSONStringWithDateFormat(staff, "dd/MM/yyyy HH:mm:ss");
+        System.out.println(json3);
+
+        // List of Java objects to JSON Array
+        List<Staff> list = Arrays.asList(createStaff(), createStaff());
+        String json4 = JSON.toJSONStringWithDateFormat(list, "dd/MM/yyyy HH:mm:ss");
+        System.out.println(json4);
+
+        try {
+            // can't find fastjson api to write files, np, just use the standard java.nio Files.write
+            Files.write(Paths.get("c:\\projects\\staff.json"), json4.getBytes());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    private static Staff createStaff() {
+
+        Staff staff = new Staff();
+
+        staff.setName("mkyong");
+        staff.setAge(38);
+        staff.setPosition(new String[]{"Founder", "CTO", "Writer"});
+        Map<String, BigDecimal> salary = new HashMap() {{
+            put("2010", new BigDecimal(10000));
+            put("2012", new BigDecimal(12000));
+            put("2018", new BigDecimal(14000));
+        }};
+        staff.setSalary(salary);
+        staff.setSkills(Arrays.asList("java", "python", "node", "kotlin"));
+        staff.setJoinDate(new Date());
+
+        return staff;
+
+    }
+
+}
+Output
+// json
+{"age":38,"joinDate":1556870430099,"name":"mkyong","position":["Founder","CTO","Writer"],
+"salary":{"2018":14000,"2012":12000,"2010":10000},"skills":["java","python","node","kotlin"]}
+
+// json2
+{
+	"age":38,
+	"joinDate":1556870430099,
+	"name":"mkyong",
+	"position":["Founder","CTO","Writer"],
+	"salary":{
+		"2018":14000,
+		"2012":12000,
+		"2010":10000
+	},
+	"skills":[
+		"java",
+		"python",
+		"node",
+		"kotlin"
+	]
+}
+
+// json3 - format date
+{"age":38,"joinDate":"03/05/2019 16:00:30","name":"mkyong","position":["Founder","CTO","Writer"],
+"salary":{"2018":14000,"2012":12000,"2010":10000},"skills":["java","python","node","kotlin"]}
+
+// json4 - JSON Array
+[
+	{
+		"age":38,
+		"joinDate":1556870630615,
+		"name":"mkyong",
+		"position":["Founder","CTO","Writer"],
+		"salary":{
+			"2018":14000,
+			"2012":12000,
+			"2010":10000
+		},
+		"skills":[
+			"java",
+			"python",
+			"node",
+			"kotlin"
+		]
+	},
+	{
+		"age":38,
+		"joinDate":1556870630615,
+		"name":"mkyong",
+		"position":["Founder","CTO","Writer"],
+		"salary":{
+			"2018":14000,
+			"2012":12000,
+			"2010":10000
+		},
+		"skills":[
+			"java",
+			"python",
+			"node",
+			"kotlin"
+		]
+	}
+]
+3. JSON to Java objectsFastJsonExample2.java
+package com.mkyong;
+
+import com.alibaba.fastjson.JSON;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+public class FastJsonExample2 {
+
+    public static void main(String[] args) {
+
+        // JSON string to Java object
+        String jsonString = "{\"name\":38,\"name\":\"mkyong\"}";
+        Staff staff = JSON.parseObject(jsonString, Staff.class);
+
+        System.out.println(staff);
+
+        // JSON array to Java object
+        String jsonArray = "[{\"name\":38,\"name\":\"mkyong\"}, {\"name\":39,\"name\":\"mkyong2\"}]";
+        List<Staff> staff1 = JSON.parseArray(jsonArray, Staff.class);
+
+        System.out.println(staff1);
+
+        // JSON array in File to Java object
+        // staff.json contain JSON array
+        try (Stream<String> lines = Files.lines(Paths.get("c:\\projects\\staff.json"))) {
+
+            String content = lines.collect(Collectors.joining());
+			// Hope parseArray() will support File or Reader in future.
+            List<Staff> list = JSON.parseArray(content, Staff.class);
+            System.out.println(list);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+}
+  ReferencesFastJson home pageFastJson user guideFastJson data bind examplesFastJson best practice (Chinese)Why FastJson is so fast? (Chinese)FastJson Stream API       mkyongFounder of Mkyong.com, love Java and open source stuff. Follow him on Twitter. If you like my tutorials, consider make a donation to these charities. Comments  Label     {}  Name*  Email*    Label     {}  Name*  Email*   3 Comments Most Voted  Newest Oldest Inline FeedbacksView all comments  Riccardo Cossu  2 years agoOk but why would one choose it over established solutions like Gson (fast) or Jackson (flexible and with better defaults, but heavier than Gson)? Is it faster and/or more resource friendly than Gson? 1   Reply   Author mkyong  2 years ago  Reply to   Riccardo Cossu Fastest JSON parser according to this benchmarkhttps://github.com/eishay/jvm-serializers/wikiFurthermore, It has a specified Android version. Worth to give it a try.Read this FAQs if you know Chinese. https://github.com/alibaba/fastjson/wiki/%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98 1   Reply  rocky  2 years agoHow to ignore unknown properties with fastjson ? 0   Reply         About Mkyong.comMkyong.com is providing Java and Spring tutorials and code snippets since 2008.
+ All published articles are simple and easy to understand and well tested in our development environment. Source code in Mkyong.com is licensed under the MIT License, read this Code License.DocumentationOpenJDKOracle JDKAdoptOpenJDKOracle Java TutorialsSpring HomeDocker HomeAndroid DeveloperKotlinMavenGradleLinksMartin FowlerJava Code GeeksJournalDev  © 2008-2021 Mkyong.com | Privacy Policy    Insert    Report this comment  This comment is spam This comment is irrelevant This comment is abusive Other Send  You are going to send email to SendMove CommentMove             
+
+
+

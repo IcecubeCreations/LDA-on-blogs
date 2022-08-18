@@ -1,0 +1,3188 @@
+
+
+
+
+
+
+
+
+
+Jackson vs. Gson vs. JSON-B vs. JSON-P vs. org.JSON vs. Jsonpath | Java JSON libraries features comparison - Its All Binary - Coding Posts, Examples, Projects & More
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Its All Binary – Coding Posts, Examples, Projects & More
+Site for innovative & creative blog posts, Code examples, Java release history, Other projects & much more.
+
+
+
+
+Menu
+
+
+
+
+
+
+
+
+
+
+
+
+Skip to content
+Projects
+
+Project – Simply Regex
+
+
+Posts / Tutorials
+
+All Java Releases, features and examples
+Data Structure / Algorithm / Interviews
+Java
+Apache Kafka
+Apache NLP
+Netty
+Web Technologies
+Reactive Programming
+Resilience4j
+Apache / Google Libraries
+GitHub Library / API
+JSON Parsing Java Libraries
+Database
+
+
+Javadoc+Examples
+Tools & Utilities
+
+Regex Builder Tool
+CSS in Action
+
+
+About us
+
+Contact Us
+YouTube
+GitHub
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Posted on July 4, 2019March 10, 2020
+ by ravik
+
+
+
+Jackson vs. Gson vs. JSON-B vs. JSON-P vs. org.JSON vs. Jsonpath | Java JSON libraries features comparison 
+
+
+In this article, we will compare top Java JSON libraries i.e. Jackson vs. Gson vs. JSON-B [JSR-367](Implementation Eclipse Yasson) vs. JSON-P [JSR 353] vs org.JSON vs. Jayway JsonPath on the basis of several features using code examples.
+Features Summary
+This is a quick table of summary of comparison. Scroll down or click on items in table for in depth examples & actual code comparison.
+NOTE: Some features are compared purely based on “Out of the box” capability which means feature not available directly but some custom code might be possible to write to achieve feature somehow.
+
+
+
+Feature
+Jackson
+Gson
+JSON-B
+(Yasson)
+JSON-P
+(Glassfish)
+org.JSON
+Jayway
+Jsonpath
+
+
+JSON Parsing to/from
+generic object
+✓
+✓
+✗
+(Use JSON-P)
+✓
+✓
+✓
+
+
+JSON Binding to/from
+specific business object
+✓
+✓
+✓
+✗
+✗
+✓
+(Attempts)
+
+
+Custom Object Instantiation (Arg constructor, factory method etc.)
+✓
+(Directly through annotation)
+✓
+(Ignores args constructors or factory methods & uses reflection. Use custom JsonDeserializer)
+✓
+(Directly through annotation)
+✗
+✗
+✗
+(Fails with NoSuchMethod Error)
+
+
+Polymorphic type
+handling
+✓
+(Directly through annotation)
+✓
+(Using custom deserializer)
+✓
+(Using custom deserializer)
+✗
+✗
+✗
+
+
+Null Handling (Out of the box)
+✓
+(Globally, Per class, Per attribute) (Null, Empty, Default, Optional handling)
+✓
+(Only globally) (Only null handling)
+✓
+(Globally, Per class, Per attribute) (Only Null handling)
+✓
+(Use JsonObject.NULL to set null. Default NullPointer Exception on add null)
+✓
+(Use JSONObject.NULL to set null. Default null ignored.)
+✗
+
+
+Ignore / Exclude properties (Out of the box)
+✓
+(Ignore field, Ignore multiple fields at class level, Ignore fields inside instance variable )
+✓
+(Reverse approach i.e. annotate fields to expose, rest all ignored. Custom annotation can be created with Exclusion Strategy) 
+✓
+(Ignore fields)
+✗
+✗
+✗
+
+
+Data formatting for Date, Collection etc. (Out of the box)
+✓
+(Globally, Per class, per attribute customize date format. Also format collection.) 
+✓
+(Globally customize date format. No collection format.)
+✓
+(Globally, Per class, per attribute customize date format. No collection format.)
+✗
+(Format date separately & add as String)
+✗
+(Uses toString of Date by default. Format date separately & add as String)
+✗
+(Format date separately & add as String)
+
+
+Property naming and order (Out of the box)
+✓
+✓
+(Custom name supported. Custom order not supported. )
+✓
+✗
+(Add properties in expected order)
+✗
+(Add properties in expected order)
+✗
+(Add properties in expected order)
+
+
+JSON Pointer support
+✓
+✗
+(Chained method as alternative)
+✗
+(Use JSON-P)
+✓
+✓
+✗
+
+
+Querying JSON
+✗
+✗
+✗
+✗
+✗
+✓
+
+
+Conversion JSON
+to/from other formats
+✓
+(XML, CSV, YAML, Properties)
+✗
+✗
+✗
+✓
+(XML, Comma delimited)
+✗
+
+
+JSON Schema
+✓
+✗
+✗
+✗
+✗
+✗
+
+
+Field versioning
+✗
+✓
+✗
+✗
+✗
+✗
+
+
+Annotations offered
+Refer this article
+
+
+
+Feature based Annotations Comparison
+Visit below article for detailed annotations comparison of Jackson, Gson & JSON-B based on features they offer.
+Jackson vs. Gson vs. JSON-B | Annotations comparison
+
+Dependencies
+Here are the maven/gradle/ivy etc. dependencies which are needed for examples in this article.
+
+Jackson
+
+jackson-databind
+jackson-module-jsonSchema
+jackson-dataformat-xml
+jackson-dataformat-properties
+jackson-dataformat-yaml
+jackson-dataformat-csv
+
+
+GSON
+JSON-B
+
+javax.json.bind-api
+org.eclipse/yasson
+
+
+JSON-P
+
+javax.json-api
+org.glassfish/javax.json
+
+
+org.json
+com.jayway.jsonpath/json-path
+
+
+
+
+Common Objects for examples
+Here are some common POJO objects which we will use in these examples of different libraries to get fair comparison.
+
+Person.java
+Java
+
+
+import java.util.List;
+
+
+
+public class Person {
+
+	private String name;
+
+	private int age;
+
+	private List<String> hobbies;
+
+	private Address address;
+
+
+
+	...getter setters...
+
+}
+
+
+
+
+12345678910
+
+import java.util.List; public class Person { private String name; private int age; private List<String> hobbies; private Address address;  ...getter setters...}
+
+
+
+
+
+
+
+Address.java
+Java
+
+
+public class Address {
+
+	private String street;
+
+	private String city;
+
+
+
+	...getter setters...
+
+}
+
+
+
+
+123456
+
+public class Address { private String street; private String city;  ...getter setters...}
+
+
+
+
+
+
+
+sample.json
+JavaScript
+
+
+{
+
+	"name": "Jimmy",
+
+	"age": 25,
+
+	"hobbies": [
+
+		"Sports",
+
+		"Music",
+
+		"Travel"
+
+	],
+
+	"address": {
+
+		"street": "123 Nice st.",
+
+		"city": "GreatCity"
+
+	}
+
+}
+
+
+
+
+12345678910111213
+
+{ "name": "Jimmy", "age": 25, "hobbies": [ "Sports", "Music", "Travel" ], "address": { "street": "123 Nice st.", "city": "GreatCity" }}
+
+
+
+
+
+
+
+
+JSON Parsing to generic object
+JSON parsing means that we don’t need specific POJO classes (like Person or Employee etc.) for serializing or deserializing. All JSONs will be using some common inbuilt object structure (like JsonObject) or some collection as shown in below examples.
+
+
+Java
+
+
+import java.io.File;
+
+import java.io.FileReader;
+
+import java.io.IOException;
+
+import java.nio.file.Files;
+
+import java.util.Map;
+
+
+
+import javax.json.Json;
+
+import javax.json.JsonReader;
+
+
+
+import org.json.JSONObject;
+
+
+
+import com.fasterxml.jackson.databind.JsonNode;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import com.google.gson.JsonObject;
+
+import com.google.gson.JsonParser;
+
+import com.google.gson.JsonSyntaxException;
+
+import com.jayway.jsonpath.JsonPath;
+
+
+
+public class JsonParseToGenericObject {
+
+
+
+	public static void main(String[] args) throws JsonSyntaxException, IOException {
+
+
+
+		/*
+
+		 * Jackson
+
+		 */
+
+		ObjectMapper jacksonObjectMapper = new ObjectMapper();
+
+		JsonNode jacksonJsonNode = jacksonObjectMapper.readTree(new File("sample.json"));
+
+		System.out.println(
+
+				"Jackson --> " + jacksonJsonNode.get("name").asText() + " " + jacksonJsonNode.get("age").asInt());
+
+		jacksonJsonNode.get("hobbies").iterator().forEachRemaining(h -> System.out.println("Jackson --> " + h));
+
+		System.out.println("Jackson --> " + jacksonJsonNode.get("address").get("street").asText() + " "
+
+				+ jacksonJsonNode.get("address").get("city").asText());
+
+
+
+		/*
+
+		 * GSON
+
+		 */
+
+		JsonObject gsonJsonObject = new JsonParser().parse(Files.readString(new File("sample.json").toPath()))
+
+				.getAsJsonObject();
+
+		System.out.println("GSON --> " + gsonJsonObject.get("name").getAsString() + " "
+
+				+ gsonJsonObject.get("age").getAsInt() + " " + gsonJsonObject.get("hobbies").getAsJsonArray() + " "
+
+				+ gsonJsonObject.get("address").getAsJsonObject().get("street") + " "
+
+				+ gsonJsonObject.get("address").getAsJsonObject().get("city"));
+
+
+
+		// In JavaEE, JSON-B is mainly for binding. For generic object use JSON-P.
+
+
+
+		/*
+
+		 * JSON-P
+
+		 */
+
+		JsonReader jsonPReader = Json.createReader(new FileReader(new File("sample.json")));
+
+		javax.json.JsonObject jsonOPbject = jsonPReader.readObject();
+
+
+
+		System.out.println("JSON-P --> " + jsonOPbject.getString("name") + " " + jsonOPbject.getInt("age") + " "
+
+				+ jsonOPbject.getJsonArray("hobbies") + " " + jsonOPbject.getJsonObject("address").getString("street")
+
+				+ " " + jsonOPbject.getJsonObject("address").getString("city"));
+
+
+
+		/*
+
+		 * org.JSON
+
+		 */
+
+		JSONObject orgJsonObject = new JSONObject(Files.readString(new File("sample.json").toPath()));
+
+		System.out.println("org.JSON --> " + orgJsonObject.getString("name") + " " + orgJsonObject.getInt("age") + " "
+
+				+ orgJsonObject.getJSONArray("hobbies"));
+
+
+
+		/*
+
+		 * json-path
+
+		 */
+
+		Map<String, Object> jsonPathMap = JsonPath.parse(new File("sample.json")).read("$");
+
+		System.out.println("json-path --> " + jsonPathMap.get("name") + " " + jsonPathMap.get("age") + " "
+
+				+ jsonPathMap.get("hobbies") + " " + ((Map<String, Object>) jsonPathMap.get("address")).get("street")
+
+				+ " " + ((Map<String, Object>) jsonPathMap.get("address")).get("city"));
+
+	}
+
+
+
+}
+
+
+
+
+123456789101112131415161718192021222324252627282930313233343536373839404142434445464748495051525354555657585960616263646566676869707172
+
+import java.io.File;import java.io.FileReader;import java.io.IOException;import java.nio.file.Files;import java.util.Map; import javax.json.Json;import javax.json.JsonReader; import org.json.JSONObject; import com.fasterxml.jackson.databind.JsonNode;import com.fasterxml.jackson.databind.ObjectMapper;import com.google.gson.JsonObject;import com.google.gson.JsonParser;import com.google.gson.JsonSyntaxException;import com.jayway.jsonpath.JsonPath; public class JsonParseToGenericObject {  public static void main(String[] args) throws JsonSyntaxException, IOException {  /*		 * Jackson		 */ ObjectMapper jacksonObjectMapper = new ObjectMapper(); JsonNode jacksonJsonNode = jacksonObjectMapper.readTree(new File("sample.json")); System.out.println( "Jackson --> " + jacksonJsonNode.get("name").asText() + " " + jacksonJsonNode.get("age").asInt()); jacksonJsonNode.get("hobbies").iterator().forEachRemaining(h -> System.out.println("Jackson --> " + h)); System.out.println("Jackson --> " + jacksonJsonNode.get("address").get("street").asText() + " " + jacksonJsonNode.get("address").get("city").asText());  /*		 * GSON		 */ JsonObject gsonJsonObject = new JsonParser().parse(Files.readString(new File("sample.json").toPath())) .getAsJsonObject(); System.out.println("GSON --> " + gsonJsonObject.get("name").getAsString() + " " + gsonJsonObject.get("age").getAsInt() + " " + gsonJsonObject.get("hobbies").getAsJsonArray() + " " + gsonJsonObject.get("address").getAsJsonObject().get("street") + " " + gsonJsonObject.get("address").getAsJsonObject().get("city"));  // In JavaEE, JSON-B is mainly for binding. For generic object use JSON-P.  /*		 * JSON-P		 */ JsonReader jsonPReader = Json.createReader(new FileReader(new File("sample.json"))); javax.json.JsonObject jsonOPbject = jsonPReader.readObject();  System.out.println("JSON-P --> " + jsonOPbject.getString("name") + " " + jsonOPbject.getInt("age") + " " + jsonOPbject.getJsonArray("hobbies") + " " + jsonOPbject.getJsonObject("address").getString("street") + " " + jsonOPbject.getJsonObject("address").getString("city"));  /*		 * org.JSON		 */ JSONObject orgJsonObject = new JSONObject(Files.readString(new File("sample.json").toPath())); System.out.println("org.JSON --> " + orgJsonObject.getString("name") + " " + orgJsonObject.getInt("age") + " " + orgJsonObject.getJSONArray("hobbies"));  /*		 * json-path		 */ Map<String, Object> jsonPathMap = JsonPath.parse(new File("sample.json")).read("$"); System.out.println("json-path --> " + jsonPathMap.get("name") + " " + jsonPathMap.get("age") + " " + jsonPathMap.get("hobbies") + " " + ((Map<String, Object>) jsonPathMap.get("address")).get("street") + " " + ((Map<String, Object>) jsonPathMap.get("address")).get("city")); } }
+
+
+
+
+
+
+
+
+MS DOS
+
+
+Jackson --> Jimmy 25
+
+Jackson --> "Sports"
+
+Jackson --> "Music"
+
+Jackson --> "Travel"
+
+Jackson --> 123 Nice st. GreatCity
+
+GSON --> Jimmy 25 ["Sports","Music","Travel"] "123 Nice st." "GreatCity"
+
+JSON-P --> Jimmy 25 ["Sports","Music","Travel"] 123 Nice st. GreatCity
+
+org.JSON --> Jimmy 25 ["Sports","Music","Travel"]
+
+json-path --> Jimmy 25 ["Sports","Music","Travel"] 123 Nice st. GreatCity
+
+
+
+
+123456789
+
+Jackson --> Jimmy 25Jackson --> "Sports"Jackson --> "Music"Jackson --> "Travel"Jackson --> 123 Nice st. GreatCityGSON --> Jimmy 25 ["Sports","Music","Travel"] "123 Nice st." "GreatCity"JSON-P --> Jimmy 25 ["Sports","Music","Travel"] 123 Nice st. GreatCityorg.JSON --> Jimmy 25 ["Sports","Music","Travel"]json-path --> Jimmy 25 ["Sports","Music","Travel"] 123 Nice st. GreatCity
+
+
+
+
+
+
+
+
+JSON Binding to specific business object
+JSON binding provides way to bind JSON string to specific custom POJO classes (Like Person or Employee etc. business objects.). This makes it easy & logical representation of JSON as object to use in java applications. We can access JSON properties using simple getter/setters on POJO. Below are examples.
+
+
+Java
+
+
+import java.io.File;
+
+import java.io.FileReader;
+
+import java.io.IOException;
+
+
+
+import javax.json.bind.Jsonb;
+
+import javax.json.bind.JsonbBuilder;
+
+
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import com.google.gson.Gson;
+
+import com.google.gson.JsonSyntaxException;
+
+import com.itsallbinary.json.Person;
+
+import com.jayway.jsonpath.JsonPath;
+
+
+
+public class JsonBindToSpecificObject {
+
+
+
+	public static void main(String[] args) throws JsonSyntaxException, IOException {
+
+
+
+		/*
+
+		 * Jackson
+
+		 */
+
+		ObjectMapper mapper = new ObjectMapper();
+
+		Person jacksonPerson = mapper.readValue(new File("sample.json"), Person.class);
+
+		System.out.println("Jackson --> " + jacksonPerson.getName() + " " + jacksonPerson.getAge() + " "
+
+				+ jacksonPerson.getHobbies() + " " + jacksonPerson.getAddress().getStreet() + " "
+
+				+ jacksonPerson.getAddress().getCity());
+
+
+
+		/*
+
+		 * GSON
+
+		 */
+
+		Gson gson = new Gson();
+
+		Person gsonPerson = gson.fromJson(new FileReader(new File("sample.json")), Person.class);
+
+		System.out
+
+				.println("GSON --> " + gsonPerson.getName() + " " + gsonPerson.getAge() + " " + gsonPerson.getHobbies()
+
+						+ " " + gsonPerson.getAddress().getStreet() + " " + gsonPerson.getAddress().getCity());
+
+
+
+		/*
+
+		 * JSON-B
+
+		 */
+
+		Jsonb jsonb = JsonbBuilder.create();
+
+		Person jsonBPerson = jsonb.fromJson(new FileReader(new File("sample.json")), Person.class);
+
+		System.out.println(
+
+				"JSON-B --> " + jsonBPerson.getName() + " " + jsonBPerson.getAge() + " " + jsonBPerson.getHobbies()
+
+						+ " " + jsonBPerson.getAddress().getStreet() + " " + jsonBPerson.getAddress().getCity());
+
+
+
+		// In JavaEE, JSON-P is mainly for parsing to generic. For specific object
+
+		// binding use JSON-B.
+
+
+
+		// org.JSON doesn't support binding
+
+
+
+		/*
+
+		 * json-path
+
+		 */
+
+		Person jsonPathPerson = JsonPath.parse(new File("sample.json")).read("$", Person.class);
+
+		System.out.println("json-path --> " + jsonPathPerson.getName() + " " + jsonPathPerson.getAge() + " "
+
+				+ jsonPathPerson.getHobbies() + " " + jsonPathPerson.getAddress().getStreet() + " "
+
+				+ jsonPathPerson.getAddress().getCity());
+
+	}
+
+
+
+}
+
+
+
+
+1234567891011121314151617181920212223242526272829303132333435363738394041424344454647484950515253545556575859
+
+import java.io.File;import java.io.FileReader;import java.io.IOException; import javax.json.bind.Jsonb;import javax.json.bind.JsonbBuilder; import com.fasterxml.jackson.databind.ObjectMapper;import com.google.gson.Gson;import com.google.gson.JsonSyntaxException;import com.itsallbinary.json.Person;import com.jayway.jsonpath.JsonPath; public class JsonBindToSpecificObject {  public static void main(String[] args) throws JsonSyntaxException, IOException {  /*		 * Jackson		 */ ObjectMapper mapper = new ObjectMapper(); Person jacksonPerson = mapper.readValue(new File("sample.json"), Person.class); System.out.println("Jackson --> " + jacksonPerson.getName() + " " + jacksonPerson.getAge() + " " + jacksonPerson.getHobbies() + " " + jacksonPerson.getAddress().getStreet() + " " + jacksonPerson.getAddress().getCity());  /*		 * GSON		 */ Gson gson = new Gson(); Person gsonPerson = gson.fromJson(new FileReader(new File("sample.json")), Person.class); System.out .println("GSON --> " + gsonPerson.getName() + " " + gsonPerson.getAge() + " " + gsonPerson.getHobbies() + " " + gsonPerson.getAddress().getStreet() + " " + gsonPerson.getAddress().getCity());  /*		 * JSON-B		 */ Jsonb jsonb = JsonbBuilder.create(); Person jsonBPerson = jsonb.fromJson(new FileReader(new File("sample.json")), Person.class); System.out.println( "JSON-B --> " + jsonBPerson.getName() + " " + jsonBPerson.getAge() + " " + jsonBPerson.getHobbies() + " " + jsonBPerson.getAddress().getStreet() + " " + jsonBPerson.getAddress().getCity());  // In JavaEE, JSON-P is mainly for parsing to generic. For specific object // binding use JSON-B.  // org.JSON doesn't support binding  /*		 * json-path		 */ Person jsonPathPerson = JsonPath.parse(new File("sample.json")).read("$", Person.class); System.out.println("json-path --> " + jsonPathPerson.getName() + " " + jsonPathPerson.getAge() + " " + jsonPathPerson.getHobbies() + " " + jsonPathPerson.getAddress().getStreet() + " " + jsonPathPerson.getAddress().getCity()); } }
+
+
+
+
+
+
+
+
+MS DOS
+
+
+Jackson --> Jimmy 25 [Sports, Music, Travel] 123 Nice st. GreatCity
+
+GSON --> Jimmy 25 [Sports, Music, Travel] 123 Nice st. GreatCity
+
+JSON-B --> Jimmy 25 [Sports, Music, Travel] 123 Nice st. GreatCity
+
+json-path --> Jimmy 25 ["Sports","Music","Travel"] 123 Nice st. GreatCity
+
+
+
+
+1234
+
+Jackson --> Jimmy 25 [Sports, Music, Travel] 123 Nice st. GreatCityGSON --> Jimmy 25 [Sports, Music, Travel] 123 Nice st. GreatCityJSON-B --> Jimmy 25 [Sports, Music, Travel] 123 Nice st. GreatCityjson-path --> Jimmy 25 ["Sports","Music","Travel"] 123 Nice st. GreatCity
+
+
+
+
+
+
+
+
+Custom Object Instantiation
+There might be a need to have JSON bound POJOs to be instantiated in certain way like multiple argument constructor or a static factory methods. This comparison is to check how different libraries handle such use case. Go to below article for detailed examples.
+Jackson vs. Gson vs. JSON-B | Custom Object Instantiation (args constructor, factory method) for JSON in Java
+
+Polymorphic Type Handling
+As Java is object oriented language, JSON bound POJOs might have polymorphic nature. This section compares JSON libraries on basic of such handling. Go to below article for detailed example.
+Jackson vs. Gson vs. JSON-B | Java JSON Polymorphic type handling
+
+
+
+
+Null/Empty Handling
+Null or empty handling is about how null values in JSON should be treated while serializing or deserializing JSON. In some cases we might want JSON key to be omitted if value is null. In other cases we might want to keep key in JSON but make value as explicit null.
+Lets consider an employee object for this test as shown below.
+
+
+Java
+
+
+public class Employee {
+
+	private String name;
+
+	private String middleName;
+
+	private String lastName;
+
+	private int age;
+
+
+
+	.. getters and setters ...
+
+}
+
+
+
+
+12345678
+
+public class Employee { private String name; private String middleName; private String lastName; private int age;  .. getters and setters ...}
+
+
+
+
+
+
+Jackson
+Jackson provides several ways to handle null, empty etc. Also provides additional handling like default handling i.e. when primitive value is default.
+Jackson null/empty handling can be done using annotations per class, per property /method. This can also be done at global level directly in mapper.
+
+
+Java
+
+
+import java.io.IOException;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import com.itsallbinary.json.Employee;
+
+
+
+public class JacksonNullHandle {
+
+
+
+	public static void main(String[] args) throws IOException {
+
+
+
+		Employee employee = new Employee();
+
+		employee.setName("John");
+
+		employee.setMiddleName("");
+
+		employee.setLastName(null);
+
+
+
+		// Basic mapper
+
+		ObjectMapper basicMapper = new ObjectMapper();
+
+		System.out.println("Basic = " + basicMapper.writeValueAsString(employee));
+
+
+
+		// Mapper to include non null
+
+		ObjectMapper nonNullMapper = new ObjectMapper();
+
+		nonNullMapper.setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL);
+
+		System.out.println("NON_NULL = " + nonNullMapper.writeValueAsString(employee));
+
+
+
+		// Mapper to include non empty
+
+		ObjectMapper nonEmptyMapper = new ObjectMapper();
+
+		nonEmptyMapper.setDefaultPropertyInclusion(JsonInclude.Include.NON_EMPTY);
+
+		System.out.println("NON_EMPTY = " + nonEmptyMapper.writeValueAsString(employee));
+
+
+
+		// Mapper to include non default
+
+		ObjectMapper nonDefaultMapper = new ObjectMapper();
+
+		nonDefaultMapper.setDefaultPropertyInclusion(JsonInclude.Include.NON_DEFAULT);
+
+		System.out.println("NON_DEFAULT = " + nonDefaultMapper.writeValueAsString(employee));
+
+
+
+		// Handling with annotation in POJO
+
+		EmployeeWithAnnotations employeeWithAnnotations = new EmployeeWithAnnotations();
+
+		employeeWithAnnotations.setName("John");
+
+		employeeWithAnnotations.setMiddleName(null); // NON_NULL for this.
+
+		employeeWithAnnotations.setLastName(""); // NON_EMPTY for this
+
+
+
+		ObjectMapper basicMapper1 = new ObjectMapper();
+
+		System.out.println("Basic with annotations = " + basicMapper1.writeValueAsString(employeeWithAnnotations));
+
+	}
+
+}
+
+
+
+
+12345678910111213141516171819202122232425262728293031323334353637383940414243
+
+import java.io.IOException;import com.fasterxml.jackson.annotation.JsonInclude;import com.fasterxml.jackson.databind.ObjectMapper;import com.itsallbinary.json.Employee; public class JacksonNullHandle {  public static void main(String[] args) throws IOException {  Employee employee = new Employee(); employee.setName("John"); employee.setMiddleName(""); employee.setLastName(null);  // Basic mapper ObjectMapper basicMapper = new ObjectMapper(); System.out.println("Basic = " + basicMapper.writeValueAsString(employee));  // Mapper to include non null ObjectMapper nonNullMapper = new ObjectMapper(); nonNullMapper.setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL); System.out.println("NON_NULL = " + nonNullMapper.writeValueAsString(employee));  // Mapper to include non empty ObjectMapper nonEmptyMapper = new ObjectMapper(); nonEmptyMapper.setDefaultPropertyInclusion(JsonInclude.Include.NON_EMPTY); System.out.println("NON_EMPTY = " + nonEmptyMapper.writeValueAsString(employee));  // Mapper to include non default ObjectMapper nonDefaultMapper = new ObjectMapper(); nonDefaultMapper.setDefaultPropertyInclusion(JsonInclude.Include.NON_DEFAULT); System.out.println("NON_DEFAULT = " + nonDefaultMapper.writeValueAsString(employee));  // Handling with annotation in POJO EmployeeWithAnnotations employeeWithAnnotations = new EmployeeWithAnnotations(); employeeWithAnnotations.setName("John"); employeeWithAnnotations.setMiddleName(null); // NON_NULL for this. employeeWithAnnotations.setLastName(""); // NON_EMPTY for this  ObjectMapper basicMapper1 = new ObjectMapper(); System.out.println("Basic with annotations = " + basicMapper1.writeValueAsString(employeeWithAnnotations)); }}
+
+
+
+
+
+This is the annotated class used in above example. Annotations also provide flexibility to handle null, empty at field or class level.
+
+
+Java
+
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+
+
+public class EmployeeWithAnnotations {
+
+
+
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+
+	private String name;
+
+
+
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+
+	private String middleName;
+
+
+
+	@JsonInclude(JsonInclude.Include.NON_EMPTY)
+
+	private String lastName;
+
+
+
+	@JsonInclude(JsonInclude.Include.NON_DEFAULT)
+
+	private int age;
+
+
+
+	... getters & setters ...
+
+}
+
+
+
+
+123456789101112131415161718
+
+import com.fasterxml.jackson.annotation.JsonInclude; public class EmployeeWithAnnotations {  @JsonInclude(JsonInclude.Include.NON_NULL) private String name;  @JsonInclude(JsonInclude.Include.NON_NULL) private String middleName;  @JsonInclude(JsonInclude.Include.NON_EMPTY) private String lastName;  @JsonInclude(JsonInclude.Include.NON_DEFAULT) private int age;  ... getters & setters ...}
+
+
+
+
+
+
+
+
+MS DOS
+
+
+Basic = {"name":"John","middleName":"","lastName":null,"age":0}
+
+NON_NULL = {"name":"John","middleName":"","age":0}
+
+NON_EMPTY = {"name":"John","age":0}
+
+NON_DEFAULT = {"name":"John"}
+
+Basic with annotations = {"name":"John"}
+
+
+
+
+12345
+
+Basic = {"name":"John","middleName":"","lastName":null,"age":0}NON_NULL = {"name":"John","middleName":"","age":0}NON_EMPTY = {"name":"John","age":0}NON_DEFAULT = {"name":"John"}Basic with annotations = {"name":"John"}
+
+
+
+
+
+
+GSON
+GSON by default removes all null values while serializing. To change this, we can customize at global level. Out of the box, it only provides global way.
+
+
+Java
+
+
+import com.google.gson.Gson;
+
+import com.google.gson.GsonBuilder;
+
+import com.itsallbinary.json.Employee;
+
+
+
+public class GsonNullHandle {
+
+
+
+	public static void main(String[] args) {
+
+		Employee employee = new Employee();
+
+		employee.setName("John");
+
+		employee.setMiddleName("");
+
+		employee.setLastName(null);
+
+
+
+		Gson basicGson = new Gson();
+
+		System.out.println(basicGson.toJson(employee));
+
+
+
+		Gson nonNullGson = new GsonBuilder().serializeNulls().create();
+
+		System.out.println(nonNullGson.toJson(employee));
+
+	}
+
+}
+
+
+
+
+12345678910111213141516171819
+
+import com.google.gson.Gson;import com.google.gson.GsonBuilder;import com.itsallbinary.json.Employee; public class GsonNullHandle {  public static void main(String[] args) { Employee employee = new Employee(); employee.setName("John"); employee.setMiddleName(""); employee.setLastName(null);  Gson basicGson = new Gson(); System.out.println(basicGson.toJson(employee));  Gson nonNullGson = new GsonBuilder().serializeNulls().create(); System.out.println(nonNullGson.toJson(employee)); }}
+
+
+
+
+
+
+
+
+MS DOS
+
+
+{"name":"John","middleName":"","age":0}
+
+{"name":"John","middleName":"","lastName":null,"age":0}
+
+
+
+
+12
+
+{"name":"John","middleName":"","age":0}{"name":"John","middleName":"","lastName":null,"age":0}
+
+
+
+
+
+
+JSON-B
+JSON-B provides global as well as per class, per field way to handle null similar to Jackson. But this does not handle empty or default values.
+JSON-B null handling can be done using annotations per class, per property /method. This can also be done at global level directly using JsonbConfig.
+
+
+Java
+
+
+import javax.json.bind.Jsonb;
+
+import javax.json.bind.JsonbBuilder;
+
+import javax.json.bind.JsonbConfig;
+
+import com.itsallbinary.json.Employee;
+
+
+
+public class JsonBNullHandle {
+
+
+
+	public static void main(String[] args) {
+
+
+
+		Employee employee = new Employee();
+
+		employee.setName("John");
+
+		employee.setMiddleName("");
+
+		employee.setLastName(null);
+
+
+
+		// Basic binding excludes null
+
+		Jsonb basicJsonb = JsonbBuilder.create();
+
+		System.out.println(basicJsonb.toJson(employee));
+
+
+
+		// Global configuration to allow null
+
+		JsonbConfig nillableConfig = new JsonbConfig().withNullValues(true);
+
+		Jsonb nillableJsonb = JsonbBuilder.create(nillableConfig);
+
+		System.out.println(nillableJsonb.toJson(employee));
+
+
+
+		// Annotations to control null handling at field or class level
+
+		EmployeeWithAnnotations employeeWithAnnotations = new EmployeeWithAnnotations();
+
+		employeeWithAnnotations.setName("John");
+
+		employeeWithAnnotations.setMiddleName(null); // Nillable true
+
+		employeeWithAnnotations.setLastName(null); // Nillable false
+
+
+
+		Jsonb basicJsonb1 = JsonbBuilder.create();
+
+		System.out.println(basicJsonb1.toJson(employeeWithAnnotations));
+
+	}
+
+}
+
+
+
+
+123456789101112131415161718192021222324252627282930313233
+
+import javax.json.bind.Jsonb;import javax.json.bind.JsonbBuilder;import javax.json.bind.JsonbConfig;import com.itsallbinary.json.Employee; public class JsonBNullHandle {  public static void main(String[] args) {  Employee employee = new Employee(); employee.setName("John"); employee.setMiddleName(""); employee.setLastName(null);  // Basic binding excludes null Jsonb basicJsonb = JsonbBuilder.create(); System.out.println(basicJsonb.toJson(employee));  // Global configuration to allow null JsonbConfig nillableConfig = new JsonbConfig().withNullValues(true); Jsonb nillableJsonb = JsonbBuilder.create(nillableConfig); System.out.println(nillableJsonb.toJson(employee));  // Annotations to control null handling at field or class level EmployeeWithAnnotations employeeWithAnnotations = new EmployeeWithAnnotations(); employeeWithAnnotations.setName("John"); employeeWithAnnotations.setMiddleName(null); // Nillable true employeeWithAnnotations.setLastName(null); // Nillable false  Jsonb basicJsonb1 = JsonbBuilder.create(); System.out.println(basicJsonb1.toJson(employeeWithAnnotations)); }}
+
+
+
+
+
+This is annotated class from above example with per field handling of null
+
+
+Java
+
+
+import javax.json.bind.annotation.JsonbProperty;
+
+
+
+public class EmployeeWithAnnotations {
+
+
+
+	@JsonbProperty(nillable = true)
+
+	private String name;
+
+
+
+	@JsonbProperty(nillable = true)
+
+	private String middleName;
+
+
+
+	@JsonbProperty(nillable = false)
+
+	private String lastName;
+
+
+
+	private int age;
+
+
+
+	... getters and setters ...
+
+}
+
+
+
+
+1234567891011121314151617
+
+import javax.json.bind.annotation.JsonbProperty; public class EmployeeWithAnnotations {  @JsonbProperty(nillable = true) private String name;  @JsonbProperty(nillable = true) private String middleName;  @JsonbProperty(nillable = false) private String lastName;  private int age;  ... getters and setters ...}
+
+
+
+
+
+
+
+
+MS DOS
+
+
+{"age":0,"middleName":"","name":"John"}
+
+{"age":0,"lastName":null,"middleName":"","name":"John"}
+
+{"age":0,"middleName":null,"name":"John"}
+
+
+
+
+123
+
+{"age":0,"middleName":"","name":"John"}{"age":0,"lastName":null,"middleName":"","name":"John"}{"age":0,"middleName":null,"name":"John"}
+
+
+
+
+
+
+
+
+Data Formatting Customization
+This section is about controlling format of certain data types like Date or Collection so that we can customize how data types will appear in JSON string version. For ex: custom date format etc.
+Jackson
+In jackson, you can provide annotations to specify formatting that you expect as shown below.
+
+
+Java
+
+
+import java.util.Date;
+
+import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+
+
+
+public class PersonFormat {
+
+	private String name;
+
+
+
+	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MMM-YYYY")
+
+	private Date dateOfBirth;
+
+
+
+	@JsonFormat(with = { JsonFormat.Feature.WRITE_SINGLE_ELEM_ARRAYS_UNWRAPPED })
+
+	private List<String> contacts;
+
+
+
+	... getters & setters ...
+
+}
+
+
+
+
+123456789101112131415
+
+import java.util.Date;import java.util.List;import com.fasterxml.jackson.annotation.JsonFormat; public class PersonFormat { private String name;  @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MMM-YYYY") private Date dateOfBirth;  @JsonFormat(with = { JsonFormat.Feature.WRITE_SINGLE_ELEM_ARRAYS_UNWRAPPED }) private List<String> contacts;  ... getters & setters ...}
+
+
+
+
+
+
+
+
+Java
+
+
+import java.io.File;
+
+import java.io.IOException;
+
+import java.util.Arrays;
+
+import java.util.Date;
+
+import com.fasterxml.jackson.core.JsonParseException;
+
+import com.fasterxml.jackson.databind.JsonMappingException;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+
+
+public class JacksonFormatting {
+
+
+
+	public static void main(String[] args) throws JsonParseException, JsonMappingException, IOException {
+
+
+
+		// Date formatting example
+
+		PersonFormat person = new PersonFormat();
+
+		person.setName("Jimmy");
+
+		person.setDateOfBirth(new Date()); // Using today's date for simplicity
+
+
+
+		ObjectMapper mapper = new ObjectMapper();
+
+		System.out.println(mapper.writeValueAsString(person));
+
+
+
+		// Collection formatting.
+
+		PersonFormat person_1 = new PersonFormat();
+
+		person_1.setName("Jimmy");
+
+		person_1.setDateOfBirth(new Date()); // Using today's date for simplicity
+
+		person_1.setContacts(Arrays.asList("1234567890"));
+
+
+
+		// Output when collection has single entry. Converts as object & not as array in
+
+		// json.
+
+		ObjectMapper basicMapper = new ObjectMapper();
+
+		System.out.println("Collection as object = " + basicMapper.writeValueAsString(person_1));
+
+
+
+		// If multiple values in collections, converts as array.
+
+		person_1.setContacts(Arrays.asList("1234567890", "0987654321"));
+
+		System.out.println("Collection as array = " + basicMapper.writeValueAsString(person_1));
+
+	}
+
+}
+
+
+
+
+123456789101112131415161718192021222324252627282930313233343536
+
+import java.io.File;import java.io.IOException;import java.util.Arrays;import java.util.Date;import com.fasterxml.jackson.core.JsonParseException;import com.fasterxml.jackson.databind.JsonMappingException;import com.fasterxml.jackson.databind.ObjectMapper; public class JacksonFormatting {  public static void main(String[] args) throws JsonParseException, JsonMappingException, IOException {  // Date formatting example PersonFormat person = new PersonFormat(); person.setName("Jimmy"); person.setDateOfBirth(new Date()); // Using today's date for simplicity  ObjectMapper mapper = new ObjectMapper(); System.out.println(mapper.writeValueAsString(person));  // Collection formatting. PersonFormat person_1 = new PersonFormat(); person_1.setName("Jimmy"); person_1.setDateOfBirth(new Date()); // Using today's date for simplicity person_1.setContacts(Arrays.asList("1234567890"));  // Output when collection has single entry. Converts as object & not as array in // json. ObjectMapper basicMapper = new ObjectMapper(); System.out.println("Collection as object = " + basicMapper.writeValueAsString(person_1));  // If multiple values in collections, converts as array. person_1.setContacts(Arrays.asList("1234567890", "0987654321")); System.out.println("Collection as array = " + basicMapper.writeValueAsString(person_1)); }}
+
+
+
+
+
+
+
+
+MS DOS
+
+
+{"name":"Jimmy","dateOfBirth":"02-Jul-2019","contacts":null}
+
+Collection as object = {"name":"Jimmy","dateOfBirth":"02-Jul-2019","contacts":"1234567890"}
+
+Collection as array = {"name":"Jimmy","dateOfBirth":"02-Jul-2019","contacts":["1234567890","0987654321"]}
+
+
+
+
+123
+
+{"name":"Jimmy","dateOfBirth":"02-Jul-2019","contacts":null}Collection as object = {"name":"Jimmy","dateOfBirth":"02-Jul-2019","contacts":"1234567890"}Collection as array = {"name":"Jimmy","dateOfBirth":"02-Jul-2019","contacts":["1234567890","0987654321"]}
+
+
+
+
+
+
+GSON
+
+
+
+Java
+
+
+import java.util.Date;
+
+
+
+public class PersonFormat {
+
+	private String name;
+
+	private Date dateOfBirth;
+
+
+
+	... getters and setters ...
+
+}
+
+
+
+
+12345678
+
+import java.util.Date; public class PersonFormat { private String name; private Date dateOfBirth;  ... getters and setters ...}
+
+
+
+
+
+
+
+
+Java
+
+
+import java.util.Date;
+
+import com.google.gson.Gson;
+
+import com.google.gson.GsonBuilder;
+
+
+
+public class GsonFormatting {
+
+
+
+	public static void main(String[] args) {
+
+		PersonFormat person = new PersonFormat();
+
+		person.setName("Jimmy");
+
+		person.setDateOfBirth(new Date()); // Using today's date for simplicity
+
+
+
+		// Default date format
+
+		Gson basicGson = new Gson();
+
+		System.out.println(basicGson.toJson(person));
+
+
+
+		// Custom global date format
+
+		Gson customGson = new GsonBuilder().setDateFormat("dd-MMM-YYYY").create();
+
+		System.out.println(customGson.toJson(person));
+
+	}
+
+}
+
+
+
+
+1234567891011121314151617181920
+
+import java.util.Date;import com.google.gson.Gson;import com.google.gson.GsonBuilder; public class GsonFormatting {  public static void main(String[] args) { PersonFormat person = new PersonFormat(); person.setName("Jimmy"); person.setDateOfBirth(new Date()); // Using today's date for simplicity  // Default date format Gson basicGson = new Gson(); System.out.println(basicGson.toJson(person));  // Custom global date format Gson customGson = new GsonBuilder().setDateFormat("dd-MMM-YYYY").create(); System.out.println(customGson.toJson(person)); }}
+
+
+
+
+
+
+
+
+MS DOS
+
+
+{"name":"Jimmy","dateOfBirth":"Jul 1, 2019, 8:10:54 PM"}
+
+{"name":"Jimmy","dateOfBirth":"01-Jul-2019"}
+
+
+
+
+12
+
+{"name":"Jimmy","dateOfBirth":"Jul 1, 2019, 8:10:54 PM"}{"name":"Jimmy","dateOfBirth":"01-Jul-2019"}
+
+
+
+
+
+
+JSON-B
+JSONB provides annotation which can be used on class, method, field so that you can control date format conversion.
+
+
+Java
+
+
+import java.util.Date;
+
+import java.util.List;
+
+import javax.json.bind.annotation.JsonbDateFormat;
+
+
+
+@JsonbDateFormat("dd-MMM-YYYY")
+
+public class PersonFormat {
+
+
+
+	private String name;
+
+	private Date dateOfBirth;
+
+	private List<String> contacts;
+
+
+
+	... getters and setters ...
+
+}
+
+
+
+
+12345678910111213
+
+import java.util.Date;import java.util.List;import javax.json.bind.annotation.JsonbDateFormat; @JsonbDateFormat("dd-MMM-YYYY")public class PersonFormat {  private String name; private Date dateOfBirth; private List<String> contacts;  ... getters and setters ...}
+
+
+
+
+
+
+
+
+Java
+
+
+import java.util.Date;
+
+import javax.json.bind.Jsonb;
+
+import javax.json.bind.JsonbBuilder;
+
+
+
+public class JsonBFormatting {
+
+
+
+	public static void main(String[] args) {
+
+		PersonFormat person = new PersonFormat();
+
+		person.setName("Jimmy");
+
+		person.setDateOfBirth(new Date()); // Using today's date for simplicity
+
+
+
+		Jsonb basicJsonb = JsonbBuilder.create();
+
+		System.out.println(basicJsonb.toJson(person));
+
+	}
+
+}
+
+
+
+
+123456789101112131415
+
+import java.util.Date;import javax.json.bind.Jsonb;import javax.json.bind.JsonbBuilder; public class JsonBFormatting {  public static void main(String[] args) { PersonFormat person = new PersonFormat(); person.setName("Jimmy"); person.setDateOfBirth(new Date()); // Using today's date for simplicity  Jsonb basicJsonb = JsonbBuilder.create(); System.out.println(basicJsonb.toJson(person)); }}
+
+
+
+
+
+
+
+
+MS DOS
+
+
+{"dateOfBirth":"02-Jul-2019","name":"Jimmy"}
+
+
+
+
+1
+
+{"dateOfBirth":"02-Jul-2019","name":"Jimmy"}
+
+
+
+
+
+
+
+
+Property Naming & Order customization
+We might want names of POJO variables to be different than names of variables in JSON. For ex. in POJO we might want name of variable as ‘firstName’ but in JSON we might prefer ‘first-name’.
+Jackson
+Jackson provides various annotations for property naming & order of properties as shown in below example. This can be done using annotations with custom names or can be done using PropertyNamingStrategy (SNAKE_CASE, UPPER_CAMEL_CASE, LOWER_CAMEL_CASE, LOWER_CASE, KEBAB_CASE)
+
+
+Java
+
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
+
+
+@JsonPropertyOrder({ "lastName", "name", "middleName" })
+
+public class EmployeePropertyOrder {
+
+
+
+	@JsonProperty("first-name")
+
+	private String name;
+
+
+
+	@JsonProperty("middle-name")
+
+	private String middleName;
+
+
+
+	@JsonProperty("last-name")
+
+	private String lastName;
+
+
+
+	... getters and setters ...
+
+
+
+}
+
+
+
+
+123456789101112131415161718
+
+import com.fasterxml.jackson.annotation.JsonProperty;import com.fasterxml.jackson.annotation.JsonPropertyOrder; @JsonPropertyOrder({ "lastName", "name", "middleName" })public class EmployeePropertyOrder {  @JsonProperty("first-name") private String name;  @JsonProperty("middle-name") private String middleName;  @JsonProperty("last-name") private String lastName;  ... getters and setters ... }
+
+
+
+
+
+
+
+
+Java
+
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+
+import com.itsallbinary.json.Employee;
+
+
+
+public class JacksonPropertyNameOrder {
+
+
+
+	public static void main(String[] args) throws JsonProcessingException {
+
+		EmployeePropertyOrder employee = new EmployeePropertyOrder();
+
+		employee.setName("Jimmy");
+
+		employee.setMiddleName("C");
+
+		employee.setLastName("Kimmel");
+
+
+
+		// Annotation based property naming and order
+
+		ObjectMapper mapper = new ObjectMapper();
+
+		System.out.println("Annotation based property names --> " + mapper.writeValueAsString(employee));
+
+
+
+		Employee employee_1 = new Employee();
+
+		employee_1.setName("Jimmy");
+
+		employee_1.setMiddleName("C");
+
+		employee_1.setLastName("Kimmel");
+
+
+
+		// Strategy based snake case.
+
+		ObjectMapper mapperSnakeCase = new ObjectMapper();
+
+		mapperSnakeCase.setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE);
+
+		System.out.println("SNAKE_CASE --> " + mapperSnakeCase.writeValueAsString(employee_1));
+
+
+
+		// Strategy based upper camel case.
+
+		ObjectMapper mapperCamelCase = new ObjectMapper();
+
+		mapperCamelCase.setPropertyNamingStrategy(PropertyNamingStrategy.UPPER_CAMEL_CASE);
+
+		System.out.println("UPPER_CAMEL_CASE --> " + mapperCamelCase.writeValueAsString(employee_1));
+
+	}
+
+}
+
+
+
+
+123456789101112131415161718192021222324252627282930313233
+
+import com.fasterxml.jackson.core.JsonProcessingException;import com.fasterxml.jackson.databind.ObjectMapper;import com.fasterxml.jackson.databind.PropertyNamingStrategy;import com.itsallbinary.json.Employee; public class JacksonPropertyNameOrder {  public static void main(String[] args) throws JsonProcessingException { EmployeePropertyOrder employee = new EmployeePropertyOrder(); employee.setName("Jimmy"); employee.setMiddleName("C"); employee.setLastName("Kimmel");  // Annotation based property naming and order ObjectMapper mapper = new ObjectMapper(); System.out.println("Annotation based property names --> " + mapper.writeValueAsString(employee));  Employee employee_1 = new Employee(); employee_1.setName("Jimmy"); employee_1.setMiddleName("C"); employee_1.setLastName("Kimmel");  // Strategy based snake case. ObjectMapper mapperSnakeCase = new ObjectMapper(); mapperSnakeCase.setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE); System.out.println("SNAKE_CASE --> " + mapperSnakeCase.writeValueAsString(employee_1));  // Strategy based upper camel case. ObjectMapper mapperCamelCase = new ObjectMapper(); mapperCamelCase.setPropertyNamingStrategy(PropertyNamingStrategy.UPPER_CAMEL_CASE); System.out.println("UPPER_CAMEL_CASE --> " + mapperCamelCase.writeValueAsString(employee_1)); }}
+
+
+
+
+
+
+
+
+MS DOS
+
+
+Annotation based property names --> {"last-name":"Kimmel","first-name":"Jimmy","middle-name":"C"}
+
+SNAKE_CASE --> {"name":"Jimmy","middle_name":"C","last_name":"Kimmel","age":0}
+
+UPPER_CAMEL_CASE --> {"Name":"Jimmy","MiddleName":"C","LastName":"Kimmel","Age":0}
+
+
+
+
+123
+
+Annotation based property names --> {"last-name":"Kimmel","first-name":"Jimmy","middle-name":"C"}SNAKE_CASE --> {"name":"Jimmy","middle_name":"C","last_name":"Kimmel","age":0}UPPER_CAMEL_CASE --> {"Name":"Jimmy","MiddleName":"C","LastName":"Kimmel","Age":0}
+
+
+
+
+
+
+GSON
+Recent release of GSON provides a way to specify different property names for JSON. This can be done using annotations with custom names or can be done using FieldNamingPolicy (UPPER_CAMEL_CASE, UPPER_CAMEL_CASE_WITH_SPACES, LOWER_CASE_WITH_UNDERSCORES, LOWER_CASE_WITH_DASHES, LOWER_CASE_WITH_DOTS, ). But GSON does not support custom property order.
+
+
+Java
+
+
+import com.google.gson.annotations.SerializedName;
+
+
+
+public class EmployeePropertyOrder {
+
+
+
+	@SerializedName("first-name")
+
+	private String name;
+
+
+
+	@SerializedName("middle-name")
+
+	private String middleName;
+
+
+
+	@SerializedName("last-name")
+
+	private String lastName;
+
+
+
+	... getters and setters ...
+
+}
+
+
+
+
+123456789101112131415
+
+import com.google.gson.annotations.SerializedName; public class EmployeePropertyOrder {  @SerializedName("first-name") private String name;  @SerializedName("middle-name") private String middleName;  @SerializedName("last-name") private String lastName;  ... getters and setters ...}
+
+
+
+
+
+
+
+
+Java
+
+
+import com.google.gson.FieldNamingPolicy;
+
+import com.google.gson.Gson;
+
+import com.google.gson.GsonBuilder;
+
+import com.itsallbinary.json.Employee;
+
+
+
+public class GsonPropertyNameOrder {
+
+
+
+	public static void main(String[] args) {
+
+		EmployeePropertyOrder employee = new EmployeePropertyOrder();
+
+		employee.setName("Jimmy");
+
+		employee.setMiddleName("C");
+
+		employee.setLastName("Kimmel");
+
+
+
+		// Annotation based property naming
+
+		Gson basicGson = new Gson();
+
+		System.out.println("Annotation based property names --> " + basicGson.toJson(employee));
+
+
+
+		Employee employee_1 = new Employee();
+
+		employee_1.setName("Jimmy");
+
+		employee_1.setMiddleName("C");
+
+		employee_1.setLastName("Kimmel");
+
+
+
+		// Policy based naming strategy
+
+		// Upper Camel Case
+
+		Gson gsonCamelCase = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.UPPER_CAMEL_CASE).create();
+
+		System.out.println("UPPER_CAMEL_CASE --> " + gsonCamelCase.toJson(employee_1));
+
+
+
+		// lower case underscore
+
+		Gson gsonUnderscore = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
+
+				.create();
+
+		System.out.println("LOWER_CASE_WITH_UNDERSCORES --> " + gsonUnderscore.toJson(employee_1));
+
+	}
+
+}
+
+
+
+
+123456789101112131415161718192021222324252627282930313233
+
+import com.google.gson.FieldNamingPolicy;import com.google.gson.Gson;import com.google.gson.GsonBuilder;import com.itsallbinary.json.Employee; public class GsonPropertyNameOrder {  public static void main(String[] args) { EmployeePropertyOrder employee = new EmployeePropertyOrder(); employee.setName("Jimmy"); employee.setMiddleName("C"); employee.setLastName("Kimmel");  // Annotation based property naming Gson basicGson = new Gson(); System.out.println("Annotation based property names --> " + basicGson.toJson(employee));  Employee employee_1 = new Employee(); employee_1.setName("Jimmy"); employee_1.setMiddleName("C"); employee_1.setLastName("Kimmel");  // Policy based naming strategy // Upper Camel Case Gson gsonCamelCase = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.UPPER_CAMEL_CASE).create(); System.out.println("UPPER_CAMEL_CASE --> " + gsonCamelCase.toJson(employee_1));  // lower case underscore Gson gsonUnderscore = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES) .create(); System.out.println("LOWER_CASE_WITH_UNDERSCORES --> " + gsonUnderscore.toJson(employee_1)); }}
+
+
+
+
+
+
+
+
+MS DOS
+
+
+Annotation based property names --> {"first-name":"Jimmy","middle-name":"C","last-name":"Kimmel"}
+
+UPPER_CAMEL_CASE --> {"Name":"Jimmy","MiddleName":"C","LastName":"Kimmel","Age":0}
+
+LOWER_CASE_WITH_UNDERSCORES --> {"name":"Jimmy","middle_name":"C","last_name":"Kimmel","age":0}
+
+
+
+
+123
+
+Annotation based property names --> {"first-name":"Jimmy","middle-name":"C","last-name":"Kimmel"}UPPER_CAMEL_CASE --> {"Name":"Jimmy","MiddleName":"C","LastName":"Kimmel","Age":0}LOWER_CASE_WITH_UNDERSCORES --> {"name":"Jimmy","middle_name":"C","last_name":"Kimmel","age":0}
+
+
+
+
+
+
+JSON-B
+JSONB does provide way to customize property name as well as order just similar to Jackson through annotations. This can be done using annotations with custom names or can be done using PropertyNamingStrategy (LOWER_CASE_WITH_DASHES, LOWER_CASE_WITH_UNDERSCORES, UPPER_CAMEL_CASE, UPPER_CAMEL_CASE_WITH_SPACES, CASE_INSENSITIVE).
+
+
+Java
+
+
+import javax.json.bind.annotation.JsonbProperty;
+
+import javax.json.bind.annotation.JsonbPropertyOrder;
+
+
+
+// Note that names given here are the java variable names 
+
+// & not the names in @JsonbProperty
+
+@JsonbPropertyOrder({ "lastName", "name", "middleName" })
+
+public class EmployeePropertyOrder {
+
+
+
+	@JsonbProperty("first-name")
+
+	private String name;
+
+
+
+	@JsonbProperty("middle-name")
+
+	private String middleName;
+
+
+
+	private String lastName;
+
+
+
+	@JsonbProperty("last-name")
+
+	public String getLastName() {
+
+		return lastName;
+
+	}
+
+
+
+	... getters and setters ...
+
+}
+
+
+
+
+1234567891011121314151617181920212223
+
+import javax.json.bind.annotation.JsonbProperty;import javax.json.bind.annotation.JsonbPropertyOrder; // Note that names given here are the java variable names // & not the names in @JsonbProperty@JsonbPropertyOrder({ "lastName", "name", "middleName" })public class EmployeePropertyOrder {  @JsonbProperty("first-name") private String name;  @JsonbProperty("middle-name") private String middleName;  private String lastName;  @JsonbProperty("last-name") public String getLastName() { return lastName; }  ... getters and setters ...}
+
+
+
+
+
+
+
+
+Java
+
+
+import javax.json.bind.Jsonb;
+
+import javax.json.bind.JsonbBuilder;
+
+import javax.json.bind.JsonbConfig;
+
+import javax.json.bind.config.PropertyNamingStrategy;
+
+import com.itsallbinary.json.Employee;
+
+
+
+public class JsonBPropertyNameOrder {
+
+
+
+	public static void main(String[] args) {
+
+		EmployeePropertyOrder employee = new EmployeePropertyOrder();
+
+		employee.setName("Jimmy");
+
+		employee.setMiddleName("C");
+
+		employee.setLastName("Kimmel");
+
+
+
+		// Annotation based property naming and order.
+
+		Jsonb basicJsonb = JsonbBuilder.create();
+
+		System.out.println(basicJsonb.toJson(employee));
+
+
+
+		Employee employee_1 = new Employee();
+
+		employee_1.setName("Jimmy");
+
+		employee_1.setMiddleName("C");
+
+		employee_1.setLastName("Kimmel");
+
+
+
+		// Strategy based property naming
+
+		// Upper camel case
+
+		JsonbConfig jsonBConfig = new JsonbConfig().withPropertyNamingStrategy(PropertyNamingStrategy.UPPER_CAMEL_CASE);
+
+		Jsonb jsonbCamelCase = JsonbBuilder.create(jsonBConfig);
+
+		System.out.println("UPPER_CAMEL_CASE --> " + jsonbCamelCase.toJson(employee_1));
+
+
+
+		// Upper camel case
+
+		JsonbConfig jsonBConfig1 = new JsonbConfig()
+
+				.withPropertyNamingStrategy(PropertyNamingStrategy.LOWER_CASE_WITH_DASHES);
+
+		Jsonb jsonbLowerCaseDashes = JsonbBuilder.create(jsonBConfig1);
+
+		System.out.println("LOWER_CASE_WITH_DASHES --> " + jsonbLowerCaseDashes.toJson(employee_1));
+
+	}
+
+}
+
+
+
+
+123456789101112131415161718192021222324252627282930313233343536
+
+import javax.json.bind.Jsonb;import javax.json.bind.JsonbBuilder;import javax.json.bind.JsonbConfig;import javax.json.bind.config.PropertyNamingStrategy;import com.itsallbinary.json.Employee; public class JsonBPropertyNameOrder {  public static void main(String[] args) { EmployeePropertyOrder employee = new EmployeePropertyOrder(); employee.setName("Jimmy"); employee.setMiddleName("C"); employee.setLastName("Kimmel");  // Annotation based property naming and order. Jsonb basicJsonb = JsonbBuilder.create(); System.out.println(basicJsonb.toJson(employee));  Employee employee_1 = new Employee(); employee_1.setName("Jimmy"); employee_1.setMiddleName("C"); employee_1.setLastName("Kimmel");  // Strategy based property naming // Upper camel case JsonbConfig jsonBConfig = new JsonbConfig().withPropertyNamingStrategy(PropertyNamingStrategy.UPPER_CAMEL_CASE); Jsonb jsonbCamelCase = JsonbBuilder.create(jsonBConfig); System.out.println("UPPER_CAMEL_CASE --> " + jsonbCamelCase.toJson(employee_1));  // Upper camel case JsonbConfig jsonBConfig1 = new JsonbConfig() .withPropertyNamingStrategy(PropertyNamingStrategy.LOWER_CASE_WITH_DASHES); Jsonb jsonbLowerCaseDashes = JsonbBuilder.create(jsonBConfig1); System.out.println("LOWER_CASE_WITH_DASHES --> " + jsonbLowerCaseDashes.toJson(employee_1)); }}
+
+
+
+
+
+
+
+
+MS DOS
+
+
+{"last-name":"Kimmel","first-name":"Jimmy","middle-name":"C"}
+
+UPPER_CAMEL_CASE --> {"Age":0,"LastName":"Kimmel","MiddleName":"C","Name":"Jimmy"}
+
+LOWER_CASE_WITH_DASHES --> {"age":0,"last-name":"Kimmel","middle-name":"C","name":"Jimmy"}
+
+
+
+
+123
+
+{"last-name":"Kimmel","first-name":"Jimmy","middle-name":"C"}UPPER_CAMEL_CASE --> {"Age":0,"LastName":"Kimmel","MiddleName":"C","Name":"Jimmy"}LOWER_CASE_WITH_DASHES --> {"age":0,"last-name":"Kimmel","middle-name":"C","name":"Jimmy"}
+
+
+
+
+
+
+
+
+JSON Pointer Support
+JSON Pointer is a standard way to specifically get certain field value from JSON without traversing through entire JSON structure. This is kind of like XPATH in XML.
+
+
+Java
+
+
+import java.io.File;
+
+import java.io.FileReader;
+
+import java.io.IOException;
+
+import java.nio.file.Files;
+
+import javax.json.Json;
+
+import javax.json.JsonReader;
+
+import javax.json.JsonString;
+
+import org.json.JSONObject;
+
+import com.fasterxml.jackson.databind.JsonNode;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import com.google.gson.JsonObject;
+
+import com.google.gson.JsonParser;
+
+import com.google.gson.JsonSyntaxException;
+
+
+
+public class JSONPointerExamples {
+
+
+
+	public static void main(String[] args) throws JsonSyntaxException, IOException {
+
+
+
+		/*
+
+		 * Jackson
+
+		 */
+
+		ObjectMapper jacksonObjectMapper = new ObjectMapper();
+
+		JsonNode jacksonJsonNode = jacksonObjectMapper.readTree(new File("sample.json"));
+
+		System.out.println("Jackson --> " + jacksonJsonNode.at("/address/street"));
+
+		System.out.println("Jackson --> " + jacksonJsonNode.path("address").path("street"));
+
+
+
+		/*
+
+		 * GSON - Doesn't support path. But can chain methods which might be kind of
+
+		 * path value fetch but not really path.
+
+		 */
+
+		JsonObject jsonObject = new JsonParser().parse(Files.readString(new File("sample.json").toPath()))
+
+				.getAsJsonObject();
+
+		System.out.println("GSON --> " + jsonObject.get("address").getAsJsonObject().get("street") + " "
+
+				+ jsonObject.get("address").getAsJsonObject().get("city"));
+
+
+
+		// In JavaEE, JSON-B doesn't support path. But JSON-P has path support.
+
+
+
+		/*
+
+		 * JSON-P
+
+		 */
+
+		JsonReader jsonPReader = Json.createReader(new FileReader(new File("sample.json")));
+
+		javax.json.JsonObject jsonOPbject = jsonPReader.readObject();
+
+		JsonString jsonValue = (JsonString) jsonOPbject.getValue("/address/street");
+
+		System.out.println("JSON-P --> " + jsonValue.toString());
+
+
+
+		/*
+
+		 * org.JSON
+
+		 */
+
+		JSONObject orgJsonObject = new JSONObject(Files.readString(new File("sample.json").toPath()));
+
+		System.out.println("org.JSON --> " + orgJsonObject.query("/address/street"));
+
+	}
+
+}
+
+
+
+
+12345678910111213141516171819202122232425262728293031323334353637383940414243444546474849505152
+
+import java.io.File;import java.io.FileReader;import java.io.IOException;import java.nio.file.Files;import javax.json.Json;import javax.json.JsonReader;import javax.json.JsonString;import org.json.JSONObject;import com.fasterxml.jackson.databind.JsonNode;import com.fasterxml.jackson.databind.ObjectMapper;import com.google.gson.JsonObject;import com.google.gson.JsonParser;import com.google.gson.JsonSyntaxException; public class JSONPointerExamples {  public static void main(String[] args) throws JsonSyntaxException, IOException {  /*		 * Jackson		 */ ObjectMapper jacksonObjectMapper = new ObjectMapper(); JsonNode jacksonJsonNode = jacksonObjectMapper.readTree(new File("sample.json")); System.out.println("Jackson --> " + jacksonJsonNode.at("/address/street")); System.out.println("Jackson --> " + jacksonJsonNode.path("address").path("street"));  /*		 * GSON - Doesn't support path. But can chain methods which might be kind of		 * path value fetch but not really path.		 */ JsonObject jsonObject = new JsonParser().parse(Files.readString(new File("sample.json").toPath())) .getAsJsonObject(); System.out.println("GSON --> " + jsonObject.get("address").getAsJsonObject().get("street") + " " + jsonObject.get("address").getAsJsonObject().get("city"));  // In JavaEE, JSON-B doesn't support path. But JSON-P has path support.  /*		 * JSON-P		 */ JsonReader jsonPReader = Json.createReader(new FileReader(new File("sample.json"))); javax.json.JsonObject jsonOPbject = jsonPReader.readObject(); JsonString jsonValue = (JsonString) jsonOPbject.getValue("/address/street"); System.out.println("JSON-P --> " + jsonValue.toString());  /*		 * org.JSON		 */ JSONObject orgJsonObject = new JSONObject(Files.readString(new File("sample.json").toPath())); System.out.println("org.JSON --> " + orgJsonObject.query("/address/street")); }}
+
+
+
+
+
+
+
+
+MS DOS
+
+
+Jackson --> "123 Nice st."
+
+Jackson --> "123 Nice st."
+
+GSON --> "123 Nice st." "GreatCity"
+
+JSON-P --> "123 Nice st."
+
+org.JSON --> 123 Nice st.
+
+
+
+
+12345
+
+Jackson --> "123 Nice st."Jackson --> "123 Nice st."GSON --> "123 Nice st." "GreatCity"JSON-P --> "123 Nice st."org.JSON --> 123 Nice st.
+
+
+
+
+
+
+
+
+Querying JSON
+json-path provides rich querying support to query & manipulate JSON to get data as required as shown below. Using queries, we can pick values that we want or we can perform operations or functions on the values we want.
+
+
+Java
+
+
+import java.io.File;
+
+import java.io.IOException;
+
+import java.util.List;
+
+import com.jayway.jsonpath.DocumentContext;
+
+import com.jayway.jsonpath.JsonPath;
+
+
+
+public class JsonPathQueryExamples {
+
+
+
+	public static void main(String[] args) throws IOException {
+
+		/*
+
+		 * json-path
+
+		 */
+
+		Object street = JsonPath.parse(new File("sample.json")).read("$.address.street");
+
+		System.out.println("json-path --> " + street);
+
+
+
+		DocumentContext employees = JsonPath.parse(new File("employees.json"));
+
+
+
+		// $ root
+
+		List emplyeeList = employees.read("$.employees");
+
+		System.out.println("emplyeeList = " + emplyeeList);
+
+
+
+		// Filter operations like less than
+
+		List emplyeeAgeLessThan30 = employees.read("$.employees[?(@.age < 30)]");
+
+		System.out.println("emplyeeAgeLessThan30 = " + emplyeeAgeLessThan30);
+
+
+
+		// Wildcard like *
+
+		List emplyeeAddressList = employees.read("$.employees[*].address");
+
+		System.out.println("emplyeeAddressList = " + emplyeeAddressList);
+
+
+
+		// Funtions like length()
+
+		Object countOfEmployees = employees.read("$.employees.length()");
+
+		System.out.println("countOfEmployees = " + countOfEmployees);
+
+	}
+
+}
+
+
+
+
+12345678910111213141516171819202122232425262728293031323334
+
+import java.io.File;import java.io.IOException;import java.util.List;import com.jayway.jsonpath.DocumentContext;import com.jayway.jsonpath.JsonPath; public class JsonPathQueryExamples {  public static void main(String[] args) throws IOException { /*		 * json-path		 */ Object street = JsonPath.parse(new File("sample.json")).read("$.address.street"); System.out.println("json-path --> " + street);  DocumentContext employees = JsonPath.parse(new File("employees.json"));  // $ root List emplyeeList = employees.read("$.employees"); System.out.println("emplyeeList = " + emplyeeList);  // Filter operations like less than List emplyeeAgeLessThan30 = employees.read("$.employees[?(@.age < 30)]"); System.out.println("emplyeeAgeLessThan30 = " + emplyeeAgeLessThan30);  // Wildcard like * List emplyeeAddressList = employees.read("$.employees[*].address"); System.out.println("emplyeeAddressList = " + emplyeeAddressList);  // Funtions like length() Object countOfEmployees = employees.read("$.employees.length()"); System.out.println("countOfEmployees = " + countOfEmployees); }}
+
+
+
+
+
+
+
+
+MS DOS
+
+
+json-path --> 123 Nice st.
+
+emplyeeList = [{"name":"Jimmy","age":25,"address":{"street":"123 Nice st.","city":"GreatCity"}},{"name":"Ravi","age":30,"address":{"street":"111 Great st.","city":"WowCity"}},{"name":"Dwyane","age":40,"address":{"street":"123 Power st.","city":"WWECity"}}]
+
+emplyeeAgeLessThan30 = [{"name":"Jimmy","age":25,"address":{"street":"123 Nice st.","city":"GreatCity"}}]
+
+emplyeeAddressList = [{"street":"123 Nice st.","city":"GreatCity"},{"street":"111 Great st.","city":"WowCity"},{"street":"123 Power st.","city":"WWECity"}]
+
+countOfEmployees = 3
+
+
+
+
+12345
+
+json-path --> 123 Nice st.emplyeeList = [{"name":"Jimmy","age":25,"address":{"street":"123 Nice st.","city":"GreatCity"}},{"name":"Ravi","age":30,"address":{"street":"111 Great st.","city":"WowCity"}},{"name":"Dwyane","age":40,"address":{"street":"123 Power st.","city":"WWECity"}}]emplyeeAgeLessThan30 = [{"name":"Jimmy","age":25,"address":{"street":"123 Nice st.","city":"GreatCity"}}]emplyeeAddressList = [{"street":"123 Nice st.","city":"GreatCity"},{"street":"111 Great st.","city":"WowCity"},{"street":"123 Power st.","city":"WWECity"}]countOfEmployees = 3
+
+
+
+
+
+
+
+
+JSON to Other format conversion
+This section is about converting JSON into other formats like XML, CSV etc. as shown in below examples.
+For Jackson, you will need these additional dependencies to be added – jackson-dataformat- xml, jackson-dataformat-properties, jackson-dataformat-yaml, jackson-dataformat-csv
+
+
+Java
+
+
+import java.io.File;
+
+import java.io.IOException;
+
+import java.nio.file.Files;
+
+import java.util.Properties;
+
+
+
+import org.json.CDL;
+
+import org.json.JSONArray;
+
+import org.json.JSONException;
+
+import org.json.JSONML;
+
+import org.json.JSONObject;
+
+import org.json.XML;
+
+
+
+import com.fasterxml.jackson.databind.JsonNode;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import com.fasterxml.jackson.dataformat.csv.CsvMapper;
+
+import com.fasterxml.jackson.dataformat.csv.CsvParser;
+
+import com.fasterxml.jackson.dataformat.javaprop.JavaPropsMapper;
+
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+
+import com.itsallbinary.json.Address;
+
+import com.itsallbinary.json.Person;
+
+
+
+public class JsonToOtherFormat {
+
+
+
+	static final String xml = "<address><city>GreatCity</city>" + "<street>123 Nice st.</street>"
+
+			+ "</address><hobbies>Sports</hobbies><hobbies>Music</hobbies><hobbies>Travel</hobbies>"
+
+			+ "<name>Jimmy</name>" + "<age>25</age>";
+
+
+
+	public static void main(String[] args) throws JSONException, IOException {
+
+
+
+		/*
+
+		 * Jackson
+
+		 */
+
+		ObjectMapper mapper = new ObjectMapper();
+
+
+
+		// convert JSON to XML
+
+		JsonNode jsonNode = mapper.readTree(new File("sample.json"));
+
+		XmlMapper xmlMapper = new XmlMapper();
+
+		System.out.println("Jackson --> json to xml = " + xmlMapper.writeValueAsString(jsonNode));
+
+		JsonNode jsonNodeFromXml = xmlMapper.readTree(xml);
+
+		System.out.println("Jackson --> xml to json - " + jsonNodeFromXml.toString());
+
+
+
+		// convert JSON to Properties
+
+		JavaPropsMapper propMapper = new JavaPropsMapper();
+
+		Properties prop = propMapper.writeValueAsProperties(jsonNode);
+
+		System.out.println("Jackson --> json to properties = " + prop);
+
+
+
+		// convert JSON to YAML
+
+		ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
+
+		System.out.println("Jackson --> json to yaml = " + yamlMapper.writeValueAsString(jsonNode));
+
+
+
+		Address[] jacksonAddress = mapper.readValue(
+
+				"[{\"street\":\"1 street\",\"city\":\"city 1\"}," + "{\"street\":\"1 street\",\"city\":\"city 1\"}]",
+
+				Address[].class);
+
+		CsvMapper csvMapper = new CsvMapper();
+
+		csvMapper.enable(CsvParser.Feature.WRAP_AS_ARRAY);
+
+		String csv = csvMapper.writerFor(Address[].class).with(csvMapper.schemaFor(Address.class))
+
+				.writeValueAsString(jacksonAddress);
+
+		System.out.println("Jackson --> json to csv = \n" + csv);
+
+
+
+		/*
+
+		 * org.JSON
+
+		 */
+
+		// convert JSON to XML
+
+		JSONObject person = new JSONObject(Files.readString(new File("sample.json").toPath()));
+
+		System.out.println("org.JSON --> json to xml = " + XML.toString(person));
+
+		// convert XML to JSON
+
+		JSONObject personFromXml = XML.toJSONObject(xml);
+
+		System.out.println("org.JSON --> xml to json - " + personFromXml);
+
+
+
+		// Convert json to comma separated list.
+
+		JSONArray jsonArray = new JSONArray(
+
+				"[{\"street\":\"1 street\",\"city\":\"city 1\"}," + "{\"street\":\"1 street\",\"city\":\"city 1\"}]");
+
+		System.out.println("org.JSON --> json to cdl - " + CDL.toString(jsonArray));
+
+
+
+	}
+
+
+
+}
+
+
+
+
+123456789101112131415161718192021222324252627282930313233343536373839404142434445464748495051525354555657585960616263646566676869707172737475767778
+
+import java.io.File;import java.io.IOException;import java.nio.file.Files;import java.util.Properties; import org.json.CDL;import org.json.JSONArray;import org.json.JSONException;import org.json.JSONML;import org.json.JSONObject;import org.json.XML; import com.fasterxml.jackson.databind.JsonNode;import com.fasterxml.jackson.databind.ObjectMapper;import com.fasterxml.jackson.dataformat.csv.CsvMapper;import com.fasterxml.jackson.dataformat.csv.CsvParser;import com.fasterxml.jackson.dataformat.javaprop.JavaPropsMapper;import com.fasterxml.jackson.dataformat.xml.XmlMapper;import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;import com.itsallbinary.json.Address;import com.itsallbinary.json.Person; public class JsonToOtherFormat {  static final String xml = "<address><city>GreatCity</city>" + "<street>123 Nice st.</street>" + "</address><hobbies>Sports</hobbies><hobbies>Music</hobbies><hobbies>Travel</hobbies>" + "<name>Jimmy</name>" + "<age>25</age>";  public static void main(String[] args) throws JSONException, IOException {  /*		 * Jackson		 */ ObjectMapper mapper = new ObjectMapper();  // convert JSON to XML JsonNode jsonNode = mapper.readTree(new File("sample.json")); XmlMapper xmlMapper = new XmlMapper(); System.out.println("Jackson --> json to xml = " + xmlMapper.writeValueAsString(jsonNode)); JsonNode jsonNodeFromXml = xmlMapper.readTree(xml); System.out.println("Jackson --> xml to json - " + jsonNodeFromXml.toString());  // convert JSON to Properties JavaPropsMapper propMapper = new JavaPropsMapper(); Properties prop = propMapper.writeValueAsProperties(jsonNode); System.out.println("Jackson --> json to properties = " + prop);  // convert JSON to YAML ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory()); System.out.println("Jackson --> json to yaml = " + yamlMapper.writeValueAsString(jsonNode));  Address[] jacksonAddress = mapper.readValue( "[{\"street\":\"1 street\",\"city\":\"city 1\"}," + "{\"street\":\"1 street\",\"city\":\"city 1\"}]", Address[].class); CsvMapper csvMapper = new CsvMapper(); csvMapper.enable(CsvParser.Feature.WRAP_AS_ARRAY); String csv = csvMapper.writerFor(Address[].class).with(csvMapper.schemaFor(Address.class)) .writeValueAsString(jacksonAddress); System.out.println("Jackson --> json to csv = \n" + csv);  /*		 * org.JSON		 */ // convert JSON to XML JSONObject person = new JSONObject(Files.readString(new File("sample.json").toPath())); System.out.println("org.JSON --> json to xml = " + XML.toString(person)); // convert XML to JSON JSONObject personFromXml = XML.toJSONObject(xml); System.out.println("org.JSON --> xml to json - " + personFromXml);  // Convert json to comma separated list. JSONArray jsonArray = new JSONArray( "[{\"street\":\"1 street\",\"city\":\"city 1\"}," + "{\"street\":\"1 street\",\"city\":\"city 1\"}]"); System.out.println("org.JSON --> json to cdl - " + CDL.toString(jsonArray));  } }
+
+
+
+
+
+
+
+
+MS DOS
+
+
+Jackson --> json to xml = <ObjectNode><name>Jimmy</name><age>25</age><hobbies>Sports</hobbies><hobbies>Music</hobbies><hobbies>Travel</hobbies><address><street>123 Nice st.</street><city>GreatCity</city></address></ObjectNode>
+
+Jackson --> xml to json - {"city":"GreatCity","street":"123 Nice st."}
+
+Jackson --> json to properties = {hobbies.2=Music, hobbies.3=Travel, address.city=GreatCity, hobbies.1=Sports, name=Jimmy, address.street=123 Nice st., age=25}
+
+Jackson --> json to yaml = ---
+
+name: "Jimmy"
+
+age: 25
+
+hobbies:
+
+- "Sports"
+
+- "Music"
+
+- "Travel"
+
+address:
+
+  street: "123 Nice st."
+
+  city: "GreatCity"
+
+
+
+Jackson --> json to csv = 
+
+"city 1","1 street"
+
+"city 1","1 street"
+
+
+
+org.JSON --> json to xml = <address><city>GreatCity</city><street>123 Nice st.</street></address><hobbies>Sports</hobbies><hobbies>Music</hobbies><hobbies>Travel</hobbies><name>Jimmy</name><age>25</age>
+
+org.JSON --> xml to json - {"address":{"city":"GreatCity","street":"123 Nice st."},"hobbies":["Sports","Music","Travel"],"name":"Jimmy","age":25}
+
+org.JSON --> json to cdl - city,street
+
+city 1,1 street
+
+city 1,1 street
+
+
+
+
+1234567891011121314151617181920212223
+
+Jackson --> json to xml = <ObjectNode><name>Jimmy</name><age>25</age><hobbies>Sports</hobbies><hobbies>Music</hobbies><hobbies>Travel</hobbies><address><street>123 Nice st.</street><city>GreatCity</city></address></ObjectNode>Jackson --> xml to json - {"city":"GreatCity","street":"123 Nice st."}Jackson --> json to properties = {hobbies.2=Music, hobbies.3=Travel, address.city=GreatCity, hobbies.1=Sports, name=Jimmy, address.street=123 Nice st., age=25}Jackson --> json to yaml = ---name: "Jimmy"age: 25hobbies:- "Sports"- "Music"- "Travel"address:  street: "123 Nice st."  city: "GreatCity" Jackson --> json to csv = "city 1","1 street""city 1","1 street" org.JSON --> json to xml = <address><city>GreatCity</city><street>123 Nice st.</street></address><hobbies>Sports</hobbies><hobbies>Music</hobbies><hobbies>Travel</hobbies><name>Jimmy</name><age>25</age>org.JSON --> xml to json - {"address":{"city":"GreatCity","street":"123 Nice st."},"hobbies":["Sports","Music","Travel"],"name":"Jimmy","age":25}org.JSON --> json to cdl - city,streetcity 1,1 streetcity 1,1 street
+
+
+
+
+
+
+
+
+JSON Schema Support
+Jackson has JSON schema support through one of their dependency jackson-module-jsonSchema.
+
+
+Java
+
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import com.fasterxml.jackson.module.jsonSchema.JsonSchema;
+
+import com.fasterxml.jackson.module.jsonSchema.JsonSchemaGenerator;
+
+import com.itsallbinary.json.Person;
+
+
+
+public class JSONSchemaExamples {
+
+
+
+	public static void main(String[] args) throws JsonProcessingException {
+
+		/*
+
+		 * Jackson
+
+		 */
+
+		ObjectMapper jacksonObjectMapper = new ObjectMapper();
+
+		JsonSchemaGenerator schemaGen = new JsonSchemaGenerator(jacksonObjectMapper);
+
+		JsonSchema schema = schemaGen.generateSchema(Person.class);
+
+		String schemaString = jacksonObjectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(schema);
+
+		System.out.println(schemaString);
+
+	}
+
+}
+
+
+
+
+12345678910111213141516171819
+
+import com.fasterxml.jackson.core.JsonProcessingException;import com.fasterxml.jackson.databind.ObjectMapper;import com.fasterxml.jackson.module.jsonSchema.JsonSchema;import com.fasterxml.jackson.module.jsonSchema.JsonSchemaGenerator;import com.itsallbinary.json.Person; public class JSONSchemaExamples {  public static void main(String[] args) throws JsonProcessingException { /*		 * Jackson		 */ ObjectMapper jacksonObjectMapper = new ObjectMapper(); JsonSchemaGenerator schemaGen = new JsonSchemaGenerator(jacksonObjectMapper); JsonSchema schema = schemaGen.generateSchema(Person.class); String schemaString = jacksonObjectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(schema); System.out.println(schemaString); }}
+
+
+
+
+
+
+
+
+MS DOS
+
+
+{
+
+  "type" : "object",
+
+  "id" : "urn:jsonschema:com:itsallbinary:json:Person",
+
+  "properties" : {
+
+    "name" : {
+
+      "type" : "string"
+
+    },
+
+    "age" : {
+
+      "type" : "integer"
+
+    },
+
+    "hobbies" : {
+
+      "type" : "array",
+
+      "items" : {
+
+        "type" : "string"
+
+      }
+
+    },
+
+    "address" : {
+
+      "type" : "object",
+
+      "id" : "urn:jsonschema:com:itsallbinary:json:Address",
+
+      "properties" : {
+
+        "street" : {
+
+          "type" : "string"
+
+        },
+
+        "city" : {
+
+          "type" : "string"
+
+        }
+
+      }
+
+    }
+
+  }
+
+}
+
+
+
+
+123456789101112131415161718192021222324252627282930
+
+{  "type" : "object",  "id" : "urn:jsonschema:com:itsallbinary:json:Person",  "properties" : {    "name" : {      "type" : "string"    },    "age" : {      "type" : "integer"    },    "hobbies" : {      "type" : "array",      "items" : {        "type" : "string"      }    },    "address" : {      "type" : "object",      "id" : "urn:jsonschema:com:itsallbinary:json:Address",      "properties" : {        "street" : {          "type" : "string"        },        "city" : {          "type" : "string"        }      }    }  }}
+
+
+
+
+
+
+
+
+Field Versioning
+Field versioning is a way to specify when or in which release certain field was introduced in given JSON. This way serialization & deserialization process can include or exclude fields within JSON without doing any special handling in code.
+GSON provides a way to version fields so that they will be serialized or deserialized only for given version.
+
+
+Java
+
+
+import com.google.gson.annotations.Since;
+
+import com.google.gson.annotations.Until;
+
+
+
+public class EmployeeVersioning {
+
+
+
+	@Since(1.0)
+
+	private String name;
+
+
+
+	@Since(3.0)
+
+	private String middleName;
+
+
+
+	@Until(2.0)
+
+	private String lastName;
+
+
+
+	... getter and setter ...
+
+}
+
+
+
+
+12345678910111213141516
+
+import com.google.gson.annotations.Since;import com.google.gson.annotations.Until; public class EmployeeVersioning {  @Since(1.0) private String name;  @Since(3.0) private String middleName;  @Until(2.0) private String lastName;  ... getter and setter ...}
+
+
+
+
+
+
+
+
+Java
+
+
+import com.google.gson.Gson;
+
+import com.google.gson.GsonBuilder;
+
+
+
+public class GsonVersioning {
+
+
+
+	public static void main(String[] args) {
+
+		EmployeeVersioning employee = new EmployeeVersioning();
+
+		employee.setName("Jimmy");
+
+		employee.setMiddleName("C");
+
+		employee.setLastName("Kimmel");
+
+
+
+		// Version 1.0
+
+		Gson gson_1_0 = new GsonBuilder().setVersion(1.0).create();
+
+		System.out.println("1.0 = " + gson_1_0.toJson(employee));
+
+
+
+		// Version 2.0
+
+		Gson gson_2_0 = new GsonBuilder().setVersion(2.0).create();
+
+		System.out.println("2.0 = " + gson_2_0.toJson(employee));
+
+
+
+		// Version 3.0
+
+		Gson gson_3_0 = new GsonBuilder().setVersion(3.0).create();
+
+		System.out.println("3.0 = " + gson_3_0.toJson(employee));
+
+	}
+
+}
+
+
+
+
+123456789101112131415161718192021222324
+
+import com.google.gson.Gson;import com.google.gson.GsonBuilder; public class GsonVersioning {  public static void main(String[] args) { EmployeeVersioning employee = new EmployeeVersioning(); employee.setName("Jimmy"); employee.setMiddleName("C"); employee.setLastName("Kimmel");  // Version 1.0 Gson gson_1_0 = new GsonBuilder().setVersion(1.0).create(); System.out.println("1.0 = " + gson_1_0.toJson(employee));  // Version 2.0 Gson gson_2_0 = new GsonBuilder().setVersion(2.0).create(); System.out.println("2.0 = " + gson_2_0.toJson(employee));  // Version 3.0 Gson gson_3_0 = new GsonBuilder().setVersion(3.0).create(); System.out.println("3.0 = " + gson_3_0.toJson(employee)); }}
+
+
+
+
+
+
+
+
+MS DOS
+
+
+1.0 = {"name":"Jimmy","lastName":"Kimmel"}
+
+2.0 = {"name":"Jimmy"}
+
+3.0 = {"name":"Jimmy","middleName":"C"}
+
+
+
+
+123
+
+1.0 = {"name":"Jimmy","lastName":"Kimmel"}2.0 = {"name":"Jimmy"}3.0 = {"name":"Jimmy","middleName":"C"}
+
+
+
+
+
+ 
+
+
+
+Related Posts:Jackson vs. Gson vs. JSON-B | Annotations comparisonJackson vs. Gson vs. JSON-B | Java JSON Polymorphic type handlingJackson vs. Gson vs. JSON-B | Ignore or exclude properties from JSON in JavaJackson vs. Gson vs. JSON-B | Custom Object Instantiation (args constructor, factory method) for…GitHub REST API | Get remote repo files list & download file content programmatically without…GitHub REST API | Search files, content, pull requests, commits programmatically using Java without… 
+
+Posted in Apache / Google Libraries, Java, JSON Parsing Java Libraries, TutorialsTagged Best JSON binding libraries in Java, Best JSON parsing libraries in Java, Camel case JSON properties, compare gson jsonb annotations, Compare jackson gson annotations, compare jackson jsonb annotations, eclipse yasson, gson, gson ignore fields from json, Handle 0 primitive in java json, Handle empty strings in JSON, How to parse JSOn using object without no-arg constructor, int double float primitive json, jackson, jackson ignore properties, jackson multiple parameter constructor, Java, Java json instance polymorphic, Java json null handling, Java json polymorphic objects, javaee json, jayway, jayway json path, json, JSON binding, json names strategy, JSON names with underscores, JSON naming patterns across, json parent multiple child serialize json, JSON parsing, JSON-B, json-b ignore fields in JSON, JSON-P, jsonb, jsonb multiple parameter constructor, jsonp, migrating from gson to jsonb, migrating from jackson to gson, migrating from jackson to jsonb, migrating to gson, migrating to jackson, migrating to jsonb, migrating to jsonp, Most popular Java JSON libraries, Null value handling in JAVA JSON, org.JSON, path expressions for JSON, snake case json properties, SQL like queries for JSON in java, Stefan Goessner JsonPath implementation., XPATH for JSON 
+
+
+Post navigation
+Prev Jackson vs. Gson vs. JSON-B | Ignore or exclude properties from JSON in JavaNext Git commands from Java using JGIT | Programmatically git clone, checkout -b, commit -a, log, status, branch
+
+
+
+Leave a Reply Cancel replyYour email address will not be published. Required fields are marked *Comment * Name * 
+Email * 
+ 
+
+ 
+
+
+
+
+
+
+
+
+Search for:
+
+
+Search
+
+
+
+Recent Posts
+
+
+Create your own screen sharing web application using Java and JavaScript (WebRTC)
+
+
+Create your own video conference web application using Java & JavaScript
+
+
+Java Server two-way communication with browser | Simple Websocket example
+
+
+Detailed Comparison of SQL (MySQL) vs. NoSQL (MongoDB) vs. Graph Query (Neo4j) | Data-structure, Queries, Data types, Functions
+
+
+Ads 
+
+
+You may also likeJackson vs. Gson vs. JSON-B | Annotations comparisonJackson vs. Gson vs. JSON-B | Java JSON Polymorphic type handlingJackson vs. Gson vs. JSON-B | Ignore or exclude properties from JSON in Java
+
+Pages
+
+All Java Releases, features and examples
+CSS in Action (Tutorial) | Watch, understand & learn CSS live in your own browser
+Tools & Utilities
+Project – Simply Regex
+
+Simply Regex Quick Start
+Simply Regex User Guide
+Simply Regex Examples
+Simply Regex Extensions
+Simply Regex Releases
+
+
+About us
+Contact Us
+
+TagsApache
+apache opennlp
+Apache open nlp for beginners
+apache open nlp hello world
+apache opennlp tokenizer for dummies
+Comparator in java streams
+Getting started with ai
+getting started with apache open nlp
+Getting started with artificial intelligence in java
+gson
+how apache open nlp works
+jackson
+Java
+Java 8
+javaee json
+Java json instance polymorphic
+Java json null handling
+Java json polymorphic objects
+java nlp
+java nlp text tokenizer
+java nlp tokenize
+jayway
+jayway json path
+json
+JSON-B
+JSON-P
+jsonb
+JSON binding
+jsonp
+json parent multiple child serialize json
+JSON parsing
+Lambda Expressions
+migrating from gson to jsonb
+migrating from jackson to gson
+migrating from jackson to jsonb
+migrating to gson
+migrating to jackson
+migrating to jsonb
+migrating to jsonp
+opennlp string tokenize
+org.JSON
+Reactive Programming
+simple example of apache open nlp
+Simple example of apache opennlp
+Understanding apache open nlp
+ 
+
+
+
+
+ 
+
+
+
+
+ 
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+© Copyright 2022 – Its All Binary – Coding Posts, Examples, Projects & MoreRadical Theme by WPFlask ⋅ Powered by WordPress 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

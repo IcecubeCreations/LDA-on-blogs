@@ -1,0 +1,456 @@
+
+
+
+
+
+
+
+
+ 
+
+
+JSON Support in Jakarta EE | The Eclipse Foundation
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+ Skip to main content
+
+
+
+
+
+
+ Log in
+ Manage Cookies
+
+
+
+
+ 
+
+
+
+ 
+ Download 
+
+
+ProjectsWorking GroupsMembers Community MarketplaceEventsPlanet EclipseNewsletterVideosBlogsParticipate Report a BugForumsMailing ListsWikiIRCResearchEclipse IDE DownloadLearn MoreDocumentationGetting Started / SupportHow to ContributeIDE and ToolsNewcomer Forum 
+
+More
+
+
+
+
+
+CommunityMarketplaceEventsPlanet EclipseNewsletterVideosBlogsParticipateReport a BugForumsMailing ListsWikiIRCResearchEclipse IDEDownloadLearn MoreDocumentationGetting Started / SupportHow to ContributeIDE and ToolsNewcomer Forum 
+
+
+
+
+
+
+
+
+Toggle navigation
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+Breadcrumbs
+
+HomeEclipse Newsletter2018Jakarta EE: Latest DevelopmentsJSON Support in Jakarta EE
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+JSON Support in Jakarta EE
+Jakarta EE takes JSON support by Java EE 8 to the next level. JavaScript Object Notation (JSON) is an open format that uses mostly human-readable text to transmit data as attribute/value pairs and arrays of such types in a serializable form.
+JSON Processing
+JSON Processing (JSON-P) is a Java API to process (e.g. parse, generate, transform and query) JSON messages. It produces and consumes JSON text in a streaming fashion (similar to StAX API for XML) and allows to build a Java object model for JSON documents using API classes that offer strong typing (similar to DOM API for XML).
+The JSON Processing Standard has been part of the Java Enterprise platform since Java EE 7. In addition to the reference implementation within the Glassfish project, the standard has since been implemented by several other projects like Apache Johnzon or Genson. Many commercial products based on Java EE use either the Glassfish SI (Specification Implementation) directly, because apart from the JSON API itself, it has no dependencies on other parts of Java EE, Jakarta EE or Glassfish. So, it can be easily used on a desktop or in a "serverless" environment. That's why the JSR as an alternative to Jackson is also supported by several popular Java frameworks like Spring. While Jackson itself does not directly implement the JSON-P standard yet, there are both Jackson types for JSR 353, which practically anticipated both JSON standards in Java EE 8, as well as a JSR 353 implementation based on Jackson.
+Here's a simple example on how to create a JSON string using JsonObjectBuilder:
+
+public static void main (String[] args) {
+
+    JsonObject json = Json.createObjectBuilder()
+      .add("name", "Falco")
+        .add("age", BigDecimal.valueOf(3))
+      .add("bitable", Boolean.FALSE).build();    
+     String result = json.toString();
+     System.out.println(result);    
+    }
+}
+
+The resulting JSON string:
+
+{
+    "name": "Falco",
+    "age": 3,
+    "bitable": false
+}
+
+For dynamic JSON content which may change regularly or when dealing with very large JSON documents, using the JSON Streaming API is usually the more flexible option.
+Here's a very basic example on using the JSON Streaming API:
+
+public static void main (String[] args) {
+   final String result = 
+     "{\"name\":\"Falco\",\"age\":3,\"bitable\":false}";
+   final JsonParser parser = Json.createParser(new StringReader(result));
+        while (parser.hasNext()) {
+            final Event event = parser.next();
+            switch (event) {
+                case KEY_NAME:
+                    String key = parser.getString();
+                    System.out.println(key);
+                    break;
+                case VALUE_STRING:
+                    String string = parser.getString();
+                    System.out.println(string);
+                    break;
+                case VALUE_NUMBER:
+                    BigDecimal number = parser.getBigDecimal();
+                    System.out.println(number);
+                    break;
+                case VALUE_TRUE:
+                    System.out.println(true);
+                    break;
+                case VALUE_FALSE:
+                    System.out.println(false);
+                    break;
+            }
+        }
+        parser.close();
+    }
+}
+ 
+Output: 
+name
+Falco
+age
+3
+bitable
+false
+
+New Features
+The new features added with JSON Processing 1.1 are:
+
+JSON Pointer
+JSON Patch
+JSON Merge Patch
+Java 8 Support
+JSON Big Data
+
+JSON Pointer
+JSON Pointer provides a syntax to identify certain elements of a JSON document, e.g. "/phone/mobile" or "/users/0", JSON Pointer offers a similar user experience as common REST URLs making it is a good match to use with REST APIs.
+A JSON Pointer example:
+
+[
+  {   
+    "name": "Jason Voorhees",
+    "profession": "Maniac killer",
+    "age": 45
+  },
+  {
+    "name": "Jason Bourne",
+    "profession": "Maniac killer",
+    "age": 35
+  }
+]
+ 
+JsonArray jasons = . . .;
+JsonPointer pointer = Json.createPointer("/1/profession");
+JsonValue profession = pointer.getValue(jasons);
+p.replace(jasons, Json.createValue("Super agent"));
+
+JSON Patch
+JSON Patch allows modification of a JSON document with one of the following operations:
+
+Add
+Remove
+Replace
+Move
+Copy
+Test
+
+Most of them correspond to HTML operations e.g. REMOVE can be seen as an equivalent to HTTP DELETE.
+A JSON patch operation is atomic and the patch should only be applied if all operations are safe and easy to use. The TEST operation may provide additional validation to ensure that pre- or post-conditions for the patch are met. If the test fails, the entire patch is discarded. So TEST can viewed a bit like a unit test.
+JSON Patch Before:
+
+[
+  {   
+    "name": "Jason Voorhees",
+    "profession": "Maniac killer",
+    "age": 45
+  },
+  {
+    "name": "Jason Bourne",
+    "profession": "Maniac killer",
+    "age": 35
+  },
+  {
+    "name": "James Bond",
+    "profession": "Agent 007",
+    "age": 40
+  }
+]
+
+Applying JSON Patch:
+
+[
+  { "op": "replace",
+    "path": "/1/profession",
+    "value": "Super agent"},
+   { "op": "remove",
+    "path": "/2"}
+]
+ 
+JsonArray agents = ...;
+JsonArray patch  = ...;
+JsonPatch jsonPatch = Json.createPatch(patch);
+JsonArray result = jsonPatch.apply(agents);
+JsonPatchBuilder builder = Json.createPatchBuilder();
+JsonArray result = builder.replace("/1/profession", "Super agent")
+.remove("/2").apply(agents);
+
+JSON Patch After:
+
+[
+  {   
+    "name": "Jason Voorhees",
+    "profession": "Maniac killer",
+    "age": 45
+  },
+  {
+    "name": "Jason Bourne",
+    "profession": "Super agent",
+    "age": 35
+  }
+]
+
+The patch itself is also a JSON document and can be combined with the HTTP PATCH operation and a special media type "application/json-patch+json". Making JSON Patch also a great companion to REST APIs and Microservices.
+The "path" expression of a JSON Patch indicates the use of a JSON Pointer. And shows how the two standards work hand-in-hand.
+JSON Merge Patch
+JSON Merge Patch rounds up the newly supported standards for the modification of JSON documents in JSON Processing. JSON Merge Patch is intended primarily for use with the HTTP PATCH method to describe a number of changes to the destination resource in JSON format.
+JSON Processing supports two ways to create a JSON Merge Patch:
+
+A new JsonMergePatch based on an existing JSON Merge Patch.
+A new JsonMergePatch from the delta of two JsonValue objects.
+
+Other Features
+Furthermore, JSON Processing 1.1 adds Java 8 support like Lambdas and Streams. As well "Big JSON" features allowing to parse very large JSON documents more efficiently. For this purpose, two methods were added to JsonParser:
+
+skipArray 
+			Skips all structures until the next END_ARRAY position
+skipObject 
+			Skips all characters until the next END_OBJECT position
+
+Future Plans
+For new versions of the JSON Processing spec in upcoming releases of Jakarta EE, potentially JSON Processing 2.0 there are several ideas, improved support for Java primitive types for building JSON values or other Java types, for example Date/Time values. Our JsonObjectBuilder example could then look somewhere like:
+
+    JsonObject json = Json.createObjectBuilder()
+      .add("name", "Falco")
+      .add("dob", LocalDate.of(1957, 2, 19))
+      .add("bitable", Boolean.FALSE).build();    
+
+The resulting JSON string still has to comply with the JSON standard which is not aware of date, time or other complex data types, but the API should add some convenience taking those types as arguments for creating JSON values.
+See https://github.com/eclipse-ee4j/jsonp/milestone/8 for a list of JSON-P 2.x feature candidates.
+JSON Binding
+JSON Processing 1.1 provides the basis for the new standard JSON Binding 1.0, which was first introduced with Java EE 8. JSON Processing provides generic low-level access and the basis for type-safe mapping and binding of Java objects to JSON documents. JSON-B is similar to JAXB for XML documents.
+JSON-B is a standard binding framework for converting Java objects to and from JSON documents. It defines a standard mapping algorithm for transforming existing Java classes into JSON, while allowing developers to customize the mapping process through the use of Java annotations.
+JSON-B is consistent with JAXB (Java API for XML Binding) and other Java EE and SE APIs where it makes sense and is possible. Use of the Builder Pattern is similar to the underlying JSON-P standard. With a few deviations. Mostly the use of Java SE 8, while JSON-P version 1.0 was still based on Java 7. The central Json class in JSON-P is a static facade, whereas Jsonb is an interface created by the static factory call JsonbBuilder.create(). A shortcut for JsonbBuilder.newBuilder().build(). As Java 8 introduced static methods to interfaces, JsonbBuilder is also an interface.
+Here's a simple example. We model a dog in a domain class Dog:
+
+public class Dog {
+    public String name;
+    public int age;
+    public boolean bitable;
+}
+
+Calling the JSON-B API:
+
+public static void main(String[] args) {
+// Create a dog instance
+Dog dog = new Main.Dog();
+dog.name = "Falco";
+dog.age = 3;
+dog.bitable = false;
+ 
+// Create Jsonb and serialize
+Jsonb jsonb = JsonbBuilder.create();
+String result = jsonb.toJson(dog);
+ 
+System.out.println(result);
+ 
+// Deserialize back
+dog = jsonb.fromJson("{\"name\":\"Falco\",\"age\":3,\"bitable\":false}", Dog.class);
+}
+
+The JSON string is identical to our initial JSON Processing example.
+Collections like lists can also be serialized and deserialized:
+
+// List of dogs
+List<Dog> dogs = new ArrayList<>();
+dogs.add(falco);
+dogs.add(cassidy);
+ 
+// Create Jsonb and serialize
+Jsonb jsonb = JsonbBuilder.create();
+String result = jsonb.toJson(dogs);
+ 
+// Deserialize back
+dogs = jsonb.fromJson(result, new ArrayList<Dog>(){}.getClass().getGenericSuperclass());
+
+JSON Binding support all relevant data types of the JDK. Both traditional java.util.Calendar or Date and the new types like Duration or LocalDateTime introduced with Java 8.
+Default mapping and behaviour can be overridden via JsonbConfig.
+Or by using annotations. Here's an example:
+
+public class Person {
+    @JsonbProperty("person-name")
+    private String name;
+ 
+    private String profession;
+}
+
+The @JsonProperty annotation has a slight similarity with the @Column Annotation of JPA entities. The JSON result looks like this:
+
+{
+    "person-name": "Jason Bourne",
+    "profession": "Super Agent"
+}
+
+JSON-B tries to use familiar elements and practices, therefore a JPA entity could even combine the two annotations if there is a use case for both. Other Java EE standards like Bean Validation work with both as well.
+Summary
+The JSON format became a first-class citizen with Java EE 8. REST APIs and similar services often prefer JSON over heavier formats like XML, to save data and bandwidth in the cloud, where transmitting more information can often be more expensive when billing based is based on data access. New security protocols such as JWT (JSON Web Token) also use the JSON format. While this is currently explored by Eclipse MicroProfile, it is possible, that JWT support also becomes part of a future Jakarta EE JSON specification or an update to existing ones. With synergies from other Jakarta EE standards like Enterprise Security.
+
+About the Author
+
+
+
+
+
+
+
+
+         	 Werner Keil
+Creative Arts & Technologies
+
+
+Twitter
+
+
+
+
+
+
+
+
+Eclipse Newsletter
+A fresh new issue delivered monthly
+
+
+
+
+
+
+
+All Eclipse Newsletters available here
+
+
+
+
+
+Back to the top
+
+
+
+
+
+Eclipse Foundation
+About UsContact UsDonateMembersGovernanceCode of ConductLogo and ArtworkBoard of DirectorsCareers 
+
+Legal
+Privacy PolicyTerms of UseCopyright AgentEclipse Public LicenseLegal Resources 
+
+Useful Links
+Report a BugDocumentationHow to ContributeMailing ListsForumsMarketplace 
+
+Other
+IDE and ToolsProjectsWorking GroupsResearch@EclipseReport a VulnerabilityService Status 
+
+
+
+Copyright © Eclipse Foundation. All Rights Reserved.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ Back to the top
+
+
+
+
+
+
+

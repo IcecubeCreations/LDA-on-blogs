@@ -1,0 +1,1299 @@
+
+
+
+
+
+
+
+
+
+Tutorial: Integrating with Apache Camel - JAXenter
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+ is where the Java community meets! Join us next week, October 7-10 - kicking off in: 
+days0-96-3hours0-8minutes-3-4seconds-50 
+
+
+
+
+
+
+
+
+
+Toggle navigation
+
+
+
+
+
+
+News
+Articles
+JAX Magazine
+DevOpsCon 2021
+
+
+
+
+
+search
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Java
+DevOps
+Machine Learning
+Serverless
+Blockchain
+JavaScript
+NetBeans
+Careers
+Tutorials
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+The job event for Developers
+May 5 in Berlin
+May 19 in Munich
+
+
+
+
+
+
+
+
+Angular Elements: Where no one has gone before
+
+
+
+
+
+
+
+
+JAX Magazine: Exploring the IoT universe
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+Running the rule over the open source integration framework
+Tutorial: Integrating with Apache Camel
+
+
+
+September 25, 2013
+
+
+
+Charles Mouillard 
+
+
+#apache camel
+#camel
+#soa
+#tutorials
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+Charles Moulliard will get you over the hump, by detailing the inner workings of Apache Camel from the DSL to routes and exchanges.
+
+
+
+
+
+
+Since its creation by the Apache community in 2007, the
+
+open source integration framework Apache Camel has become
+
+a developer favourite. It is recognised as a key technology
+
+to design SOA / Integration projects and address complex
+
+enterprise integration use cases. This article, the first part of
+
+a series, will reveal how the framework generates, from the
+
+Domain Specific Language, routes where exchanges take
+
+place, how they are processed according to the patterns
+
+chosen, and finally how integration occurs.
+
+Introduction
+
+From a general point of view, designing an integration
+
+architecture is not such an obvious task even if the
+
+technology and the frameworks you want to use are relatively
+
+easy to understand and implement. The difficulties lie in the
+
+volume of messages, transformations to apply, synchronicity or
+
+asynchronocity of exchanges, processes running sequentially or
+
+in parallel, and of course the monitoring of such
+
+projects running in multiple JVMs.
+
+
+
+In traditional Java applications, we call methods from
+
+classes, while objects are passed and/or returned. A service
+
+(such as payment or billing, …) is a collection of classes.
+
+Called methods are chained and objects transport information,
+
+sometimes enlisted within transactions but always deployed
+
+within the same Java Container (Web, JEE, Standalone). Unless
+
+we have to call external systems or integrate legacy
+
+applications, RDBMS etc, most of the calls are done
+
+locally and synchronously.
+
+
+
+If a service wants to be reusable, it needs to be packaged,
+
+versioned in a library and communicate to the project which
+
+will use it. This approach is fine for projects maintained by
+
+in-house development teams where costs can be supported by IT
+
+departments but it suffers from different issues and requires us,
+
+most of the time, to use the same programming language or
+
+specific technology to interconnect process (RPC, IIOP, …),
+
+container where code is deployed.
+
+
+
+
+Figure 1: SOA
+
+To allow applications to be developed
+
+independently, without such constraints, the decoupling must
+
+be promoted between the issuer of a request/message from the
+
+service in charge to consume it. Such a new architecture
+
+paradigm is called Service Oriented Architecture and uses a
+
+transport layer to exchange information between systems. One of
+
+the immediate benefits of SOA is to promote a contract based
+
+approach to define the Services which are exposed between
+
+applications and manage them according to ‘governance rules’.
+
+
+
+The SOA approach has been able to federate different teams,
+
+tackle problems surrounding the development of more complex
+
+projects. This IT transformation is required as companies need
+
+to be more agile to adapt to the market needs, information
+
+must be provided in real-time and business adaptions need to be
+
+supported by existing legacy and back systems.
+
+
+
+While the SOA philosophy has been widely adopted,
+
+the learning curve to master XML, XDS Schemas, Web
+
+Services and Business Process Engine, the creation and
+
+management of transversal teams, the governance needed to
+
+manage services and the skills to acquired have certainly been
+
+factors in explaining why SOA still struggle to be adopted by
+
+corporate companies. Moreover, IT departments are not only
+
+concerned by promoting and managing the Web Services and
+
+Registry but also to interconnect, exchange, transform and
+
+validate information between disparate systems. This
+
+integration aspect of IT work has been completely “underestimated”
+
+when SOA principles have been elaborated.
+
+Enterprise Integration
+
+Patterns
+
+In 2005, Gregory Hope and Bobby Wolf have published a book
+
+called ‘Enterprise
+
+Integration Patterns‘ where they not only spend their
+
+time to describe complex use cases, but they also define a
+
+vocabulary, grammar and design icons to express those complex
+
+integration patterns that IT departments have to address. This book
+
+has changed the way how development teams (Business/Functional
+
+analysts, Data Modelers and Developers) collaborate together
+
+to design Integration / SOA projects. The discussions were not
+
+only focused any more just on how Services, XML should
+
+be structured and business processes imagined, but also on
+
+how patterns should be used to solve integration use cases
+
+(aggregation, splitting, filtering, content based routing,
+
+dynamic routing). This book has leveraged actors towards a
+
+more agile programming approach. To support the EIP
+
+described in this book and help the developers to solution
+
+integration use cases, the Apache Camel Integration Java
+
+framework was created 5 years ago.
+
+
+
+EIP design icons
+Discover Apache Camel
+
+Representing the EIP patterns for
+
+aggregated or routing which requires that we ‘express’ them
+
+using a language. This language is not a new programming
+
+language, moreover a language specific to a Domain, which
+
+describes problems adequately to the chosen domain
+
+(Integration). Apache
+
+Camel is a Java Integration Framework that supports
+
+such Domain
+
+Specific Language (aka.
+
+DSL; for further information, see the Camel
+
+documentation) using object-oriented language like Java,
+
+Scala, Groovy etc. No parser, compiler or interpreter is
+
+required but instead a list of commands, instructions which
+
+are sequenced:
+
+instruction1().instruction2()....instructionN(); 
+
+
+
+Apache Camel is also defined as a “Mediation and
+
+Routing” engine. Let’s think of the global road network: we
+
+can transport vehicles of different type and size, with passengers
+
+of different origin, color, age, sex, between cities and
+
+capitals. According to traffic conditions, the trip can be
+
+adapted and alternative roads used. Likewise Apache Camel
+
+transports ‘messages’ along Routes.
+
+from("Brussels")
+
+ .to("Paris"); // Transport passengers from Brussels Capital to Paris
+
+
+
+Each Camel route starts with the from instruction which
+
+is particularly important as it acts as a consumer and plays
+
+a specific role depending on whether it will be triggered
+
+(‘event drived architecture’) or be able to read data at
+
+regular intervals (‘poll architecture’). The consumer is a factory
+
+and whenever data are received, then ‘Messages’ will be
+
+created and transported by the Apache Camel route.
+
+
+
+
+
+
+
+Of course Apache Camel does not at all transport ‘passengers’ in
+
+a route but ‘messages’. These Messages will pass through a
+
+collection of steps, aka processors to transform, validate,
+
+format, enrich the content of the information received. The
+
+framework provides different processors which have been
+
+specialized (Bean, Log) to simplify the manipulations that we would
+
+like to apply, like the code below:
+
+from("Brussels")
+
+       .bean("Border","validPassport")
+
+       .log("Passport has been controlled")
+
+       .bean("Border","controlTicket")
+
+       .to("log:travel://LogLevel=INFO" + "Ticket has been controlled")
+
+       .to("Paris");
+
+
+
+Each processor placed after the ‘from’ pass the
+
+information and “form” a chain like the wagons of a train, as
+
+below:
+
+from("")
+
+       ...
+
+       .to("log:travel://LogLevel=INFO" + "Ticket has been controlled") //
+
+       .to("file:///outputDirectoryWhereFileWillbeCreated") //
+
+       .to("http://www.google.be?doASearch") // Call External HTTP Server
+
+       .to("jms://queue:outputQueue; // Response received is published in a queue
+
+
+
+Nevertheless, certain processors will produce a
+
+message that Camel will send to a Server (SMTP, FTP),
+
+Application (RDBMS), Broker (JMS), to another camel route
+
+(DIRECT, SEDA, VM) and in some cases will wait till they get a
+
+response (HTTP, TCP/IP, WS, REST,WebSocket).
+
+
+
+One of the key benefits of Camel is that it offers the
+
+possibility to take decisions according to the information
+
+that it carry in using a Message structure. Such a Message
+
+which corresponds to an object Exchange contains the
+
+information or object carried in a Body, but also the
+
+metadata part of Headers.
+
+
+
+The metadata allows you to document the objects transported but
+
+also to know from where they are coming from, their origin
+
+(File, Ftp, WebService, SMTP, JDBC, JPA, JMS, …) and where
+
+they should go. To support the decisions, Camel uses one of
+
+the EIP patterns Content Based Router, Filter, Aggregator,
+
+Splitter, … with a specific language called Expression
+
+Language (Simple, Constant, Xpath, Xquery, SQL, Bean,
+
+Header, Body, OGNL, Mvel, EL, …).
+
+
+
+
+Message structure
+
+The decisions are taken by Predicates that
+
+we can compare to If/Then/Else, While/For statements. The routing
+
+engine will determine what to do with the “Message(s)”
+
+and where they should go.
+
+
+
+
+The choice/when which is used by the
+
+Content Based Router will calculate (using the predicate and
+
+expression language) if the condition is met. If this is the
+
+case, then the exchange is moved to the processors
+
+defined in the path of the branch, otherwise they will move
+
+into another pipeline. All this is demonstrated below:
+  // 
+
+  from("Brussels")
+
+       .bean("Border","validPassport")
+
+       .choice()
+
+            .when()
+
+                .simple(${header.isValid}==true) // Simple language checks if  the status is equal to true
+
+                   .log("Passenger has been controlled")
+
+                   .log("We can now control their ticket")
+
+                   .bean("Border","controlTicket")
+
+                   .to("Paris")
+
+            .otherwise()
+
+                   .log("Your are not authorized to continue your trip");  
+
+
+
+For some components used, a response is expected from
+
+the receiver called (HTTP, WebService, REST, JMS –
+
+Request/Reply, TCP/IP, …) or by the sender issuing the message. In
+
+this case, Camel will adapt the pattern used to internally
+
+transport the message. This pattern is normally of type
+
+InOnly but when a response is required, the pattern
+
+to be used will be InOut. To transport the
+
+information and to avoid that we mix an incoming Message with
+
+outgoing Message, Apache Camel will use two different objects
+
+for that purpose, which are in or out. When
+
+no response is required which is the case when we use
+
+by example a File component, then the out object is
+
+always null.
+
+
+
+
+
+One step further
+
+As the traffic is controlled by operators, Apache Camel provides
+
+an environment to manage routes (Start/Stop/Suspend/Resume the
+
+traffic in routes). This environment is called a Container or
+
+more precisely a CamelContext.
+
+
+
+
+
+
+
+The container is not only the runtime where the routes
+
+are deployed and but also acts as complex ecosystem. It
+
+can trace the exchanges, how to manage using JMX
+
+information exposed by the framework, how to handle the
+
+thread’s pools, how the routes can be discovered, how we
+
+should shutdown the routes and generate unique identifiers that we
+
+use when an exchange is created.
+
+
+
+The CamelContext will also register the components that we
+
+need to consume or produce that information. According to the
+
+scheme name contained in the URI, Apache Camel will scan the
+
+classes loaded by the classloader to find the components that it
+
+would like use:
+
+"scheme://properties?key1=val2&key2=val3 //
+
+"ﬁle:///home/user/integration? "
+
+"timer://myTimer?delay=2s&period=10S"
+
+
+
+The Component class
+
+is a factory which will create an Endpoint object
+
+based on the parameters of the collected from the URI
+
+(?key1=value1&key1=value2 …). This object contains the
+
+methods required to create a Producer or Consumer
+
+according to the role played by the component.
+
+
+
+Typically, the Polling Consumer regularly scans a
+
+directory of a file system, has a listener to a JMS reading
+
+JMS messages and will create an Exchange that it will
+
+propagate to the next processor as shown below:
+
+@Override
+
+protected int poll() throws Exception {
+
+ Exchange exchange = endpoint.createExchange();
+
+// create a message body
+
+ Date now = new Date();
+
+ exchange.getIn().setBody("Hello World! The time is " + now);
+
+ try {
+
+// send message to next processor in the route
+
+ getProcessor().process(exchange);
+
+ return 1; // number of messages polled
+
+ } 
+
+}
+
+
+
+At the opposite end, the Producer will wait till it gets
+
+a Camel Exchange from a processor, then will manipulate
+
+the “Message”, enrich it and change the ‘Metadata’:
+
+public void process(Exchange exchange) throws Exception {
+
+// Add a new property
+
+ exchange.getIn().setHeader("FrequentFlyer","true); 
+
+}
+
+
+
+A Camel project typically consists of a Java Main class where we
+
+will create a DefaultCamelContext, register the Camel Routes
+
+and start the container. As described in the following example, a
+
+RouteBuilder class is required, as is its Configure method to
+
+call the static methods (= instructions) to design a Camel Route (=
+
+collection of Processors). A Route Builder allows to
+
+create one to many Camel Routes.
+
+  // 
+
+  public class MainApp {
+
+    public static void main(String[] args) throws Exception {
+
+        // CamelContext = container where we will register the routes
+
+        DefaultCamelContext camelContext = new DefaultCamelContext();
+
+        // RouteBuilder = Where we design the Routes using here Java DSL
+
+        RouteBuilder routeBuilder = new RouteBuilder() {
+
+            @Override
+
+            public void configure() throws Exception {
+
+                from(„file:///travelers“)
+
+                  .bean(“Flight”,”TransportPassenger”)
+
+                  .to(„file:///authorizedTravelers“);
+
+            }
+
+        };
+
+            // Add the routes to the container 
+
+        camelContext.addRoutes(routeBuilder);
+
+
+
+        // Start the container
+
+        camelContext.start();
+
+        // When work is done we shutdown it
+
+        camelContext.stop(); 
+
+
+
+Compared to other integration frameworks, Apache Camel is
+
+unique, as it is able to handle Java Objects and is able
+
+to automatically convert the object type to the one
+
+which is expected by the Processor
+
+or Predicate.
+
+
+
+
+
+
+
+During the crea tion of the CamelContext, all the
+
+classes in charge of doing type
+
+conversion (File to String, Reader, String to DOM, …)
+
+will be loaded in an internal registry which is queried during
+
+exchange processing by the Camel Processors. These
+
+Converter classes come from the different jars, part
+
+of the java classpath. While such a process is done by default
+
+by Apache Camel, you can also use a specific instruction to
+
+tell which specific converter should be applied to the object
+
+type received. See below:
+
+// 
+
+ from("ﬁle:///travelers") // The File endpoint polls every 1s second ﬁles
+
+ // available under "travelers" directory
+
+ .convertBodyTo("String") // We convert Camel Generic File object to a String 
+
+// which is required by Xpath expression language during Content Based Routing
+
+ .choice()
+
+ .when()
+
+ .xpath("/traveler/@controlled" = 'true') // Check if condition is 
+
+// matched using as expression left hand side part and condition, right hand side
+
+ .log("Passenger has been controlled")
+
+ .to("ﬁle:///authorizedTravelers")
+
+ .otherwise()
+
+ .log("Your are not authorized to continue your trip"); 
+
+
+Next Time
+
+During this first part of the Apache Camel article, we
+
+have introduced some of the basic functionalities of this Java
+
+Integration Framework, implementing the Enterprise
+
+Integration Patterns, which uses a Domain Specific Language to
+
+design route transporting Messages between
+
+systems/applications.
+
+
+
+The DSL allows us to define instructions which are
+
+read sequentially. When information is received or consumed by
+
+a Camel Component, then an Exchange is created and
+
+moved to a collection of processors doing transformations on
+
+the content of the message linked to a Body object.
+
+The framework is able to take decisions (Content Based Router,
+
+Filter, …) using one of the Expression Languages
+
+supported (Xpath, Simple, SQL, Header, Body, Constant, EL,
+
+JavaScript, …) with a Predicate which allows us to
+
+define the condition. During the transportation of the
+
+Exchange, Camel will automatically convert object from and
+
+/ or to a specific type using an internal registry containing
+
+Converting strategies. A Camel project typically uses a
+
+Container called a CamelContext to register the Camel Routes,
+
+Endpoints. In the second part of the series, we will cover
+
+more advanced features of Camel (Transformation of Complex
+
+Data Format, mutltithreading, asynchronous exchange, …).
+
+
+
+Camel photo by xikita.
+ 
+
+Be the first to share this article with your network!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Author
+
+
+
+ 
+
+
+
+
+						Charles Mouillard					
+
+
+
+
+All Posts by Charles Mouillard
+
+
+
+
+				Charles Moulliard is currently a Senior Enterprise Architect @RedHat, Apache Fellow with more than 19 years of expertise in IT solutions design based on JEE / Middleware technologies. As Architect, he has been involved in system integration of client projects in Financial and Banking world. The skills (Methodology, UML, RUP, Project Management, Network, Security, Web Development, Programming languages, RDBMS, Architecture			
+
+
+
+
+
+Recommended For You
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Name*
+
+
+
+
+Email*
+
+
+
+
+Website
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Name*
+
+
+
+
+Email*
+
+
+
+
+Website
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+0 Comments                
+
+
+
+
+
+ Inline Feedbacks
+View all comments
+
+
+
+
+
+
+
+
+
+
+
+
+
+﻿﻿﻿﻿Featured PostsGPU-enabled AI/ML at the Edge using KubernetesAI Regulations are Coming. Are you Prepared?Women in Tech: “Don’t let self-doubt get in the way and go for it”DevSecOps: Why it’s critical for secure innovation in the cloud Tweets by @JAXenterCOM
+
+ 
+
+
+
+ 
+
+
+
+Tips, tricks and tutorialsAn introduction to JobRunr, a distributed background job schedulerUsing pg_profile for Historical Workload Analysis in PostgreSQL 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+TopicsJava
+DevOps
+Machine Learning
+Serverless
+Blockchain
+JavaScript
+NetBeans
+Careers
+Tutorials
+ 
+
+PagesContact
+Newsletter
+Authors
+Found a bug?
+Advertise
+Privacy Policy
+Terms of Use
+Imprint
+ 
+
+Follow JAXenterTwitter
+Facebook
+RSS
+ 
+
+S&S MediaJAXenter.de
+JAX London
+JAX Germany
+DevOpsCon
+International PHP Conference
+Webinale
+S&S Media
+ 
+
+
+
+
+
+
+
+
+
+
+Software & Support Media Group
+Contact
+Masterclass Terms & Conditions
+ 
+
+
+
+
+
+
+Insert
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

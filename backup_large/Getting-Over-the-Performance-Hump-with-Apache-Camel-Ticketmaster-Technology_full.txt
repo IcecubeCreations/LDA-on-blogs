@@ -1,0 +1,707 @@
+
+
+
+
+
+
+
+Getting Over the Performance Hump with Apache Camel – Ticketmaster Technology
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+Skip to content
+
+
+
+
+
+
+
+
+
+
+
+
+
+Primary Menu
+
+Ticketmaster Technology
+Bringing out the fan in everyone…
+
+
+
+
+
+Search for:
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+Close Menu
+
+
+
+
+HomeAbout
+
+
+
+
+
+Recent Posts
+
+
+Ticketmaster Presence wins “Best in Sports Technology” at Sports Business Awards
+
+
+Ticketmaster Launches an Action on Google Assistant
+
+
+Ticketmaster Presence: When tickets go digital, event going gets better
+
+
+Ticketmaster Demonstrates Cutting Edge Android Instant Apps Technology at Google I/O
+
+
+Tech Maturity is now available on GitHub
+
+
+Categories
+
+Android
+
+API
+
+Architecture
+
+Build Pipeline
+
+Design Patterns
+
+DevOps
+
+Garbage Collection
+
+Innovation
+
+Interactive Seat Map
+
+Metrilyx
+
+Mobile
+
+Monitoring
+
+Performance
+
+Purpose
+
+Raising the Bar
+
+Testing
+
+TM+
+
+Uncategorized
+
+Web Services
+
+
+Archives
+
+May 2018
+October 2017
+July 2017
+May 2017
+January 2017
+November 2016
+May 2016
+March 2016
+February 2016
+January 2016
+December 2015
+November 2015
+October 2015
+September 2015
+August 2015
+July 2015
+June 2015
+May 2015
+April 2015
+March 2015
+February 2015
+January 2015
+December 2014
+November 2014
+October 2014
+August 2014
+July 2014
+June 2014
+May 2014
+
+Recent Comments 
+Ticketmaster Demonst… on 2015: Year of the AndroidTicketmaster shows y… on View from Section – Behind The…Ticketmaster shows y… on View from Section – Behind The…Ticketmaster shows y… on View from Section – Behind The…Ticketmaster shows y… on View from Section – Behind The… 
+
+
+Search for:
+
+
+
+
+
+
+
+
+
+
+Meta
+
+Register Log in
+Entries feed
+Comments feed
+WordPress.com
+
+ 
+
+
+
+
+
+
+Getting Over the Performance Hump with Apache Camel 
+
+This post goes over some of our findings in improving performance of one of our Apache Camel based web services.  The past year, Ticketmaster has seen tremendous growth in our new product, TM+, of which our service is a key component. With the increase in traffic, we have been working hard to ensure acceptable response times for our customer-facing services.  For the most part, our service has performed well, with a majority of requests completing within our desired duration. However, we had occasional requests which took longer to execute, at seemingly random intervals, so we set about to investigate and fix these worst-case performance spikes.
+
+CSI (Consolidated System of Inventory) is one of our central web services that acts as an abstraction layer for transactional APIs across a potentially wide range of inventory sources.  We use Apache Camel – for its excellent support of Enterprise Integration Patterns – to route requests to other web services.  Through this investigation, we found several optimizations to the way we use Camel that have greatly reduced garbage collection times, and as a result, improved performance.
+Note that the issues and solutions presented here were discovered using Camel 2.9.2. Another thing to note is that the custom graphs you’re seeing here are all based on Ticketmaster’s awesome open source graphing solution, Metrilyx, which is a visualization layer on top of OpenTSDB.
+We first noticed that when execution times were slow, our logs would show no application activity for a certain duration, which often indicates that garbage collection is taking place.  We then saw in our application JVM metrics that young-generation garbage collection was taking longer than expected:
+
+We turned on garbage collection logs and confirmed that collection times directly correlated with the pauses we were seeing in the application.  Our problem identified, the next step was to find out how and why our application was allocating excessive amounts of memory.  We had had success using Java’s VisualVM to diagnose previous memory issues, so we began by using that tool to inspect heap dumps.
+Although the excessive garbage collection times are a result of memory usage, the issue is not a memory leak, so the problem objects are not immediately apparent in a heap dump.  We were already suspicious of our Camel integration when looking at GC issues, so we drilled down to Camel objects in a heap dump to look for clues.  The heap dump was taken while we were putting load on our service, so although the heap dump process temporarily stops the application and triggers a full garbage collection before retrieving the memory snapshot, there were enough in-flight requests to reveal Camel’s TypeMapping class as a possible offender.  Objects of this class are very small, but they are allocated at a high rate compared to the overall rate of requests, so we then began to examine what causes these objects to be created.
+
+Apache Camel has a very flexible TypeConverter API for transforming objects, which examines a variety of different aspects of the source object to determine whether a desired conversion is possible.  Those aspects include type hierarchy, whether the object is part of a collection, and more, and those attributes are inspected repeatedly while Camel iterates through its list of possible conversion strategies.  This approach makes the following code possible:
+
+
+exchange.getIn().setBody(Arrays.asList(new RequestImpl()));
+
+RequestInterface body = exchange.getIn().getBody(RequestInterface.class());
+
+
+However, this flexibility comes at a cost of high and rapid memory allocation.  Every time Camel tries to perform a conversion, it checks to see if it has attempted it before, by creating a TypeMapping object that encapsulates the relationship between the source and destination types, which is then used as a key for Camel’s in-memory map of Type Converters.  Over the course of a single request, we observed hundreds of these objects being created.
+Increasing the severity of the issue is the fact that Camel uses this conversion strategy for more than just the exchange payload.  Camel attempts to convert method invocations in routes to its native Processor interface before proceeding with the invocation.
+Due to the nature of this issue, fixes are necessarily on a case-by-case basis.  We combed through our Camel routes to find places where we could help Camel eliminate the need to perform these type conversions.
+CXF MessageContentsList
+When using Camel’s CXF component, Camel’s exchange is populated with a CXF MessageContentsList object (a subclass of ArrayList) which contains the request payload.  We have always been able to bypass this wrapper by requesting the element class directly from Camel:
+
+
+ReservationRequestGroup reserveInventoryRequest =     
+
+        exchange.getIn().getBody(ReservationRequestGroup.class);
+
+
+Due to the relatively complex type hierarchy of MessageContentsList, this call is quite expensive from a memory allocation perspective.  To streamline this call, we added a Camel processor, invoked at the beginning of every HTTP request, which extracts the request element from the list and stores it directly as the Camel exchange body:
+
+
+@Override
+
+public void process(Exchange exchange) throws Exception {
+
+    MessageContentsList contentsList = 
+
+            exchange.getIn().getBody(MessageContentsList.class);
+
+    if (contentsList != null && contentsList.size() == 1) {
+
+        in.setBody(contentsList.get(0));
+
+    }
+
+}
+
+
+The important point of this fix is that we are requesting the exchange body as its actual type (MessageContentsList).  When this is done, the method call is virtually free, and no TypeMapping objects are created.  Because of Camel’s flexibility, this change is transparent to other places in our code where we extract the message body, but all of those calls are now optimized as well, assuming the requested type is the same as the actual body type.  Since CSI is a routing service that makes calls to other systems, we invoke this processor both when we receive the incoming request from the client and the incoming response from the end inventory system.
+Transform
+In CSI, we have many instances in our routes when we need to invoke a custom converter object on our exchange payload.  We used Camel’s transform API to do this, in Spring DSL:
+
+
+<transform> 
+
+    <method bean="helperTPI" method="convert" /> 
+
+</transform>
+
+
+As noted above, Camel attempts to convert this style of bean invocation into its own Processor.  Using Camel’s to API, we can bypass this:
+
+
+<to uri="bean:helperTPI?method=convert" />
+
+
+With this invocation, Camel calls the method directly without trying to convert the bean to a processor.
+With these fixes deployed, impact to our GC time was immediate and significant.  Peak GC times went down by around two-thirds.
+
+Due to the random nature of GC-related performance issues, and usage patterns of the CSI service, direct performance impacts can be difficult to measure.  However, we have seen that worst-case execution time is generally much lower and more stable.
+
+Share this:TwitterFacebookLike this:Like Loading...
+
+Related
+ 
+
+December 1, 2014June 19, 2015 Michael Boisvert
+
+
+
+Post navigation
+
+← Fear and Paranoia in a DevOps WorldView from Section – Behind The Scenes → 
+
+
+
+			6 thoughts on “Getting Over the Performance Hump with Apache Camel”		
+
+
+
+
+
+ Dennis says: 
+
+December 3, 2014 at 6:38 pm 
+
+
+Thank you
+
+
+
+
+
+
+
+ Vince says: 
+
+December 10, 2014 at 10:35 am 
+
+
+Hi Michael,
+Great Article!  
+Thanks for sharing your findings 🙂
+I was curious about something.  
+When you encountered these issues did you attempt to increase your JVM’s NewSize to meet the new object generation rate required by your application?
+I have run into similar performance issues in the past and was able to overcome them by making sure that my JVM Young Generation (Eden, and Survior) space was properly sized for my applications needs to avoid unnecessary minor and major garbage collections.
+I have no doubt the changes you made will yield better performance, but just wanted to know if there was a way to overcome this performance hump and still be able to rely on camel’s Type Converter API when needed and not have to worry about the performance hit.
+Best Regards and Thanks!,
+Vince Furlanetto
+
+
+
+
+
+
+
+ Michael Boisvert says: 
+
+December 12, 2014 at 11:50 am 
+
+
+Hi Vince,
+Thanks for your response and suggestions.
+We didn’t spend much time turning GC knobs when we started looking at the issue, because we wanted to focus on finding ways to reduce memory usage within the application.  With regards to the TypeConverter API, our use case is straightforward enough so that altering our routes to force the most optimal usage of the converters was a practical approach to dealing with the issue.  So for more complex routes where these kinds of changes may not be feasible, I don’t have a definitive answer as to whether similar improvements can be made by adjusting JVM settings alone.
+But it is possible–since the objects created by the TypeConverter are very short-lived, the pauses incurred by promoting objects to the survivor space were probably for other objects in the application, prematurely pushed out of the Eden space by the volume of Camel objects.  In that case, increasing the Eden space could help by delaying garbage collection enough to let other objects die (this is effectively what happened when we implemented our fixes).  We will consider this in further efforts, and it is very helpful to know you had success in tuning those settings!
+I hope this helps, and thanks!
+-Michael Boisvert
+
+
+
+
+
+
+
+ Vince says: 
+
+December 12, 2014 at 11:59 am 
+
+
+Hey Michael,
+Thanks for replying :).
+Makes perfect sense.
+Well if you do ever end up getting around to tinkering with the JVM settings for this please do share your findings as I am indeed curious.
+Take care,
+Vince
+
+
+
+
+
+
+
+
+
+ Jim says: 
+
+February 4, 2015 at 4:20 pm 
+
+
+These results sound like a pre-escape-analysis JRE is in use.  combined with adequate GC headroom escape analysis should alleviate pressure from short-lived objects.  it is possible through bad habits like linked-queues and cache-everything strategies to break escape analysis.  interesting that this is a december-2014 article.  all current vm’s 1.7+ in 2015 are using escape analysis
+
+
+
+
+
+
+
+ Jasen Jacobsen says: 
+
+December 13, 2016 at 6:27 am 
+
+
+I believe we just had a similar problem. We are using Camel for some Extract Transform Load tasks: pulling data out of some databases, mashing the results into new forms, and putting them into another database. We are using inline  Groovy in several places because of its concise syntax and general ease of use. Unfortunately, we found that after running several hours we were getting out of memory errors. I plugged in VisualVM and could see that the number of classes loaded kept going up, and each time garbage collection happened about 15MB of heap memory got lost. Not good.
+To troubleshoot, I pulled all the Groovy to an external library. Just doing this slowed down the memory leak, but did not stop it. Then I applied the @CompileStatic annotation to my Groovy class. This, of course, caused all the dynamic duck typing to break horribly. Bye-bye “def”, using dot-notation on maps, and a several other conveniences. But, the memory leak went away. The number of classes loaded stabilized, GC stopped leaking heap memory.
+It is very clear Camel did not clean up after itself cleanly after each run through the route.
+
+
+
+
+Comments are closed.
+
+
+
+
+
+
+Blog at WordPress.com.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Follow
+
+
+Following
+
+
+
+
+
+
+
+				Ticketmaster Technology			
+
+
+Join 118 other followers
+
+
+
+
+
+
+
+ 
+
+												Sign me up											
+
+
+
+
+											Already have a WordPress.com account? Log in now. 
+
+
+
+
+
+
+ 
+
+
+
+
+
+				Ticketmaster Technology			
+
+
+
+ Customize
+
+
+
+
+Follow
+
+
+Following
+
+
+Sign up
+Log in
+Copy shortlink
+Report this content
+
+
+											View post in Reader										
+
+
+Manage subscriptions
+
+Collapse this bar
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Loading Comments...
+
+
+
+ 
+
+
+Write a Comment...
+
+
+
+
+Email (Required)
+
+
+
+Name (Required)
+
+
+
+Website
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+%d bloggers like this:		
+
+
+ 
+
+
+
+

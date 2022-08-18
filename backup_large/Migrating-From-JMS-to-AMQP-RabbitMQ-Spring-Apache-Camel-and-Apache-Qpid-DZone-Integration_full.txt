@@ -1,0 +1,741 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Migrating From JMS to AMQP: RabbitMQ, Spring, Apache Camel, and Apache Qpid - DZone Integration
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Integration Zone
+
+
+
+Thanks for visiting DZone today,
+
+
+
+
+
+
+
+
+Edit Profile
+
+
+Manage Email Subscriptions
+
+
+                          How to Post to DZone
+                        
+
+
+
+                          Article Submission Guidelines
+                        
+
+
+
+Sign Out
+View Profile
+
+
+
+
+
+Post
+
+
+
+
+
+
+
+Post an Article
+
+
+Manage My Drafts
+
+
+
+
+
+
+
+Over 2 million developers have joined DZone.
+
+Log In
+/
+Join
+
+
+
+
+
+
+
+
+
+
+
+
+
+Refcardz
+
+
+
+
+Trend Reports
+
+
+
+
+Webinars
+
+
+
+
+
+                  Zones
+                  
+
+
+
+
+
+
+|
+
+
+
+Agile
+
+
+AI
+
+
+Big Data
+
+
+Cloud
+
+
+Database
+
+
+DevOps
+
+
+Integration
+
+
+IoT
+
+
+Java
+
+
+Microservices
+
+
+Open Source
+
+
+Performance
+
+
+Security
+
+
+Web Dev
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+DZone
+                    >
+                      Integration Zone
+                      >
+                      Migrating From JMS to AMQP: RabbitMQ, Spring, Apache Camel, and Apache Qpid
+
+
+
+Migrating From JMS to AMQP: RabbitMQ, Spring, Apache Camel, and Apache Qpid
+
+
+
+
+
+
+
+                          by
+
+                          
+
+Łukasz Budnik
+
+
+
+
+
+
+
+                          ·
+                        
+
+                        Apr. 17, 12
+                      
+                      ·
+                        
+Integration Zone
+
+                      ·
+                      Interview
+
+
+
+
+
+
+
+Like
+
+
+(2)
+
+
+
+
+
+
+                      Comment
+                      
+
+
+
+
+Save
+
+
+
+
+
+Tweet
+
+
+
+
+ 40.02K
+                      Views
+
+
+
+
+Join the DZone community and get the full member experience.
+Join For Free
+
+
+
+
+As you know I'm open-sourcing and completely overhauling my PhD system. 
+
+One of my goals was to replace internal JMS queues with AMQP. Today I'll
+
+ show you how I did it and why I was forced to change RabbitMQ to Apache
+
+ Qpid.
+
+AMQP
+
+
+In short. AMQP is an open standard application layer protocol for 
+
+message-oriented middleware. The most important feature is that AMQP is a
+
+ wire-level protocol and is interoperable by design. JMS is just an API.
+
+ Altough JMS brokers can be used in .NET applications (see my post: ActiveMQ and .NET combined!), the whole JMS specification does not guarantee interoperability. 
+
+Also, the AMQP standard is by design more flexible and powerful (e.g., supports 
+
+two-way communication by design) - they simply learnt from JMS mistakes 
+
+:).
+
+
+Oh, forgot to mention. The AMQP was originally developed by banks :) so I
+
+ don't have to say that AMQP is secure, fault-tolerant, and so on.
+
+RabbitMQ
+
+
+RabbitMQ is the most mature AMQP broker. RabbitMQ is written in Erlang so 
+
+you have to download that first (RabbitMQ Windows installer does it for 
+
+you). Download it from here: http://www.rabbitmq.com/.
+
+
+I also recommend installing the web management console. From Rabbit's sbin directory execute:
+rabbitmq-plugins enable rabbitmq_management
+
+If you're on Windows and you installed a Rabbit service you have to restart it.
+
+
+That's it.
+
+Spring
+
+
+Well, it turned out that VMware bought RabbitMQ and SpringSource 
+
+developers are now developing it. Given this fact, you shouldn't be 
+
+surprised that Spring - RabbitMQ integration is childishly simple.
+
+
+Add spring-rabbit dependency to your Maven project, and then in Spring configuration paste the following:<rabbit:connection-factory id="connectionFactory" />
+
+<rabbit:template connection-factory="connectionFactory" id="amqpTemplate" routing-key="myqueue" />
+
+<rabbit:admin connection-factory="connectionFactory" />
+
+<rabbit:queue name="myqueue" />The default configuration assumes that RabbitMQ is running on a local 
+
+server using the default port and default credentials (guest/guest). Of 
+
+course all these settings are configurable.
+
+
+To sent a message to "myqueue" queue, just inject an instance of AmqpTemplate into your service and send the message. An example would be:@Service
+
+public class HomeController {
+
+    @Autowired
+
+    private AmqpTemplate amqpTemplate;
+
+    public void sendMessage(Bundle bundle) throws IOException {       
+
+        byte[] body = IOUtils.toByteArray(bundle.getInputStream());
+
+        MessageProperties messageProperties = new MessageProperties();
+
+        messageProperties.setContentType(bundle.getContentType());
+
+        messageProperties.setContentLength(bundle.getSize());
+
+        messageProperties.setTimestamp(new Date());
+
+        messageProperties.setDeliveryMode(MessageDeliveryMode.PERSISTENT);
+
+        Message message = new Message(body, messageProperties);
+
+        amqpTemplate.send(message);
+
+    }
+
+}You can open the web console http://localhost:55672/mgmt/ and see 1 message in "myqueue" queue.
+
+Apache Camel
+
+
+To read a message from Apache Camel you first have to add camel-amqp dependency to your POM. Then just copy and paste the following route definition:
+<camelContext xmlns="http://camel.apache.org/schema/spring">
+
+ <route>
+
+  <from uri="amqp:queue:myqueue" />
+
+  <to uri="log:Message" />
+
+ </route>
+
+</camelContext>
+
+Run the route by executing mvn:camel-run and... you'll see an error.
+
+
+Making a long story short, Apache Camel 2.9.0 doesn't work with RabbitMQ. This is because the camel-amqp
+
+ component is using the Apache Qpid client under the hood. The current Qpid 
+
+version is 0.14, but Qpid guys forgot to upload new jars to the Maven public
+
+ repo. Thus camel-amqp is still using Qpid 0.12 whose client doesn't seem to negotiate protocols. Even if you exclude qpid-commons and qpid-client
+
+ dependencies and explicitly add Qpid 0.14 ones (download them and 
+
+install in your local repo) there will be an exception thrown from the camel-amqp component as there is no longer a default ConnectionFactory constructor.
+
+
+Thus I was forced to install Qpid.
+
+Qpid
+
+
+I downloaded the Java server and simply ran it. There is no web management console, but that's OK. You can use JConsole for JMX.
+
+Spring AMQP and Qpid
+
+
+In order to make Spring AMQP work with Qpid copy and paste the following configuration:<camelContext xmlns="http://camel.apache.org/schema/spring">
+
+ <route>
+
+  <from uri="amqp:queue:queue" />
+
+  <to uri="log:Message" />
+
+ </route>
+
+</camelContext>
+
+
+
+<bean id="amqp" class="org.apache.camel.component.amqp.AMQPComponent">
+
+ <property name="connectionFactory" ref="amqConnectionFactory" />
+
+</bean>
+
+
+
+<bean id="amqConnectionFactory" class="org.apache.qpid.client.AMQConnectionFactory">
+
+ <property name="host" value="localhost" />
+
+ <property name="port" value="5672" />
+
+ <property name="defaultUsername" value="guest" />
+
+ <property name="defaultPassword" value="guest" />
+
+ <property name="virtualPath" value="/development" />
+
+</bean>As you can see in the above snippet I explicitly created AMPQComponent with connectionFactory set to Apache Qpid AMQConnectionFactory object.  
+
+Source code and working example
+
+
+This solution is a part of the Qualitas project. I use Spring MVC to 
+
+handle uploads of business processes bundles (e.g., zipped archive of a 
+
+WS-BPEL process) and send it to an AMQP queue. Then Apache Camel consumes 
+
+the message, does additional processing of the bundle, and installs it 
+
+on a remote business process execution engine.
+
+
+The projects you are most interested in are:
+qualitas-webapp (Spring MVC sending messages to AMQP)qualitas-internall-installation (Apache Camel route consuming messages from AMQP)
+
+To check out 0.0.2-SNAPSHOT tag from here: http://code.google.com/p/qualitas/source/browse/.
+
+Qualitas
+
+
+Read more about Qualitas project here: http://code.google.com/p/qualitas/. Happy to welcome new developers on board!
+
+
+cheers,
+
+Łukasz
+
+
+
+Apache Camel
+Apache Qpid
+Spring Framework
+
+
+Published at DZone with permission of Łukasz Budnik, DZone MVB.
+                        
+See the original article here.
+                            
+
+
+
+Opinions expressed by DZone contributors are their own.
+
+
+Popular on DZone
+
+
+The End of the Beginning for Apache Cassandra
+
+
+Top Soft Skills to Identify a Great Software Engineer
+
+
+Enough Already With ‘Event Streaming’
+
+
+7 Traits of an Effective Software Asset Manager
+
+
+
+
+
+
+
+
+
+
+
+
+
+ Comments
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+                      Integration Partner Resources
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                X
+              
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ABOUT US
+
+About DZone
+Send feedback
+Careers
+Sitemap
+
+
+
+ADVERTISE
+
+Advertise with DZone
+
+
+
+
+
+CONTRIBUTE ON DZONE
+
+Article Submission Guidelines
+MVB Program
+Become a Contributor
+Visit the Writers' Zone
+
+LEGAL
+
+Terms of Service
+Privacy Policy
+
+
+
+CONTACT US
+
+600 Park Offices Drive
+Suite 300
+Durham, NC 27709
+support@dzone.com
++1 (919) 678-0300
+
+
+
+
+
+Let's be friends:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+DZone.com is powered by 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

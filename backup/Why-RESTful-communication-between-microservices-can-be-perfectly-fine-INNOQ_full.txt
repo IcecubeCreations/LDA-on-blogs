@@ -1,0 +1,565 @@
+
+
+
+
+Why RESTful communication between microservices can be perfectly fine – INNOQ
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                    🔥 DATA MESH Workshop: Was, Warum, Wie, Wann? Mehr erfahren
+
+
+
+
+
+
+
+
+ 
+
+
+
+💙💛
+Newsletter
+Kontakt
+DE | EN
+
+
+
+
+                            Menü
+                        
+
+
+
+
+ 
+
+
+
+
+
+Leistungen
+
+
+
+ausgeklappt
+eingeklappt
+
+
+
+Strategie- und Technologieberatung
+Digitale Produktentwicklung
+Softwarearchitektur und -entwicklung
+Digitale Plattformen und Infrastrukturen
+Wissenstransfer, Coaching und Trainings
+
+
+
+
+
+Success Stories
+
+
+
+Kultur
+
+
+
+ausgeklappt
+eingeklappt
+
+
+
+Wie wir zusammenarbeiten
+Was uns wichtig ist
+Arbeiten bei INNOQ
+
+
+
+
+
+
+Magazin
+
+
+
+ausgeklappt
+eingeklappt
+
+
+
+Blog & Artikel
+Podcasts
+Vorträge
+Technology Lunch
+Primer
+Newsletter
+
+Medienkunst
+
+
+
+
+
+
+Termine
+
+
+
+Schulungen
+
+
+
+ausgeklappt
+eingeklappt
+
+
+
+Warum Online-Schulungen?
+iSAQB CPSA-F Foundation Level
+Flexible Architekturen
+Domain-driven Design
+Web-Security
+Software Analytics
+JavaScript
+Modernisierung
+Cloud Native Infrastruktur
+Web-Architekturen
+Advanced Product Owner
+Blockchain
+Remote Mob Programming
+
+
+
+
+
+
+
+                        Hauptmenü
+                    
+
+
+
+
+
+            Blog-Post
+        
+Why RESTful communication between microservices can be perfectly fine
+
+ 6. März 2016
+
+            Recent debates about REST versus message passing in microservice communication have led to some confusion. What is meant with asynchronous communication in this context and why is REST a perfectly valid choice?
+
+        
+
+
+                    8 Minuten Lesedauer
+                
+
+
+
+
+
+
+
+
+
+
+
+
+                    Daniel Westheide
+                
+
+
+
+
+
+
+Recently, Lightbend CTO and co-founder Jonas Bonér, whom I highly respect, was talking a bit about how synchronous HTTP is a bad choice, even an anti-pattern, for communication between microservices:
+An dieser Stelle möchten wir Dir gerne einen Tweet anzeigen. Um ihn zu sehen, musst Du dem Laden von Fremdinhalten von twitter.com zustimmen.
+
+
+Inhalt anzeigen (Datenschutzhinweise)
+
+According to Bonér, synchronous REST is acceptable for public APIs, but internal communication between microservices should be based on asynchronous message-passing:
+An dieser Stelle möchten wir Dir gerne einen Tweet anzeigen. Um ihn zu sehen, musst Du dem Laden von Fremdinhalten von twitter.com zustimmen.
+
+
+Inhalt anzeigen (Datenschutzhinweise)
+
+In a recent article on Lightbend’s new Lagom framework, this thinking is summarized even more briefly than in the aforementioned tweets:
+
+Bonér cites the example of REST in microservices in particular as an example of this snafu[…]
+
+Statements such as these are problematic, because they are confounding the protocol used for communication with the mode of integration between services.
+In this blog post, I want to clarify how the terms used should be understood and show that HTTP and REST for internal service communication can be perfectly fine, as choosing to do so has nothing to do with whether your services integrate synchronously or asynchronously – and the latter question is what you should really be concerned with.
+Let’s begin with the different levels at which we can talk about sync versus async:
+Async IO
+This simply means that when you communicate over the network (e.g. with another service), your current thread is not blocked until the remote service has responded, but is free to do other things in between. Usually, it means it will serve other requests to your service until the service you have called has come back to you with a reply. The mechanisms for working with non-blocking IO are callbacks, futures, or streams. Async IO can help you to be able to serve more requests by keeping your CPUs busy, but as you will see, this is not the kind of asynchronicity you should be worried about when it comes to communication between your (micro)-services.
+Asynchronous protocols
+HTTP is a synchronous protocol: the client issues a request and waits for a response. If you are using non-blocking (aka async) IO, the current thread of the client does not really have to wait, but can do other things (see above). Still, it can only continue doing whatever it wanted to do until it has received the server’s response.
+In contrast to HTTP, message passing (e.g. over AMQP, or between Akka actors) is asynchronous. As a sender, you usually don’t wait for a response. This can be implemented with non-blocking IO, as it happens to be done in Akka, or with blocking IO, as it is done in JMS.
+It is also perfectly possible to use a request-reply pattern using asynchronous message passing protocols.
+Again, though, this is not the kind of asynchronicity we should be concerned with when thinking about communication between services.
+Asynchronous service integration
+In an ideal world, no communication whatsoever between your microservices should be necessary. And if it has to happen, it should be asynchronous.
+What does this mean? It is really quite simple: Do not communicate with other services during your own service’s request/response cycle. Ultimately, the goal is for your service to be available to the end-user even if other services that are part of the whole system are offline or unhealthy.
+If you have to call other services in order to be able to serve a response to a request from a public client, this is really an architectural problem. Don’t blame the protocol! It doesn’t matter whether you are using HTTP or asynchronous message passing (with a request-reply pattern), the overall response time for the public client will be bad, and your service will not be as resilient as it could be, because it is coupled in time to the service it depends on.
+If your service needs to trigger some action in another service, do that outside of the request/response cycle. You can use message passing or HTTP for this, it doesn’t really matter. If you really want to, I won’t even prevent you from using blocking IO for this stuff. Actors are pretty nice for handling the communication with other services outside of your own request/response cycle, but any other mechanism using some kind of buffer or queue should work as well.
+If your service relies on data that is located in another service, replicate that data into your own service’s data store, using eventual consistency. This also has the advantage that you can translate that data into the language of your own Bounded Context. You can either update your version of the data by receiving domain events via message passing, or by polling a RESTful notification resource, which can, for instance, be implemented using Atom. It is easy to dismiss the RESTful approach to service integration, but it can have some advantages that shouldn’t be easily carelessly ignored: You can make use of the standard infrastructure of the web, e.g. HTTP caches, instead of having to reinvent the wheel. Also, your teams remain free in their choice of technology for the services each of them are responsible for. This is possible with message passing for integration as well, if you choose an open standardized protocol, but not if you, say, use Akka or Erlang message passing for communication between your services.
+Self-contained systems
+Unfortunately, it is not always possible to avoid synchronous integration completely: At least the communication with the database will usually have to be synchronous in the sense that it happens within the request-response cycle. You should strive to apply such necessary synchronous communication only in narrowly defined boundaries.
+Such a boundary can, for example, be what we call a self-contained system (SCS) – an autonomous, isolated unit that includes its own data, logic, and UI. A system of self-contained systems is depicted below:
+
+
+A system of decoupled systems
+Whenever feasible, „integration“ between two self-contained systems should happen in the UI, using good old hypertext links and/or transclusion. Where this is not possible, integration with other services should happen asynchronously using the techniques for asynchronous integration described above.
+Summary
+I hope this blog post helped to shed some light on what you should really care about when designing your services: decoupling in time, which can be achieved or violated with both REST and message passing.
+If you want to learn more about the kind of decoupled, self-contained systems I mentioned above, please have a look at the SCS architecture website and feel free to participate in the discussion. Also, I would be happy to discuss my take on the asynchronous communication debate on Twitter.
+
+
+
+TAGS
+
+
+
+Architecture
+
+
+Web
+
+
+scs
+
+
+rest
+
+
+restful
+
+
+microservices
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                    Daniel Westheide
+                
+
+                    Senior Consultant
+                
+
+ 
+
+
+
+ 
+
+
+Daniel Westheide ist Senior Consultant bei INNOQ und entwickelt seit 2006 Server-Applikationen auf der JVM. Er intessiert sich besonders für funktionale Progammierung und verteilte Systeme und ist Autor des E-Books „The Neophyte’s Guide to Scala“.
+
+
+
+
+
+Kommentare
+
+
+
+
+Teilen auf
+
+
+
+
+Twitter
+ 
+
+
+
+Facebook
+ 
+
+
+
+Mail
+ 
+
+
+
+
+Mehr zum Thema
+
+
+
+
+Kommende Vorträge
+
+
+
+
+
+
+
+Kontakt
+
+
+Nutzen Sie unser Kontaktformular oder schreiben Sie uns eine E-Mail an [email protected].
+Wenn Sie mögen, können Sie uns auch verschlüsselte E-Mails mit dem Programm Ihrer Wahl senden. Nutzen Sie dazu wahlweise unsere S/MIME-Zertifikate (.cer, .p7b, .pem) oder unseren öffentlichen PGP-Schlüssel.
+
+
+
+
+Name
+
+ 
+E-Mail
+
+ 
+Nachricht
+
+ Senden
+
+
+
+
+Links
+
+Blog & Artikel
+Vorträge
+Podcasts
+Technology Lunch
+Primer
+Bücher
+Management
+socreatory – The Software Creators’ Academy
+Kontakt
+Datenschutz
+Impressum
+
+
+
+Leistungen
+
+Strategie- und Technologieberatung
+Digitale Produktentwicklung
+Softwarearchitektur und -entwicklung
+Digitale Plattformen und Infrastrukturen
+Wissenstransfer, Coaching und Trainings
+
+
+
+
+Standorte
+
+innoQ Deutschland GmbH
+
+Krischerstr. 100
+40789 Monheim am Rhein
+Tel (+49) 2173 3366 0
+Anfahrt
+
+
+Ohlauer Str. 43
+10999 Berlin
+Anfahrt
+
+
+Ludwigstr. 180 E
+63067 Offenbach
+Anfahrt
+
+
+Kreuzstr. 16
+80331 München
+Anfahrt
+
+
+c/o WeWork
+Hermannstrasse 13
+20095 Hamburg
+Anfahrt
+
+
+c/o Design Offices Mediapark
+Erftstr. 15-17
+50672 Köln
+Anfahrt
+
+
+c/o Design Offices
+Königstorgraben 11
+90402 Nürnberg
+Anfahrt
+
+
+
+innoQ Schweiz GmbH
+
+Schutzengelstr. 57
+6340 Baar
+Tel (+41) 41 743 01 11
+
+Anfahrt
+
+
+Hardturmstrasse 253
+8005 Zürich
+Anfahrt
+
+
+
+
+
+
+
+Unsere Newsletter
+
+
+            Nie mehr spannende Artikel, Veranstaltungstipps und Podcasts zu Architektur, Entwicklung und Technologietrends verpassen!
+        
+
+
+
+
+
+
+Der INNOQ Newsletter
+
+                    Spannende Artikel, Veranstaltungstipps und Podcasts zu Architektur, Entwicklung und Technologietrends. Erscheint ca. 1 mal pro Monat.
+                    
+
+
+
+                        Hiermit willige ich in die Erhebung und Verarbeitung der vorstehenden Daten für das Empfangen des monatlichen Newsletters per E-Mail ein. Diese Einwilligung kann ich per Email an [email protected], direkt per Link in der Newsletter-Email oder an die im Impressum genannten Kontaktdaten jederzeit widerrufen. Die Datenschutzhinweise habe ich zur Kenntnis genommen und bestätige dies mit Absenden des Formulars.
+                    
+
+
+
+
+
+
+
+Das Digitale Rauchzeichen
+                    Success Stories aus Digitalisierung und Modernisierung von INNOQ Schweiz. Erscheint max. 4 mal pro Jahr.
+                    
+
+
+                        Hiermit willige ich in die Erhebung und Verarbeitung der vorstehenden Daten für den Empfang des Newsletters der innoQ Schweiz GmbH per E-Mail ein. Diese Einwilligung kann ich per Email an [email protected], direkt per Link in der Newsletter-Email oder an die im Impressum genannten Kontaktdaten jederzeit widerrufen. Die Datenschutzhinweise habe ich zur Kenntnis genommen und bestätige dies mit Absenden des Formulars.
+                    
+
+
+
+
+Email
+
+
+
+
+Vorname optional
+
+
+
+
+
+Nachname optional
+
+
+
+
+
+            Anmelden
+        
+
+
+
+
+Finden können Sie uns auch auf
+
+
+
+Twitter
+
+
+
+
+
+Youtube
+
+
+
+
+
+LinkedIn
+
+
+
+
+
+Xing
+
+
+
+
+
+Feed
+
+
+
+
+
+
+
