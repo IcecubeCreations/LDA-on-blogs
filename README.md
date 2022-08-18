@@ -1,5 +1,6 @@
 # LDA-on-blogs
 Contains the data and code necessary to run the LDA topic analysis on AK blogs.
+Disclaimer. Any change to the parameters or to the source data may create different results.
 
 ## Requirements
 - Python 3.10
