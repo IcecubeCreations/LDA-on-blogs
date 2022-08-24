@@ -167,7 +167,7 @@ def main():
     args = sys.argv
     MAX_DF = 0.95
     MIN_DF = 0.05
-    ALPHA = 50/TOPIC_COUNT
+    ALPHA = None
     ETA = None
     MAX_ITER = 100
     MAX_FEATURES = None    
