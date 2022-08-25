@@ -27,7 +27,7 @@ def retrieve_int_or_float(input):
 def plot_top_words(model, feature_names, n_top_words, title):
     rows = math.ceil(TOPIC_COUNT / 10)
     columns = math.ceil(TOPIC_COUNT / rows)
-    length, height = [columns * 6 , int(TOP_WORDS / 5 * 3)]    
+    length, height = [columns * 10 , int(TOP_WORDS / 5 * 3)]    
     fig, axes = plt.subplots(1, columns, figsize=(length, height), sharex=True)
     axes = axes.flatten()
     for topic_idx, topic in enumerate(model.components_):
@@ -48,8 +48,8 @@ def plot_top_words(model, feature_names, n_top_words, title):
         for i in "top right left".split():
             ax.spines[i].set_visible(False)
         fig.suptitle(title, fontsize=40)
-
     plt.subplots_adjust(top=0.90, bottom=0.05, wspace=0.90, hspace=0.3)
+    fig.savefig('topics.png')
     plt.show()
 
 # calculates document to topic distance
