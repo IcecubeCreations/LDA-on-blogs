@@ -75,3 +75,17 @@ Requires running importer.py with a blog list rather than local files. Matches U
   
 ### plot_sources.py
 Generates discrete bubble chart and boxplots. Uses "BlogTypes.xlsx" to match with "match_topic_types.xlsx"
+
+## Replicate the results
+### Default arguments should suffice. Either option is valid for replicating the results.
+- 1 directly run the python LDA.py command. 
+- Delete all txt files in the txtfiles/category_1_folder and copy files in the txtfiles there. Folloed by running python preprocess.py and python LDA.py.
+
+### To follow original process run the following.
+- importer.py "relevant_pages.xlsx"
+  - Manually download missing pages and remove not blogs that were downloaded.
+- run the langtest.py
+  - Manually remove non english pages
+  - copy files to category_1_folder
+- run the preprocess.py
+- run the LDA.py
