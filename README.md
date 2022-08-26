@@ -71,7 +71,7 @@ Is used to get coherence score of different topic counts. Prints score on the sc
 Prints coherence score per topic count alongside top words.
   
 ### source_topic_matcher.py
-Requires running importer.py with a blog list rather than local files. Matches URLs to the generated topics (rather than matching the txt files). Used for making sampling easier. Generates "match_topic_types.xlsx" file.
+Requires running importer.py with a blog list rather than local files followed by the results_to_url.py. Matches URLs to the generated topics (rather than matching the txt files). Used for making sampling easier. Generates "match_topic_types.xlsx" file.
   
 ### plot_sources.py
 Generates discrete bubble chart and boxplots. Uses "BlogTypes.xlsx" to match with "match_topic_types.xlsx"
