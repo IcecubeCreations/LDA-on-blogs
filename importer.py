@@ -23,7 +23,7 @@ def url_to_name(s):
 def get_name(url):
     name = url.rsplit('/', 1)[-1]
     file_name = url_to_name(name)
-    file_location = os.path.join(DOCUMENTS_FOLDER, file_name, "_full.txt")
+    file_location = os.path.join(DOCUMENTS_FOLDER, file_name+"_full.txt")
     return file_location
 
 # reads urls from excel sheet
@@ -79,12 +79,12 @@ def write_page(page, url):
     # Create a local copy of the html file
     html_path = os.path.join(HTML_FOLDER, file_name+"_full.html")
     with open(html_path, "w", encoding="utf-8") as f:
-        print(html_path, " TEST")
+        print(html_path)
         f.write(page.text)      
         f.close()
     
     # Save the txt contents of the html file
-    txt_path = os.path.join(DOCUMENTS_FOLDER, file_name+"_full.html")
+    txt_path = os.path.join(DOCUMENTS_FOLDER, file_name+"_full.txt")
     with open(txt_path, "w", encoding="utf-8") as f:
         f.write(soup.get_text())      
         f.close()
