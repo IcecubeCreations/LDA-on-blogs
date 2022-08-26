@@ -79,7 +79,7 @@ Generates discrete bubble chart and boxplots. Uses "BlogTypes.xlsx" to match wit
 ## Replicate the results
 ### Default arguments should suffice. Either option is valid for replicating the results.
 - 1 directly run the python LDA.py command. 
-- Delete all txt files in the txtfiles/category_1_folder and copy files in the txtfiles there. Folloed by running python preprocess.py and python LDA.py.
+- Delete all txt files in the txtfiles/category_1_folder and copy files in the txtfiles there. Followed by running python preprocess.py and python LDA.py.
 
 ### To follow original process run the following.
 - importer.py "relevant_pages.xlsx"
